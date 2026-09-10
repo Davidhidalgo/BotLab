@@ -12,6 +12,14 @@
       "options": {
         "command": "tsc -p libs/runtime/tsconfig.lib.json --outDir dist/libs/runtime"
       }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/coverage/libs/runtime"],
+      "options": {
+        "cwd": "libs/runtime",
+        "command": "vitest"
+      }
     }
   }
 }

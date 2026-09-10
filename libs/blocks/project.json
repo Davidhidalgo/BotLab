@@ -12,6 +12,14 @@
       "options": {
         "command": "tsc -p libs/blocks/tsconfig.lib.json --outDir dist/libs/blocks"
       }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/coverage/libs/blocks"],
+      "options": {
+        "cwd": "libs/blocks",
+        "command": "vitest"
+      }
     }
   }
 }

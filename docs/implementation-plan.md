@@ -43,6 +43,7 @@ Implemented:
 - Build targets for every library plus the root `npm run build:libs` workflow.
 - Root Nx affected scripts for build, test, and lint workflows.
 - Validation helpers for policies, capability schemas, compiled behavior artifacts, and behavior graph/AST references.
+- Initial `@botlab/blocks` editor boundary with workspace artifacts, import/export helpers, a mock provider, workspace states, callbacks, and package tests.
 
 Not implemented yet:
 

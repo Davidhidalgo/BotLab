@@ -1,6 +1,6 @@
 import { createMicroDuckAdapter } from '@botlab/adapters-microduck';
 import { createStackChanAdapter } from '@botlab/adapters-stackchan';
-import { BlocksEditorShell } from '@botlab/blocks';
+import { BlocksEditorShell, sampleBlocksWorkspaceArtifact } from '@botlab/blocks';
 import { botLabConcepts } from '@botlab/model';
 import { createBotLabRuntime } from '@botlab/runtime';
 import { officialSimulatorIntegrations } from '@botlab/simulators';
@@ -59,9 +59,9 @@ export function App() {
 
       <section className="mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-[1.35fr_0.65fr]">
         <BlocksEditorShell
-          workspaceName="BotLab Scratch/TurboWarp boundary"
-          status="Encapsulado"
-          blocks={['when robot starts', 'set MicroDuck LEDs', 'wait for capability', 'publish artifact']}
+          workspaceName="Editor de bloques BotLab"
+          artifact={sampleBlocksWorkspaceArtifact}
+          blocks={['al iniciar robot', 'fijar LEDs MicroDuck', 'esperar capacidad', 'publicar artefacto']}
         />
 
         <aside className="space-y-4">

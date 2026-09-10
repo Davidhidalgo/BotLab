@@ -1,0 +1,28 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": ["es2020", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@botlab/adapters-microduck": ["libs/adapters/microduck/src/index.ts"],
+      "@botlab/adapters-stackchan": ["libs/adapters/stackchan/src/index.ts"],
+      "@botlab/blocks": ["libs/blocks/src/index.ts"],
+      "@botlab/model": ["libs/botlab-model/src/index.ts"],
+      "@botlab/runtime": ["libs/runtime/src/index.ts"],
+      "@botlab/simulators": ["libs/simulators/src/index.ts"],
+      "@botlab/ui": ["libs/ui/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}

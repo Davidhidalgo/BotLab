@@ -1,0 +1,9 @@
+{
+  "name": "botlab-model",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/botlab-model/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project botlab-model --web",
+  "targets": {}
+}

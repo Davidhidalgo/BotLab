@@ -3,7 +3,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/botlab-web/src",
   "projectType": "application",
-  "tags": [],
+  "tags": ["scope:app", "type:web", "platform:react"],
   "// targets": "to see all targets run: nx show project botlab-web --web",
   "targets": {}
 }

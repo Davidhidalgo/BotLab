@@ -33,6 +33,14 @@ Implemented:
 - Planned StackChan adapter contract in `libs/adapters/stackchan`.
 - Simulator integration contracts in `libs/simulators`.
 - First screen showing project model, runtime counts, targets, and editor placeholder.
+- Project tags in each `project.json` for app, UI, model, runtime, adapter, simulator, and editor boundaries.
+- Lightweight ADR folder with the first boundary decision.
+- BotLab glossary linked from the README.
+- Expanded domain model contracts for policies, skills, behavior graphs/AST, artifacts, target profiles, and capability schemas.
+- Sample MicroDuck LED and StackChan expression behaviors in `@botlab/model`.
+- Validation helpers and model tests for valid and invalid behavior definitions.
+- Adapter target profiles and capability command schemas for MicroDuck and StackChan placeholders.
+- Build targets for every library plus the root `npm run build:libs` workflow.
 
 Not implemented yet:
 
@@ -56,7 +64,7 @@ Tasks:
 - Confirm project naming and package naming conventions.
 - Add project tags in each `project.json`, for example `scope:runtime`, `scope:adapter`, `type:ui`.
 - Add root scripts for common Nx workflows.
-- Add lint/typecheck targets where Nx does not infer enough.
+- Add lint/typecheck/build targets where Nx does not infer enough.
 - Add a lightweight architecture decision record folder: `docs/adr`.
 - Add a `docs/glossary.md` for BotLab terms.
 

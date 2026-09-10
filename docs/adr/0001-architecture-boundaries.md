@@ -1,0 +1,30 @@
+# ADR 0001: Keep Editor, Runtime, Adapter, and Simulator Boundaries Separate
+
+## Status
+
+Accepted
+
+## Context
+
+BotLab needs to support visual programming, runtime execution, real robot adapters, and simulator integrations without coupling the first web screen to every future implementation detail.
+
+Scratch Blocks or TurboWarp may become the visual editor engine, MicroDuck is the first robot target, StackChan is planned, and simulators should use official packages or processes where possible. Each of those choices may change independently.
+
+## Decision
+
+BotLab keeps separate package boundaries for the major responsibilities:
+
+- `@botlab/blocks` owns the visual editor boundary and hides Scratch Blocks, TurboWarp, or Blockly-specific details.
+- `@botlab/model` owns shared domain concepts and contracts.
+- `@botlab/runtime` owns execution orchestration, policy evaluation, scheduling, arbitration, dispatch, and introspection.
+- `@botlab/adapters-*` packages own robot-specific capabilities, targets, and transport concerns.
+- `@botlab/simulators` owns simulator integration contracts and dependency strategy.
+- `apps/botlab-web` composes these packages but does not import robot transport, simulator internals, or block-engine globals directly.
+
+Nx project tags document these boundaries so future lint constraints can enforce them.
+
+## Consequences
+
+This makes the early codebase more explicit and gives each integration a clear home before the real robotics work begins.
+
+The tradeoff is some upfront ceremony: simple demos need to pass through package contracts instead of importing concrete implementation details directly. That cost is acceptable because BotLab is expected to grow across multiple robot targets, simulators, and editor engines.

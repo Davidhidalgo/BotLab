@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx serve botlab-web",
     "build": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx build botlab-web",
+    "build:libs": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx run-many --target=build --projects=botlab-model,runtime,simulators,microduck,stackchan,blocks,ui",
     "test": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx test botlab-web",
     "nx": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx"
   },

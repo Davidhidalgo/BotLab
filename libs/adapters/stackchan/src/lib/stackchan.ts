@@ -12,6 +12,19 @@ export function createStackChanAdapter(): BotLabAdapter {
         kind: 'robot',
         adapterId: 'stackchan',
         status: 'planned',
+        profile: {
+          hardware: {
+            family: 'StackChan',
+          },
+          simulator: {
+            supported: false,
+          },
+          connection: {
+            modes: ['wifi', 'manual'],
+            defaultMode: 'manual',
+            discovery: 'planned',
+          },
+        },
       },
     ],
     capabilities: [
@@ -21,6 +34,24 @@ export function createStackChanAdapter(): BotLabAdapter {
         name: 'Face expression',
         description: 'Future expressive output capability for StackChan.',
         targetIds: ['stackchan-planned'],
+        schema: {
+          commands: [
+            {
+              id: 'set-expression',
+              name: 'Set expression',
+              description: 'Display a named facial expression.',
+              inputs: [
+                {
+                  name: 'expression',
+                  type: 'enum',
+                  required: true,
+                  enumValues: ['happy', 'neutral', 'surprised', 'sleepy'],
+                },
+              ],
+            },
+          ],
+          telemetry: [],
+        },
       },
       {
         id: 'stackchan-sound',
@@ -28,6 +59,23 @@ export function createStackChanAdapter(): BotLabAdapter {
         name: 'Speech and sound',
         description: 'Future audio capability for StackChan behaviors.',
         targetIds: ['stackchan-planned'],
+        schema: {
+          commands: [
+            {
+              id: 'speak',
+              name: 'Speak',
+              description: 'Play synthesized speech or a short phrase.',
+              inputs: [
+                {
+                  name: 'text',
+                  type: 'string',
+                  required: true,
+                },
+              ],
+            },
+          ],
+          telemetry: [],
+        },
       },
     ],
   };

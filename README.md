@@ -34,6 +34,11 @@ libs/
 
 The detailed roadmap lives in [docs/implementation-plan.md](docs/implementation-plan.md). It covers milestones, package ownership, acceptance criteria, open decisions, near-term backlog, and technical risks.
 
+Supporting project docs:
+
+- [Glossary](docs/glossary.md)
+- [Architecture Decision Records](docs/adr/README.md)
+
 ## Domain Concepts
 
 BotLab starts with these concepts in the model:
@@ -77,6 +82,7 @@ The package scripts already include those environment variables.
 ```sh
 npm run dev
 npm run build
+npm run build:libs
 npm run test
 npm run nx -- show projects
 ```

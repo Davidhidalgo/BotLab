@@ -95,6 +95,17 @@ export interface RuntimeSessionSnapshot {
   messages: string[];
 }
 
+export interface RuntimeIntrospectionSnapshot {
+  generatedAt: string;
+  targets: Target[];
+  capabilities: Capability[];
+  simulators: SimulatorIntegration[];
+  sessions: RuntimeSessionSnapshot[];
+  activeSessionCount: number;
+  diagnostics: RuntimeDiagnostic[];
+  recentEvents: RuntimeEvent[];
+}
+
 export type RuntimeCommandDispatchStatus = 'dispatched' | 'failed';
 
 export interface RuntimeCommandDispatchResult {
@@ -157,6 +168,7 @@ export interface BotLabRuntime {
   listTargets(): Target[];
   listCapabilities(): Capability[];
   listSimulatorIntegrations(): SimulatorIntegration[];
+  inspectRuntime(): RuntimeIntrospectionSnapshot;
   inspectTarget(targetId: string): IntrospectionSnapshot;
   createSession(options?: RuntimeSessionOptions): RuntimeSessionSnapshot;
   loadBehavior(sessionId: string, behavior: Behavior): RuntimeLoadResult;
@@ -189,6 +201,7 @@ interface RuntimeSession {
 export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
   const sessions = new Map<string, RuntimeSession>();
   const listeners = new Set<RuntimeEventListener>();
+  const events: RuntimeEvent[] = [];
   const now = config.now ?? (() => new Date().toISOString());
   let sessionCounter = 0;
   let eventCounter = 0;
@@ -264,6 +277,7 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
     };
 
     eventCounter += 1;
+    events.push(event);
     listeners.forEach((listener) => listener(event));
   }
 
@@ -312,14 +326,36 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
     listSimulatorIntegrations() {
       return config.simulators;
     },
+    inspectRuntime() {
+      const sessionSnapshots = Array.from(sessions.values()).map(snapshot);
+
+      return {
+        generatedAt: now(),
+        targets: listTargets(),
+        capabilities: listCapabilities(),
+        simulators: config.simulators,
+        sessions: sessionSnapshots,
+        activeSessionCount: sessionSnapshots.filter((session) =>
+          ['created', 'ready', 'running', 'paused'].includes(session.state),
+        ).length,
+        diagnostics: sessionSnapshots.flatMap((session) => session.diagnostics),
+        recentEvents: events.slice(-25),
+      };
+    },
     inspectTarget(targetId) {
       const target = listTargets().find((candidate) => candidate.id === targetId);
+      const targetSessions = Array.from(sessions.values()).filter(
+        (session) => session.targetId === targetId,
+      );
 
       return {
         targetId,
-        health: target?.status === 'available' ? 'nominal' : 'unknown',
+        health: resolveTargetHealth(target, targetSessions),
         messages: target
-          ? [`${target.name} is registered through ${target.adapterId}.`]
+          ? [
+              `${target.name} is registered through ${target.adapterId}.`,
+              `${targetSessions.length} runtime session(s) reference this target.`,
+            ]
           : ['Target is not registered in this runtime session.'],
       };
     },
@@ -581,4 +617,19 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
       };
     },
   };
+}
+
+function resolveTargetHealth(
+  target: Target | undefined,
+  sessions: RuntimeSession[],
+): IntrospectionSnapshot['health'] {
+  if (!target) {
+    return 'unknown';
+  }
+
+  if (sessions.some((session) => session.state === 'error')) {
+    return 'degraded';
+  }
+
+  return target.status === 'available' ? 'nominal' : 'unknown';
 }

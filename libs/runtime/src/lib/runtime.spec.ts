@@ -26,6 +26,37 @@ describe('runtime', () => {
     });
   });
 
+  it('summarizes runtime state through introspection snapshots', () => {
+    const runtime = createTestRuntime();
+    const session = runtime.createSession({ id: 'session-introspection' });
+
+    runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
+
+    expect(runtime.inspectRuntime()).toMatchObject({
+      generatedAt: '2026-09-10T00:00:00.000Z',
+      targets: expect.arrayContaining([
+        expect.objectContaining({ id: 'microduck-usb' }),
+      ]),
+      capabilities: expect.arrayContaining([
+        expect.objectContaining({ id: 'microduck-leds' }),
+      ]),
+      sessions: [
+        expect.objectContaining({
+          id: 'session-introspection',
+          state: 'ready',
+          targetId: 'microduck-usb',
+          behaviorId: 'microduck-led-demo',
+        }),
+      ],
+      activeSessionCount: 1,
+      diagnostics: [],
+      recentEvents: [
+        expect.objectContaining({ type: 'session-created' }),
+        expect.objectContaining({ type: 'artifact-loaded' }),
+      ],
+    });
+  });
+
   it('loads a compiled behavior plan into a runtime session', () => {
     const runtime = createTestRuntime();
     const session = runtime.createSession({ id: 'session-a' });
@@ -166,6 +197,24 @@ describe('runtime', () => {
         code: 'missing-compiled-artifact',
       }),
     ]);
+    expect(runtime.inspectRuntime().diagnostics).toHaveLength(1);
+  });
+
+  it('marks target health as degraded when one of its sessions is in error', async () => {
+    const runtime = createTestRuntime();
+    const session = runtime.createSession({ id: 'session-target-error' });
+
+    runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
+    await runtime.startSession(session.id);
+
+    expect(runtime.inspectTarget('microduck-usb')).toMatchObject({
+      targetId: 'microduck-usb',
+      health: 'degraded',
+      messages: [
+        'MicroDuck USB is registered through microduck.',
+        '1 runtime session(s) reference this target.',
+      ],
+    });
   });
 });
 

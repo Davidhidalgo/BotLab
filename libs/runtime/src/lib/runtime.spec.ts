@@ -3,7 +3,10 @@ import { createBotLabRuntime } from './runtime';
 import {
   sampleMicroDuckCompiledBehaviorArtifact,
   sampleMicroDuckLedBehavior,
+  sampleArbitrationStrategies,
   samplePolicies,
+  sampleSchedulers,
+  sampleSkills,
   type BotLabAdapter,
   type CompiledCommand,
 } from '@botlab/model';
@@ -38,6 +41,19 @@ describe('runtime', () => {
       behaviorId: 'microduck-led-demo',
       targetId: 'microduck-usb',
       loadedArtifactId: 'artifact-microduck-leds-plan',
+    });
+  });
+
+  it('loads a validated behavior before compilation', () => {
+    const runtime = createTestRuntime();
+    const session = runtime.createSession({ id: 'session-behavior' });
+    const result = runtime.loadBehavior(session.id, sampleMicroDuckLedBehavior);
+
+    expect(result.validation).toEqual({ valid: true, errors: [] });
+    expect(result.snapshot).toMatchObject({
+      id: 'session-behavior',
+      state: 'ready',
+      behaviorId: 'microduck-led-demo',
     });
   });
 
@@ -123,9 +139,33 @@ describe('runtime', () => {
 
     expect(result.validation.valid).toBe(false);
     expect(result.snapshot.state).toBe('error');
+    expect(result.snapshot.diagnostics).toEqual([
+      expect.objectContaining({
+        category: 'validation',
+        code: 'compiled-artifact-validation-failed',
+        severity: 'error',
+      }),
+    ]);
     expect(result.validation.errors).toContain(
       'Compiled command command-microduck-leds-smile references unknown command missing-command on capability microduck-leds.',
     );
+  });
+
+  it('records lifecycle diagnostics when a session starts without a compiled plan', async () => {
+    const runtime = createTestRuntime();
+    const session = runtime.createSession({ id: 'session-no-plan' });
+    const result = await runtime.startSession(session.id);
+
+    expect(result.snapshot).toMatchObject({
+      state: 'error',
+      dispatchedCommandCount: 0,
+    });
+    expect(result.snapshot.diagnostics).toEqual([
+      expect.objectContaining({
+        category: 'lifecycle',
+        code: 'missing-compiled-artifact',
+      }),
+    ]);
   });
 });
 
@@ -136,6 +176,9 @@ function createTestRuntime(dispatcher?: {
     adapters: [microDuckAdapter],
     simulators: [],
     behaviors: [sampleMicroDuckLedBehavior],
+    skills: sampleSkills,
+    schedulers: sampleSchedulers,
+    arbitrationStrategies: sampleArbitrationStrategies,
     policies: samplePolicies,
     dispatchers: dispatcher
       ? [

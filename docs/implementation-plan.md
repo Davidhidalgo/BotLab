@@ -46,6 +46,7 @@ Implemented:
 - Initial `@botlab/blocks` editor boundary with workspace artifacts, import/export helpers, a mock provider, workspace states, callbacks, and package tests.
 - App-level workspace state receives mock editor artifact updates and displays editor status metadata.
 - Runtime sessions can load compiled behavior artifacts, dispatch commands through injected target dispatchers, emit lifecycle events, and produce trace artifacts.
+- Runtime sessions can load validated behavior definitions and record structured diagnostics with validation, lifecycle, adapter, transport, scheduler, simulator, and policy categories.
 
 Not implemented yet:
 

@@ -6,12 +6,18 @@ import type {
   CompiledBehaviorArtifact,
   CompiledCommand,
   IntrospectionSnapshot,
+  Skill,
   Policy,
+  SchedulerProfile,
   SimulatorIntegration,
   Target,
   ValidationResult,
+  ArbitrationStrategy,
 } from '@botlab/model';
-import { validateCompiledBehaviorArtifact } from '@botlab/model';
+import {
+  validateBehaviorDefinition,
+  validateCompiledBehaviorArtifact,
+} from '@botlab/model';
 
 export type RuntimeSessionState =
   | 'created'
@@ -26,7 +32,36 @@ export type RuntimeTraceCategory =
   | 'lifecycle'
   | 'load'
   | 'dispatch'
+  | 'validation'
   | 'error';
+
+export type RuntimeErrorCategory =
+  | 'validation'
+  | 'policy'
+  | 'adapter'
+  | 'transport'
+  | 'scheduler'
+  | 'simulator'
+  | 'lifecycle';
+
+export type RuntimeErrorCode =
+  | 'behavior-validation-failed'
+  | 'compiled-artifact-validation-failed'
+  | 'missing-compiled-artifact'
+  | 'missing-dispatcher'
+  | 'dispatcher-failed'
+  | 'dispatcher-threw'
+  | 'disposed-session-transition';
+
+export interface RuntimeDiagnostic {
+  id: string;
+  timestamp: string;
+  category: RuntimeErrorCategory;
+  code: RuntimeErrorCode;
+  severity: 'warning' | 'error';
+  message: string;
+  commandId?: string;
+}
 
 export interface RuntimeTraceEntry {
   id: string;
@@ -56,6 +91,7 @@ export interface RuntimeSessionSnapshot {
   loadedArtifactId?: string;
   dispatchedCommandCount: number;
   trace: RuntimeTraceEntry[];
+  diagnostics: RuntimeDiagnostic[];
   messages: string[];
 }
 
@@ -109,6 +145,9 @@ export interface RuntimeConfig {
   adapters: BotLabAdapter[];
   simulators: SimulatorIntegration[];
   behaviors?: Behavior[];
+  skills?: Skill[];
+  schedulers?: SchedulerProfile[];
+  arbitrationStrategies?: ArbitrationStrategy[];
   policies?: Policy[];
   dispatchers?: RuntimeCommandDispatcher[];
   now?: () => string;
@@ -120,6 +159,7 @@ export interface BotLabRuntime {
   listSimulatorIntegrations(): SimulatorIntegration[];
   inspectTarget(targetId: string): IntrospectionSnapshot;
   createSession(options?: RuntimeSessionOptions): RuntimeSessionSnapshot;
+  loadBehavior(sessionId: string, behavior: Behavior): RuntimeLoadResult;
   loadCompiledBehavior(
     sessionId: string,
     artifact: CompiledBehaviorArtifact,
@@ -142,6 +182,7 @@ interface RuntimeSession {
   loadedArtifact?: CompiledBehaviorArtifact;
   dispatchedCommandCount: number;
   trace: RuntimeTraceEntry[];
+  diagnostics: RuntimeDiagnostic[];
   messages: string[];
 }
 
@@ -151,6 +192,7 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
   const now = config.now ?? (() => new Date().toISOString());
   let sessionCounter = 0;
   let eventCounter = 0;
+  let diagnosticCounter = 0;
 
   function listTargets() {
     return config.adapters.flatMap((adapter) => adapter.targets);
@@ -188,6 +230,30 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
     session.messages.push(message);
   }
 
+  function recordDiagnostic(
+    session: RuntimeSession,
+    category: RuntimeErrorCategory,
+    code: RuntimeErrorCode,
+    message: string,
+    commandId?: string,
+  ) {
+    diagnosticCounter += 1;
+
+    const diagnostic: RuntimeDiagnostic = {
+      id: `runtime-diagnostic-${diagnosticCounter}`,
+      timestamp: now(),
+      category,
+      code,
+      severity: 'error',
+      message,
+      commandId,
+    };
+
+    session.diagnostics.push(diagnostic);
+    appendTrace(session, category === 'validation' ? 'validation' : 'error', message, commandId);
+    emit('runtime-error', message, session.id);
+  }
+
   function emit(type: RuntimeEventType, message: string, sessionId?: string) {
     const event: RuntimeEvent = {
       id: `runtime-event-${eventCounter + 1}`,
@@ -210,6 +276,7 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
       loadedArtifactId: session.loadedArtifact?.id,
       dispatchedCommandCount: session.dispatchedCommandCount,
       trace: [...session.trace],
+      diagnostics: [...session.diagnostics],
       messages: [...session.messages],
     };
   }
@@ -223,8 +290,12 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
     const session = getSession(sessionId);
 
     if (session.state === 'disposed') {
-      appendTrace(session, 'error', `Disposed session ${session.id} cannot transition.`);
-      emit('runtime-error', `Disposed session ${session.id} cannot transition.`, session.id);
+      recordDiagnostic(
+        session,
+        'lifecycle',
+        'disposed-session-transition',
+        `Disposed session ${session.id} cannot transition.`,
+      );
       return snapshot(session);
     }
 
@@ -260,6 +331,7 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
         state: 'created',
         dispatchedCommandCount: 0,
         trace: [],
+        diagnostics: [],
         messages: [],
       };
 
@@ -268,6 +340,39 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
       emit('session-created', `Runtime session ${session.id} created.`, session.id);
 
       return snapshot(session);
+    },
+    loadBehavior(sessionId, behavior) {
+      const session = getSession(sessionId);
+      const validation = validateBehaviorDefinition(behavior, {
+        skills: config.skills ?? [],
+        schedulers: config.schedulers ?? [],
+        arbitrationStrategies: config.arbitrationStrategies ?? [],
+      });
+
+      if (!validation.valid) {
+        session.state = 'error';
+        recordDiagnostic(
+          session,
+          'validation',
+          'behavior-validation-failed',
+          `Behavior ${behavior.id} failed validation.`,
+        );
+
+        return {
+          snapshot: snapshot(session),
+          validation,
+        };
+      }
+
+      session.behaviorId = behavior.id;
+      session.state = 'ready';
+      appendTrace(session, 'load', `Behavior ${behavior.id} loaded.`);
+      emit('artifact-loaded', `Behavior ${behavior.id} loaded.`, session.id);
+
+      return {
+        snapshot: snapshot(session),
+        validation,
+      };
     },
     loadCompiledBehavior(sessionId, artifact) {
       const session = getSession(sessionId);
@@ -279,15 +384,11 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
 
       if (!validation.valid) {
         session.state = 'error';
-        appendTrace(
+        recordDiagnostic(
           session,
-          'error',
+          'validation',
+          'compiled-artifact-validation-failed',
           `Compiled artifact ${artifact.id} failed validation.`,
-        );
-        emit(
-          'runtime-error',
-          `Compiled artifact ${artifact.id} failed validation.`,
-          session.id,
         );
 
         return {
@@ -313,8 +414,12 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
 
       if (!session.loadedArtifact) {
         session.state = 'error';
-        appendTrace(session, 'error', `Runtime session ${session.id} has no loaded artifact.`);
-        emit('runtime-error', `Runtime session ${session.id} has no loaded artifact.`, session.id);
+        recordDiagnostic(
+          session,
+          'lifecycle',
+          'missing-compiled-artifact',
+          `Runtime session ${session.id} has no loaded artifact.`,
+        );
 
         return {
           snapshot: snapshot(session),
@@ -323,8 +428,12 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
       }
 
       if (session.state === 'disposed') {
-        appendTrace(session, 'error', `Runtime session ${session.id} is disposed.`);
-        emit('runtime-error', `Runtime session ${session.id} is disposed.`, session.id);
+        recordDiagnostic(
+          session,
+          'lifecycle',
+          'disposed-session-transition',
+          `Runtime session ${session.id} is disposed.`,
+        );
 
         return {
           snapshot: snapshot(session),
@@ -351,8 +460,13 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
           };
 
           dispatchResults.push(result);
-          appendTrace(session, 'error', result.message, command.id);
-          emit('runtime-error', result.message, session.id);
+          recordDiagnostic(
+            session,
+            'adapter',
+            'missing-dispatcher',
+            result.message,
+            command.id,
+          );
           continue;
         }
 
@@ -365,8 +479,13 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
             appendTrace(session, 'dispatch', result.message, command.id);
             emit('command-dispatched', result.message, session.id);
           } else {
-            appendTrace(session, 'error', result.message, command.id);
-            emit('runtime-error', result.message, session.id);
+            recordDiagnostic(
+              session,
+              'transport',
+              'dispatcher-failed',
+              result.message,
+              command.id,
+            );
           }
         } catch (error) {
           const result = {
@@ -376,8 +495,13 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
           };
 
           dispatchResults.push(result);
-          appendTrace(session, 'error', result.message, command.id);
-          emit('runtime-error', result.message, session.id);
+          recordDiagnostic(
+            session,
+            'transport',
+            'dispatcher-threw',
+            result.message,
+            command.id,
+          );
         }
       }
 

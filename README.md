@@ -30,6 +30,10 @@ libs/
   ui/                          shadcn/ui-style primitives
 ```
 
+## Implementation Plan
+
+The detailed roadmap lives in [docs/implementation-plan.md](docs/implementation-plan.md). It covers milestones, package ownership, acceptance criteria, open decisions, near-term backlog, and technical risks.
+
 ## Domain Concepts
 
 BotLab starts with these concepts in the model:

@@ -42,6 +42,7 @@ Implemented:
 - Adapter target profiles and capability command schemas for MicroDuck and StackChan placeholders.
 - Build targets for every library plus the root `npm run build:libs` workflow.
 - Root Nx affected scripts for build, test, and lint workflows.
+- Validation helpers for policies, capability schemas, compiled behavior artifacts, and behavior graph/AST references.
 
 Not implemented yet:
 

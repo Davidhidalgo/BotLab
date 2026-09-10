@@ -274,6 +274,17 @@ export interface BehaviorValidationContext {
   artifacts?: Artifact[];
 }
 
+export interface PolicyValidationContext {
+  capabilities: Capability[];
+  targets: Target[];
+}
+
+export interface CompiledBehaviorValidationContext {
+  behaviors: Behavior[];
+  adapters: BotLabAdapter[];
+  policies: Policy[];
+}
+
 export interface ValidationResult {
   valid: boolean;
   errors: string[];
@@ -291,6 +302,8 @@ export function validateBehaviorDefinition(
   );
   const artifactIds = new Set((context.artifacts ?? []).map((artifact) => artifact.id));
   const nodeIds = new Set(behavior.graph.nodes.map((node) => node.id));
+  const duplicatedNodeIds = findDuplicateIds(behavior.graph.nodes);
+  const duplicatedStepIds = findDuplicateIds(behavior.ast.steps);
 
   if (!schedulerIds.has(behavior.schedulerId)) {
     errors.push(`Behavior ${behavior.id} references unknown scheduler ${behavior.schedulerId}.`);
@@ -314,6 +327,10 @@ export function validateBehaviorDefinition(
     }
   }
 
+  for (const duplicatedNodeId of duplicatedNodeIds) {
+    errors.push(`Behavior ${behavior.id} has duplicate graph node ${duplicatedNodeId}.`);
+  }
+
   if (!nodeIds.has(behavior.graph.entryNodeId)) {
     errors.push(`Behavior ${behavior.id} has an entry node that is not in its graph.`);
   }
@@ -327,6 +344,20 @@ export function validateBehaviorDefinition(
   for (const artifactId of behavior.artifactIds) {
     if (context.artifacts && !artifactIds.has(artifactId)) {
       errors.push(`Behavior ${behavior.id} references unknown artifact ${artifactId}.`);
+    }
+  }
+
+  for (const duplicatedStepId of duplicatedStepIds) {
+    errors.push(`Behavior ${behavior.id} has duplicate AST step ${duplicatedStepId}.`);
+  }
+
+  for (const step of behavior.ast.steps) {
+    if (!nodeIds.has(step.nodeId)) {
+      errors.push(`Behavior AST step ${step.id} references missing graph node ${step.nodeId}.`);
+    }
+
+    if (step.action === 'dispatch-skill' && (!step.skillId || !skillIds.has(step.skillId))) {
+      errors.push(`Behavior AST step ${step.id} references an unknown skill.`);
     }
   }
 
@@ -356,12 +387,305 @@ export function validateAdapterManifest(adapter: BotLabAdapter): ValidationResul
         errors.push(`Capability ${capability.id} references unknown target ${targetId}.`);
       }
     }
+
+    if (capability.schema) {
+      errors.push(...validateCapabilitySchema(capability).errors);
+    }
   }
 
   return {
     valid: errors.length === 0,
     errors,
   };
+}
+
+export function validateCapabilitySchema(capability: Capability): ValidationResult {
+  const errors: string[] = [];
+
+  if (!capability.schema) {
+    return {
+      valid: true,
+      errors,
+    };
+  }
+
+  for (const commandId of findDuplicateIds(capability.schema.commands)) {
+    errors.push(`Capability ${capability.id} has duplicate command ${commandId}.`);
+  }
+
+  for (const telemetryId of findDuplicateIds(capability.schema.telemetry)) {
+    errors.push(`Capability ${capability.id} has duplicate telemetry ${telemetryId}.`);
+  }
+
+  for (const command of capability.schema.commands) {
+    errors.push(
+      ...validateFieldSchemas(
+        command.inputs,
+        `Capability ${capability.id} command ${command.id}`,
+      ),
+    );
+  }
+
+  for (const telemetry of capability.schema.telemetry) {
+    errors.push(
+      ...validateFieldSchemas(
+        telemetry.fields,
+        `Capability ${capability.id} telemetry ${telemetry.id}`,
+      ),
+    );
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+export function validatePolicy(
+  policy: Policy,
+  context: PolicyValidationContext,
+): ValidationResult {
+  const errors: string[] = [];
+  const capabilityIds = new Set(context.capabilities.map((capability) => capability.id));
+  const targetIds = new Set(context.targets.map((target) => target.id));
+
+  for (const ruleId of findDuplicateIds(policy.rules)) {
+    errors.push(`Policy ${policy.id} has duplicate rule ${ruleId}.`);
+  }
+
+  for (const rule of policy.rules) {
+    if (rule.category === 'target' && !rule.targetIds?.length) {
+      errors.push(`Policy rule ${rule.id} must name targetIds for target rules.`);
+    }
+
+    if (rule.category === 'user-confirmation' && rule.effect !== 'require-confirmation') {
+      errors.push(
+        `Policy rule ${rule.id} must require confirmation when category is user-confirmation.`,
+      );
+    }
+
+    for (const capabilityId of rule.capabilityIds ?? []) {
+      if (!capabilityIds.has(capabilityId)) {
+        errors.push(`Policy rule ${rule.id} references unknown capability ${capabilityId}.`);
+      }
+    }
+
+    for (const targetId of rule.targetIds ?? []) {
+      if (!targetIds.has(targetId)) {
+        errors.push(`Policy rule ${rule.id} references unknown target ${targetId}.`);
+      }
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+export function validateCompiledBehaviorArtifact(
+  artifact: CompiledBehaviorArtifact,
+  context: CompiledBehaviorValidationContext,
+): ValidationResult {
+  const errors: string[] = [];
+  const behaviorIds = new Set(context.behaviors.map((behavior) => behavior.id));
+  const policyIds = new Set(context.policies.map((policy) => policy.id));
+  const targets = context.adapters.flatMap((adapter) => adapter.targets);
+  const capabilities = context.adapters.flatMap((adapter) => adapter.capabilities);
+  const targetIds = new Set(targets.map((target) => target.id));
+  const capabilityById = new Map(
+    capabilities.map((capability) => [capability.id, capability] as const),
+  );
+
+  if (!behaviorIds.has(artifact.behaviorId)) {
+    errors.push(`Compiled artifact ${artifact.id} references unknown behavior ${artifact.behaviorId}.`);
+  }
+
+  if (!targetIds.has(artifact.targetId)) {
+    errors.push(`Compiled artifact ${artifact.id} references unknown target ${artifact.targetId}.`);
+  }
+
+  for (const policyId of artifact.requiredPolicyIds) {
+    if (!policyIds.has(policyId)) {
+      errors.push(`Compiled artifact ${artifact.id} references unknown policy ${policyId}.`);
+    }
+  }
+
+  for (const command of artifact.commands) {
+    if (command.targetId !== artifact.targetId) {
+      errors.push(
+        `Compiled command ${command.id} targets ${command.targetId}, not artifact target ${artifact.targetId}.`,
+      );
+    }
+
+    if (!targetIds.has(command.targetId)) {
+      errors.push(`Compiled command ${command.id} references unknown target ${command.targetId}.`);
+    }
+
+    const capability = capabilityById.get(command.capabilityId);
+
+    if (!capability) {
+      errors.push(
+        `Compiled command ${command.id} references unknown capability ${command.capabilityId}.`,
+      );
+      continue;
+    }
+
+    if (!capability.targetIds.includes(command.targetId)) {
+      errors.push(
+        `Compiled command ${command.id} uses capability ${capability.id} on unsupported target ${command.targetId}.`,
+      );
+    }
+
+    const commandSchema = capability.schema?.commands.find(
+      (schema) => schema.id === command.commandId,
+    );
+
+    if (!commandSchema) {
+      errors.push(
+        `Compiled command ${command.id} references unknown command ${command.commandId} on capability ${capability.id}.`,
+      );
+      continue;
+    }
+
+    errors.push(
+      ...validateCommandInputs(
+        command.inputs,
+        commandSchema.inputs,
+        `Compiled command ${command.id}`,
+      ),
+    );
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+function validateFieldSchemas(
+  fields: CapabilityFieldSchema[],
+  scope: string,
+): string[] {
+  const errors: string[] = [];
+  const fieldNames = new Set<string>();
+
+  for (const field of fields) {
+    if (fieldNames.has(field.name)) {
+      errors.push(`${scope} has duplicate input ${field.name}.`);
+    }
+    fieldNames.add(field.name);
+
+    if (field.type === 'enum' && !field.enumValues?.length) {
+      errors.push(`${scope} field ${field.name} must define enumValues.`);
+    }
+
+    if (field.min !== undefined && field.max !== undefined && field.min > field.max) {
+      errors.push(`${scope} field ${field.name} has min greater than max.`);
+    }
+  }
+
+  return errors;
+}
+
+function validateCommandInputs(
+  inputs: Record<string, unknown>,
+  schemaFields: CapabilityFieldSchema[],
+  scope: string,
+): string[] {
+  const errors: string[] = [];
+  const schemaByName = new Map(schemaFields.map((field) => [field.name, field] as const));
+
+  for (const field of schemaFields) {
+    const value = inputs[field.name];
+
+    if (field.required && value === undefined) {
+      errors.push(`${scope} is missing required input ${field.name}.`);
+      continue;
+    }
+
+    if (value !== undefined) {
+      errors.push(...validateInputValue(value, field, scope));
+    }
+  }
+
+  for (const inputName of Object.keys(inputs)) {
+    if (!schemaByName.has(inputName)) {
+      errors.push(`${scope} provides unknown input ${inputName}.`);
+    }
+  }
+
+  return errors;
+}
+
+function validateInputValue(
+  value: unknown,
+  field: CapabilityFieldSchema,
+  scope: string,
+): string[] {
+  const errors: string[] = [];
+
+  if (field.type === 'number') {
+    if (typeof value !== 'number') {
+      errors.push(`${scope} input ${field.name} must be a number.`);
+      return errors;
+    }
+
+    if (field.min !== undefined && value < field.min) {
+      errors.push(`${scope} input ${field.name} must be >= ${field.min}.`);
+    }
+
+    if (field.max !== undefined && value > field.max) {
+      errors.push(`${scope} input ${field.name} must be <= ${field.max}.`);
+    }
+  }
+
+  if (field.type === 'boolean' && typeof value !== 'boolean') {
+    errors.push(`${scope} input ${field.name} must be a boolean.`);
+  }
+
+  if (field.type === 'string' && typeof value !== 'string') {
+    errors.push(`${scope} input ${field.name} must be a string.`);
+  }
+
+  if (field.type === 'color' && typeof value !== 'string') {
+    errors.push(`${scope} input ${field.name} must be a color string.`);
+  }
+
+  if (field.type === 'enum') {
+    if (typeof value !== 'string') {
+      errors.push(`${scope} input ${field.name} must be an enum string.`);
+      return errors;
+    }
+
+    if (field.enumValues && !field.enumValues.includes(value)) {
+      errors.push(`${scope} input ${field.name} must be one of ${field.enumValues.join(', ')}.`);
+    }
+  }
+
+  if (
+    field.type === 'object' &&
+    (typeof value !== 'object' || value === null || Array.isArray(value))
+  ) {
+    errors.push(`${scope} input ${field.name} must be an object.`);
+  }
+
+  return errors;
+}
+
+function findDuplicateIds(items: Array<{ id: string }>): string[] {
+  const seen = new Set<string>();
+  const duplicated = new Set<string>();
+
+  for (const item of items) {
+    if (seen.has(item.id)) {
+      duplicated.add(item.id);
+    }
+
+    seen.add(item.id);
+  }
+
+  return Array.from(duplicated);
 }
 
 export const botLabConcepts: Array<{

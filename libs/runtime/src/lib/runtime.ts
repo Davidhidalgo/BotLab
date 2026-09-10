@@ -8,6 +8,7 @@ import type {
   IntrospectionSnapshot,
   Skill,
   Policy,
+  PolicyRule,
   SchedulerProfile,
   SimulatorIntegration,
   Target,
@@ -22,6 +23,7 @@ import {
 export type RuntimeSessionState =
   | 'created'
   | 'ready'
+  | 'awaiting-confirmation'
   | 'running'
   | 'paused'
   | 'stopped'
@@ -31,6 +33,7 @@ export type RuntimeSessionState =
 export type RuntimeTraceCategory =
   | 'lifecycle'
   | 'load'
+  | 'policy'
   | 'dispatch'
   | 'validation'
   | 'error';
@@ -47,6 +50,8 @@ export type RuntimeErrorCategory =
 export type RuntimeErrorCode =
   | 'behavior-validation-failed'
   | 'compiled-artifact-validation-failed'
+  | 'policy-denied'
+  | 'policy-confirmation-required'
   | 'missing-compiled-artifact'
   | 'missing-dispatcher'
   | 'dispatcher-failed'
@@ -92,6 +97,20 @@ export interface RuntimeSessionSnapshot {
   dispatchedCommandCount: number;
   trace: RuntimeTraceEntry[];
   diagnostics: RuntimeDiagnostic[];
+  policyEvaluation?: RuntimePolicyEvaluation;
+  messages: string[];
+}
+
+export type RuntimePolicyDecision =
+  | 'allow'
+  | 'deny'
+  | 'warn'
+  | 'require-confirmation';
+
+export interface RuntimePolicyEvaluation {
+  decision: RuntimePolicyDecision;
+  policyIds: string[];
+  ruleIds: string[];
   messages: string[];
 }
 
@@ -134,6 +153,8 @@ export interface RuntimeRunResult {
 export type RuntimeEventType =
   | 'session-created'
   | 'artifact-loaded'
+  | 'policy-evaluated'
+  | 'policy-confirmed'
   | 'session-started'
   | 'command-dispatched'
   | 'session-paused'
@@ -176,6 +197,7 @@ export interface BotLabRuntime {
     sessionId: string,
     artifact: CompiledBehaviorArtifact,
   ): RuntimeLoadResult;
+  confirmPolicy(sessionId: string): RuntimeSessionSnapshot;
   startSession(sessionId: string): Promise<RuntimeRunResult>;
   pauseSession(sessionId: string): RuntimeSessionSnapshot;
   resumeSession(sessionId: string): RuntimeSessionSnapshot;
@@ -195,6 +217,8 @@ interface RuntimeSession {
   dispatchedCommandCount: number;
   trace: RuntimeTraceEntry[];
   diagnostics: RuntimeDiagnostic[];
+  policyEvaluation?: RuntimePolicyEvaluation;
+  policyConfirmed: boolean;
   messages: string[];
 }
 
@@ -249,6 +273,7 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
     code: RuntimeErrorCode,
     message: string,
     commandId?: string,
+    severity: RuntimeDiagnostic['severity'] = 'error',
   ) {
     diagnosticCounter += 1;
 
@@ -257,14 +282,23 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
       timestamp: now(),
       category,
       code,
-      severity: 'error',
+      severity,
       message,
       commandId,
     };
 
     session.diagnostics.push(diagnostic);
-    appendTrace(session, category === 'validation' ? 'validation' : 'error', message, commandId);
-    emit('runtime-error', message, session.id);
+    appendTrace(
+      session,
+      category === 'validation'
+        ? 'validation'
+        : category === 'policy'
+          ? 'policy'
+          : 'error',
+      message,
+      commandId,
+    );
+    emit(severity === 'error' ? 'runtime-error' : 'policy-evaluated', message, session.id);
   }
 
   function emit(type: RuntimeEventType, message: string, sessionId?: string) {
@@ -291,8 +325,104 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
       dispatchedCommandCount: session.dispatchedCommandCount,
       trace: [...session.trace],
       diagnostics: [...session.diagnostics],
+      policyEvaluation: session.policyEvaluation
+        ? {
+            ...session.policyEvaluation,
+            policyIds: [...session.policyEvaluation.policyIds],
+            ruleIds: [...session.policyEvaluation.ruleIds],
+            messages: [...session.policyEvaluation.messages],
+          }
+        : undefined,
       messages: [...session.messages],
     };
+  }
+
+  function evaluatePolicies(artifact: CompiledBehaviorArtifact): RuntimePolicyEvaluation {
+    const matches: Array<{ policy: Policy; rule: PolicyRule; commandId?: string }> = [];
+
+    for (const policy of config.policies ?? []) {
+      for (const rule of policy.rules) {
+        for (const command of artifact.commands) {
+          const targetMatches = !rule.targetIds?.length || rule.targetIds.includes(command.targetId);
+          const capabilityMatches =
+            !rule.capabilityIds?.length || rule.capabilityIds.includes(command.capabilityId);
+
+          if (targetMatches && capabilityMatches) {
+            matches.push({ policy, rule, commandId: command.id });
+          }
+        }
+      }
+    }
+
+    const denyRules = matches.filter(({ rule }) => rule.effect === 'deny');
+    const confirmationRules = matches.filter(
+      ({ rule }) => rule.effect === 'require-confirmation',
+    );
+    const warningRules = matches.filter(({ rule }) => rule.effect === 'warn');
+    const decision: RuntimePolicyDecision =
+      denyRules.length > 0
+        ? 'deny'
+        : confirmationRules.length > 0
+          ? 'require-confirmation'
+          : warningRules.length > 0
+            ? 'warn'
+            : 'allow';
+
+    return {
+      decision,
+      policyIds: Array.from(new Set(matches.map(({ policy }) => policy.id))),
+      ruleIds: Array.from(new Set(matches.map(({ rule }) => rule.id))),
+      messages: matches.map(
+        ({ rule, commandId }) =>
+          `Policy rule ${rule.id} ${rule.effect} for ${commandId ?? artifact.id}.`,
+      ),
+    };
+  }
+
+  function applyPolicyEvaluation(
+    session: RuntimeSession,
+    evaluation: RuntimePolicyEvaluation,
+  ) {
+    session.policyEvaluation = evaluation;
+
+    if (evaluation.decision === 'allow') {
+      appendTrace(session, 'policy', `Policy allowed session ${session.id}.`);
+      emit('policy-evaluated', `Policy allowed session ${session.id}.`, session.id);
+      return;
+    }
+
+    if (evaluation.decision === 'warn') {
+      recordDiagnostic(
+        session,
+        'policy',
+        'policy-confirmation-required',
+        `Policy warning for session ${session.id}: ${evaluation.messages.join(' ')}`,
+        undefined,
+        'warning',
+      );
+      return;
+    }
+
+    if (evaluation.decision === 'require-confirmation') {
+      session.state = 'awaiting-confirmation';
+      recordDiagnostic(
+        session,
+        'policy',
+        'policy-confirmation-required',
+        `Policy requires confirmation for session ${session.id}.`,
+        undefined,
+        'warning',
+      );
+      return;
+    }
+
+    session.state = 'error';
+    recordDiagnostic(
+      session,
+      'policy',
+      'policy-denied',
+      `Policy denied session ${session.id}: ${evaluation.messages.join(' ')}`,
+    );
   }
 
   function transition(
@@ -336,7 +466,9 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
         simulators: config.simulators,
         sessions: sessionSnapshots,
         activeSessionCount: sessionSnapshots.filter((session) =>
-          ['created', 'ready', 'running', 'paused'].includes(session.state),
+          ['created', 'ready', 'awaiting-confirmation', 'running', 'paused'].includes(
+            session.state,
+          ),
         ).length,
         diagnostics: sessionSnapshots.flatMap((session) => session.diagnostics),
         recentEvents: events.slice(-25),
@@ -368,6 +500,7 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
         dispatchedCommandCount: 0,
         trace: [],
         diagnostics: [],
+        policyConfirmed: false,
         messages: [],
       };
 
@@ -439,11 +572,26 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
       session.state = 'ready';
       appendTrace(session, 'load', `Compiled artifact ${artifact.id} loaded.`);
       emit('artifact-loaded', `Compiled artifact ${artifact.id} loaded.`, session.id);
+      applyPolicyEvaluation(session, evaluatePolicies(artifact));
 
       return {
         snapshot: snapshot(session),
         validation,
       };
+    },
+    confirmPolicy(sessionId) {
+      const session = getSession(sessionId);
+
+      if (session.state !== 'awaiting-confirmation') {
+        return snapshot(session);
+      }
+
+      session.policyConfirmed = true;
+      session.state = 'ready';
+      appendTrace(session, 'policy', `Policy confirmed for session ${session.id}.`);
+      emit('policy-confirmed', `Policy confirmed for session ${session.id}.`, session.id);
+
+      return snapshot(session);
     },
     async startSession(sessionId) {
       const session = getSession(sessionId);
@@ -469,6 +617,41 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
           'lifecycle',
           'disposed-session-transition',
           `Runtime session ${session.id} is disposed.`,
+        );
+
+        return {
+          snapshot: snapshot(session),
+          dispatchResults: [],
+        };
+      }
+
+      if (
+        session.policyEvaluation?.decision === 'require-confirmation' &&
+        !session.policyConfirmed
+      ) {
+        session.state = 'awaiting-confirmation';
+        recordDiagnostic(
+          session,
+          'policy',
+          'policy-confirmation-required',
+          `Runtime session ${session.id} requires policy confirmation before start.`,
+          undefined,
+          'warning',
+        );
+
+        return {
+          snapshot: snapshot(session),
+          dispatchResults: [],
+        };
+      }
+
+      if (session.policyEvaluation?.decision === 'deny') {
+        session.state = 'error';
+        recordDiagnostic(
+          session,
+          'policy',
+          'policy-denied',
+          `Runtime session ${session.id} cannot start because policy denied it.`,
         );
 
         return {

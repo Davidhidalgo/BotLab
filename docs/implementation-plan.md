@@ -48,6 +48,7 @@ Implemented:
 - Runtime sessions can load compiled behavior artifacts, dispatch commands through injected target dispatchers, emit lifecycle events, and produce trace artifacts.
 - Runtime sessions can load validated behavior definitions and record structured diagnostics with validation, lifecycle, adapter, transport, scheduler, simulator, and policy categories.
 - Runtime can produce global introspection snapshots with targets, capabilities, simulators, sessions, diagnostics, active session counts, and recent events.
+- Runtime evaluates policy rules for compiled plans, blocks denied execution, pauses for required confirmation, records policy diagnostics, and resumes after confirmation.
 
 Not implemented yet:
 

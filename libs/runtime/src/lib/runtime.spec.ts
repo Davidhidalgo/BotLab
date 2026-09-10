@@ -43,17 +43,24 @@ describe('runtime', () => {
       sessions: [
         expect.objectContaining({
           id: 'session-introspection',
-          state: 'ready',
+          state: 'awaiting-confirmation',
           targetId: 'microduck-usb',
           behaviorId: 'microduck-led-demo',
         }),
       ],
       activeSessionCount: 1,
-      diagnostics: [],
-      recentEvents: [
+      diagnostics: [
+        expect.objectContaining({
+          category: 'policy',
+          code: 'policy-confirmation-required',
+          severity: 'warning',
+        }),
+      ],
+      recentEvents: expect.arrayContaining([
         expect.objectContaining({ type: 'session-created' }),
         expect.objectContaining({ type: 'artifact-loaded' }),
-      ],
+        expect.objectContaining({ type: 'policy-evaluated' }),
+      ]),
     });
   });
 
@@ -68,10 +75,15 @@ describe('runtime', () => {
     expect(result.validation).toEqual({ valid: true, errors: [] });
     expect(result.snapshot).toMatchObject({
       id: 'session-a',
-      state: 'ready',
+      state: 'awaiting-confirmation',
       behaviorId: 'microduck-led-demo',
       targetId: 'microduck-usb',
       loadedArtifactId: 'artifact-microduck-leds-plan',
+    });
+    expect(result.snapshot.policyEvaluation).toMatchObject({
+      decision: 'require-confirmation',
+      policyIds: ['confirm-visible-output'],
+      ruleIds: ['confirm-led-output'],
     });
   });
 
@@ -104,6 +116,7 @@ describe('runtime', () => {
 
     const session = runtime.createSession({ id: 'session-dispatch' });
     runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
+    runtime.confirmPolicy(session.id);
 
     const result = await runtime.startSession(session.id);
 
@@ -142,6 +155,7 @@ describe('runtime', () => {
     const session = runtime.createSession({ id: 'session-events' });
 
     runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
+    runtime.confirmPolicy(session.id);
     await runtime.startSession(session.id);
     unsubscribe();
     runtime.pauseSession(session.id);
@@ -149,6 +163,8 @@ describe('runtime', () => {
     expect(events).toEqual([
       'session-created',
       'artifact-loaded',
+      'policy-evaluated',
+      'policy-confirmed',
       'session-started',
       'command-dispatched',
       'session-stopped',
@@ -205,6 +221,7 @@ describe('runtime', () => {
     const session = runtime.createSession({ id: 'session-target-error' });
 
     runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
+    runtime.confirmPolicy(session.id);
     await runtime.startSession(session.id);
 
     expect(runtime.inspectTarget('microduck-usb')).toMatchObject({
@@ -216,11 +233,82 @@ describe('runtime', () => {
       ],
     });
   });
+
+  it('does not dispatch commands until required policy is confirmed', async () => {
+    const runtime = createTestRuntime({
+      dispatch(command) {
+        return {
+          commandId: command.id,
+          status: 'dispatched',
+          message: `Dispatched ${command.commandId}.`,
+        };
+      },
+    });
+    const session = runtime.createSession({ id: 'session-needs-confirmation' });
+
+    runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
+    const result = await runtime.startSession(session.id);
+
+    expect(result.dispatchResults).toEqual([]);
+    expect(result.snapshot).toMatchObject({
+      state: 'awaiting-confirmation',
+      dispatchedCommandCount: 0,
+    });
+    expect(result.snapshot.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: 'policy',
+          code: 'policy-confirmation-required',
+          severity: 'warning',
+        }),
+      ]),
+    );
+  });
+
+  it('denies compiled plans when a matching policy rule denies execution', () => {
+    const runtime = createTestRuntime(undefined, [
+      ...samplePolicies,
+      {
+        id: 'deny-microduck-leds',
+        name: 'Deny MicroDuck LEDs',
+        rules: [
+          {
+            id: 'deny-led-command',
+            category: 'safety',
+            effect: 'deny',
+            description: 'Block LED commands in this test profile.',
+            capabilityIds: ['microduck-leds'],
+          },
+        ],
+      },
+    ]);
+    const session = runtime.createSession({ id: 'session-denied' });
+    const result = runtime.loadCompiledBehavior(
+      session.id,
+      sampleMicroDuckCompiledBehaviorArtifact,
+    );
+
+    expect(result.snapshot).toMatchObject({
+      state: 'error',
+      policyEvaluation: expect.objectContaining({
+        decision: 'deny',
+        policyIds: expect.arrayContaining(['deny-microduck-leds']),
+        ruleIds: expect.arrayContaining(['deny-led-command']),
+      }),
+    });
+    expect(result.snapshot.diagnostics).toEqual([
+      expect.objectContaining({
+        category: 'policy',
+        code: 'policy-denied',
+        severity: 'error',
+      }),
+    ]);
+  });
 });
 
 function createTestRuntime(dispatcher?: {
   dispatch(command: CompiledCommand): RuntimeCommandDispatchResult;
-}) {
+}, policies = samplePolicies) {
   return createBotLabRuntime({
     adapters: [microDuckAdapter],
     simulators: [],
@@ -228,7 +316,7 @@ function createTestRuntime(dispatcher?: {
     skills: sampleSkills,
     schedulers: sampleSchedulers,
     arbitrationStrategies: sampleArbitrationStrategies,
-    policies: samplePolicies,
+    policies,
     dispatchers: dispatcher
       ? [
           {

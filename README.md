@@ -84,8 +84,13 @@ npm run dev
 npm run build
 npm run build:libs
 npm run test
+npm run affected:build
+npm run affected:test
+npm run affected:lint
 npm run nx -- show projects
 ```
+
+Use the affected scripts for everyday validation when only part of the workspace changed. Use `build:libs` when you want a full library contract check.
 
 When generating code, prefer Nx generators:
 

@@ -27,6 +27,7 @@ export function BlocksEditorShell({
   onArtifactChange,
 }: BlocksEditorShellProps) {
   const badgeVariant = workspaceStatus === 'invalid' ? 'outline' : 'secondary';
+  const statusLabel = status ?? workspaceStatusLabels[workspaceStatus];
 
   function markDirty() {
     if (readOnly) {
@@ -47,7 +48,7 @@ export function BlocksEditorShell({
           <h2 className="text-lg font-semibold">{workspaceName}</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={badgeVariant}>{status ?? workspaceStatus}</Badge>
+          <Badge variant={badgeVariant}>{statusLabel}</Badge>
           <Badge variant="outline">{artifact.format}</Badge>
         </div>
       </header>
@@ -95,3 +96,11 @@ export function BlocksEditorShell({
 }
 
 export default BlocksEditorShell;
+
+const workspaceStatusLabels: Record<BlocksWorkspaceStatus, string> = {
+  empty: 'Vacio',
+  loaded: 'Cargado',
+  dirty: 'Editado',
+  invalid: 'Invalido',
+  'read-only': 'Solo lectura',
+};

@@ -6,6 +6,7 @@ import { createBotLabRuntime } from '@botlab/runtime';
 import { officialSimulatorIntegrations } from '@botlab/simulators';
 import { Badge, Button } from '@botlab/ui';
 import { Activity, Blocks, Cpu, GitBranch, Play, ShieldCheck, Workflow } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 
 const runtime = createBotLabRuntime({
   adapters: [createMicroDuckAdapter(), createStackChanAdapter()],
@@ -24,6 +25,7 @@ const conceptIcons = {
 };
 
 export function App() {
+  const [workspaceArtifact, setWorkspaceArtifact] = useState(sampleBlocksWorkspaceArtifact);
   const targets = runtime.listTargets();
   const capabilities = runtime.listCapabilities();
 
@@ -60,11 +62,18 @@ export function App() {
       <section className="mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-[1.35fr_0.65fr]">
         <BlocksEditorShell
           workspaceName="Editor de bloques BotLab"
-          artifact={sampleBlocksWorkspaceArtifact}
+          artifact={workspaceArtifact}
           blocks={['al iniciar robot', 'fijar LEDs MicroDuck', 'esperar capacidad', 'publicar artefacto']}
+          onArtifactChange={setWorkspaceArtifact}
         />
 
         <aside className="space-y-4">
+          <Panel title="Editor">
+            <Metric label="Estado" value={workspaceStatusLabels[workspaceArtifact.status]} />
+            <Metric label="Artifact" value={workspaceArtifact.id} />
+            <Metric label="Formato" value={workspaceArtifact.format} />
+          </Panel>
+
           <Panel title="Runtime">
             <Metric label="Targets" value={targets.length.toString()} />
             <Metric label="Capabilities" value={capabilities.length.toString()} />
@@ -113,7 +122,7 @@ export function App() {
 
 export default App;
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-lg border bg-card p-4">
       <div className="mb-4 flex items-center gap-2">
@@ -133,3 +142,11 @@ function Metric({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+const workspaceStatusLabels = {
+  empty: 'Vacio',
+  loaded: 'Cargado',
+  dirty: 'Editado',
+  invalid: 'Invalido',
+  'read-only': 'Solo lectura',
+};

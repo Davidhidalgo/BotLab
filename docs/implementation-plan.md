@@ -44,6 +44,7 @@ Implemented:
 - Root Nx affected scripts for build, test, and lint workflows.
 - Validation helpers for policies, capability schemas, compiled behavior artifacts, and behavior graph/AST references.
 - Initial `@botlab/blocks` editor boundary with workspace artifacts, import/export helpers, a mock provider, workspace states, callbacks, and package tests.
+- App-level workspace state receives mock editor artifact updates and displays editor status metadata.
 
 Not implemented yet:
 

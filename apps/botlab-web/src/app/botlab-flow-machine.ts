@@ -1,6 +1,12 @@
 import { createMicroDuckAdapter } from '@botlab/adapters-microduck';
 import { createStackChanAdapter } from '@botlab/adapters-stackchan';
 import {
+  createMockBlocksEditorProvider,
+  sampleBlocksWorkspaceArtifact,
+  type BlocksWorkspaceArtifact,
+  type BlocksWorkspaceValidationResult,
+} from '@botlab/blocks';
+import {
   sampleArbitrationStrategies,
   sampleMicroDuckCompiledBehaviorArtifact,
   sampleMicroDuckLedBehavior,
@@ -17,7 +23,14 @@ import {
 import { officialSimulatorIntegrations } from '@botlab/simulators';
 import { assign, fromPromise, setup } from 'xstate';
 
-export type BotLabFlowState =
+export type BotLabWorkspaceState =
+  | 'loaded'
+  | 'dirty'
+  | 'validating'
+  | 'valid'
+  | 'invalid';
+
+export type BotLabExecutionState =
   | 'ready'
   | 'queueing'
   | 'running'
@@ -27,7 +40,9 @@ export type BotLabFlowState =
 export interface BotLabFlowContext {
   runtime: BotLabRuntime;
   demoSessionId: string;
+  workspaceArtifact: BlocksWorkspaceArtifact;
   runtimeSnapshot: RuntimeIntrospectionSnapshot;
+  workspaceMessage: string;
   runMessage: string;
   errorMessage?: string;
 }
@@ -50,12 +65,40 @@ interface RunQueuedDemoOutput {
   runMessage: string;
 }
 
+interface ValidateWorkspaceInput {
+  artifact: BlocksWorkspaceArtifact;
+}
+
+interface ValidateWorkspaceOutput {
+  artifact: BlocksWorkspaceArtifact;
+  validation: BlocksWorkspaceValidationResult;
+}
+
 export const botLabFlowMachine = setup({
   types: {} as {
     context: BotLabFlowContext;
-    events: { type: 'demo.run' };
+    events:
+      | { type: 'workspace.changed'; artifact: BlocksWorkspaceArtifact }
+      | { type: 'workspace.validate' }
+      | { type: 'demo.run' };
   },
   actors: {
+    validateWorkspace: fromPromise(
+      async ({ input }: { input: ValidateWorkspaceInput }) => {
+        const validation = createMockBlocksEditorProvider().validateWorkspace(
+          input.artifact,
+        );
+
+        return {
+          validation,
+          artifact: {
+            ...input.artifact,
+            status: validation.valid ? 'loaded' : 'invalid',
+            validationErrors: validation.errors,
+          },
+        };
+      },
+    ),
     queueDemo: fromPromise(async ({ input }: { input: QueueDemoInput }) => {
       input.runtime.queueSession(input.demoSessionId, { priority: 5 });
 
@@ -73,6 +116,22 @@ export const botLabFlowMachine = setup({
     }),
   },
   actions: {
+    setWorkspaceArtifact: assign({
+      workspaceArtifact: (_, params: { artifact: BlocksWorkspaceArtifact }) =>
+        params.artifact,
+      workspaceMessage: (_, params: { artifact: BlocksWorkspaceArtifact }) =>
+        `Workspace ${workspaceStatusLabels[params.artifact.status]}.`,
+      errorMessage: () => undefined,
+    }),
+    setWorkspaceValidation: assign({
+      workspaceArtifact: (_, params: ValidateWorkspaceOutput) => params.artifact,
+      workspaceMessage: (_, params: ValidateWorkspaceOutput) =>
+        params.validation.valid
+          ? 'Workspace validado y listo para compilar.'
+          : params.validation.errors.join(' '),
+      errorMessage: (_, params: ValidateWorkspaceOutput) =>
+        params.validation.valid ? undefined : params.validation.errors.join(' '),
+    }),
     setQueuedSnapshot: assign({
       runtimeSnapshot: (_, params: QueueDemoOutput) => params.runtimeSnapshot,
       runMessage: () => 'Demo en cola para MicroDuck.',
@@ -88,99 +147,238 @@ export const botLabFlowMachine = setup({
       runMessage: (_, params: { message: string }) => params.message,
     }),
   },
+  guards: {
+    workspaceCanRun: ({ context }) => context.workspaceArtifact.status !== 'invalid',
+    workspaceIsValid: (_, params: BlocksWorkspaceValidationResult) => params.valid,
+  },
 }).createMachine({
   id: 'botlabFlow',
   context: createBotLabFlowContext,
-  initial: 'ready',
+  type: 'parallel',
   states: {
-    ready: {
-      tags: ['idle'],
-      on: {
-        'demo.run': {
-          target: 'queueing',
+    workspace: {
+      initial: 'loaded',
+      states: {
+        loaded: {
+          tags: ['workspace-ready'],
+          on: {
+            'workspace.changed': {
+              target: 'dirty',
+              actions: [
+                {
+                  type: 'setWorkspaceArtifact',
+                  params: ({ event }) => ({ artifact: event.artifact }),
+                },
+              ],
+            },
+            'workspace.validate': {
+              target: 'validating',
+            },
+          },
+        },
+        dirty: {
+          tags: ['dirty'],
+          on: {
+            'workspace.changed': {
+              actions: [
+                {
+                  type: 'setWorkspaceArtifact',
+                  params: ({ event }) => ({ artifact: event.artifact }),
+                },
+              ],
+            },
+            'workspace.validate': {
+              target: 'validating',
+            },
+          },
+        },
+        validating: {
+          tags: ['workspace-busy'],
+          invoke: {
+            src: 'validateWorkspace',
+            input: ({ context }) => ({
+              artifact: context.workspaceArtifact,
+            }),
+            onDone: [
+              {
+                guard: {
+                  type: 'workspaceIsValid',
+                  params: ({ event }) => event.output.validation,
+                },
+                target: 'valid',
+                actions: [
+                  {
+                    type: 'setWorkspaceValidation',
+                    params: ({ event }) => event.output,
+                  },
+                ],
+              },
+              {
+                target: 'invalid',
+                actions: [
+                  {
+                    type: 'setWorkspaceValidation',
+                    params: ({ event }) => event.output,
+                  },
+                ],
+              },
+            ],
+            onError: {
+              target: 'invalid',
+              actions: [
+                {
+                  type: 'setError',
+                  params: ({ event }) => ({
+                    message: formatErrorMessage(event.error),
+                  }),
+                },
+              ],
+            },
+          },
+        },
+        valid: {
+          tags: ['workspace-ready'],
+          on: {
+            'workspace.changed': {
+              target: 'dirty',
+              actions: [
+                {
+                  type: 'setWorkspaceArtifact',
+                  params: ({ event }) => ({ artifact: event.artifact }),
+                },
+              ],
+            },
+            'workspace.validate': {
+              target: 'validating',
+            },
+          },
+        },
+        invalid: {
+          tags: ['error'],
+          on: {
+            'workspace.changed': {
+              target: 'dirty',
+              actions: [
+                {
+                  type: 'setWorkspaceArtifact',
+                  params: ({ event }) => ({ artifact: event.artifact }),
+                },
+              ],
+            },
+            'workspace.validate': {
+              target: 'validating',
+            },
+          },
         },
       },
     },
-    queueing: {
-      tags: ['busy'],
-      invoke: {
-        src: 'queueDemo',
-        input: ({ context }) => ({
-          runtime: context.runtime,
-          demoSessionId: context.demoSessionId,
-        }),
-        onDone: {
-          target: 'running',
-          actions: [
-            {
-              type: 'setQueuedSnapshot',
-              params: ({ event }) => event.output,
+    execution: {
+      initial: 'ready',
+      states: {
+        ready: {
+          tags: ['idle'],
+          on: {
+            'demo.run': {
+              guard: { type: 'workspaceCanRun' },
+              target: 'queueing',
             },
-          ],
+          },
         },
-        onError: {
-          target: 'failed',
-          actions: [
-            {
-              type: 'setError',
-              params: ({ event }) => ({
-                message: formatErrorMessage(event.error),
-              }),
+        queueing: {
+          tags: ['execution-busy'],
+          invoke: {
+            src: 'queueDemo',
+            input: ({ context }) => ({
+              runtime: context.runtime,
+              demoSessionId: context.demoSessionId,
+            }),
+            onDone: {
+              target: 'running',
+              actions: [
+                {
+                  type: 'setQueuedSnapshot',
+                  params: ({ event }) => event.output,
+                },
+              ],
             },
-          ],
-        },
-      },
-    },
-    running: {
-      tags: ['busy'],
-      invoke: {
-        src: 'runQueuedDemo',
-        input: ({ context }) => ({
-          runtime: context.runtime,
-        }),
-        onDone: {
-          target: 'completed',
-          actions: [
-            {
-              type: 'setRunResult',
-              params: ({ event }) => event.output,
+            onError: {
+              target: 'failed',
+              actions: [
+                {
+                  type: 'setError',
+                  params: ({ event }) => ({
+                    message: formatErrorMessage(event.error),
+                  }),
+                },
+              ],
             },
-          ],
+          },
         },
-        onError: {
-          target: 'failed',
-          actions: [
-            {
-              type: 'setError',
-              params: ({ event }) => ({
-                message: formatErrorMessage(event.error),
-              }),
+        running: {
+          tags: ['execution-busy'],
+          invoke: {
+            src: 'runQueuedDemo',
+            input: ({ context }) => ({
+              runtime: context.runtime,
+            }),
+            onDone: {
+              target: 'completed',
+              actions: [
+                {
+                  type: 'setRunResult',
+                  params: ({ event }) => event.output,
+                },
+              ],
             },
-          ],
+            onError: {
+              target: 'failed',
+              actions: [
+                {
+                  type: 'setError',
+                  params: ({ event }) => ({
+                    message: formatErrorMessage(event.error),
+                  }),
+                },
+              ],
+            },
+          },
         },
-      },
-    },
-    completed: {
-      tags: ['completed'],
-      on: {
-        'demo.run': {
-          target: 'queueing',
+        completed: {
+          tags: ['completed'],
+          on: {
+            'demo.run': {
+              guard: { type: 'workspaceCanRun' },
+              target: 'queueing',
+            },
+          },
         },
-      },
-    },
-    failed: {
-      tags: ['error'],
-      on: {
-        'demo.run': {
-          target: 'queueing',
+        failed: {
+          tags: ['error'],
+          on: {
+            'demo.run': {
+              guard: { type: 'workspaceCanRun' },
+              target: 'queueing',
+            },
+          },
         },
       },
     },
   },
 });
 
-export const botLabFlowSteps: Array<{
-  state: BotLabFlowState;
+export const botLabWorkspaceSteps: Array<{
+  state: BotLabWorkspaceState;
+  label: string;
+}> = [
+  { state: 'loaded', label: 'Cargado' },
+  { state: 'dirty', label: 'Editado' },
+  { state: 'validating', label: 'Validando' },
+  { state: 'valid', label: 'Listo' },
+  { state: 'invalid', label: 'Invalido' },
+];
+
+export const botLabExecutionSteps: Array<{
+  state: BotLabExecutionState;
   label: string;
 }> = [
   { state: 'ready', label: 'Preparada' },
@@ -190,7 +388,15 @@ export const botLabFlowSteps: Array<{
   { state: 'failed', label: 'Error' },
 ];
 
-export const botLabFlowStateLabels: Record<BotLabFlowState, string> = {
+export const botLabWorkspaceStateLabels: Record<BotLabWorkspaceState, string> = {
+  loaded: 'Cargado',
+  dirty: 'Editado',
+  validating: 'Validando',
+  valid: 'Listo',
+  invalid: 'Invalido',
+};
+
+export const botLabExecutionStateLabels: Record<BotLabExecutionState, string> = {
   ready: 'Preparada',
   queueing: 'En cola',
   running: 'Ejecutando',
@@ -232,7 +438,9 @@ function createBotLabFlowContext(): BotLabFlowContext {
   return {
     runtime,
     demoSessionId: session.id,
+    workspaceArtifact: sampleBlocksWorkspaceArtifact,
     runtimeSnapshot: runtime.inspectRuntime(),
+    workspaceMessage: 'Workspace cargado desde la muestra.',
     runMessage: 'Demo preparada para MicroDuck',
   };
 }
@@ -261,4 +469,12 @@ const runtimeStateLabels = {
   stopped: 'Completada',
   error: 'Error',
   disposed: 'Cerrada',
+};
+
+const workspaceStatusLabels = {
+  empty: 'vacio',
+  loaded: 'cargado',
+  dirty: 'editado',
+  invalid: 'invalido',
+  'read-only': 'solo lectura',
 };

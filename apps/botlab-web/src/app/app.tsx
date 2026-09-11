@@ -1,14 +1,17 @@
-import { BlocksEditorShell, sampleBlocksWorkspaceArtifact } from '@botlab/blocks';
+import { BlocksEditorShell } from '@botlab/blocks';
 import { botLabConcepts } from '@botlab/model';
 import { Badge, Button } from '@botlab/ui';
 import { useMachine } from '@xstate/react';
 import { Activity, Blocks, Cpu, GitBranch, Lock, Play, ShieldCheck, Workflow } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import {
+  botLabExecutionStateLabels,
+  botLabExecutionSteps,
   botLabFlowMachine,
-  botLabFlowStateLabels,
-  botLabFlowSteps,
-  type BotLabFlowState,
+  botLabWorkspaceStateLabels,
+  botLabWorkspaceSteps,
+  type BotLabExecutionState,
+  type BotLabWorkspaceState,
 } from './botlab-flow-machine';
 
 const featuredConcepts = botLabConcepts.filter(({ concept }) =>
@@ -24,10 +27,13 @@ const conceptIcons = {
 
 export function App() {
   const [flowSnapshot, sendFlow] = useMachine(botLabFlowMachine);
-  const [workspaceArtifact, setWorkspaceArtifact] = useState(sampleBlocksWorkspaceArtifact);
-  const { runtime, runtimeSnapshot, runMessage } = flowSnapshot.context;
-  const flowState = flowSnapshot.value as BotLabFlowState;
-  const isRunningDemo = flowSnapshot.hasTag('busy');
+  const { runtime, runtimeSnapshot, runMessage, workspaceArtifact, workspaceMessage } =
+    flowSnapshot.context;
+  const flowState = flowSnapshot.value as {
+    workspace: BotLabWorkspaceState;
+    execution: BotLabExecutionState;
+  };
+  const isRunningDemo = flowSnapshot.hasTag('execution-busy');
   const targets = runtime.listTargets();
   const capabilities = runtime.listCapabilities();
   const queue = runtimeSnapshot.queue;
@@ -61,6 +67,14 @@ export function App() {
               <Blocks className="h-4 w-4" />
               Abrir editor
             </Button>
+            <Button
+              variant="secondary"
+              onClick={() => sendFlow({ type: 'workspace.validate' })}
+              disabled={!flowSnapshot.can({ type: 'workspace.validate' })}
+            >
+              <ShieldCheck className="h-4 w-4" />
+              Validar workspace
+            </Button>
           </div>
         </div>
       </section>
@@ -70,7 +84,9 @@ export function App() {
           workspaceName="Editor de bloques BotLab"
           artifact={workspaceArtifact}
           blocks={['al iniciar robot', 'fijar LEDs MicroDuck', 'esperar capacidad', 'publicar artefacto']}
-          onArtifactChange={setWorkspaceArtifact}
+          onArtifactChange={(artifact) =>
+            sendFlow({ type: 'workspace.changed', artifact })
+          }
         />
 
         <aside className="space-y-4">
@@ -78,6 +94,7 @@ export function App() {
             <Metric label="Estado" value={workspaceStatusLabels[workspaceArtifact.status]} />
             <Metric label="Artifact" value={workspaceArtifact.id} />
             <Metric label="Formato" value={workspaceArtifact.format} />
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">{workspaceMessage}</p>
           </Panel>
 
           <Panel title="Runtime">
@@ -126,10 +143,21 @@ export function App() {
             </div>
             <div className="mt-3 rounded-md border bg-background p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="text-sm font-medium">Flujo XState</span>
-                <Badge variant="outline">{botLabFlowStateLabels[flowState]}</Badge>
+                <span className="text-sm font-medium">Flujo workspace</span>
+                <Badge variant="outline">
+                  {botLabWorkspaceStateLabels[flowState.workspace]}
+                </Badge>
               </div>
-              <FlowRail activeState={flowState} />
+              <FlowRail steps={botLabWorkspaceSteps} activeState={flowState.workspace} />
+            </div>
+            <div className="mt-3 rounded-md border bg-background p-3">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">Flujo ejecución</span>
+                <Badge variant="outline">
+                  {botLabExecutionStateLabels[flowState.execution]}
+                </Badge>
+              </div>
+              <FlowRail steps={botLabExecutionSteps} activeState={flowState.execution} />
             </div>
           </Panel>
 
@@ -233,10 +261,16 @@ function RuntimeList({
   );
 }
 
-function FlowRail({ activeState }: { activeState: BotLabFlowState }) {
+function FlowRail<TState extends string>({
+  steps,
+  activeState,
+}: {
+  steps: Array<{ state: TState; label: string }>;
+  activeState: TState;
+}) {
   return (
     <div className="grid gap-2">
-      {botLabFlowSteps.map((step) => {
+      {steps.map((step) => {
         const isActive = step.state === activeState;
 
         return (

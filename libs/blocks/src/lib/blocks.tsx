@@ -2,12 +2,14 @@ import { Badge } from '@botlab/ui';
 import { useRef, useState } from 'react';
 import {
   createBlocksEditorProvider,
+  createTurboWarpBlocksEditorProvider,
   sampleBlocksWorkspaceArtifact,
   type BlocksEditorMountHandle,
   type BlocksEditorProvider,
   type BlocksWorkspaceArtifact,
   type BlocksWorkspaceStatus,
 } from './blocks-contract';
+import { createLocalTurboWarpEditorBridge } from './turbowarp-local-bridge';
 
 export interface BlocksEditorShellProps {
   workspaceName: string;
@@ -29,7 +31,10 @@ export function BlocksEditorShell({
   workspaceStatus = artifact.status,
   readOnly = workspaceStatus === 'read-only',
   validationErrors = artifact.validationErrors,
-  provider = createBlocksEditorProvider(artifact.engine),
+  provider =
+    artifact.engine === 'turbowarp'
+      ? createTurboWarpBlocksEditorProvider(createLocalTurboWarpEditorBridge())
+      : createBlocksEditorProvider(artifact.engine),
   onArtifactChange,
 }: BlocksEditorShellProps) {
   const badgeVariant = workspaceStatus === 'invalid' ? 'outline' : 'secondary';

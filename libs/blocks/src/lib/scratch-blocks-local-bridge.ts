@@ -15,10 +15,15 @@ let botLabScratchBlocksTheme:
   | ReturnType<ScratchBlocksApi['Theme']['defineTheme']>
   | undefined;
 
+const SCRATCH_BLOCKS_MEDIA_PATH = '/vendor/scratch-blocks/media/';
+
 export function createLocalScratchBlocksEditorBridge(): ScratchBlocksEditorBridge {
   return {
     async mount(request) {
-      return mountLocalScratchBlocksWorkspace(request, await loadScratchBlocks());
+      return mountLocalScratchBlocksWorkspace(
+        request,
+        await loadScratchBlocks()
+      );
     },
   };
 }
@@ -30,7 +35,7 @@ function loadScratchBlocks() {
 
 function mountLocalScratchBlocksWorkspace(
   request: BlocksEditorMountRequest,
-  scratchBlocks: ScratchBlocksApi,
+  scratchBlocks: ScratchBlocksApi
 ): BlocksEditorMountResult {
   registerBotLabBlocks(scratchBlocks);
 
@@ -41,7 +46,7 @@ function mountLocalScratchBlocksWorkspace(
 
   try {
     const workspace = scratchBlocks.inject(request.element, {
-      media: '/node_modules/scratch-blocks/media/',
+      media: SCRATCH_BLOCKS_MEDIA_PATH,
       readOnly: request.artifact.status === 'read-only',
       scrollbars: true,
       theme: getBotLabScratchBlocksTheme(scratchBlocks),
@@ -103,7 +108,10 @@ function mountLocalScratchBlocksWorkspace(
 function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
   scratchBlocks.ScratchMsgs.setLocale('en');
 
-  if (botLabBlocksRegistered || scratchBlocks.Blocks.botlab_microduck_set_leds) {
+  if (
+    botLabBlocksRegistered ||
+    scratchBlocks.Blocks.botlab_microduck_set_leds
+  ) {
     botLabBlocksRegistered = true;
     return;
   }
@@ -159,7 +167,7 @@ function getBotLabScratchBlocksTheme(scratchBlocks: ScratchBlocksApi) {
         scrollbarColour: '#CBD5E1',
         insertionMarkerColour: '#0F766E',
       },
-    },
+    }
   );
 
   return botLabScratchBlocksTheme;
@@ -184,7 +192,7 @@ function createScratchBlockStyles(scratchBlocks: ScratchBlocksApi) {
 }
 
 function normalizeBlocklyBlockStyles(
-  blockStyles: Record<string, Partial<ScratchBlockStyle>>,
+  blockStyles: Record<string, Partial<ScratchBlockStyle>>
 ) {
   return Object.fromEntries(
     Object.entries(blockStyles).map(([name, style]) => [
@@ -196,9 +204,9 @@ function normalizeBlocklyBlockStyles(
           style.colourSecondary ??
           style.colourPrimary ??
           '#334155',
-        style.hat ?? '',
+        style.hat ?? ''
       ),
-    ]),
+    ])
   );
 }
 
@@ -206,7 +214,7 @@ function createBlockStyle(
   colourPrimary: string,
   colourSecondary: string,
   colourTertiary: string,
-  hat = '',
+  hat = ''
 ) {
   return {
     colourPrimary,
@@ -245,7 +253,7 @@ function createBotLabToolbox() {
 function loadWorkspaceXml(
   content: string,
   workspace: ScratchBlocksWorkspace,
-  scratchBlocks: ScratchBlocksApi,
+  scratchBlocks: ScratchBlocksApi
 ) {
   const document = new DOMParser().parseFromString(content, 'text/xml');
   const xml = document.documentElement;
@@ -259,7 +267,9 @@ function loadWorkspaceXml(
 
 function exportWorkspaceXml(
   workspace: ScratchBlocksWorkspace,
-  scratchBlocks: ScratchBlocksApi,
+  scratchBlocks: ScratchBlocksApi
 ) {
-  return scratchBlocks.Xml.domToText(scratchBlocks.Xml.workspaceToDom(workspace));
+  return scratchBlocks.Xml.domToText(
+    scratchBlocks.Xml.workspaceToDom(workspace)
+  );
 }

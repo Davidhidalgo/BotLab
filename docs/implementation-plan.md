@@ -46,6 +46,7 @@ Implemented:
 - Initial `@botlab/blocks` editor boundary with workspace artifacts, import/export helpers, a mock provider, workspace states, callbacks, and package tests.
 - `@botlab/blocks` now has a Scratch Blocks provider boundary with Scratch XML workspace support and an injected bridge contract.
 - `@botlab/blocks` now depends on the official `scratch-blocks` package locally, mounts it directly without iframes, and registers an initial BotLab custom MicroDuck block.
+- The web app serves Scratch Blocks media from the local dependency in development and copies it into production builds.
 - App-level workspace state receives mock editor artifact updates and displays editor status metadata.
 - Runtime sessions can load compiled behavior artifacts, dispatch commands through injected target dispatchers, emit lifecycle events, and produce trace artifacts.
 - Runtime sessions can load validated behavior definitions and record structured diagnostics with validation, lifecycle, adapter, transport, scheduler, simulator, and policy categories.
@@ -138,6 +139,7 @@ Tasks:
 - Add a mock provider for tests and development.
 - Add Scratch Blocks provider boundary with an injected bridge contract.
 - Add official `scratch-blocks` as a local dependency of `@botlab/blocks`.
+- Serve Scratch Blocks media assets from the app without exposing `node_modules` paths to the browser.
 - Register initial BotLab custom blocks through the Scratch Blocks/Blockly API.
 - Add UI states: empty workspace, loaded workspace, dirty workspace, invalid workspace, read-only workspace.
 - Add callbacks for artifact updates and validation errors.

@@ -22,6 +22,7 @@ import {
 
 export type RuntimeSessionState =
   | 'created'
+  | 'queued'
   | 'ready'
   | 'awaiting-confirmation'
   | 'running'
@@ -34,6 +35,8 @@ export type RuntimeTraceCategory =
   | 'lifecycle'
   | 'load'
   | 'policy'
+  | 'scheduler'
+  | 'arbitration'
   | 'dispatch'
   | 'validation'
   | 'error';
@@ -44,6 +47,7 @@ export type RuntimeErrorCategory =
   | 'adapter'
   | 'transport'
   | 'scheduler'
+  | 'arbitration'
   | 'simulator'
   | 'lifecycle';
 
@@ -53,6 +57,9 @@ export type RuntimeErrorCode =
   | 'policy-denied'
   | 'policy-confirmation-required'
   | 'missing-compiled-artifact'
+  | 'session-already-running'
+  | 'queued-session-not-ready'
+  | 'capability-lock-conflict'
   | 'missing-dispatcher'
   | 'dispatcher-failed'
   | 'dispatcher-threw'
@@ -88,6 +95,31 @@ export interface RuntimeSessionOptions {
   id?: string;
 }
 
+export interface RuntimeQueueOptions {
+  priority?: number;
+}
+
+export interface RuntimeQueueEntry {
+  id: string;
+  sessionId: string;
+  priority: number;
+  enqueuedAt: string;
+  targetId?: string;
+  behaviorId?: string;
+}
+
+export interface RuntimeCapabilityLock {
+  capabilityId: string;
+  sessionId: string;
+  commandId?: string;
+  acquiredAt: string;
+}
+
+export interface RuntimeQueueSnapshot {
+  entries: RuntimeQueueEntry[];
+  capabilityLocks: RuntimeCapabilityLock[];
+}
+
 export interface RuntimeSessionSnapshot {
   id: string;
   state: RuntimeSessionState;
@@ -121,6 +153,7 @@ export interface RuntimeIntrospectionSnapshot {
   simulators: SimulatorIntegration[];
   sessions: RuntimeSessionSnapshot[];
   activeSessionCount: number;
+  queue: RuntimeQueueSnapshot;
   diagnostics: RuntimeDiagnostic[];
   recentEvents: RuntimeEvent[];
 }
@@ -155,6 +188,8 @@ export type RuntimeEventType =
   | 'artifact-loaded'
   | 'policy-evaluated'
   | 'policy-confirmed'
+  | 'session-queued'
+  | 'session-dequeued'
   | 'session-started'
   | 'command-dispatched'
   | 'session-paused'
@@ -191,6 +226,7 @@ export interface BotLabRuntime {
   listSimulatorIntegrations(): SimulatorIntegration[];
   inspectRuntime(): RuntimeIntrospectionSnapshot;
   inspectTarget(targetId: string): IntrospectionSnapshot;
+  inspectQueue(): RuntimeQueueSnapshot;
   createSession(options?: RuntimeSessionOptions): RuntimeSessionSnapshot;
   loadBehavior(sessionId: string, behavior: Behavior): RuntimeLoadResult;
   loadCompiledBehavior(
@@ -198,6 +234,11 @@ export interface BotLabRuntime {
     artifact: CompiledBehaviorArtifact,
   ): RuntimeLoadResult;
   confirmPolicy(sessionId: string): RuntimeSessionSnapshot;
+  queueSession(
+    sessionId: string,
+    options?: RuntimeQueueOptions,
+  ): RuntimeQueueSnapshot;
+  runNextQueuedSession(): Promise<RuntimeRunResult | undefined>;
   startSession(sessionId: string): Promise<RuntimeRunResult>;
   pauseSession(sessionId: string): RuntimeSessionSnapshot;
   resumeSession(sessionId: string): RuntimeSessionSnapshot;
@@ -226,10 +267,13 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
   const sessions = new Map<string, RuntimeSession>();
   const listeners = new Set<RuntimeEventListener>();
   const events: RuntimeEvent[] = [];
+  const queue: RuntimeQueueEntry[] = [];
+  const capabilityLocks = new Map<string, RuntimeCapabilityLock>();
   const now = config.now ?? (() => new Date().toISOString());
   let sessionCounter = 0;
   let eventCounter = 0;
   let diagnosticCounter = 0;
+  let queueCounter = 0;
 
   function listTargets() {
     return config.adapters.flatMap((adapter) => adapter.targets);
@@ -288,16 +332,7 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
     };
 
     session.diagnostics.push(diagnostic);
-    appendTrace(
-      session,
-      category === 'validation'
-        ? 'validation'
-        : category === 'policy'
-          ? 'policy'
-          : 'error',
-      message,
-      commandId,
-    );
+    appendTrace(session, traceCategoryForDiagnostic(category), message, commandId);
     emit(severity === 'error' ? 'runtime-error' : 'policy-evaluated', message, session.id);
   }
 
@@ -335,6 +370,87 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
         : undefined,
       messages: [...session.messages],
     };
+  }
+
+  function queueSnapshot(): RuntimeQueueSnapshot {
+    return {
+      entries: [...queue],
+      capabilityLocks: Array.from(capabilityLocks.values()),
+    };
+  }
+
+  function sortQueue() {
+    queue.sort((left, right) => {
+      const priorityDelta = right.priority - left.priority;
+
+      if (priorityDelta !== 0) {
+        return priorityDelta;
+      }
+
+      return left.id.localeCompare(right.id);
+    });
+  }
+
+  function acquireCapabilityLocks(
+    session: RuntimeSession,
+    artifact: CompiledBehaviorArtifact,
+  ): boolean {
+    const requestedCapabilityIds = Array.from(
+      new Set(artifact.commands.map((command) => command.capabilityId)),
+    );
+
+    for (const capabilityId of requestedCapabilityIds) {
+      const lock = capabilityLocks.get(capabilityId);
+
+      if (lock && lock.sessionId !== session.id) {
+        session.state = 'error';
+        recordDiagnostic(
+          session,
+          'arbitration',
+          'capability-lock-conflict',
+          `Capability ${capabilityId} is locked by session ${lock.sessionId}.`,
+        );
+
+        return false;
+      }
+    }
+
+    for (const capabilityId of requestedCapabilityIds) {
+      capabilityLocks.set(capabilityId, {
+        capabilityId,
+        sessionId: session.id,
+        acquiredAt: now(),
+      });
+    }
+
+    if (requestedCapabilityIds.length > 0) {
+      appendTrace(
+        session,
+        'arbitration',
+        `Session ${session.id} acquired ${requestedCapabilityIds.length} capability lock(s).`,
+      );
+    }
+
+    return true;
+  }
+
+  function releaseCapabilityLocks(session: RuntimeSession) {
+    let releasedLockCount = 0;
+
+    for (const [capabilityId, lock] of capabilityLocks.entries()) {
+      if (lock.sessionId === session.id) {
+        capabilityLocks.delete(capabilityId);
+        releasedLockCount += 1;
+      }
+    }
+
+    if (releasedLockCount > 0) {
+      appendTrace(
+        session,
+        'arbitration',
+        `Session ${session.id} released ${releasedLockCount} capability lock(s).`,
+      );
+    }
   }
 
   function evaluatePolicies(artifact: CompiledBehaviorArtifact): RuntimePolicyEvaluation {
@@ -466,10 +582,16 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
         simulators: config.simulators,
         sessions: sessionSnapshots,
         activeSessionCount: sessionSnapshots.filter((session) =>
-          ['created', 'ready', 'awaiting-confirmation', 'running', 'paused'].includes(
-            session.state,
-          ),
+          [
+            'created',
+            'queued',
+            'ready',
+            'awaiting-confirmation',
+            'running',
+            'paused',
+          ].includes(session.state),
         ).length,
+        queue: queueSnapshot(),
         diagnostics: sessionSnapshots.flatMap((session) => session.diagnostics),
         recentEvents: events.slice(-25),
       };
@@ -490,6 +612,9 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
             ]
           : ['Target is not registered in this runtime session.'],
       };
+    },
+    inspectQueue() {
+      return queueSnapshot();
     },
     createSession(options = {}) {
       sessionCounter += 1;
@@ -593,6 +718,78 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
 
       return snapshot(session);
     },
+    queueSession(sessionId, options = {}) {
+      const session = getSession(sessionId);
+
+      if (session.state === 'running') {
+        recordDiagnostic(
+          session,
+          'scheduler',
+          'session-already-running',
+          `Runtime session ${session.id} is already running.`,
+        );
+
+        return queueSnapshot();
+      }
+
+      if (!session.loadedArtifact || session.state === 'error' || session.state === 'disposed') {
+        recordDiagnostic(
+          session,
+          'scheduler',
+          'queued-session-not-ready',
+          `Runtime session ${session.id} is not ready to queue.`,
+          undefined,
+          'warning',
+        );
+
+        return queueSnapshot();
+      }
+
+      const existingEntry = queue.find((entry) => entry.sessionId === session.id);
+
+      if (existingEntry) {
+        existingEntry.priority = options.priority ?? existingEntry.priority;
+        sortQueue();
+        appendTrace(session, 'scheduler', `Runtime session ${session.id} queue priority updated.`);
+        return queueSnapshot();
+      }
+
+      queueCounter += 1;
+      const entry: RuntimeQueueEntry = {
+        id: `runtime-queue-${queueCounter}`,
+        sessionId: session.id,
+        priority: options.priority ?? 0,
+        enqueuedAt: now(),
+        targetId: session.targetId,
+        behaviorId: session.behaviorId,
+      };
+
+      queue.push(entry);
+      sortQueue();
+      session.state = 'queued';
+      appendTrace(
+        session,
+        'scheduler',
+        `Runtime session ${session.id} queued with priority ${entry.priority}.`,
+      );
+      emit('session-queued', `Runtime session ${session.id} queued.`, session.id);
+
+      return queueSnapshot();
+    },
+    async runNextQueuedSession() {
+      const entry = queue.shift();
+
+      if (!entry) {
+        return undefined;
+      }
+
+      const session = getSession(entry.sessionId);
+      session.state = 'ready';
+      appendTrace(session, 'scheduler', `Runtime session ${session.id} dequeued.`);
+      emit('session-dequeued', `Runtime session ${session.id} dequeued.`, session.id);
+
+      return this.startSession(session.id);
+    },
     async startSession(sessionId) {
       const session = getSession(sessionId);
 
@@ -617,6 +814,20 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
           'lifecycle',
           'disposed-session-transition',
           `Runtime session ${session.id} is disposed.`,
+        );
+
+        return {
+          snapshot: snapshot(session),
+          dispatchResults: [],
+        };
+      }
+
+      if (session.state === 'running') {
+        recordDiagnostic(
+          session,
+          'scheduler',
+          'session-already-running',
+          `Runtime session ${session.id} is already running.`,
         );
 
         return {
@@ -660,83 +871,94 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
         };
       }
 
+      if (!acquireCapabilityLocks(session, session.loadedArtifact)) {
+        return {
+          snapshot: snapshot(session),
+          dispatchResults: [],
+        };
+      }
+
       session.state = 'running';
       appendTrace(session, 'lifecycle', `Runtime session ${session.id} started.`);
       emit('session-started', `Runtime session ${session.id} started.`, session.id);
 
       const dispatchResults: RuntimeCommandDispatchResult[] = [];
 
-      for (const command of session.loadedArtifact.commands) {
-        const dispatcher = config.dispatchers?.find(
-          (candidate) => candidate.targetId === command.targetId,
-        );
-
-        if (!dispatcher) {
-          const result = {
-            commandId: command.id,
-            status: 'failed' as const,
-            message: `No dispatcher registered for target ${command.targetId}.`,
-          };
-
-          dispatchResults.push(result);
-          recordDiagnostic(
-            session,
-            'adapter',
-            'missing-dispatcher',
-            result.message,
-            command.id,
+      try {
+        for (const command of session.loadedArtifact.commands) {
+          const dispatcher = config.dispatchers?.find(
+            (candidate) => candidate.targetId === command.targetId,
           );
-          continue;
-        }
 
-        try {
-          const result = await dispatcher.dispatch(command);
-          dispatchResults.push(result);
+          if (!dispatcher) {
+            const result = {
+              commandId: command.id,
+              status: 'failed' as const,
+              message: `No dispatcher registered for target ${command.targetId}.`,
+            };
 
-          if (result.status === 'dispatched') {
-            session.dispatchedCommandCount += 1;
-            appendTrace(session, 'dispatch', result.message, command.id);
-            emit('command-dispatched', result.message, session.id);
-          } else {
+            dispatchResults.push(result);
+            recordDiagnostic(
+              session,
+              'adapter',
+              'missing-dispatcher',
+              result.message,
+              command.id,
+            );
+            continue;
+          }
+
+          try {
+            const result = await dispatcher.dispatch(command);
+            dispatchResults.push(result);
+
+            if (result.status === 'dispatched') {
+              session.dispatchedCommandCount += 1;
+              appendTrace(session, 'dispatch', result.message, command.id);
+              emit('command-dispatched', result.message, session.id);
+            } else {
+              recordDiagnostic(
+                session,
+                'transport',
+                'dispatcher-failed',
+                result.message,
+                command.id,
+              );
+            }
+          } catch (error) {
+            const result = {
+              commandId: command.id,
+              status: 'failed' as const,
+              message: error instanceof Error ? error.message : 'Unknown dispatch error.',
+            };
+
+            dispatchResults.push(result);
             recordDiagnostic(
               session,
               'transport',
-              'dispatcher-failed',
+              'dispatcher-threw',
               result.message,
               command.id,
             );
           }
-        } catch (error) {
-          const result = {
-            commandId: command.id,
-            status: 'failed' as const,
-            message: error instanceof Error ? error.message : 'Unknown dispatch error.',
-          };
-
-          dispatchResults.push(result);
-          recordDiagnostic(
-            session,
-            'transport',
-            'dispatcher-threw',
-            result.message,
-            command.id,
-          );
         }
-      }
 
-      session.state = dispatchResults.every((result) => result.status === 'dispatched')
-        ? 'stopped'
-        : 'error';
-      appendTrace(
-        session,
-        'lifecycle',
-        `Runtime session ${session.id} ${session.state === 'stopped' ? 'completed' : 'failed'}.`,
-      );
-      emit(
-        session.state === 'stopped' ? 'session-stopped' : 'runtime-error',
-        `Runtime session ${session.id} ${session.state === 'stopped' ? 'completed' : 'failed'}.`,
-        session.id,
-      );
+        session.state = dispatchResults.every((result) => result.status === 'dispatched')
+          ? 'stopped'
+          : 'error';
+        appendTrace(
+          session,
+          'lifecycle',
+          `Runtime session ${session.id} ${session.state === 'stopped' ? 'completed' : 'failed'}.`,
+        );
+        emit(
+          session.state === 'stopped' ? 'session-stopped' : 'runtime-error',
+          `Runtime session ${session.id} ${session.state === 'stopped' ? 'completed' : 'failed'}.`,
+          session.id,
+        );
+      } finally {
+        releaseCapabilityLocks(session);
+      }
 
       return {
         snapshot: snapshot(session),
@@ -815,4 +1037,26 @@ function resolveTargetHealth(
   }
 
   return target.status === 'available' ? 'nominal' : 'unknown';
+}
+
+function traceCategoryForDiagnostic(
+  category: RuntimeErrorCategory,
+): RuntimeTraceCategory {
+  if (category === 'validation') {
+    return 'validation';
+  }
+
+  if (category === 'policy') {
+    return 'policy';
+  }
+
+  if (category === 'scheduler') {
+    return 'scheduler';
+  }
+
+  if (category === 'arbitration') {
+    return 'arbitration';
+  }
+
+  return 'error';
 }

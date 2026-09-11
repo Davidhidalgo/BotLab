@@ -1,4 +1,4 @@
-import { fireEvent, render } from '@testing-library/react';
+import { fireEvent, render, waitFor } from '@testing-library/react';
 
 import App from './app';
 
@@ -21,5 +21,18 @@ describe('App', () => {
     fireEvent.click(getByRole('button', { name: 'Editar' }));
 
     expect(getAllByText('Editado').length).toBeGreaterThan(0);
+  });
+
+  it('should run the MicroDuck runtime demo from the UI', async () => {
+    const { getAllByText, getByRole, getByText } = render(<App />);
+
+    fireEvent.click(getByRole('button', { name: 'Ejecutar demo' }));
+
+    expect(getAllByText(/Ejecutando/i).length).toBeGreaterThan(0);
+
+    await waitFor(() => {
+      expect(getByText(/1 comando\(s\) enviados/i)).toBeTruthy();
+    });
+    expect(getByText('Completada')).toBeTruthy();
   });
 });

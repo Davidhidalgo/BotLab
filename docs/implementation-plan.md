@@ -49,6 +49,8 @@ Implemented:
 - Runtime sessions can load validated behavior definitions and record structured diagnostics with validation, lifecycle, adapter, transport, scheduler, simulator, and policy categories.
 - Runtime can produce global introspection snapshots with targets, capabilities, simulators, sessions, diagnostics, active session counts, and recent events.
 - Runtime evaluates policy rules for compiled plans, blocks denied execution, pauses for required confirmation, records policy diagnostics, and resumes after confirmation.
+- Runtime has an initial priority run queue, scheduler events, capability locks, and arbitration diagnostics for conflicting sessions.
+- The web app can run a MicroDuck runtime demo from the UI and display session state, queue entries, and capability locks.
 
 Not implemented yet:
 
@@ -56,9 +58,8 @@ Not implemented yet:
 - Behavior serialization and compilation.
 - Real MicroDuck transport.
 - Real simulator bridge.
-- Scheduler loop.
-- Arbitration engine.
-- Policy enforcement.
+- Timed/event-driven scheduler loop.
+- Full arbitration engine beyond initial priority queue and exclusive capability locks.
 - Runtime logs, traces, and introspection UI.
 - Persistence.
 - Deployment workflow.

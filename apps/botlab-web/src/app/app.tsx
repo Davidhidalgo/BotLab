@@ -1,17 +1,20 @@
 import { createMicroDuckAdapter } from '@botlab/adapters-microduck';
 import { createStackChanAdapter } from '@botlab/adapters-stackchan';
 import { BlocksEditorShell, sampleBlocksWorkspaceArtifact } from '@botlab/blocks';
-import { botLabConcepts } from '@botlab/model';
+import {
+  botLabConcepts,
+  sampleArbitrationStrategies,
+  sampleMicroDuckCompiledBehaviorArtifact,
+  sampleMicroDuckLedBehavior,
+  samplePolicies,
+  sampleSchedulers,
+  sampleSkills,
+} from '@botlab/model';
 import { createBotLabRuntime } from '@botlab/runtime';
 import { officialSimulatorIntegrations } from '@botlab/simulators';
 import { Badge, Button } from '@botlab/ui';
-import { Activity, Blocks, Cpu, GitBranch, Play, ShieldCheck, Workflow } from 'lucide-react';
+import { Activity, Blocks, Cpu, GitBranch, Lock, Play, ShieldCheck, Workflow } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
-
-const runtime = createBotLabRuntime({
-  adapters: [createMicroDuckAdapter(), createStackChanAdapter()],
-  simulators: officialSimulatorIntegrations,
-});
 
 const featuredConcepts = botLabConcepts.filter(({ concept }) =>
   ['policy', 'skill', 'behavior', 'arbitration'].includes(concept),
@@ -25,9 +28,32 @@ const conceptIcons = {
 };
 
 export function App() {
+  const [{ runtime, demoSessionId }] = useState(createRuntimeDemo);
   const [workspaceArtifact, setWorkspaceArtifact] = useState(sampleBlocksWorkspaceArtifact);
+  const [runtimeSnapshot, setRuntimeSnapshot] = useState(() => runtime.inspectRuntime());
+  const [runMessage, setRunMessage] = useState('Demo preparada para MicroDuck');
+  const [isRunningDemo, setIsRunningDemo] = useState(false);
   const targets = runtime.listTargets();
   const capabilities = runtime.listCapabilities();
+  const queue = runtimeSnapshot.queue;
+
+  async function runDemo() {
+    setIsRunningDemo(true);
+    runtime.queueSession(demoSessionId, { priority: 5 });
+    setRuntimeSnapshot(runtime.inspectRuntime());
+
+    const run = runtime.runNextQueuedSession();
+    setRuntimeSnapshot(runtime.inspectRuntime());
+
+    const result = await run;
+    setRuntimeSnapshot(runtime.inspectRuntime());
+    setRunMessage(
+      result
+        ? `${result.snapshot.dispatchedCommandCount} comando(s) enviados. Estado: ${runtimeStateLabels[result.snapshot.state]}.`
+        : 'No habia sesiones pendientes en cola.',
+    );
+    setIsRunningDemo(false);
+  }
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -47,9 +73,9 @@ export function App() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button>
+            <Button onClick={runDemo} disabled={isRunningDemo}>
               <Play className="h-4 w-4" />
-              Ejecutar demo
+              {isRunningDemo ? 'Ejecutando' : 'Ejecutar demo'}
             </Button>
             <Button variant="secondary">
               <Blocks className="h-4 w-4" />
@@ -81,6 +107,43 @@ export function App() {
               label="Simulators"
               value={runtime.listSimulatorIntegrations().length.toString()}
             />
+            <Metric
+              label="Sesiones activas"
+              value={runtimeSnapshot.activeSessionCount.toString()}
+            />
+            <div className="mt-4 rounded-md border bg-background p-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">Sesion demo</span>
+                <Badge variant="secondary">
+                  {runtimeStateLabels[runtimeSnapshot.sessions[0]?.state ?? 'created']}
+                </Badge>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{runMessage}</p>
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <RuntimeList
+                icon={<GitBranch className="h-4 w-4 text-primary" />}
+                label="Cola"
+                value={
+                  queue.entries.length > 0
+                    ? queue.entries
+                        .map((entry) => `${entry.sessionId} · prioridad ${entry.priority}`)
+                        .join(', ')
+                    : 'Sin sesiones en cola'
+                }
+              />
+              <RuntimeList
+                icon={<Lock className="h-4 w-4 text-primary" />}
+                label="Locks"
+                value={
+                  queue.capabilityLocks.length > 0
+                    ? queue.capabilityLocks
+                        .map((lock) => `${lock.capabilityId} por ${lock.sessionId}`)
+                        .join(', ')
+                    : 'Sin capacidades bloqueadas'
+                }
+              />
+            </div>
           </Panel>
 
           <Panel title="Targets">
@@ -150,3 +213,69 @@ const workspaceStatusLabels = {
   invalid: 'Invalido',
   'read-only': 'Solo lectura',
 };
+
+const runtimeStateLabels = {
+  created: 'Creada',
+  queued: 'En cola',
+  ready: 'Lista',
+  'awaiting-confirmation': 'Pendiente',
+  running: 'Ejecutando',
+  paused: 'Pausada',
+  stopped: 'Completada',
+  error: 'Error',
+  disposed: 'Cerrada',
+};
+
+function RuntimeList({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-md border bg-background p-3">
+      <div className="mb-2 flex items-center gap-2">
+        {icon}
+        <span className="text-sm font-medium">{label}</span>
+      </div>
+      <p className="text-sm leading-6 text-muted-foreground">{value}</p>
+    </div>
+  );
+}
+
+function createRuntimeDemo() {
+  const runtime = createBotLabRuntime({
+    adapters: [createMicroDuckAdapter(), createStackChanAdapter()],
+    simulators: officialSimulatorIntegrations,
+    behaviors: [sampleMicroDuckLedBehavior],
+    skills: sampleSkills,
+    schedulers: sampleSchedulers,
+    arbitrationStrategies: sampleArbitrationStrategies,
+    policies: samplePolicies,
+    dispatchers: [
+      {
+        targetId: 'microduck-usb',
+        async dispatch(command) {
+          await new Promise((resolve) => {
+            window.setTimeout(resolve, 250);
+          });
+
+          return {
+            commandId: command.id,
+            status: 'dispatched',
+            message: `Demo dispatch ${command.commandId}.`,
+          };
+        },
+      },
+    ],
+  });
+  const session = runtime.createSession({ id: 'demo-microduck-leds' });
+
+  runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
+  runtime.confirmPolicy(session.id);
+
+  return { runtime, demoSessionId: session.id };
+}

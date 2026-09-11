@@ -265,6 +265,105 @@ describe('runtime', () => {
     );
   });
 
+  it('queues runtime sessions by priority', async () => {
+    const runtime = createTestRuntime({
+      dispatch(command) {
+        return {
+          commandId: command.id,
+          status: 'dispatched',
+          message: `Dispatched ${command.commandId}.`,
+        };
+      },
+    });
+    const lowPrioritySession = runtime.createSession({ id: 'session-low-priority' });
+    const highPrioritySession = runtime.createSession({ id: 'session-high-priority' });
+
+    runtime.loadCompiledBehavior(
+      lowPrioritySession.id,
+      sampleMicroDuckCompiledBehaviorArtifact,
+    );
+    runtime.loadCompiledBehavior(
+      highPrioritySession.id,
+      sampleMicroDuckCompiledBehaviorArtifact,
+    );
+    runtime.confirmPolicy(lowPrioritySession.id);
+    runtime.confirmPolicy(highPrioritySession.id);
+
+    runtime.queueSession(lowPrioritySession.id, { priority: 1 });
+    const queue = runtime.queueSession(highPrioritySession.id, { priority: 10 });
+
+    expect(queue.entries.map((entry) => entry.sessionId)).toEqual([
+      'session-high-priority',
+      'session-low-priority',
+    ]);
+    expect(runtime.inspectSession(highPrioritySession.id)).toMatchObject({
+      state: 'queued',
+    });
+
+    const result = await runtime.runNextQueuedSession();
+
+    expect(result?.snapshot).toMatchObject({
+      id: 'session-high-priority',
+      state: 'stopped',
+      dispatchedCommandCount: 1,
+    });
+    expect(runtime.inspectQueue().entries.map((entry) => entry.sessionId)).toEqual([
+      'session-low-priority',
+    ]);
+  });
+
+  it('prevents concurrent sessions from locking the same capability', async () => {
+    let releaseDispatch!: () => void;
+    const pendingDispatch = new Promise<void>((resolve) => {
+      releaseDispatch = resolve;
+    });
+    const runtime = createTestRuntime({
+      async dispatch(command) {
+        await pendingDispatch;
+
+        return {
+          commandId: command.id,
+          status: 'dispatched',
+          message: `Dispatched ${command.commandId}.`,
+        };
+      },
+    });
+    const firstSession = runtime.createSession({ id: 'session-lock-owner' });
+    const secondSession = runtime.createSession({ id: 'session-lock-conflict' });
+
+    runtime.loadCompiledBehavior(firstSession.id, sampleMicroDuckCompiledBehaviorArtifact);
+    runtime.loadCompiledBehavior(secondSession.id, sampleMicroDuckCompiledBehaviorArtifact);
+    runtime.confirmPolicy(firstSession.id);
+    runtime.confirmPolicy(secondSession.id);
+
+    const firstRun = runtime.startSession(firstSession.id);
+    const secondRun = await runtime.startSession(secondSession.id);
+
+    expect(runtime.inspectQueue().capabilityLocks).toEqual([
+      expect.objectContaining({
+        capabilityId: 'microduck-leds',
+        sessionId: 'session-lock-owner',
+      }),
+    ]);
+    expect(secondRun.snapshot).toMatchObject({
+      state: 'error',
+      dispatchedCommandCount: 0,
+    });
+    expect(secondRun.snapshot.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: 'arbitration',
+          code: 'capability-lock-conflict',
+        }),
+      ]),
+    );
+
+    releaseDispatch();
+    await firstRun;
+
+    expect(runtime.inspectQueue().capabilityLocks).toEqual([]);
+  });
+
   it('denies compiled plans when a matching policy rule denies execution', () => {
     const runtime = createTestRuntime(undefined, [
       ...samplePolicies,
@@ -307,7 +406,9 @@ describe('runtime', () => {
 });
 
 function createTestRuntime(dispatcher?: {
-  dispatch(command: CompiledCommand): RuntimeCommandDispatchResult;
+  dispatch(
+    command: CompiledCommand,
+  ): RuntimeCommandDispatchResult | Promise<RuntimeCommandDispatchResult>;
 }, policies = samplePolicies) {
   return createBotLabRuntime({
     adapters: [microDuckAdapter],

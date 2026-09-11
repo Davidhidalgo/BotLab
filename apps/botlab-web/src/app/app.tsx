@@ -2,7 +2,7 @@ import { BlocksEditorShell } from '@botlab/blocks';
 import { botLabConcepts } from '@botlab/model';
 import { Badge, Button } from '@botlab/ui';
 import { useMachine } from '@xstate/react';
-import { Activity, Blocks, Cpu, GitBranch, Lock, Play, Radar, ShieldCheck, Workflow } from 'lucide-react';
+import { Activity, Blocks, Cpu, FileCode, GitBranch, Lock, Play, Radar, ShieldCheck, Workflow } from 'lucide-react';
 import { type ReactNode } from 'react';
 import {
   botLabBuildStateLabels,
@@ -66,9 +66,46 @@ export function App() {
     selectedCapabilities.some((capability) => capability.id === 'microduck-leds');
   const queue = runtimeSnapshot.queue;
   const activeSession = runtimeSnapshot.sessions[0];
+  const traceArtifact = activeSession
+    ? runtime.getSessionTrace(activeSession.id)
+    : undefined;
   const recentEvents = runtimeSnapshot.recentEvents.slice(-5).reverse();
   const recentTrace = activeSession?.trace.slice(-5).reverse() ?? [];
   const diagnostics = runtimeSnapshot.diagnostics.slice(-5).reverse();
+  const artifactCards = [
+    {
+      id: workspaceArtifact.id,
+      title: 'Workspace',
+      kind: artifactKindLabels[workspaceArtifact.kind],
+      status: workspaceStatusLabels[workspaceArtifact.status],
+      detail: `${workspaceArtifact.engine} · ${workspaceArtifact.format}`,
+    },
+    {
+      id: compiledArtifact?.id ?? 'compiled-plan-pending',
+      title: 'Plan compilado',
+      kind: 'Compiled plan',
+      status: compiledArtifact ? 'Listo' : 'Pendiente',
+      detail: compiledArtifact
+        ? `${compiledArtifact.commands.length} comando(s) · ${selectedTarget?.name ?? compiledArtifact.targetId}`
+        : 'Compila la demo para generar este artifact.',
+    },
+    {
+      id: simulationResult?.artifactId ?? 'simulation-output-pending',
+      title: 'Salida simulacion',
+      kind: 'Simulator output',
+      status: simulationResult ? 'Listo' : 'Pendiente',
+      detail: simulationResult
+        ? `${simulationResult.commandCount} comando(s) verificados · ${simulationResult.simulatorId}`
+        : 'Simula el plan compilado para generar este artifact.',
+    },
+    {
+      id: traceArtifact?.id ?? 'runtime-trace-pending',
+      title: 'Trace runtime',
+      kind: 'Trace',
+      status: activeSession && activeSession.trace.length > 0 ? 'Listo' : 'Pendiente',
+      detail: `${activeSession?.trace.length ?? 0} entrada(s) · ${activeSession?.diagnostics.length ?? 0} diagnostico(s)`,
+    },
+  ];
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -178,6 +215,14 @@ export function App() {
               value={simulationResult?.commandCount.toString() ?? '0'}
             />
             <p className="mt-3 text-sm leading-6 text-muted-foreground">{simulationMessage}</p>
+          </Panel>
+
+          <Panel title="Artifacts">
+            <div className="grid gap-3">
+              {artifactCards.map((artifact) => (
+                <ArtifactCard key={artifact.title} artifact={artifact} />
+              ))}
+            </div>
           </Panel>
 
           <Panel title="Runtime">
@@ -459,6 +504,14 @@ const targetStatusLabels = {
   offline: 'Offline',
 };
 
+const artifactKindLabels = {
+  blocks: 'Blocks workspace',
+  'compiled-plan': 'Compiled plan',
+  log: 'Log',
+  trace: 'Trace',
+  'simulator-output': 'Simulator output',
+};
+
 const runtimeEventLabels = {
   'session-created': 'Sesion creada',
   'artifact-loaded': 'Artifact cargado',
@@ -513,6 +566,36 @@ function RuntimeList({
         <span className="text-sm font-medium">{label}</span>
       </div>
       <p className="text-sm leading-6 text-muted-foreground">{value}</p>
+    </div>
+  );
+}
+
+function ArtifactCard({
+  artifact,
+}: {
+  artifact: {
+    id: string;
+    title: string;
+    kind: string;
+    status: string;
+    detail: string;
+  };
+}) {
+  return (
+    <div className="rounded-md border bg-background p-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <FileCode className="h-4 w-4 shrink-0 text-primary" />
+          <span className="truncate text-sm font-medium">{artifact.title}</span>
+        </div>
+        <Badge variant={artifact.status === 'Pendiente' ? 'outline' : 'secondary'}>
+          {artifact.status}
+        </Badge>
+      </div>
+      <p className="truncate text-sm font-medium text-foreground">{artifact.id}</p>
+      <p className="mt-1 text-sm leading-6 text-muted-foreground">
+        {artifact.kind} · {artifact.detail}
+      </p>
     </div>
   );
 }

@@ -13,6 +13,15 @@ describe('App', () => {
     expect(getByText(/Laboratorio visual para robots programables/i)).toBeTruthy();
   });
 
+  it('should show the artifact inventory', () => {
+    const { getAllByText, getByText } = render(<App />);
+
+    expect(getByText('Artifacts')).toBeTruthy();
+    expect(getAllByText('sample-blocks-workspace').length).toBeGreaterThan(0);
+    expect(getByText('compiled-plan-pending')).toBeTruthy();
+    expect(getByText('simulation-output-pending')).toBeTruthy();
+  });
+
   it('should receive workspace updates from the blocks boundary', () => {
     const { getAllByText, getByRole } = render(<App />);
 
@@ -66,5 +75,6 @@ describe('App', () => {
     expect(getByText('Ejecucion demo completada.')).toBeTruthy();
     expect(getByText('Comando enviado')).toBeTruthy();
     expect(getAllByText('Simulated dispatch set-led-pattern.').length).toBeGreaterThan(0);
+    expect(getByText('demo-microduck-leds-trace-artifact')).toBeTruthy();
   });
 });

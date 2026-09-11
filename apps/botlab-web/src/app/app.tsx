@@ -2,7 +2,18 @@ import { BlocksEditorShell } from '@botlab/blocks';
 import { botLabConcepts } from '@botlab/model';
 import { Badge, Button } from '@botlab/ui';
 import { useMachine } from '@xstate/react';
-import { Activity, Blocks, Cpu, FileCode, GitBranch, Lock, Play, Radar, ShieldCheck, Workflow } from 'lucide-react';
+import {
+  Activity,
+  Blocks,
+  Cpu,
+  FileCode,
+  GitBranch,
+  Lock,
+  Play,
+  Radar,
+  ShieldCheck,
+  Workflow,
+} from 'lucide-react';
 import { type ReactNode } from 'react';
 import {
   botLabBuildStateLabels,
@@ -21,7 +32,7 @@ import {
 } from './botlab-flow-machine';
 
 const featuredConcepts = botLabConcepts.filter(({ concept }) =>
-  ['policy', 'skill', 'behavior', 'arbitration'].includes(concept),
+  ['policy', 'skill', 'behavior', 'arbitration'].includes(concept)
 );
 
 const conceptIcons = {
@@ -57,13 +68,17 @@ export function App() {
   const isSimulating = flowSnapshot.hasTag('simulation-busy');
   const targets = runtime.listTargets();
   const capabilities = runtime.listCapabilities();
-  const selectedTarget = targets.find((target) => target.id === selectedTargetId);
+  const selectedTarget = targets.find(
+    (target) => target.id === selectedTargetId
+  );
   const selectedCapabilities = capabilities.filter((capability) =>
-    capability.targetIds.includes(selectedTargetId),
+    capability.targetIds.includes(selectedTargetId)
   );
   const selectedTargetCanRunDemo =
     selectedTarget?.status === 'available' &&
-    selectedCapabilities.some((capability) => capability.id === 'microduck-leds');
+    selectedCapabilities.some(
+      (capability) => capability.id === 'microduck-leds'
+    );
   const queue = runtimeSnapshot.queue;
   const activeSession = runtimeSnapshot.sessions[0];
   const traceArtifact = activeSession
@@ -73,9 +88,22 @@ export function App() {
   const recentTrace = activeSession?.trace.slice(-5).reverse() ?? [];
   const diagnostics = runtimeSnapshot.diagnostics.slice(-5).reverse();
   const policyEvaluation = activeSession?.policyEvaluation;
+  const compiledCommand = compiledArtifact?.commands[0];
+  const compiledPattern =
+    typeof compiledCommand?.inputs.pattern === 'string'
+      ? compiledCommand.inputs.pattern
+      : undefined;
+  const compiledBrightness =
+    typeof compiledCommand?.inputs.brightness === 'number'
+      ? compiledCommand.inputs.brightness
+      : undefined;
+  const compiledTargetName = compiledArtifact
+    ? targets.find((target) => target.id === compiledArtifact.targetId)?.name ??
+      compiledArtifact.targetId
+    : undefined;
   const policyConfirmed = runtimeSnapshot.recentEvents.some(
     (event) =>
-      event.type === 'policy-confirmed' && event.sessionId === activeSession?.id,
+      event.type === 'policy-confirmed' && event.sessionId === activeSession?.id
   );
   const artifactCards = [
     {
@@ -91,7 +119,9 @@ export function App() {
       kind: 'Compiled plan',
       status: compiledArtifact ? 'Listo' : 'Pendiente',
       detail: compiledArtifact
-        ? `${compiledArtifact.commands.length} comando(s) · ${selectedTarget?.name ?? compiledArtifact.targetId}`
+        ? `${compiledArtifact.commands.length} comando(s) · ${
+            selectedTarget?.name ?? compiledArtifact.targetId
+          }`
         : 'Compila la demo para generar este artifact.',
     },
     {
@@ -107,8 +137,11 @@ export function App() {
       id: traceArtifact?.id ?? 'runtime-trace-pending',
       title: 'Trace runtime',
       kind: 'Trace',
-      status: activeSession && activeSession.trace.length > 0 ? 'Listo' : 'Pendiente',
-      detail: `${activeSession?.trace.length ?? 0} entrada(s) · ${activeSession?.diagnostics.length ?? 0} diagnostico(s)`,
+      status:
+        activeSession && activeSession.trace.length > 0 ? 'Listo' : 'Pendiente',
+      detail: `${activeSession?.trace.length ?? 0} entrada(s) · ${
+        activeSession?.diagnostics.length ?? 0
+      } diagnostico(s)`,
     },
   ];
 
@@ -126,7 +159,9 @@ export function App() {
               Laboratorio visual para robots programables
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
-              Una base local para diseñar comportamientos por bloques, ejecutarlos sobre un runtime comun y conectar robots reales o simulados mediante adapters.
+              Una base local para diseñar comportamientos por bloques,
+              ejecutarlos sobre un runtime comun y conectar robots reales o
+              simulados mediante adapters.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -176,7 +211,12 @@ export function App() {
         <BlocksEditorShell
           workspaceName="Editor de bloques BotLab"
           artifact={workspaceArtifact}
-          blocks={['al iniciar robot', 'fijar LEDs MicroDuck', 'esperar capacidad', 'publicar artefacto']}
+          blocks={[
+            'al iniciar robot',
+            'fijar LEDs MicroDuck',
+            'esperar capacidad',
+            'publicar artefacto',
+          ]}
           onArtifactChange={(artifact) =>
             sendFlow({ type: 'workspace.changed', artifact })
           }
@@ -184,10 +224,15 @@ export function App() {
 
         <aside className="space-y-4">
           <Panel title="Editor">
-            <Metric label="Estado" value={workspaceStatusLabels[workspaceArtifact.status]} />
+            <Metric
+              label="Estado"
+              value={workspaceStatusLabels[workspaceArtifact.status]}
+            />
             <Metric label="Artifact" value={workspaceArtifact.id} />
             <Metric label="Formato" value={workspaceArtifact.format} />
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">{workspaceMessage}</p>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              {workspaceMessage}
+            </p>
           </Panel>
 
           <Panel title="Build">
@@ -199,7 +244,15 @@ export function App() {
               label="Plan"
               value={compiledArtifact?.id ?? 'Sin compilar'}
             />
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">{buildMessage}</p>
+            <CompiledCommandCard
+              commandId={compiledCommand?.commandId}
+              targetName={compiledTargetName}
+              pattern={compiledPattern}
+              brightness={compiledBrightness}
+            />
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              {buildMessage}
+            </p>
           </Panel>
 
           <Panel title="Simulador">
@@ -219,7 +272,20 @@ export function App() {
               label="Comandos"
               value={simulationResult?.commandCount.toString() ?? '0'}
             />
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">{simulationMessage}</p>
+            <RuntimeList
+              icon={<Cpu className="h-4 w-4 text-primary" />}
+              label="Verificacion"
+              value={
+                compiledCommand
+                  ? `${compiledCommand.commandId} · ${formatLedPattern(
+                      compiledPattern
+                    )} · brillo ${compiledBrightness ?? 0}`
+                  : 'Compila el workspace para preparar la simulacion.'
+              }
+            />
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              {simulationMessage}
+            </p>
           </Panel>
 
           <Panel title="Artifacts">
@@ -278,7 +344,10 @@ export function App() {
               value={selectedTarget?.name ?? 'Sin seleccionar'}
             />
             <Metric label="Targets" value={targets.length.toString()} />
-            <Metric label="Capabilities" value={capabilities.length.toString()} />
+            <Metric
+              label="Capabilities"
+              value={capabilities.length.toString()}
+            />
             <Metric
               label="Simulators"
               value={runtime.listSimulatorIntegrations().length.toString()}
@@ -291,10 +360,16 @@ export function App() {
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">Sesion demo</span>
                 <Badge variant="secondary">
-                  {runtimeStateLabels[runtimeSnapshot.sessions[0]?.state ?? 'created']}
+                  {
+                    runtimeStateLabels[
+                      runtimeSnapshot.sessions[0]?.state ?? 'created'
+                    ]
+                  }
                 </Badge>
               </div>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">{runMessage}</p>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                {runMessage}
+              </p>
             </div>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
               <RuntimeList
@@ -303,7 +378,10 @@ export function App() {
                 value={
                   queue.entries.length > 0
                     ? queue.entries
-                        .map((entry) => `${entry.sessionId} · prioridad ${entry.priority}`)
+                        .map(
+                          (entry) =>
+                            `${entry.sessionId} · prioridad ${entry.priority}`
+                        )
                         .join(', ')
                     : 'Sin sesiones en cola'
                 }
@@ -314,7 +392,9 @@ export function App() {
                 value={
                   queue.capabilityLocks.length > 0
                     ? queue.capabilityLocks
-                        .map((lock) => `${lock.capabilityId} por ${lock.sessionId}`)
+                        .map(
+                          (lock) => `${lock.capabilityId} por ${lock.sessionId}`
+                        )
                         .join(', ')
                     : 'Sin capacidades bloqueadas'
                 }
@@ -327,7 +407,10 @@ export function App() {
                   {botLabWorkspaceStateLabels[flowState.workspace]}
                 </Badge>
               </div>
-              <FlowRail steps={botLabWorkspaceSteps} activeState={flowState.workspace} />
+              <FlowRail
+                steps={botLabWorkspaceSteps}
+                activeState={flowState.workspace}
+              />
             </div>
             <div className="mt-3 rounded-md border bg-background p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
@@ -336,7 +419,10 @@ export function App() {
                   {botLabBuildStateLabels[flowState.build]}
                 </Badge>
               </div>
-              <FlowRail steps={botLabBuildSteps} activeState={flowState.build} />
+              <FlowRail
+                steps={botLabBuildSteps}
+                activeState={flowState.build}
+              />
             </div>
             <div className="mt-3 rounded-md border bg-background p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
@@ -345,7 +431,10 @@ export function App() {
                   {botLabSimulationStateLabels[flowState.simulation]}
                 </Badge>
               </div>
-              <FlowRail steps={botLabSimulationSteps} activeState={flowState.simulation} />
+              <FlowRail
+                steps={botLabSimulationSteps}
+                activeState={flowState.simulation}
+              />
             </div>
             <div className="mt-3 rounded-md border bg-background p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
@@ -354,7 +443,10 @@ export function App() {
                   {botLabExecutionStateLabels[flowState.execution]}
                 </Badge>
               </div>
-              <FlowRail steps={botLabExecutionSteps} activeState={flowState.execution} />
+              <FlowRail
+                steps={botLabExecutionSteps}
+                activeState={flowState.execution}
+              />
             </div>
           </Panel>
 
@@ -362,22 +454,25 @@ export function App() {
             <div className="mb-3 rounded-md border bg-background p-3">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">Destino activo</span>
-                <Badge>{targetKindLabels[selectedTarget?.kind ?? 'simulator']}</Badge>
+                <Badge>
+                  {targetKindLabels[selectedTarget?.kind ?? 'simulator']}
+                </Badge>
               </div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {selectedTarget?.name ?? 'Selecciona un target'} · {selectedCapabilities.length} capacidad(es) compatibles
+                {selectedTarget?.name ?? 'Selecciona un target'} ·{' '}
+                {selectedCapabilities.length} capacidad(es) compatibles
               </p>
             </div>
             <div className="space-y-3">
               {targets.map((target) => {
                 const isSelected = target.id === selectedTargetId;
-                const compatibleCapabilities = capabilities.filter((capability) =>
-                  capability.targetIds.includes(target.id),
+                const compatibleCapabilities = capabilities.filter(
+                  (capability) => capability.targetIds.includes(target.id)
                 );
                 const canRunDemo =
                   target.status === 'available' &&
                   compatibleCapabilities.some(
-                    (capability) => capability.id === 'microduck-leds',
+                    (capability) => capability.id === 'microduck-leds'
                   );
 
                 return (
@@ -399,15 +494,18 @@ export function App() {
                           isSelected
                             ? 'default'
                             : target.status === 'available'
-                              ? 'secondary'
-                              : 'outline'
+                            ? 'secondary'
+                            : 'outline'
                         }
                       >
-                        {isSelected ? 'Seleccionado' : targetStatusLabels[target.status]}
+                        {isSelected
+                          ? 'Seleccionado'
+                          : targetStatusLabels[target.status]}
                       </Badge>
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {targetKindLabels[target.kind]} · {target.profile?.connection.defaultMode ?? 'manual'}
+                      {targetKindLabels[target.kind]} ·{' '}
+                      {target.profile?.connection.defaultMode ?? 'manual'}
                     </p>
                     <p className="mt-2 text-sm leading-6 text-muted-foreground">
                       {canRunDemo
@@ -453,19 +551,29 @@ export function App() {
           <Panel title="Historial">
             <div className="space-y-2">
               {flowLog.map((entry) => (
-                <div key={entry.id} className="rounded-md border bg-background p-3">
+                <div
+                  key={entry.id}
+                  className="rounded-md border bg-background p-3"
+                >
                   <div className="mb-1 flex items-center justify-between gap-3">
-                    <span className="text-sm font-medium">{flowLogLabels[entry.category]}</span>
-                    <Badge variant={entry.category === 'error' ? 'outline' : 'secondary'}>
+                    <span className="text-sm font-medium">
+                      {flowLogLabels[entry.category]}
+                    </span>
+                    <Badge
+                      variant={
+                        entry.category === 'error' ? 'outline' : 'secondary'
+                      }
+                    >
                       {entry.id.replace('flow-log-', '#')}
                     </Badge>
                   </div>
-                  <p className="text-sm leading-6 text-muted-foreground">{entry.message}</p>
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    {entry.message}
+                  </p>
                 </div>
               ))}
             </div>
           </Panel>
-
         </aside>
       </section>
 
@@ -477,8 +585,12 @@ export function App() {
             return (
               <article key={concept} className="rounded-lg border bg-card p-4">
                 <Icon className="mb-4 h-5 w-5 text-primary" />
-                <h2 className="text-base font-semibold capitalize">{concept}</h2>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+                <h2 className="text-base font-semibold capitalize">
+                  {concept}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  {description}
+                </p>
               </article>
             );
           })}
@@ -507,6 +619,64 @@ function Metric({ label, value }: { label: string; value: string }) {
     <div className="mb-3 flex items-center justify-between rounded-md bg-muted px-3 py-2 last:mb-0">
       <span className="text-sm text-muted-foreground">{label}</span>
       <span className="font-semibold">{value}</span>
+    </div>
+  );
+}
+
+function CompiledCommandCard({
+  commandId,
+  targetName,
+  pattern,
+  brightness,
+}: {
+  commandId?: string;
+  targetName?: string;
+  pattern?: string;
+  brightness?: number;
+}) {
+  if (!commandId) {
+    return (
+      <div className="rounded-md border bg-background p-3">
+        <div className="mb-2 flex items-center gap-2">
+          <Cpu className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">Comando generado</span>
+        </div>
+        <p className="text-sm leading-6 text-muted-foreground">
+          Todavia no hay comando. Compila el workspace para ver que produce el
+          bloque.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-md border bg-background p-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Cpu className="h-4 w-4 shrink-0 text-primary" />
+          <span className="truncate text-sm font-medium">Comando generado</span>
+        </div>
+        <Badge variant="secondary">{commandId}</Badge>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
+        <CommandFact label="Destino" value={targetName ?? 'Sin target'} />
+        <CommandFact label="Patron" value={formatLedPattern(pattern)} />
+        <CommandFact
+          label="Brillo"
+          value={brightness === undefined ? 'Sin dato' : brightness.toString()}
+        />
+      </div>
+    </div>
+  );
+}
+
+function CommandFact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md bg-muted px-3 py-2">
+      <div className="text-xs font-medium uppercase text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-1 text-sm font-semibold">{value}</div>
     </div>
   );
 }
@@ -564,6 +734,13 @@ const policyDecisionLabels = {
   deny: 'Denegada',
   warn: 'Aviso',
   'require-confirmation': 'Requiere confirmacion',
+};
+
+const ledPatternLabels: Record<string, string> = {
+  blink: 'parpadeo',
+  off: 'apagado',
+  smile: 'sonrisa',
+  solid: 'solido',
 };
 
 const runtimeEventLabels = {
@@ -642,11 +819,15 @@ function ArtifactCard({
           <FileCode className="h-4 w-4 shrink-0 text-primary" />
           <span className="truncate text-sm font-medium">{artifact.title}</span>
         </div>
-        <Badge variant={artifact.status === 'Pendiente' ? 'outline' : 'secondary'}>
+        <Badge
+          variant={artifact.status === 'Pendiente' ? 'outline' : 'secondary'}
+        >
           {artifact.status}
         </Badge>
       </div>
-      <p className="truncate text-sm font-medium text-foreground">{artifact.id}</p>
+      <p className="truncate text-sm font-medium text-foreground">
+        {artifact.id}
+      </p>
       <p className="mt-1 text-sm leading-6 text-muted-foreground">
         {artifact.kind} · {artifact.detail}
       </p>
@@ -678,7 +859,9 @@ function RuntimeLogSection({
           items.map((item) => (
             <div key={item.id} className="rounded-md border bg-background p-3">
               <div className="mb-1 text-sm font-medium">{item.label}</div>
-              <p className="text-sm leading-6 text-muted-foreground">{item.detail}</p>
+              <p className="text-sm leading-6 text-muted-foreground">
+                {item.detail}
+              </p>
             </div>
           ))
         )}
@@ -703,7 +886,9 @@ function FlowRail<TState extends string>({
           <div
             key={step.state}
             className={`flex items-center gap-3 rounded-md border px-3 py-2 text-sm ${
-              isActive ? 'border-primary bg-primary/10 text-foreground' : 'bg-muted text-muted-foreground'
+              isActive
+                ? 'border-primary bg-primary/10 text-foreground'
+                : 'bg-muted text-muted-foreground'
             }`}
           >
             <span
@@ -717,4 +902,12 @@ function FlowRail<TState extends string>({
       })}
     </div>
   );
+}
+
+function formatLedPattern(pattern: string | undefined) {
+  if (!pattern) {
+    return 'Sin patron';
+  }
+
+  return ledPatternLabels[pattern] ?? pattern;
 }

@@ -69,6 +69,10 @@ describe('App', () => {
     expect(getByText('Requiere confirmacion')).toBeTruthy();
     expect(getByText('Confirmacion aplicada')).toBeTruthy();
     expect(getByText('confirm-led-output')).toBeTruthy();
+    expect(getAllByText('Comando generado').length).toBeGreaterThan(0);
+    expect(getAllByText('set-led-pattern').length).toBeGreaterThan(0);
+    expect(getAllByText('sonrisa').length).toBeGreaterThan(0);
+    expect(getAllByText('50').length).toBeGreaterThan(0);
 
     fireEvent.click(getByRole('button', { name: 'Simular demo' }));
 

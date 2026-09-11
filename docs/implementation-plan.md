@@ -6,7 +6,7 @@ This document is the working implementation plan for BotLab. It keeps the roadma
 
 BotLab should let a user build robot behaviors visually, test them safely in a simulator when available, inspect what the runtime is doing, and deploy the behavior to supported robot targets through adapters.
 
-The first supported target is MicroDuck. StackChan is planned as the next robot family. The visual editor should be based on Scratch Blocks or TurboWarp, but those engines must stay behind an internal BotLab boundary.
+The first supported target is MicroDuck. StackChan is planned as the next robot family. The visual editor should use the official Scratch Blocks package first, while keeping TurboWarp or raw Blockly as future swappable options behind an internal BotLab boundary.
 
 ## Architecture Principles
 
@@ -44,8 +44,8 @@ Implemented:
 - Root Nx affected scripts for build, test, and lint workflows.
 - Validation helpers for policies, capability schemas, compiled behavior artifacts, and behavior graph/AST references.
 - Initial `@botlab/blocks` editor boundary with workspace artifacts, import/export helpers, a mock provider, workspace states, callbacks, and package tests.
-- `@botlab/blocks` now has a TurboWarp provider boundary with Scratch XML workspace support and an injected bridge contract for mounting scratch-gui or scratch-blocks.
-- `@botlab/blocks` now depends on the TurboWarp `scratch-blocks` fork locally and includes a local bridge that mounts a browser-loaded `ScratchBlocks` API when available.
+- `@botlab/blocks` now has a Scratch Blocks provider boundary with Scratch XML workspace support and an injected bridge contract.
+- `@botlab/blocks` now depends on the official `scratch-blocks` package locally, mounts it directly without iframes, and registers an initial BotLab custom MicroDuck block.
 - App-level workspace state receives mock editor artifact updates and displays editor status metadata.
 - Runtime sessions can load compiled behavior artifacts, dispatch commands through injected target dispatchers, emit lifecycle events, and produce trace artifacts.
 - Runtime sessions can load validated behavior definitions and record structured diagnostics with validation, lifecycle, adapter, transport, scheduler, simulator, and policy categories.
@@ -63,7 +63,7 @@ Implemented:
 
 Not implemented yet:
 
-- Browser-ready TurboWarp `ScratchBlocks` bundle generation/loading inside `@botlab/blocks`.
+- Real block-to-behavior serialization and compilation from Scratch XML.
 - Behavior serialization and compilation.
 - Real MicroDuck transport.
 - Real simulator bridge.
@@ -122,7 +122,7 @@ Acceptance criteria:
 
 ## Milestone 3: Visual Editor Boundary
 
-Goal: turn `@botlab/blocks` into a real boundary for Scratch Blocks or TurboWarp.
+Goal: turn `@botlab/blocks` into a real boundary for Scratch Blocks first, with room to swap in TurboWarp or Blockly later.
 
 Packages:
 
@@ -131,13 +131,14 @@ Packages:
 
 Tasks:
 
-- Choose TurboWarp-derived integration as the first real editor route.
+- Choose the official `scratch-blocks` package as the first real editor route.
 - Add `BlocksEditorProvider` interface.
 - Add `BlocksWorkspaceArtifact` type.
 - Add import/export functions for workspace XML or equivalent block format.
 - Add a mock provider for tests and development.
-- Add TurboWarp provider boundary with an injected bridge contract.
-- Add TurboWarp `scratch-blocks` as a local dependency of `@botlab/blocks`.
+- Add Scratch Blocks provider boundary with an injected bridge contract.
+- Add official `scratch-blocks` as a local dependency of `@botlab/blocks`.
+- Register initial BotLab custom blocks through the Scratch Blocks/Blockly API.
 - Add UI states: empty workspace, loaded workspace, dirty workspace, invalid workspace, read-only workspace.
 - Add callbacks for artifact updates and validation errors.
 - Keep engine-specific globals out of the app.
@@ -151,7 +152,7 @@ Acceptance criteria:
 
 Open decisions:
 
-- Scratch Blocks direct dependency versus TurboWarp dependency.
+- Whether TurboWarp features should be added later through the same editor boundary.
 - Whether BotLab stores blocks as XML, JSON, or a normalized internal artifact.
 - How custom robot blocks are registered per adapter.
 
@@ -402,7 +403,7 @@ Recommended next tasks:
 
 ## Technical Risks
 
-- Scratch Blocks and TurboWarp integration may require browser globals, asset loading, or build configuration that conflicts with Vite.
+- Scratch Blocks, TurboWarp, or Blockly integration may require asset loading or build configuration that conflicts with Vite.
 - Real robot transports may require browser APIs, native bridges, or permissions that change the app architecture.
 - Simulator licensing or packaging may prevent direct dependency integration.
 - Runtime policy and arbitration need careful design before real robot execution.

@@ -2,7 +2,7 @@ import { createMicroDuckAdapter } from '@botlab/adapters-microduck';
 import { createStackChanAdapter } from '@botlab/adapters-stackchan';
 import {
   createBlocksEditorProvider,
-  sampleTurboWarpWorkspaceArtifact,
+  sampleScratchBlocksWorkspaceArtifact,
   type BlocksWorkspaceArtifact,
   type BlocksWorkspaceValidationResult,
 } from '@botlab/blocks';
@@ -948,7 +948,7 @@ function createBotLabFlowContext(): BotLabFlowContext {
     runtime,
     demoSessionId: session.id,
     selectedTargetId,
-    workspaceArtifact: sampleTurboWarpWorkspaceArtifact,
+    workspaceArtifact: sampleScratchBlocksWorkspaceArtifact,
     runtimeSnapshot: runtime.inspectRuntime(),
     workspaceMessage: 'Workspace cargado desde la muestra.',
     buildMessage: createTargetMessage(runtime, selectedTargetId),

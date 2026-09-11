@@ -17,7 +17,7 @@ describe('App', () => {
     const { getAllByText, getByText } = render(<App />);
 
     expect(getByText('Artifacts')).toBeTruthy();
-    expect(getAllByText('sample-turbowarp-workspace').length).toBeGreaterThan(0);
+    expect(getAllByText('sample-scratch-blocks-workspace').length).toBeGreaterThan(0);
     expect(getByText('compiled-plan-pending')).toBeTruthy();
     expect(getByText('simulation-output-pending')).toBeTruthy();
   });

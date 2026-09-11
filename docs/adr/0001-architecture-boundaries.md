@@ -8,7 +8,7 @@ Accepted
 
 BotLab needs to support visual programming, runtime execution, real robot adapters, and simulator integrations without coupling the first web screen to every future implementation detail.
 
-Scratch Blocks or TurboWarp may become the visual editor engine, MicroDuck is the first robot target, StackChan is planned, and simulators should use official packages or processes where possible. Each of those choices may change independently.
+The official Scratch Blocks package is the first visual editor engine, MicroDuck is the first robot target, StackChan is planned, and simulators should use official packages or processes where possible. TurboWarp or raw Blockly can still be evaluated later behind the same editor boundary.
 
 ## Decision
 

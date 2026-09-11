@@ -7,7 +7,7 @@ export type BlocksWorkspaceStatus =
   | 'invalid'
   | 'read-only';
 
-export type BlocksEditorEngine = 'mock' | 'scratch-blocks' | 'turbowarp';
+export type BlocksEditorEngine = 'mock' | 'scratch-blocks';
 
 export interface BlocksEditorMountHandle {
   exportWorkspace(): BlocksWorkspaceArtifact;
@@ -29,6 +29,9 @@ export type BlocksEditorMountResult =
       mounted: false;
       reason: string;
     };
+export type BlocksEditorMountResponse =
+  | BlocksEditorMountResult
+  | Promise<BlocksEditorMountResult>;
 
 export interface BlocksWorkspaceArtifact extends BehaviorArtifact {
   engine: BlocksEditorEngine;
@@ -54,7 +57,7 @@ export interface BlocksEditorProvider {
   loadWorkspace(artifact: BlocksWorkspaceArtifact): BlocksWorkspaceSession;
   exportWorkspace(session: BlocksWorkspaceSession): BlocksWorkspaceArtifact;
   validateWorkspace(artifact: BlocksWorkspaceArtifact): BlocksWorkspaceValidationResult;
-  mountWorkspace(request: BlocksEditorMountRequest): BlocksEditorMountResult;
+  mountWorkspace(request: BlocksEditorMountRequest): BlocksEditorMountResponse;
 }
 
 export function createBlocksWorkspaceArtifact(
@@ -177,24 +180,24 @@ export function createMockBlocksEditorProvider(): BlocksEditorProvider {
   };
 }
 
-export interface TurboWarpEditorBridge {
-  mount(request: BlocksEditorMountRequest): BlocksEditorMountResult;
+export interface ScratchBlocksEditorBridge {
+  mount(request: BlocksEditorMountRequest): BlocksEditorMountResponse;
 }
 
-export function createTurboWarpBlocksEditorProvider(
-  bridge?: TurboWarpEditorBridge,
+export function createScratchBlocksEditorProvider(
+  bridge?: ScratchBlocksEditorBridge,
 ): BlocksEditorProvider {
   return {
-    id: 'turbowarp',
-    name: 'TurboWarp Blocks',
+    id: 'scratch-blocks',
+    name: 'Scratch Blocks',
     supportsNativeMount: Boolean(bridge),
     createEmptyWorkspace(behaviorId) {
       return createBlocksWorkspaceArtifact({
-        id: `${behaviorId}-turbowarp-workspace`,
+        id: `${behaviorId}-scratch-blocks-workspace`,
         behaviorId,
-        label: 'TurboWarp workspace',
+        label: 'Scratch Blocks workspace',
         format: 'scratch-xml',
-        engine: 'turbowarp',
+        engine: 'scratch-blocks',
         status: 'empty',
         content: '<xml xmlns="https://developers.google.com/blockly/xml"></xml>',
       });
@@ -205,7 +208,7 @@ export function createTurboWarpBlocksEditorProvider(
       return {
         artifact: {
           ...artifact,
-          engine: 'turbowarp',
+          engine: 'scratch-blocks',
           format: 'scratch-xml',
           status: validation.valid ? artifact.status : 'invalid',
           validationErrors: validation.errors,
@@ -216,7 +219,7 @@ export function createTurboWarpBlocksEditorProvider(
     exportWorkspace(session) {
       return {
         ...session.artifact,
-        engine: 'turbowarp',
+        engine: 'scratch-blocks',
         format: 'scratch-xml',
         status: session.status,
       };
@@ -224,7 +227,7 @@ export function createTurboWarpBlocksEditorProvider(
     validateWorkspace(artifact) {
       return validateWorkspaceContent({
         ...artifact,
-        engine: 'turbowarp',
+        engine: 'scratch-blocks',
         format: 'scratch-xml',
       });
     },
@@ -233,7 +236,7 @@ export function createTurboWarpBlocksEditorProvider(
         return {
           mounted: false,
           reason:
-            'TurboWarp bridge is not configured. Provide a bridge that mounts scratch-gui or scratch-blocks.',
+            'Scratch Blocks bridge is not configured. Provide a bridge that mounts the local scratch-blocks package.',
         };
       }
 
@@ -241,7 +244,7 @@ export function createTurboWarpBlocksEditorProvider(
         ...request,
         artifact: {
           ...request.artifact,
-          engine: 'turbowarp',
+          engine: 'scratch-blocks',
           format: 'scratch-xml',
         },
       });
@@ -252,8 +255,8 @@ export function createTurboWarpBlocksEditorProvider(
 export function createBlocksEditorProvider(
   engine: BlocksEditorEngine,
 ): BlocksEditorProvider {
-  if (engine === 'turbowarp' || engine === 'scratch-blocks') {
-    return createTurboWarpBlocksEditorProvider();
+  if (engine === 'scratch-blocks') {
+    return createScratchBlocksEditorProvider();
   }
 
   return createMockBlocksEditorProvider();
@@ -266,13 +269,13 @@ export const sampleBlocksWorkspaceArtifact = importBlocksWorkspace({
   content: '{"blocks":[{"type":"event_on_start"},{"type":"skill_dispatch"}]}',
 });
 
-export const sampleTurboWarpWorkspaceArtifact = importBlocksWorkspace({
-  id: 'sample-turbowarp-workspace',
+export const sampleScratchBlocksWorkspaceArtifact = importBlocksWorkspace({
+  id: 'sample-scratch-blocks-workspace',
   behaviorId: 'sample-behavior',
-  label: 'Sample TurboWarp workspace',
+  label: 'Sample Scratch Blocks workspace',
   content:
     '<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_whenflagclicked" id="botlab-start" x="32" y="32"><next><block type="botlab_microduck_set_leds" id="botlab-leds" /></next></block></xml>',
-  engine: 'turbowarp',
+  engine: 'scratch-blocks',
   format: 'scratch-xml',
 });
 

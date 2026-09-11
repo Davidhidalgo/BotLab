@@ -2,14 +2,14 @@ import { Badge } from '@botlab/ui';
 import { useRef, useState } from 'react';
 import {
   createBlocksEditorProvider,
-  createTurboWarpBlocksEditorProvider,
+  createScratchBlocksEditorProvider,
   sampleBlocksWorkspaceArtifact,
   type BlocksEditorMountHandle,
   type BlocksEditorProvider,
   type BlocksWorkspaceArtifact,
   type BlocksWorkspaceStatus,
 } from './blocks-contract';
-import { createLocalTurboWarpEditorBridge } from './turbowarp-local-bridge';
+import { createLocalScratchBlocksEditorBridge } from './scratch-blocks-local-bridge';
 
 export interface BlocksEditorShellProps {
   workspaceName: string;
@@ -32,8 +32,8 @@ export function BlocksEditorShell({
   readOnly = workspaceStatus === 'read-only',
   validationErrors = artifact.validationErrors,
   provider =
-    artifact.engine === 'turbowarp'
-      ? createTurboWarpBlocksEditorProvider(createLocalTurboWarpEditorBridge())
+    artifact.engine === 'scratch-blocks'
+      ? createScratchBlocksEditorProvider(createLocalScratchBlocksEditorBridge())
       : createBlocksEditorProvider(artifact.engine),
   onArtifactChange,
 }: BlocksEditorShellProps) {
@@ -43,8 +43,8 @@ export function BlocksEditorShell({
   const mountHandleRef = useRef<BlocksEditorMountHandle | undefined>(undefined);
   const [mountMessage, setMountMessage] = useState(
     provider.supportsNativeMount
-      ? 'TurboWarp listo para montar.'
-      : 'Bridge TurboWarp pendiente.',
+      ? 'Scratch Blocks listo para montar.'
+      : 'Bridge Scratch Blocks pendiente.',
   );
 
   function markDirty() {
@@ -58,13 +58,13 @@ export function BlocksEditorShell({
     });
   }
 
-  function openNativeEditor() {
+  async function openNativeEditor() {
     if (!mountElementRef.current) {
       return;
     }
 
     mountHandleRef.current?.dispose();
-    const result = provider.mountWorkspace({
+    const result = await provider.mountWorkspace({
       element: mountElementRef.current,
       artifact,
       onArtifactChange,

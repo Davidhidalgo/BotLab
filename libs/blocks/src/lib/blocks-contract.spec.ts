@@ -1,11 +1,11 @@
 import {
   createBlocksEditorProvider,
   createMockBlocksEditorProvider,
-  createTurboWarpBlocksEditorProvider,
+  createScratchBlocksEditorProvider,
   exportBlocksWorkspace,
   importBlocksWorkspace,
   sampleBlocksWorkspaceArtifact,
-  sampleTurboWarpWorkspaceArtifact,
+  sampleScratchBlocksWorkspaceArtifact,
 } from './blocks-contract';
 
 describe('blocksContract', () => {
@@ -62,14 +62,14 @@ describe('blocksContract', () => {
     expect(exportBlocksWorkspace(artifact)).toContain('<xml>');
   });
 
-  it('loads TurboWarp workspaces through the TurboWarp provider', () => {
-    const provider = createTurboWarpBlocksEditorProvider();
-    const session = provider.loadWorkspace(sampleTurboWarpWorkspaceArtifact);
+  it('loads Scratch Blocks workspaces through the Scratch Blocks provider', () => {
+    const provider = createScratchBlocksEditorProvider();
+    const session = provider.loadWorkspace(sampleScratchBlocksWorkspaceArtifact);
 
-    expect(provider.name).toBe('TurboWarp Blocks');
+    expect(provider.name).toBe('Scratch Blocks');
     expect(provider.supportsNativeMount).toBe(false);
     expect(session.artifact).toMatchObject({
-      engine: 'turbowarp',
+      engine: 'scratch-blocks',
       format: 'scratch-xml',
       status: 'loaded',
     });
@@ -79,22 +79,22 @@ describe('blocksContract', () => {
     });
   });
 
-  it('reports that TurboWarp mounting needs a bridge when none is configured', () => {
-    const provider = createBlocksEditorProvider('turbowarp');
+  it('reports that Scratch Blocks mounting needs a bridge when none is configured', () => {
+    const provider = createBlocksEditorProvider('scratch-blocks');
     const result = provider.mountWorkspace({
       element: document.createElement('div'),
-      artifact: sampleTurboWarpWorkspaceArtifact,
+      artifact: sampleScratchBlocksWorkspaceArtifact,
     });
 
     expect(result).toEqual({
       mounted: false,
       reason:
-        'TurboWarp bridge is not configured. Provide a bridge that mounts scratch-gui or scratch-blocks.',
+        'Scratch Blocks bridge is not configured. Provide a bridge that mounts the local scratch-blocks package.',
     });
   });
 
-  it('delegates TurboWarp mounting to an injected bridge', () => {
-    const provider = createTurboWarpBlocksEditorProvider({
+  it('delegates Scratch Blocks mounting to an injected bridge', () => {
+    const provider = createScratchBlocksEditorProvider({
       mount(request) {
         return {
           mounted: true,
@@ -115,7 +115,7 @@ describe('blocksContract', () => {
 
     const result = provider.mountWorkspace({
       element: document.createElement('div'),
-      artifact: sampleTurboWarpWorkspaceArtifact,
+      artifact: sampleScratchBlocksWorkspaceArtifact,
     });
 
     expect(result.mounted).toBe(true);

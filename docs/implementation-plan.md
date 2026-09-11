@@ -57,6 +57,7 @@ Implemented:
 - The UI now exposes a target selector that defaults to the MicroDuck simulator demo target and blocks planned or incompatible targets from compilation.
 - The UI now exposes a runtime log panel with recent events, session trace entries, and diagnostics.
 - The UI now exposes an artifact inventory for the current workspace, compiled plan, simulation output, and runtime trace.
+- The UI now exposes policy status for the compiled demo plan, including decision, confirmation state, and rule ids.
 
 Not implemented yet:
 
@@ -66,7 +67,7 @@ Not implemented yet:
 - Real simulator bridge.
 - Timed/event-driven scheduler loop.
 - Full arbitration engine beyond initial priority queue and exclusive capability locks.
-- Richer runtime introspection UI beyond the initial event, trace, diagnostic, and artifact lists.
+- Richer runtime introspection UI beyond the initial event, trace, diagnostic, artifact, and policy summaries.
 - Full product statechart for deployment, recovery, real compiler integration, and real simulator bridge integration.
 - Persistence.
 - Deployment workflow.

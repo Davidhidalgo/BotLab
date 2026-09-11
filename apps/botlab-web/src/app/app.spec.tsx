@@ -57,6 +57,9 @@ describe('App', () => {
     await waitFor(() => {
       expect(getAllByText(/artifact-microduck-leds-plan/i).length).toBeGreaterThan(0);
     });
+    expect(getByText('Requiere confirmacion')).toBeTruthy();
+    expect(getByText('Confirmacion aplicada')).toBeTruthy();
+    expect(getByText('confirm-led-output')).toBeTruthy();
 
     fireEvent.click(getByRole('button', { name: 'Simular demo' }));
 

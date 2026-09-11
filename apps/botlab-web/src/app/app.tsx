@@ -72,6 +72,11 @@ export function App() {
   const recentEvents = runtimeSnapshot.recentEvents.slice(-5).reverse();
   const recentTrace = activeSession?.trace.slice(-5).reverse() ?? [];
   const diagnostics = runtimeSnapshot.diagnostics.slice(-5).reverse();
+  const policyEvaluation = activeSession?.policyEvaluation;
+  const policyConfirmed = runtimeSnapshot.recentEvents.some(
+    (event) =>
+      event.type === 'policy-confirmed' && event.sessionId === activeSession?.id,
+  );
   const artifactCards = [
     {
       id: workspaceArtifact.id,
@@ -221,6 +226,48 @@ export function App() {
             <div className="grid gap-3">
               {artifactCards.map((artifact) => (
                 <ArtifactCard key={artifact.title} artifact={artifact} />
+              ))}
+            </div>
+          </Panel>
+
+          <Panel title="Policy">
+            <Metric
+              label="Decision"
+              value={
+                policyEvaluation
+                  ? policyDecisionLabels[policyEvaluation.decision]
+                  : 'Sin evaluar'
+              }
+            />
+            <Metric
+              label="Estado"
+              value={
+                policyEvaluation
+                  ? policyConfirmed
+                    ? 'Confirmacion aplicada'
+                    : 'Pendiente de confirmacion'
+                  : 'Esperando compilacion'
+              }
+            />
+            <Metric
+              label="Reglas"
+              value={
+                policyEvaluation?.ruleIds.length
+                  ? policyEvaluation.ruleIds.join(', ')
+                  : 'Sin reglas'
+              }
+            />
+            <div className="mt-3 space-y-2">
+              {(policyEvaluation?.messages.length
+                ? policyEvaluation.messages
+                : ['Compila la demo para evaluar las politicas.']
+              ).map((message) => (
+                <p
+                  key={message}
+                  className="rounded-md border bg-background p-3 text-sm leading-6 text-muted-foreground"
+                >
+                  {message}
+                </p>
               ))}
             </div>
           </Panel>
@@ -510,6 +557,13 @@ const artifactKindLabels = {
   log: 'Log',
   trace: 'Trace',
   'simulator-output': 'Simulator output',
+};
+
+const policyDecisionLabels = {
+  allow: 'Permitida',
+  deny: 'Denegada',
+  warn: 'Aviso',
+  'require-confirmation': 'Requiere confirmacion',
 };
 
 const runtimeEventLabels = {

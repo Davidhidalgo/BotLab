@@ -12,6 +12,14 @@
       "options": {
         "command": "tsc -p libs/simulators/core/tsconfig.lib.json --outDir dist/libs/simulators/core"
       }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/coverage/libs/simulators/core"],
+      "options": {
+        "cwd": "libs/simulators/core",
+        "command": "vitest"
+      }
     }
   }
 }

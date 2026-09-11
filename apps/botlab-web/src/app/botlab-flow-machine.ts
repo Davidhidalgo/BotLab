@@ -22,7 +22,10 @@ import {
   type RuntimeIntrospectionSnapshot,
   type RuntimeRunResult,
 } from '@botlab/runtime';
-import { microDuckSimulatorIntegrations } from '@botlab/simulators-microduck';
+import {
+  createMicroDuckSimulatorBridge,
+  microDuckSimulatorIntegrations,
+} from '@botlab/simulators-microduck';
 import { assign, fromPromise, setup } from 'xstate';
 
 export type BotLabWorkspaceState =
@@ -209,22 +212,22 @@ export const botLabFlowMachine = setup({
           throw new Error('Compila un plan antes de simular.');
         }
 
-        await new Promise((resolve) => {
-          globalThis.setTimeout(resolve, 200);
-        });
+        if (!input.target) {
+          throw new Error('Selecciona un target disponible antes de simular.');
+        }
+
+        const simulator = createMicroDuckSimulatorBridge();
+        await simulator.boot(input.target);
+        const simulation = await simulator.simulate(input.artifact);
 
         return {
           simulationResult: {
-            simulatorId:
-              input.target?.profile?.simulator?.integrationId ??
-              'microduck-official-sim',
-            artifactId: input.artifact.id,
-            status: 'passed' as const,
-            commandCount: input.artifact.commands.length,
+            simulatorId: simulation.simulatorId,
+            artifactId: simulation.artifactId,
+            status: simulation.status,
+            commandCount: simulation.commandCount,
           },
-          simulationMessage: `Simulacion completa: ${
-            input.artifact.commands.length
-          } comando(s) verificados para ${input.target?.name ?? 'MicroDuck'}.`,
+          simulationMessage: `Simulacion completa: ${simulation.commandCount} comando(s) verificados para ${input.target.name}.`,
         };
       }
     ),

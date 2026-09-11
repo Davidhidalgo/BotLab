@@ -12,6 +12,14 @@
       "options": {
         "command": "tsc -p libs/simulators/microduck/tsconfig.lib.json --outDir dist/libs/simulators/microduck"
       }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/coverage/libs/simulators/microduck"],
+      "options": {
+        "cwd": "libs/simulators/microduck",
+        "command": "vitest"
+      }
     }
   }
 }

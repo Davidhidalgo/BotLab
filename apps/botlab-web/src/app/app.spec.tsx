@@ -17,7 +17,7 @@ describe('App', () => {
     const { getAllByText, getByText } = render(<App />);
 
     expect(getByText('Artifacts')).toBeTruthy();
-    expect(getAllByText('sample-blocks-workspace').length).toBeGreaterThan(0);
+    expect(getAllByText('sample-turbowarp-workspace').length).toBeGreaterThan(0);
     expect(getByText('compiled-plan-pending')).toBeTruthy();
     expect(getByText('simulation-output-pending')).toBeTruthy();
   });
@@ -27,7 +27,7 @@ describe('App', () => {
 
     expect(getAllByText('Cargado').length).toBeGreaterThan(0);
 
-    fireEvent.click(getByRole('button', { name: 'Editar' }));
+    fireEvent.click(getByRole('button', { name: 'Marcar editado' }));
 
     expect(getAllByText('Editado').length).toBeGreaterThan(0);
   });

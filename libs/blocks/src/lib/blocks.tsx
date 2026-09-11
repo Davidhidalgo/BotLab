@@ -1,6 +1,10 @@
 import { Badge } from '@botlab/ui';
+import { useRef, useState } from 'react';
 import {
+  createBlocksEditorProvider,
   sampleBlocksWorkspaceArtifact,
+  type BlocksEditorMountHandle,
+  type BlocksEditorProvider,
   type BlocksWorkspaceArtifact,
   type BlocksWorkspaceStatus,
 } from './blocks-contract';
@@ -13,6 +17,7 @@ export interface BlocksEditorShellProps {
   workspaceStatus?: BlocksWorkspaceStatus;
   readOnly?: boolean;
   validationErrors?: string[];
+  provider?: BlocksEditorProvider;
   onArtifactChange?: (artifact: BlocksWorkspaceArtifact) => void;
 }
 
@@ -24,10 +29,18 @@ export function BlocksEditorShell({
   workspaceStatus = artifact.status,
   readOnly = workspaceStatus === 'read-only',
   validationErrors = artifact.validationErrors,
+  provider = createBlocksEditorProvider(artifact.engine),
   onArtifactChange,
 }: BlocksEditorShellProps) {
   const badgeVariant = workspaceStatus === 'invalid' ? 'outline' : 'secondary';
   const statusLabel = status ?? workspaceStatusLabels[workspaceStatus];
+  const mountElementRef = useRef<HTMLDivElement>(null);
+  const mountHandleRef = useRef<BlocksEditorMountHandle | undefined>(undefined);
+  const [mountMessage, setMountMessage] = useState(
+    provider.supportsNativeMount
+      ? 'TurboWarp listo para montar.'
+      : 'Bridge TurboWarp pendiente.',
+  );
 
   function markDirty() {
     if (readOnly) {
@@ -40,6 +53,27 @@ export function BlocksEditorShell({
     });
   }
 
+  function openNativeEditor() {
+    if (!mountElementRef.current) {
+      return;
+    }
+
+    mountHandleRef.current?.dispose();
+    const result = provider.mountWorkspace({
+      element: mountElementRef.current,
+      artifact,
+      onArtifactChange,
+    });
+
+    if (!result.mounted) {
+      setMountMessage(result.reason);
+      return;
+    }
+
+    mountHandleRef.current = result.handle;
+    setMountMessage(`${provider.name} montado.`);
+  }
+
   return (
     <section className="min-h-[420px] rounded-lg border bg-card">
       <header className="flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between">
@@ -48,6 +82,7 @@ export function BlocksEditorShell({
           <h2 className="text-lg font-semibold">{workspaceName}</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Badge>{provider.name}</Badge>
           <Badge variant={badgeVariant}>{statusLabel}</Badge>
           <Badge variant="outline">{artifact.format}</Badge>
         </div>
@@ -66,11 +101,17 @@ export function BlocksEditorShell({
         </aside>
 
         <div className="flex min-h-[280px] flex-col rounded-md border border-dashed bg-background p-6">
-          <div className="flex flex-1 items-center justify-center text-center">
+          <div
+            ref={mountElementRef}
+            className="flex flex-1 items-center justify-center rounded-md bg-muted/40 text-center"
+          >
             <div>
               <p className="text-base font-medium">Área de trabajo</p>
               <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
                 {artifact.label}
+              </p>
+              <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+                {mountMessage}
               </p>
             </div>
           </div>
@@ -81,14 +122,24 @@ export function BlocksEditorShell({
             </div>
           ) : null}
 
-          <button
-            type="button"
-            className="mt-4 self-start rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
-            disabled={readOnly}
-            onClick={markDirty}
-          >
-            Editar
-          </button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+              disabled={readOnly}
+              onClick={openNativeEditor}
+            >
+              Abrir {provider.name}
+            </button>
+            <button
+              type="button"
+              className="rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+              disabled={readOnly}
+              onClick={markDirty}
+            >
+              Marcar editado
+            </button>
+          </div>
         </div>
       </div>
     </section>

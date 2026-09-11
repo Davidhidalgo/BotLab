@@ -9,6 +9,27 @@ export type BlocksWorkspaceStatus =
 
 export type BlocksEditorEngine = 'mock' | 'scratch-blocks' | 'turbowarp';
 
+export interface BlocksEditorMountHandle {
+  exportWorkspace(): BlocksWorkspaceArtifact;
+  dispose(): void;
+}
+
+export interface BlocksEditorMountRequest {
+  element: HTMLElement;
+  artifact: BlocksWorkspaceArtifact;
+  onArtifactChange?: (artifact: BlocksWorkspaceArtifact) => void;
+}
+
+export type BlocksEditorMountResult =
+  | {
+      mounted: true;
+      handle: BlocksEditorMountHandle;
+    }
+  | {
+      mounted: false;
+      reason: string;
+    };
+
 export interface BlocksWorkspaceArtifact extends BehaviorArtifact {
   engine: BlocksEditorEngine;
   status: BlocksWorkspaceStatus;
@@ -28,10 +49,12 @@ export interface BlocksWorkspaceSession {
 export interface BlocksEditorProvider {
   id: BlocksEditorEngine;
   name: string;
+  supportsNativeMount: boolean;
   createEmptyWorkspace(behaviorId: string): BlocksWorkspaceArtifact;
   loadWorkspace(artifact: BlocksWorkspaceArtifact): BlocksWorkspaceSession;
   exportWorkspace(session: BlocksWorkspaceSession): BlocksWorkspaceArtifact;
   validateWorkspace(artifact: BlocksWorkspaceArtifact): BlocksWorkspaceValidationResult;
+  mountWorkspace(request: BlocksEditorMountRequest): BlocksEditorMountResult;
 }
 
 export function createBlocksWorkspaceArtifact(
@@ -104,6 +127,7 @@ export function createMockBlocksEditorProvider(): BlocksEditorProvider {
   return {
     id: 'mock',
     name: 'Mock Blocks Provider',
+    supportsNativeMount: false,
     createEmptyWorkspace(behaviorId) {
       return createBlocksWorkspaceArtifact({
         id: `${behaviorId}-empty-workspace`,
@@ -134,7 +158,105 @@ export function createMockBlocksEditorProvider(): BlocksEditorProvider {
       };
     },
     validateWorkspace: validateWorkspaceContent,
+    mountWorkspace(request) {
+      return {
+        mounted: true,
+        handle: {
+          exportWorkspace() {
+            return {
+              ...request.artifact,
+              status: 'dirty',
+            };
+          },
+          dispose() {
+            return undefined;
+          },
+        },
+      };
+    },
   };
+}
+
+export interface TurboWarpEditorBridge {
+  mount(request: BlocksEditorMountRequest): BlocksEditorMountResult;
+}
+
+export function createTurboWarpBlocksEditorProvider(
+  bridge?: TurboWarpEditorBridge,
+): BlocksEditorProvider {
+  return {
+    id: 'turbowarp',
+    name: 'TurboWarp Blocks',
+    supportsNativeMount: Boolean(bridge),
+    createEmptyWorkspace(behaviorId) {
+      return createBlocksWorkspaceArtifact({
+        id: `${behaviorId}-turbowarp-workspace`,
+        behaviorId,
+        label: 'TurboWarp workspace',
+        format: 'scratch-xml',
+        engine: 'turbowarp',
+        status: 'empty',
+        content: '<xml xmlns="https://developers.google.com/blockly/xml"></xml>',
+      });
+    },
+    loadWorkspace(artifact) {
+      const validation = validateWorkspaceContent(artifact);
+
+      return {
+        artifact: {
+          ...artifact,
+          engine: 'turbowarp',
+          format: 'scratch-xml',
+          status: validation.valid ? artifact.status : 'invalid',
+          validationErrors: validation.errors,
+        },
+        status: validation.valid ? artifact.status : 'invalid',
+      };
+    },
+    exportWorkspace(session) {
+      return {
+        ...session.artifact,
+        engine: 'turbowarp',
+        format: 'scratch-xml',
+        status: session.status,
+      };
+    },
+    validateWorkspace(artifact) {
+      return validateWorkspaceContent({
+        ...artifact,
+        engine: 'turbowarp',
+        format: 'scratch-xml',
+      });
+    },
+    mountWorkspace(request) {
+      if (!bridge) {
+        return {
+          mounted: false,
+          reason:
+            'TurboWarp bridge is not configured. Provide a bridge that mounts scratch-gui or scratch-blocks.',
+        };
+      }
+
+      return bridge.mount({
+        ...request,
+        artifact: {
+          ...request.artifact,
+          engine: 'turbowarp',
+          format: 'scratch-xml',
+        },
+      });
+    },
+  };
+}
+
+export function createBlocksEditorProvider(
+  engine: BlocksEditorEngine,
+): BlocksEditorProvider {
+  if (engine === 'turbowarp' || engine === 'scratch-blocks') {
+    return createTurboWarpBlocksEditorProvider();
+  }
+
+  return createMockBlocksEditorProvider();
 }
 
 export const sampleBlocksWorkspaceArtifact = importBlocksWorkspace({
@@ -142,6 +264,16 @@ export const sampleBlocksWorkspaceArtifact = importBlocksWorkspace({
   behaviorId: 'sample-behavior',
   label: 'Sample workspace',
   content: '{"blocks":[{"type":"event_on_start"},{"type":"skill_dispatch"}]}',
+});
+
+export const sampleTurboWarpWorkspaceArtifact = importBlocksWorkspace({
+  id: 'sample-turbowarp-workspace',
+  behaviorId: 'sample-behavior',
+  label: 'Sample TurboWarp workspace',
+  content:
+    '<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_whenflagclicked" id="botlab-start" x="32" y="32"><next><block type="botlab_microduck_set_leds" id="botlab-leds" /></next></block></xml>',
+  engine: 'turbowarp',
+  format: 'scratch-xml',
 });
 
 function detectWorkspaceFormat(

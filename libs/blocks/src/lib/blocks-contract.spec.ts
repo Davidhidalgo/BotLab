@@ -1,8 +1,11 @@
 import {
+  createBlocksEditorProvider,
   createMockBlocksEditorProvider,
+  createTurboWarpBlocksEditorProvider,
   exportBlocksWorkspace,
   importBlocksWorkspace,
   sampleBlocksWorkspaceArtifact,
+  sampleTurboWarpWorkspaceArtifact,
 } from './blocks-contract';
 
 describe('blocksContract', () => {
@@ -57,5 +60,67 @@ describe('blocksContract', () => {
     expect(artifact.format).toBe('scratch-xml');
     expect(artifact.status).toBe('loaded');
     expect(exportBlocksWorkspace(artifact)).toContain('<xml>');
+  });
+
+  it('loads TurboWarp workspaces through the TurboWarp provider', () => {
+    const provider = createTurboWarpBlocksEditorProvider();
+    const session = provider.loadWorkspace(sampleTurboWarpWorkspaceArtifact);
+
+    expect(provider.name).toBe('TurboWarp Blocks');
+    expect(provider.supportsNativeMount).toBe(false);
+    expect(session.artifact).toMatchObject({
+      engine: 'turbowarp',
+      format: 'scratch-xml',
+      status: 'loaded',
+    });
+    expect(provider.validateWorkspace(session.artifact)).toEqual({
+      valid: true,
+      errors: [],
+    });
+  });
+
+  it('reports that TurboWarp mounting needs a bridge when none is configured', () => {
+    const provider = createBlocksEditorProvider('turbowarp');
+    const result = provider.mountWorkspace({
+      element: document.createElement('div'),
+      artifact: sampleTurboWarpWorkspaceArtifact,
+    });
+
+    expect(result).toEqual({
+      mounted: false,
+      reason:
+        'TurboWarp bridge is not configured. Provide a bridge that mounts scratch-gui or scratch-blocks.',
+    });
+  });
+
+  it('delegates TurboWarp mounting to an injected bridge', () => {
+    const provider = createTurboWarpBlocksEditorProvider({
+      mount(request) {
+        return {
+          mounted: true,
+          handle: {
+            exportWorkspace() {
+              return {
+                ...request.artifact,
+                status: 'dirty',
+              };
+            },
+            dispose() {
+              return undefined;
+            },
+          },
+        };
+      },
+    });
+
+    const result = provider.mountWorkspace({
+      element: document.createElement('div'),
+      artifact: sampleTurboWarpWorkspaceArtifact,
+    });
+
+    expect(result.mounted).toBe(true);
+    if (result.mounted) {
+      expect(result.handle.exportWorkspace().status).toBe('dirty');
+    }
   });
 });

@@ -1,8 +1,8 @@
 import { createMicroDuckAdapter } from '@botlab/adapters-microduck';
 import { createStackChanAdapter } from '@botlab/adapters-stackchan';
 import {
-  createMockBlocksEditorProvider,
-  sampleBlocksWorkspaceArtifact,
+  createBlocksEditorProvider,
+  sampleTurboWarpWorkspaceArtifact,
   type BlocksWorkspaceArtifact,
   type BlocksWorkspaceValidationResult,
 } from '@botlab/blocks';
@@ -155,7 +155,9 @@ export const botLabFlowMachine = setup({
   actors: {
     validateWorkspace: fromPromise(
       async ({ input }: { input: ValidateWorkspaceInput }) => {
-        const validation = createMockBlocksEditorProvider().validateWorkspace(
+        const validation = createBlocksEditorProvider(
+          input.artifact.engine,
+        ).validateWorkspace(
           input.artifact,
         );
 
@@ -946,7 +948,7 @@ function createBotLabFlowContext(): BotLabFlowContext {
     runtime,
     demoSessionId: session.id,
     selectedTargetId,
-    workspaceArtifact: sampleBlocksWorkspaceArtifact,
+    workspaceArtifact: sampleTurboWarpWorkspaceArtifact,
     runtimeSnapshot: runtime.inspectRuntime(),
     workspaceMessage: 'Workspace cargado desde la muestra.',
     buildMessage: createTargetMessage(runtime, selectedTargetId),

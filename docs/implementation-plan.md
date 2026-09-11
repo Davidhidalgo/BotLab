@@ -44,6 +44,7 @@ Implemented:
 - Root Nx affected scripts for build, test, and lint workflows.
 - Validation helpers for policies, capability schemas, compiled behavior artifacts, and behavior graph/AST references.
 - Initial `@botlab/blocks` editor boundary with workspace artifacts, import/export helpers, a mock provider, workspace states, callbacks, and package tests.
+- `@botlab/blocks` now has a TurboWarp provider boundary with Scratch XML workspace support and an injected bridge contract for mounting scratch-gui or scratch-blocks.
 - App-level workspace state receives mock editor artifact updates and displays editor status metadata.
 - Runtime sessions can load compiled behavior artifacts, dispatch commands through injected target dispatchers, emit lifecycle events, and produce trace artifacts.
 - Runtime sessions can load validated behavior definitions and record structured diagnostics with validation, lifecycle, adapter, transport, scheduler, simulator, and policy categories.
@@ -61,7 +62,7 @@ Implemented:
 
 Not implemented yet:
 
-- Real Scratch Blocks or TurboWarp integration.
+- Real mounted TurboWarp editor bridge using scratch-gui or scratch-blocks.
 - Behavior serialization and compilation.
 - Real MicroDuck transport.
 - Real simulator bridge.
@@ -129,11 +130,12 @@ Packages:
 
 Tasks:
 
-- Decide between Scratch Blocks direct integration and TurboWarp-derived integration.
+- Choose TurboWarp-derived integration as the first real editor route.
 - Add `BlocksEditorProvider` interface.
 - Add `BlocksWorkspaceArtifact` type.
 - Add import/export functions for workspace XML or equivalent block format.
 - Add a mock provider for tests and development.
+- Add TurboWarp provider boundary with an injected bridge contract.
 - Add UI states: empty workspace, loaded workspace, dirty workspace, invalid workspace, read-only workspace.
 - Add callbacks for artifact updates and validation errors.
 - Keep engine-specific globals out of the app.

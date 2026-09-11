@@ -32,6 +32,12 @@ describe('App', () => {
       expect(getAllByText(/artifact-microduck-leds-plan/i).length).toBeGreaterThan(0);
     });
 
+    fireEvent.click(getByRole('button', { name: 'Simular demo' }));
+
+    await waitFor(() => {
+      expect(getByText(/Simulacion completa/i)).toBeTruthy();
+    });
+
     fireEvent.click(getByRole('button', { name: 'Ejecutar demo' }));
 
     expect(getAllByText(/Ejecutando/i).length).toBeGreaterThan(0);

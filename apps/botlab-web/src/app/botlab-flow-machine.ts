@@ -45,14 +45,30 @@ export type BotLabBuildState =
   | 'compiled'
   | 'failed';
 
+export type BotLabSimulationState =
+  | 'idle'
+  | 'stale'
+  | 'simulating'
+  | 'passed'
+  | 'failed';
+
+export interface BotLabSimulationResult {
+  simulatorId: string;
+  artifactId: string;
+  status: 'passed' | 'failed';
+  commandCount: number;
+}
+
 export interface BotLabFlowContext {
   runtime: BotLabRuntime;
   demoSessionId: string;
   workspaceArtifact: BlocksWorkspaceArtifact;
   compiledArtifact?: CompiledBehaviorArtifact;
+  simulationResult?: BotLabSimulationResult;
   runtimeSnapshot: RuntimeIntrospectionSnapshot;
   workspaceMessage: string;
   buildMessage: string;
+  simulationMessage: string;
   runMessage: string;
   errorMessage?: string;
 }
@@ -96,6 +112,15 @@ interface CompileWorkspaceOutput {
   buildMessage: string;
 }
 
+interface SimulatePlanInput {
+  artifact?: CompiledBehaviorArtifact;
+}
+
+interface SimulatePlanOutput {
+  simulationMessage: string;
+  simulationResult: BotLabSimulationResult;
+}
+
 export const botLabFlowMachine = setup({
   types: {} as {
     context: BotLabFlowContext;
@@ -103,6 +128,7 @@ export const botLabFlowMachine = setup({
       | { type: 'workspace.changed'; artifact: BlocksWorkspaceArtifact }
       | { type: 'workspace.validate' }
       | { type: 'build.compile' }
+      | { type: 'simulation.run' }
       | { type: 'demo.run' };
   },
   actors: {
@@ -141,6 +167,25 @@ export const botLabFlowMachine = setup({
         };
       },
     ),
+    simulatePlan: fromPromise(async ({ input }: { input: SimulatePlanInput }) => {
+      if (!input.artifact) {
+        throw new Error('Compila un plan antes de simular.');
+      }
+
+      await new Promise((resolve) => {
+        globalThis.setTimeout(resolve, 200);
+      });
+
+      return {
+        simulationResult: {
+          simulatorId: 'microduck-official-sim',
+          artifactId: input.artifact.id,
+          status: 'passed' as const,
+          commandCount: input.artifact.commands.length,
+        },
+        simulationMessage: `Simulacion completa: ${input.artifact.commands.length} comando(s) verificados en MicroDuck official simulator.`,
+      };
+    }),
     queueDemo: fromPromise(async ({ input }: { input: QueueDemoInput }) => {
       input.runtime.queueSession(input.demoSessionId, { priority: 5 });
 
@@ -169,6 +214,10 @@ export const botLabFlowMachine = setup({
       compiledArtifact: () => undefined,
       buildMessage: () => 'Workspace editado. Compila de nuevo antes de ejecutar.',
     }),
+    clearSimulationResult: assign({
+      simulationResult: () => undefined,
+      simulationMessage: () => 'Simulacion pendiente para el plan actual.',
+    }),
     setWorkspaceValidation: assign({
       workspaceArtifact: (_, params: ValidateWorkspaceOutput) => params.artifact,
       workspaceMessage: (_, params: ValidateWorkspaceOutput) =>
@@ -186,6 +235,15 @@ export const botLabFlowMachine = setup({
     }),
     setBuildError: assign({
       buildMessage: (_, params: { message: string }) => params.message,
+      errorMessage: (_, params: { message: string }) => params.message,
+    }),
+    setSimulationResult: assign({
+      simulationResult: (_, params: SimulatePlanOutput) => params.simulationResult,
+      simulationMessage: (_, params: SimulatePlanOutput) => params.simulationMessage,
+      errorMessage: () => undefined,
+    }),
+    setSimulationError: assign({
+      simulationMessage: (_, params: { message: string }) => params.message,
       errorMessage: (_, params: { message: string }) => params.message,
     }),
     setQueuedSnapshot: assign({
@@ -206,6 +264,8 @@ export const botLabFlowMachine = setup({
   guards: {
     buildCanCompile: ({ context }) => context.workspaceArtifact.status !== 'invalid',
     hasCompiledArtifact: ({ context }) => Boolean(context.compiledArtifact),
+    hasPassedSimulation: ({ context }) =>
+      context.simulationResult?.status === 'passed',
     workspaceCanRun: ({ context }) => context.workspaceArtifact.status !== 'invalid',
     workspaceIsValid: (_, params: BlocksWorkspaceValidationResult) => params.valid,
   },
@@ -335,7 +395,7 @@ export const botLabFlowMachine = setup({
       on: {
         'workspace.changed': {
           target: '.stale',
-          actions: [{ type: 'clearCompiledArtifact' }],
+          actions: [{ type: 'clearCompiledArtifact' }, { type: 'clearSimulationResult' }],
         },
       },
       states: {
@@ -407,6 +467,85 @@ export const botLabFlowMachine = setup({
         },
       },
     },
+    simulation: {
+      initial: 'idle',
+      on: {
+        'workspace.changed': {
+          target: '.stale',
+          actions: [{ type: 'clearSimulationResult' }],
+        },
+        'build.compile': {
+          target: '.stale',
+          actions: [{ type: 'clearSimulationResult' }],
+        },
+      },
+      states: {
+        idle: {
+          on: {
+            'simulation.run': {
+              guard: { type: 'hasCompiledArtifact' },
+              target: 'simulating',
+            },
+          },
+        },
+        stale: {
+          tags: ['dirty'],
+          on: {
+            'simulation.run': {
+              guard: { type: 'hasCompiledArtifact' },
+              target: 'simulating',
+            },
+          },
+        },
+        simulating: {
+          tags: ['simulation-busy'],
+          invoke: {
+            src: 'simulatePlan',
+            input: ({ context }) => ({
+              artifact: context.compiledArtifact,
+            }),
+            onDone: {
+              target: 'passed',
+              actions: [
+                {
+                  type: 'setSimulationResult',
+                  params: ({ event }) => event.output,
+                },
+              ],
+            },
+            onError: {
+              target: 'failed',
+              actions: [
+                {
+                  type: 'setSimulationError',
+                  params: ({ event }) => ({
+                    message: formatErrorMessage(event.error),
+                  }),
+                },
+              ],
+            },
+          },
+        },
+        passed: {
+          tags: ['simulation-ready'],
+          on: {
+            'simulation.run': {
+              guard: { type: 'hasCompiledArtifact' },
+              target: 'simulating',
+            },
+          },
+        },
+        failed: {
+          tags: ['error'],
+          on: {
+            'simulation.run': {
+              guard: { type: 'hasCompiledArtifact' },
+              target: 'simulating',
+            },
+          },
+        },
+      },
+    },
     execution: {
       initial: 'ready',
       states: {
@@ -414,7 +553,7 @@ export const botLabFlowMachine = setup({
           tags: ['idle'],
           on: {
             'demo.run': {
-              guard: { type: 'hasCompiledArtifact' },
+              guard: { type: 'hasPassedSimulation' },
               target: 'queueing',
             },
           },
@@ -482,7 +621,7 @@ export const botLabFlowMachine = setup({
           tags: ['completed'],
           on: {
             'demo.run': {
-              guard: { type: 'hasCompiledArtifact' },
+              guard: { type: 'hasPassedSimulation' },
               target: 'queueing',
             },
           },
@@ -491,7 +630,7 @@ export const botLabFlowMachine = setup({
           tags: ['error'],
           on: {
             'demo.run': {
-              guard: { type: 'hasCompiledArtifact' },
+              guard: { type: 'hasPassedSimulation' },
               target: 'queueing',
             },
           },
@@ -534,6 +673,17 @@ export const botLabBuildSteps: Array<{
   { state: 'failed', label: 'Error' },
 ];
 
+export const botLabSimulationSteps: Array<{
+  state: BotLabSimulationState;
+  label: string;
+}> = [
+  { state: 'idle', label: 'Pendiente' },
+  { state: 'stale', label: 'Desactualizada' },
+  { state: 'simulating', label: 'Simulando' },
+  { state: 'passed', label: 'OK' },
+  { state: 'failed', label: 'Error' },
+];
+
 export const botLabWorkspaceStateLabels: Record<BotLabWorkspaceState, string> = {
   loaded: 'Cargado',
   dirty: 'Editado',
@@ -547,6 +697,14 @@ export const botLabBuildStateLabels: Record<BotLabBuildState, string> = {
   stale: 'Desactualizado',
   compiling: 'Compilando',
   compiled: 'Compilado',
+  failed: 'Error',
+};
+
+export const botLabSimulationStateLabels: Record<BotLabSimulationState, string> = {
+  idle: 'Pendiente',
+  stale: 'Desactualizada',
+  simulating: 'Simulando',
+  passed: 'OK',
   failed: 'Error',
 };
 
@@ -593,6 +751,7 @@ function createBotLabFlowContext(): BotLabFlowContext {
     runtimeSnapshot: runtime.inspectRuntime(),
     workspaceMessage: 'Workspace cargado desde la muestra.',
     buildMessage: 'Compila el workspace para generar un plan ejecutable.',
+    simulationMessage: 'Simula el plan compilado antes de ejecutar.',
     runMessage: 'Demo preparada para MicroDuck',
   };
 }

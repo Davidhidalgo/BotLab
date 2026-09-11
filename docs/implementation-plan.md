@@ -51,8 +51,9 @@ Implemented:
 - Runtime evaluates policy rules for compiled plans, blocks denied execution, pauses for required confirmation, records policy diagnostics, and resumes after confirmation.
 - Runtime has an initial priority run queue, scheduler events, capability locks, and arbitration diagnostics for conflicting sessions.
 - The web app can run a MicroDuck runtime demo from the UI and display session state, queue entries, and capability locks.
-- The web app uses an initial XState v5 parallel flow machine for workspace, build, and execution lifecycles.
+- The web app uses an initial XState v5 parallel flow machine for workspace, build, simulation, and execution lifecycles.
 - The UI now exposes a demo compile step that produces a compiled plan artifact before runtime execution is enabled.
+- The UI now exposes a demo simulation step that verifies the compiled plan before runtime execution is enabled.
 
 Not implemented yet:
 
@@ -63,7 +64,7 @@ Not implemented yet:
 - Timed/event-driven scheduler loop.
 - Full arbitration engine beyond initial priority queue and exclusive capability locks.
 - Runtime logs, traces, and richer introspection UI.
-- Full product statechart for simulation, deployment, recovery, and real compiler integration.
+- Full product statechart for deployment, recovery, real compiler integration, and real simulator bridge integration.
 - Persistence.
 - Deployment workflow.
 

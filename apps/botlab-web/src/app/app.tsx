@@ -2,7 +2,7 @@ import { BlocksEditorShell } from '@botlab/blocks';
 import { botLabConcepts } from '@botlab/model';
 import { Badge, Button } from '@botlab/ui';
 import { useMachine } from '@xstate/react';
-import { Activity, Blocks, Cpu, GitBranch, Lock, Play, ShieldCheck, Workflow } from 'lucide-react';
+import { Activity, Blocks, Cpu, GitBranch, Lock, Play, Radar, ShieldCheck, Workflow } from 'lucide-react';
 import { type ReactNode } from 'react';
 import {
   botLabBuildStateLabels,
@@ -10,10 +10,13 @@ import {
   botLabExecutionStateLabels,
   botLabExecutionSteps,
   botLabFlowMachine,
+  botLabSimulationStateLabels,
+  botLabSimulationSteps,
   botLabWorkspaceStateLabels,
   botLabWorkspaceSteps,
   type BotLabBuildState,
   type BotLabExecutionState,
+  type BotLabSimulationState,
   type BotLabWorkspaceState,
 } from './botlab-flow-machine';
 
@@ -36,16 +39,20 @@ export function App() {
     runtimeSnapshot,
     runMessage,
     buildMessage,
+    simulationMessage,
+    simulationResult,
     workspaceArtifact,
     workspaceMessage,
   } = flowSnapshot.context;
   const flowState = flowSnapshot.value as {
     workspace: BotLabWorkspaceState;
     build: BotLabBuildState;
+    simulation: BotLabSimulationState;
     execution: BotLabExecutionState;
   };
   const isRunningDemo = flowSnapshot.hasTag('execution-busy');
   const isCompiling = flowSnapshot.hasTag('build-busy');
+  const isSimulating = flowSnapshot.hasTag('simulation-busy');
   const targets = runtime.listTargets();
   const capabilities = runtime.listCapabilities();
   const queue = runtimeSnapshot.queue;
@@ -95,6 +102,14 @@ export function App() {
               <Cpu className="h-4 w-4" />
               {isCompiling ? 'Compilando' : 'Compilar demo'}
             </Button>
+            <Button
+              variant="secondary"
+              onClick={() => sendFlow({ type: 'simulation.run' })}
+              disabled={!flowSnapshot.can({ type: 'simulation.run' })}
+            >
+              <Radar className="h-4 w-4" />
+              {isSimulating ? 'Simulando' : 'Simular demo'}
+            </Button>
           </div>
         </div>
       </section>
@@ -127,6 +142,22 @@ export function App() {
               value={compiledArtifact?.id ?? 'Sin compilar'}
             />
             <p className="mt-3 text-sm leading-6 text-muted-foreground">{buildMessage}</p>
+          </Panel>
+
+          <Panel title="Simulador">
+            <Metric
+              label="Estado"
+              value={botLabSimulationStateLabels[flowState.simulation]}
+            />
+            <Metric
+              label="Simulador"
+              value={simulationResult?.simulatorId ?? 'Sin ejecutar'}
+            />
+            <Metric
+              label="Comandos"
+              value={simulationResult?.commandCount.toString() ?? '0'}
+            />
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">{simulationMessage}</p>
           </Panel>
 
           <Panel title="Runtime">
@@ -190,6 +221,15 @@ export function App() {
                 </Badge>
               </div>
               <FlowRail steps={botLabBuildSteps} activeState={flowState.build} />
+            </div>
+            <div className="mt-3 rounded-md border bg-background p-3">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">Flujo simulación</span>
+                <Badge variant="outline">
+                  {botLabSimulationStateLabels[flowState.simulation]}
+                </Badge>
+              </div>
+              <FlowRail steps={botLabSimulationSteps} activeState={flowState.simulation} />
             </div>
             <div className="mt-3 rounded-md border bg-background p-3">
               <div className="mb-3 flex items-center justify-between gap-3">

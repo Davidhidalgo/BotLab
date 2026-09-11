@@ -12,7 +12,7 @@ BotLab is a local-first monorepo for building, simulating, and running robot beh
 - Common runtime orchestration in `libs/runtime`.
 - Robot adapters under `libs/adapters/*`.
 - Encapsulated visual editor shell in `libs/blocks`.
-- Simulator integration contracts in `libs/simulators`.
+- Simulator contracts and robot-specific integrations under `libs/simulators/*`.
 
 ## Project Shape
 
@@ -26,7 +26,9 @@ libs/
   adapters/
     microduck/                 Initial MicroDuck adapter contract
     stackchan/                 Future StackChan adapter placeholder
-  simulators/                  Official simulator integration contracts
+  simulators/
+    core/                      Shared simulator contracts
+    microduck/                 MicroDuck simulator integration boundary
   ui/                          shadcn/ui-style primitives
 ```
 
@@ -65,7 +67,7 @@ BotLab starts with these concepts in the model:
 
 ### Simulators are dependencies where possible
 
-`@botlab/simulators` records official simulator integration strategies. The preferred path is to depend on official simulator packages or processes instead of copying simulator code into BotLab.
+`@botlab/simulators-core` owns the lightweight simulator contracts. Robot-specific packages such as `@botlab/simulators-microduck` own heavy simulator dependencies, assets, and bridges. The preferred path is to depend on official simulator packages or processes instead of copying simulator code into BotLab.
 
 ### Nx commands in this environment
 

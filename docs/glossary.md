@@ -52,7 +52,7 @@ The part of the runtime that decides when behaviors run. Initial modes include m
 
 ## Simulator Integration
 
-A bridge between BotLab and an official simulator package or process. Simulator work should stay behind `@botlab/simulators` and runtime contracts.
+A bridge between BotLab and an official simulator package or process. Shared simulator contracts should stay behind `@botlab/simulators-core`; robot-specific simulator work should live in packages such as `@botlab/simulators-microduck`.
 
 ## Skill
 

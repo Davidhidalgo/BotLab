@@ -20,7 +20,10 @@
       "@botlab/blocks": ["libs/blocks/src/index.ts"],
       "@botlab/model": ["libs/botlab-model/src/index.ts"],
       "@botlab/runtime": ["libs/runtime/src/index.ts"],
-      "@botlab/simulators": ["libs/simulators/src/index.ts"],
+      "@botlab/simulators-core": ["libs/simulators/core/src/index.ts"],
+      "@botlab/simulators-microduck": [
+        "libs/simulators/microduck/src/index.ts"
+      ],
       "@botlab/ui": ["libs/ui/src/index.ts"]
     }
   },

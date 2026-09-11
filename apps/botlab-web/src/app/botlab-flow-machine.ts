@@ -22,7 +22,7 @@ import {
   type RuntimeIntrospectionSnapshot,
   type RuntimeRunResult,
 } from '@botlab/runtime';
-import { officialSimulatorIntegrations } from '@botlab/simulators';
+import { microDuckSimulatorIntegrations } from '@botlab/simulators-microduck';
 import { assign, fromPromise, setup } from 'xstate';
 
 export type BotLabWorkspaceState =
@@ -937,7 +937,7 @@ export const botLabExecutionStateLabels: Record<BotLabExecutionState, string> =
 function createBotLabFlowContext(): BotLabFlowContext {
   const runtime = createBotLabRuntime({
     adapters: [createMicroDuckAdapter(), createStackChanAdapter()],
-    simulators: officialSimulatorIntegrations,
+    simulators: microDuckSimulatorIntegrations,
     behaviors: [sampleMicroDuckLedBehavior],
     skills: sampleSkills,
     schedulers: sampleSchedulers,

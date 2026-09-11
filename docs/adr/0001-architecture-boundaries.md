@@ -18,7 +18,8 @@ BotLab keeps separate package boundaries for the major responsibilities:
 - `@botlab/model` owns shared domain concepts and contracts.
 - `@botlab/runtime` owns execution orchestration, policy evaluation, scheduling, arbitration, dispatch, and introspection.
 - `@botlab/adapters-*` packages own robot-specific capabilities, targets, and transport concerns.
-- `@botlab/simulators` owns simulator integration contracts and dependency strategy.
+- `@botlab/simulators-core` owns shared simulator contracts and dependency strategy.
+- `@botlab/simulators-*` packages own robot-specific simulator bridges, heavy dependencies, assets, and runtime adapters.
 - `apps/botlab-web` composes these packages but does not import robot transport, simulator internals, or block-engine globals directly.
 
 Nx project tags document these boundaries so future lint constraints can enforce them.

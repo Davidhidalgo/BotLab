@@ -31,7 +31,7 @@ Implemented:
 - Runtime facade in `libs/runtime`.
 - Initial MicroDuck adapter contract in `libs/adapters/microduck`.
 - Planned StackChan adapter contract in `libs/adapters/stackchan`.
-- Simulator integration contracts in `libs/simulators`.
+- Simulator integration contracts in `libs/simulators/core` and robot-specific simulator packages under `libs/simulators/*`.
 - First screen showing project model, runtime counts, targets, and editor placeholder.
 - Project tags in each `project.json` for app, UI, model, runtime, adapter, simulator, and editor boundaries.
 - Lightweight ADR folder with the first boundary decision.
@@ -277,7 +277,8 @@ Goal: let users test behavior without a physical robot when an official simulato
 
 Packages:
 
-- `@botlab/simulators`
+- `@botlab/simulators-core`
+- `@botlab/simulators-microduck`
 - `@botlab/runtime`
 - `@botlab/adapters-microduck`
 

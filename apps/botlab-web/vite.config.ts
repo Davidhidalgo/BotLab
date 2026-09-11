@@ -35,9 +35,13 @@ export default defineConfig({
         '../../libs/botlab-model/src/index.ts'
       ),
       '@botlab/runtime': resolve(__dirname, '../../libs/runtime/src/index.ts'),
-      '@botlab/simulators': resolve(
+      '@botlab/simulators-core': resolve(
         __dirname,
-        '../../libs/simulators/src/index.ts'
+        '../../libs/simulators/core/src/index.ts'
+      ),
+      '@botlab/simulators-microduck': resolve(
+        __dirname,
+        '../../libs/simulators/microduck/src/index.ts'
       ),
       '@botlab/ui': resolve(__dirname, '../../libs/ui/src/index.ts'),
     },

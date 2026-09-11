@@ -1,0 +1,17 @@
+{
+  "name": "simulators-core",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/simulators/core/src",
+  "projectType": "library",
+  "tags": ["scope:simulator", "type:core"],
+  "// targets": "to see all targets run: nx show project simulators-core --web",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/dist/libs/simulators/core"],
+      "options": {
+        "command": "tsc -p libs/simulators/core/tsconfig.lib.json --outDir dist/libs/simulators/core"
+      }
+    }
+  }
+}

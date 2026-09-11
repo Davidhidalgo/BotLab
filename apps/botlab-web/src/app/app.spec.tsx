@@ -33,6 +33,6 @@ describe('App', () => {
     await waitFor(() => {
       expect(getByText(/1 comando\(s\) enviados/i)).toBeTruthy();
     });
-    expect(getByText('Completada')).toBeTruthy();
+    expect(getAllByText('Completada').length).toBeGreaterThan(0);
   });
 });

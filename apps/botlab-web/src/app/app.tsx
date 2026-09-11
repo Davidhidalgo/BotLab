@@ -1,20 +1,15 @@
-import { createMicroDuckAdapter } from '@botlab/adapters-microduck';
-import { createStackChanAdapter } from '@botlab/adapters-stackchan';
 import { BlocksEditorShell, sampleBlocksWorkspaceArtifact } from '@botlab/blocks';
-import {
-  botLabConcepts,
-  sampleArbitrationStrategies,
-  sampleMicroDuckCompiledBehaviorArtifact,
-  sampleMicroDuckLedBehavior,
-  samplePolicies,
-  sampleSchedulers,
-  sampleSkills,
-} from '@botlab/model';
-import { createBotLabRuntime } from '@botlab/runtime';
-import { officialSimulatorIntegrations } from '@botlab/simulators';
+import { botLabConcepts } from '@botlab/model';
 import { Badge, Button } from '@botlab/ui';
+import { useMachine } from '@xstate/react';
 import { Activity, Blocks, Cpu, GitBranch, Lock, Play, ShieldCheck, Workflow } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
+import {
+  botLabFlowMachine,
+  botLabFlowStateLabels,
+  botLabFlowSteps,
+  type BotLabFlowState,
+} from './botlab-flow-machine';
 
 const featuredConcepts = botLabConcepts.filter(({ concept }) =>
   ['policy', 'skill', 'behavior', 'arbitration'].includes(concept),
@@ -28,32 +23,14 @@ const conceptIcons = {
 };
 
 export function App() {
-  const [{ runtime, demoSessionId }] = useState(createRuntimeDemo);
+  const [flowSnapshot, sendFlow] = useMachine(botLabFlowMachine);
   const [workspaceArtifact, setWorkspaceArtifact] = useState(sampleBlocksWorkspaceArtifact);
-  const [runtimeSnapshot, setRuntimeSnapshot] = useState(() => runtime.inspectRuntime());
-  const [runMessage, setRunMessage] = useState('Demo preparada para MicroDuck');
-  const [isRunningDemo, setIsRunningDemo] = useState(false);
+  const { runtime, runtimeSnapshot, runMessage } = flowSnapshot.context;
+  const flowState = flowSnapshot.value as BotLabFlowState;
+  const isRunningDemo = flowSnapshot.hasTag('busy');
   const targets = runtime.listTargets();
   const capabilities = runtime.listCapabilities();
   const queue = runtimeSnapshot.queue;
-
-  async function runDemo() {
-    setIsRunningDemo(true);
-    runtime.queueSession(demoSessionId, { priority: 5 });
-    setRuntimeSnapshot(runtime.inspectRuntime());
-
-    const run = runtime.runNextQueuedSession();
-    setRuntimeSnapshot(runtime.inspectRuntime());
-
-    const result = await run;
-    setRuntimeSnapshot(runtime.inspectRuntime());
-    setRunMessage(
-      result
-        ? `${result.snapshot.dispatchedCommandCount} comando(s) enviados. Estado: ${runtimeStateLabels[result.snapshot.state]}.`
-        : 'No habia sesiones pendientes en cola.',
-    );
-    setIsRunningDemo(false);
-  }
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -73,7 +50,10 @@ export function App() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button onClick={runDemo} disabled={isRunningDemo}>
+            <Button
+              onClick={() => sendFlow({ type: 'demo.run' })}
+              disabled={!flowSnapshot.can({ type: 'demo.run' })}
+            >
               <Play className="h-4 w-4" />
               {isRunningDemo ? 'Ejecutando' : 'Ejecutar demo'}
             </Button>
@@ -143,6 +123,13 @@ export function App() {
                     : 'Sin capacidades bloqueadas'
                 }
               />
+            </div>
+            <div className="mt-3 rounded-md border bg-background p-3">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">Flujo XState</span>
+                <Badge variant="outline">{botLabFlowStateLabels[flowState]}</Badge>
+              </div>
+              <FlowRail activeState={flowState} />
             </div>
           </Panel>
 
@@ -246,36 +233,28 @@ function RuntimeList({
   );
 }
 
-function createRuntimeDemo() {
-  const runtime = createBotLabRuntime({
-    adapters: [createMicroDuckAdapter(), createStackChanAdapter()],
-    simulators: officialSimulatorIntegrations,
-    behaviors: [sampleMicroDuckLedBehavior],
-    skills: sampleSkills,
-    schedulers: sampleSchedulers,
-    arbitrationStrategies: sampleArbitrationStrategies,
-    policies: samplePolicies,
-    dispatchers: [
-      {
-        targetId: 'microduck-usb',
-        async dispatch(command) {
-          await new Promise((resolve) => {
-            window.setTimeout(resolve, 250);
-          });
+function FlowRail({ activeState }: { activeState: BotLabFlowState }) {
+  return (
+    <div className="grid gap-2">
+      {botLabFlowSteps.map((step) => {
+        const isActive = step.state === activeState;
 
-          return {
-            commandId: command.id,
-            status: 'dispatched',
-            message: `Demo dispatch ${command.commandId}.`,
-          };
-        },
-      },
-    ],
-  });
-  const session = runtime.createSession({ id: 'demo-microduck-leds' });
-
-  runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
-  runtime.confirmPolicy(session.id);
-
-  return { runtime, demoSessionId: session.id };
+        return (
+          <div
+            key={step.state}
+            className={`flex items-center gap-3 rounded-md border px-3 py-2 text-sm ${
+              isActive ? 'border-primary bg-primary/10 text-foreground' : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${
+                isActive ? 'bg-primary' : 'bg-muted-foreground/40'
+              }`}
+            />
+            <span className="font-medium">{step.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
 }

@@ -69,6 +69,8 @@ BotLab starts with these concepts in the model:
 
 `@botlab/simulators-core` owns the lightweight simulator contracts. Robot-specific packages such as `@botlab/simulators-microduck` own heavy simulator dependencies, assets, and bridges. The preferred path is to depend on official simulator packages or processes instead of copying simulator code into BotLab.
 
+For MicroDuck, BotLab will use a pinned upstream bridge strategy: BotLab-owned adapter code maps BotLab commands into the simulator, while upstream assets are referenced by manifest and loaded into a user cache with verification instead of being committed into this repo.
+
 ### Nx commands in this environment
 
 The local sandbox blocks the Unix sockets used by the Nx daemon and isolated plugins. Use:

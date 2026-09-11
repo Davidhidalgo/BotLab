@@ -282,11 +282,26 @@ Packages:
 - `@botlab/runtime`
 - `@botlab/adapters-microduck`
 
+Infrastructure decisions:
+
+- Keep shared simulator contracts in `libs/simulators/core`.
+- Keep robot-specific simulator integrations in `libs/simulators/<robot>`, starting with `libs/simulators/microduck`.
+- Do not put heavy simulator dependencies in `@botlab/simulators-core`.
+- Do not modify `node_modules`.
+- Do not vendor upstream MicroDuck meshes, ONNX policies, logos, sounds, or simulator bundles unless licensing is explicitly verified.
+- Prefer a pinned upstream asset manifest with hashes and a user cache for MicroDuck simulator assets.
+- Integrate the official browser simulator through its controller/source boundary where possible, not through an iframe.
+- Use Nx affected validation before committing simulator infrastructure changes.
+
 Tasks:
 
-- Identify official MicroDuck simulator package or process.
-- Add simulator bridge interface.
-- Add simulator target registration.
+- Identify official MicroDuck simulator package or process. Done: browser simulator is a full app, daemon simulator is a heavier local process path.
+- Add simulator bridge interface. Done: initial `SimulatorBridge` contract lives in `@botlab/simulators-core`.
+- Add simulator target registration. Done: MicroDuck simulator metadata lives in `@botlab/simulators-microduck`.
+- Add upstream manifest types for MicroDuck simulator assets, including URL, revision, hash, and license notes.
+- Add a cache/setup path for MicroDuck simulator assets without committing those assets to the repo.
+- Add a BotLab simulator control source that maps compiled BotLab commands to the official simulator controller contract.
+- Spike loading the official simulator game core in the BotLab UI through `@botlab/simulators-microduck`.
 - Map simulator capabilities to the same adapter contract as hardware.
 - Add simulator output artifacts.
 - Add app UI for selecting hardware versus simulator target.
@@ -295,7 +310,17 @@ Acceptance criteria:
 
 - Runtime sees simulator targets and hardware targets through the same target model.
 - A simulated MicroDuck behavior can produce an output artifact.
-- Simulator integration does not require copying official simulator source into BotLab.
+- Simulator integration does not require copying official simulator source or assets into BotLab without license verification.
+- First-run simulator asset loading has clear pending, success, and failure states.
+- Updating upstream MicroDuck simulator inputs is a manifest/hash update plus adapter verification, not an ad hoc patch.
+
+Next handoff:
+
+1. Verify licenses for the official browser simulator source, MicroDuck model assets, ONNX policies, meshes, and sounds.
+2. Add the MicroDuck upstream manifest and cache interfaces in `@botlab/simulators-microduck`.
+3. Implement a BotLab control source compatible with the official simulator controller source contract.
+4. Load the simulator lazily in the UI behind the current `MicroDuckSimulatorBridge`.
+5. Keep the existing local bridge tests green while adding browser-level smoke coverage for the visible simulator.
 
 ## Milestone 9: Artifacts and Persistence
 

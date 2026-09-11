@@ -56,6 +56,7 @@ Implemented:
 - The web app can run a MicroDuck runtime demo from the UI and display session state, queue entries, and capability locks.
 - The web app uses an initial XState v5 parallel flow machine for workspace, build, simulation, and execution lifecycles.
 - The UI now exposes a demo compile step that produces a compiled plan artifact before runtime execution is enabled.
+- The demo compile step now reads the current Scratch Blocks XML and turns the BotLab MicroDuck LED block into a runtime command.
 - The UI now exposes a demo simulation step that verifies the compiled plan before runtime execution is enabled.
 - The UI now exposes a target selector that defaults to the MicroDuck simulator demo target and blocks planned or incompatible targets from compilation.
 - The UI now exposes a runtime log panel with recent events, session trace entries, and diagnostics.
@@ -136,6 +137,7 @@ Tasks:
 - Add `BlocksEditorProvider` interface.
 - Add `BlocksWorkspaceArtifact` type.
 - Add import/export functions for workspace XML or equivalent block format.
+- Add a first Scratch XML to MicroDuck demo plan compiler path.
 - Add a mock provider for tests and development.
 - Add Scratch Blocks provider boundary with an injected bridge contract.
 - Add official `scratch-blocks` as a local dependency of `@botlab/blocks`.

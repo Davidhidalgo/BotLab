@@ -73,19 +73,27 @@ describe('botLabFlowMachine', () => {
       execution: 'completed',
     });
     expect(actor.getSnapshot().context.compiledArtifact?.id).toBe(
-      'artifact-microduck-leds-plan',
+      'artifact-microduck-led-demo-microduck-sim-smile-plan'
     );
     expect(actor.getSnapshot().context.compiledArtifact?.targetId).toBe(
-      'microduck-sim',
+      'microduck-sim'
     );
+    expect(
+      actor.getSnapshot().context.compiledArtifact?.commands[0].inputs
+    ).toEqual({
+      brightness: 50,
+      pattern: 'smile',
+    });
     expect(actor.getSnapshot().context.simulationResult).toMatchObject({
-      artifactId: 'artifact-microduck-leds-plan',
+      artifactId: 'artifact-microduck-led-demo-microduck-sim-smile-plan',
       status: 'passed',
     });
-    expect(actor.getSnapshot().context.flowLog.map((entry) => entry.category)).toEqual(
-      expect.arrayContaining(['build', 'simulation', 'execution']),
+    expect(
+      actor.getSnapshot().context.flowLog.map((entry) => entry.category)
+    ).toEqual(expect.arrayContaining(['build', 'simulation', 'execution']));
+    expect(actor.getSnapshot().context.runMessage).toContain(
+      '1 comando(s) enviados'
     );
-    expect(actor.getSnapshot().context.runMessage).toContain('1 comando(s) enviados');
   });
 
   it('blocks compilation for planned or incompatible targets', () => {
@@ -100,7 +108,48 @@ describe('botLabFlowMachine', () => {
       simulation: 'stale',
       execution: 'ready',
     });
-    expect(actor.getSnapshot().context.selectedTargetId).toBe('stackchan-planned');
+    expect(actor.getSnapshot().context.selectedTargetId).toBe(
+      'stackchan-planned'
+    );
     expect(actor.getSnapshot().context.compiledArtifact).toBeUndefined();
+  });
+
+  it('compiles the selected MicroDuck LED pattern from Scratch XML', async () => {
+    const actor = createActor(botLabFlowMachine);
+
+    actor.start();
+    actor.send({
+      type: 'workspace.changed',
+      artifact: {
+        ...actor.getSnapshot().context.workspaceArtifact,
+        content:
+          '<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_whenflagclicked" id="start"><next><block type="botlab_microduck_set_leds" id="leds"><field name="PATTERN">off</field></block></next></block></xml>',
+        status: 'dirty',
+      },
+    });
+
+    const compiled = new Promise<void>((resolve, reject) => {
+      const subscription = actor.subscribe((snapshot) => {
+        if (snapshot.matches({ build: 'compiled' })) {
+          globalThis.clearTimeout(timeout);
+          subscription.unsubscribe();
+          resolve();
+        }
+      });
+      const timeout = globalThis.setTimeout(() => {
+        subscription.unsubscribe();
+        reject(new Error('BotLab flow did not compile edited XML in time.'));
+      }, 1000);
+    });
+
+    actor.send({ type: 'build.compile' });
+    await compiled;
+
+    expect(
+      actor.getSnapshot().context.compiledArtifact?.commands[0].inputs
+    ).toEqual({
+      brightness: 50,
+      pattern: 'off',
+    });
   });
 });

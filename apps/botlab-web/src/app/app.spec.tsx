@@ -10,14 +10,18 @@ describe('App', () => {
 
   it('should show the BotLab project screen', () => {
     const { getByText } = render(<App />);
-    expect(getByText(/Laboratorio visual para robots programables/i)).toBeTruthy();
+    expect(
+      getByText(/Laboratorio visual para robots programables/i)
+    ).toBeTruthy();
   });
 
   it('should show the artifact inventory', () => {
     const { getAllByText, getByText } = render(<App />);
 
     expect(getByText('Artifacts')).toBeTruthy();
-    expect(getAllByText('sample-scratch-blocks-workspace').length).toBeGreaterThan(0);
+    expect(
+      getAllByText('sample-scratch-blocks-workspace').length
+    ).toBeGreaterThan(0);
     expect(getByText('compiled-plan-pending')).toBeTruthy();
     expect(getByText('simulation-output-pending')).toBeTruthy();
   });
@@ -40,11 +44,13 @@ describe('App', () => {
 
     fireEvent.click(getByRole('button', { name: /StackChan/i }));
 
-    expect(getAllByText(/Planificado o no compatible/i).length).toBeGreaterThan(0);
+    expect(getAllByText(/Planificado o no compatible/i).length).toBeGreaterThan(
+      0
+    );
     await waitFor(() => {
       expect(getByRole('button', { name: 'Compilar demo' })).toHaveProperty(
         'disabled',
-        true,
+        true
       );
     });
   });
@@ -55,7 +61,10 @@ describe('App', () => {
     fireEvent.click(getByRole('button', { name: 'Compilar demo' }));
 
     await waitFor(() => {
-      expect(getAllByText(/artifact-microduck-leds-plan/i).length).toBeGreaterThan(0);
+      expect(
+        getAllByText(/artifact-microduck-led-demo-microduck-sim-smile-plan/i)
+          .length
+      ).toBeGreaterThan(0);
     });
     expect(getByText('Requiere confirmacion')).toBeTruthy();
     expect(getByText('Confirmacion aplicada')).toBeTruthy();
@@ -77,7 +86,9 @@ describe('App', () => {
     expect(getAllByText('Completada').length).toBeGreaterThan(0);
     expect(getByText('Ejecucion demo completada.')).toBeTruthy();
     expect(getByText('Comando enviado')).toBeTruthy();
-    expect(getAllByText('Simulated dispatch set-led-pattern.').length).toBeGreaterThan(0);
+    expect(
+      getAllByText('Simulated dispatch set-led-pattern.').length
+    ).toBeGreaterThan(0);
     expect(getByText('demo-microduck-leds-trace-artifact')).toBeTruthy();
   });
 });

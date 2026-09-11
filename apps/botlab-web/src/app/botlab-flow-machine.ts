@@ -156,10 +156,8 @@ export const botLabFlowMachine = setup({
     validateWorkspace: fromPromise(
       async ({ input }: { input: ValidateWorkspaceInput }) => {
         const validation = createBlocksEditorProvider(
-          input.artifact.engine,
-        ).validateWorkspace(
-          input.artifact,
-        );
+          input.artifact.engine
+        ).validateWorkspace(input.artifact);
 
         return {
           validation,
@@ -169,12 +167,14 @@ export const botLabFlowMachine = setup({
             validationErrors: validation.errors,
           },
         };
-      },
+      }
     ),
     compileWorkspace: fromPromise(
       async ({ input }: { input: CompileWorkspaceInput }) => {
         if (input.artifact.status === 'invalid') {
-          throw new Error('Workspace invalido. Valida o corrige antes de compilar.');
+          throw new Error(
+            'Workspace invalido. Valida o corrige antes de compilar.'
+          );
         }
 
         const target = input.runtime
@@ -185,39 +185,49 @@ export const botLabFlowMachine = setup({
           throw new Error('Selecciona un target disponible antes de compilar.');
         }
 
-        const compiledArtifact = createMicroDuckArtifactForTarget(input.targetId);
+        const compiledArtifact = compileMicroDuckWorkspaceArtifact(
+          input.artifact,
+          input.targetId
+        );
 
-        input.runtime.loadCompiledBehavior(input.demoSessionId, compiledArtifact);
+        input.runtime.loadCompiledBehavior(
+          input.demoSessionId,
+          compiledArtifact
+        );
         input.runtime.confirmPolicy(input.demoSessionId);
 
         return {
           compiledArtifact,
           runtimeSnapshot: input.runtime.inspectRuntime(),
-          buildMessage: `Plan ${compiledArtifact.id} compilado para ${target.name}.`,
+          buildMessage: `Plan ${compiledArtifact.id} compilado desde Scratch Blocks para ${target.name}.`,
         };
-      },
-    ),
-    simulatePlan: fromPromise(async ({ input }: { input: SimulatePlanInput }) => {
-      if (!input.artifact) {
-        throw new Error('Compila un plan antes de simular.');
       }
+    ),
+    simulatePlan: fromPromise(
+      async ({ input }: { input: SimulatePlanInput }) => {
+        if (!input.artifact) {
+          throw new Error('Compila un plan antes de simular.');
+        }
 
-      await new Promise((resolve) => {
-        globalThis.setTimeout(resolve, 200);
-      });
+        await new Promise((resolve) => {
+          globalThis.setTimeout(resolve, 200);
+        });
 
-      return {
-        simulationResult: {
-          simulatorId:
-            input.target?.profile?.simulator?.integrationId ??
-            'microduck-official-sim',
-          artifactId: input.artifact.id,
-          status: 'passed' as const,
-          commandCount: input.artifact.commands.length,
-        },
-        simulationMessage: `Simulacion completa: ${input.artifact.commands.length} comando(s) verificados para ${input.target?.name ?? 'MicroDuck'}.`,
-      };
-    }),
+        return {
+          simulationResult: {
+            simulatorId:
+              input.target?.profile?.simulator?.integrationId ??
+              'microduck-official-sim',
+            artifactId: input.artifact.id,
+            status: 'passed' as const,
+            commandCount: input.artifact.commands.length,
+          },
+          simulationMessage: `Simulacion completa: ${
+            input.artifact.commands.length
+          } comando(s) verificados para ${input.target?.name ?? 'MicroDuck'}.`,
+        };
+      }
+    ),
     queueDemo: fromPromise(async ({ input }: { input: QueueDemoInput }) => {
       input.runtime.queueSession(input.demoSessionId, { priority: 5 });
 
@@ -225,14 +235,16 @@ export const botLabFlowMachine = setup({
         runtimeSnapshot: input.runtime.inspectRuntime(),
       };
     }),
-    runQueuedDemo: fromPromise(async ({ input }: { input: RunQueuedDemoInput }) => {
-      const result = await input.runtime.runNextQueuedSession();
+    runQueuedDemo: fromPromise(
+      async ({ input }: { input: RunQueuedDemoInput }) => {
+        const result = await input.runtime.runNextQueuedSession();
 
-      return {
-        runtimeSnapshot: input.runtime.inspectRuntime(),
-        runMessage: formatRunMessage(result),
-      };
-    }),
+        return {
+          runtimeSnapshot: input.runtime.inspectRuntime(),
+          runMessage: formatRunMessage(result),
+        };
+      }
+    ),
   },
   actions: {
     selectTarget: assign({
@@ -241,15 +253,17 @@ export const botLabFlowMachine = setup({
       simulationResult: () => undefined,
       buildMessage: ({ context }, params: { targetId: string }) =>
         createTargetMessage(context.runtime, params.targetId),
-      simulationMessage: () => 'Simulacion pendiente para el target seleccionado.',
-      runMessage: () => 'Compila y simula antes de ejecutar el target seleccionado.',
+      simulationMessage: () =>
+        'Simulacion pendiente para el target seleccionado.',
+      runMessage: () =>
+        'Compila y simula antes de ejecutar el target seleccionado.',
       errorMessage: () => undefined,
     }),
     appendFlowLog: assign({
       flowLogCounter: ({ context }) => context.flowLogCounter + 1,
       flowLog: (
         { context },
-        params: { category: BotLabFlowLogCategory; message: string },
+        params: { category: BotLabFlowLogCategory; message: string }
       ) =>
         [
           {
@@ -269,24 +283,30 @@ export const botLabFlowMachine = setup({
     }),
     clearCompiledArtifact: assign({
       compiledArtifact: () => undefined,
-      buildMessage: () => 'Workspace editado. Compila de nuevo antes de ejecutar.',
+      buildMessage: () =>
+        'Workspace editado. Compila de nuevo antes de ejecutar.',
     }),
     clearSimulationResult: assign({
       simulationResult: () => undefined,
       simulationMessage: () => 'Simulacion pendiente para el plan actual.',
     }),
     setWorkspaceValidation: assign({
-      workspaceArtifact: (_, params: ValidateWorkspaceOutput) => params.artifact,
+      workspaceArtifact: (_, params: ValidateWorkspaceOutput) =>
+        params.artifact,
       workspaceMessage: (_, params: ValidateWorkspaceOutput) =>
         params.validation.valid
           ? 'Workspace validado y listo para compilar.'
           : params.validation.errors.join(' '),
       errorMessage: (_, params: ValidateWorkspaceOutput) =>
-        params.validation.valid ? undefined : params.validation.errors.join(' '),
+        params.validation.valid
+          ? undefined
+          : params.validation.errors.join(' '),
     }),
     setCompiledArtifact: assign({
-      compiledArtifact: (_, params: CompileWorkspaceOutput) => params.compiledArtifact,
-      runtimeSnapshot: (_, params: CompileWorkspaceOutput) => params.runtimeSnapshot,
+      compiledArtifact: (_, params: CompileWorkspaceOutput) =>
+        params.compiledArtifact,
+      runtimeSnapshot: (_, params: CompileWorkspaceOutput) =>
+        params.runtimeSnapshot,
       buildMessage: (_, params: CompileWorkspaceOutput) => params.buildMessage,
       errorMessage: () => undefined,
     }),
@@ -295,8 +315,10 @@ export const botLabFlowMachine = setup({
       errorMessage: (_, params: { message: string }) => params.message,
     }),
     setSimulationResult: assign({
-      simulationResult: (_, params: SimulatePlanOutput) => params.simulationResult,
-      simulationMessage: (_, params: SimulatePlanOutput) => params.simulationMessage,
+      simulationResult: (_, params: SimulatePlanOutput) =>
+        params.simulationResult,
+      simulationMessage: (_, params: SimulatePlanOutput) =>
+        params.simulationMessage,
       errorMessage: () => undefined,
     }),
     setSimulationError: assign({
@@ -309,7 +331,8 @@ export const botLabFlowMachine = setup({
       errorMessage: () => undefined,
     }),
     setRunResult: assign({
-      runtimeSnapshot: (_, params: RunQueuedDemoOutput) => params.runtimeSnapshot,
+      runtimeSnapshot: (_, params: RunQueuedDemoOutput) =>
+        params.runtimeSnapshot,
       runMessage: (_, params: RunQueuedDemoOutput) => params.runMessage,
       errorMessage: () => undefined,
     }),
@@ -325,8 +348,10 @@ export const botLabFlowMachine = setup({
     hasCompiledArtifact: ({ context }) => Boolean(context.compiledArtifact),
     hasPassedSimulation: ({ context }) =>
       context.simulationResult?.status === 'passed',
-    workspaceCanRun: ({ context }) => context.workspaceArtifact.status !== 'invalid',
-    workspaceIsValid: (_, params: BlocksWorkspaceValidationResult) => params.valid,
+    workspaceCanRun: ({ context }) =>
+      context.workspaceArtifact.status !== 'invalid',
+    workspaceIsValid: (_, params: BlocksWorkspaceValidationResult) =>
+      params.valid,
   },
 }).createMachine({
   id: 'botlabFlow',
@@ -512,7 +537,10 @@ export const botLabFlowMachine = setup({
         },
         'workspace.changed': {
           target: '.stale',
-          actions: [{ type: 'clearCompiledArtifact' }, { type: 'clearSimulationResult' }],
+          actions: [
+            { type: 'clearCompiledArtifact' },
+            { type: 'clearSimulationResult' },
+          ],
         },
       },
       states: {
@@ -869,13 +897,14 @@ export const botLabSimulationSteps: Array<{
   { state: 'failed', label: 'Error' },
 ];
 
-export const botLabWorkspaceStateLabels: Record<BotLabWorkspaceState, string> = {
-  loaded: 'Cargado',
-  dirty: 'Editado',
-  validating: 'Validando',
-  valid: 'Listo',
-  invalid: 'Invalido',
-};
+export const botLabWorkspaceStateLabels: Record<BotLabWorkspaceState, string> =
+  {
+    loaded: 'Cargado',
+    dirty: 'Editado',
+    validating: 'Validando',
+    valid: 'Listo',
+    invalid: 'Invalido',
+  };
 
 export const botLabBuildStateLabels: Record<BotLabBuildState, string> = {
   draft: 'Pendiente',
@@ -885,7 +914,10 @@ export const botLabBuildStateLabels: Record<BotLabBuildState, string> = {
   failed: 'Error',
 };
 
-export const botLabSimulationStateLabels: Record<BotLabSimulationState, string> = {
+export const botLabSimulationStateLabels: Record<
+  BotLabSimulationState,
+  string
+> = {
   idle: 'Pendiente',
   stale: 'Desactualizada',
   simulating: 'Simulando',
@@ -893,13 +925,14 @@ export const botLabSimulationStateLabels: Record<BotLabSimulationState, string> 
   failed: 'Error',
 };
 
-export const botLabExecutionStateLabels: Record<BotLabExecutionState, string> = {
-  ready: 'Preparada',
-  queueing: 'En cola',
-  running: 'Ejecutando',
-  completed: 'Completada',
-  failed: 'Error',
-};
+export const botLabExecutionStateLabels: Record<BotLabExecutionState, string> =
+  {
+    ready: 'Preparada',
+    queueing: 'En cola',
+    running: 'Ejecutando',
+    completed: 'Completada',
+    failed: 'Error',
+  };
 
 function createBotLabFlowContext(): BotLabFlowContext {
   const runtime = createBotLabRuntime({
@@ -965,32 +998,114 @@ function createBotLabFlowContext(): BotLabFlowContext {
   };
 }
 
-function createMicroDuckArtifactForTarget(
-  targetId: string,
+function compileMicroDuckWorkspaceArtifact(
+  artifact: BlocksWorkspaceArtifact,
+  targetId: string
 ): CompiledBehaviorArtifact {
+  const pattern = readMicroDuckLedPatternFromWorkspace(artifact);
+
   return {
     ...sampleMicroDuckCompiledBehaviorArtifact,
+    id: `artifact-${artifact.behaviorId}-${targetId}-${pattern}-plan`,
+    label: `MicroDuck LED ${pattern} compiled plan`,
+    behaviorId: artifact.behaviorId,
     targetId,
-    commands: sampleMicroDuckCompiledBehaviorArtifact.commands.map((command) => ({
-      ...command,
-      targetId,
-    })),
+    commands: [
+      {
+        id: `command-microduck-leds-${pattern}`,
+        capabilityId: 'microduck-leds',
+        commandId: 'set-led-pattern',
+        targetId,
+        inputs: {
+          pattern,
+          brightness: 50,
+        },
+      },
+    ],
   };
 }
 
+function readMicroDuckLedPatternFromWorkspace(
+  artifact: BlocksWorkspaceArtifact
+) {
+  if (artifact.format !== 'scratch-xml') {
+    throw new Error('Solo se puede compilar Scratch XML en esta demo.');
+  }
+
+  const xmlDocument = new DOMParser().parseFromString(
+    artifact.content,
+    'text/xml'
+  );
+  const parserError = xmlDocument.querySelector('parsererror');
+
+  if (parserError) {
+    throw new Error('El workspace Scratch XML no se puede leer.');
+  }
+
+  const root = xmlDocument.documentElement;
+
+  if (root.nodeName.toLowerCase() !== 'xml') {
+    throw new Error('El workspace no contiene un XML de Scratch valido.');
+  }
+
+  const startBlock = root.querySelector('block[type="event_whenflagclicked"]');
+
+  if (!startBlock) {
+    throw new Error(
+      'Anade un bloque de inicio con bandera verde antes de compilar.'
+    );
+  }
+
+  const ledBlock = root.querySelector(
+    'block[type="botlab_microduck_set_leds"]'
+  );
+
+  if (!ledBlock) {
+    throw new Error(
+      'Anade el bloque BotLab de LEDs MicroDuck antes de compilar.'
+    );
+  }
+
+  const patternField = ledBlock.querySelector('field[name="PATTERN"]');
+
+  return normalizeMicroDuckLedPattern(patternField?.textContent);
+}
+
+function normalizeMicroDuckLedPattern(value: string | null | undefined) {
+  const pattern = value?.trim() || 'smile';
+
+  if (pattern === 'all') {
+    return 'solid';
+  }
+
+  if (pattern === 'left' || pattern === 'right') {
+    return 'blink';
+  }
+
+  if (['smile', 'blink', 'solid', 'off'].includes(pattern)) {
+    return pattern;
+  }
+
+  throw new Error(`Patron LED no soportado: ${pattern}.`);
+}
+
 function targetCanRunMicroDuckDemo(runtime: BotLabRuntime, targetId: string) {
-  const target = runtime.listTargets().find((candidate) => candidate.id === targetId);
+  const target = runtime
+    .listTargets()
+    .find((candidate) => candidate.id === targetId);
   const capability = runtime
     .listCapabilities()
     .find((candidate) => candidate.id === 'microduck-leds');
 
   return Boolean(
-    target?.status === 'available' && capability?.targetIds.includes(targetId),
+    target?.status === 'available' && capability?.targetIds.includes(targetId)
   );
 }
 
 function createTargetMessage(runtime: BotLabRuntime, targetId: string) {
-  const target = runtime.listTargets().find((candidate) => candidate.id === targetId);
+  const target = runtime
+    .listTargets()
+    .find((candidate) => candidate.id === targetId);
 
   if (!target) {
     return 'Target desconocido. Selecciona un destino valido.';
@@ -1008,13 +1123,15 @@ function formatRunMessage(result: RuntimeRunResult | undefined) {
     return 'No habia sesiones pendientes en cola.';
   }
 
-  return `${result.snapshot.dispatchedCommandCount} comando(s) enviados. Estado: ${
-    runtimeStateLabels[result.snapshot.state]
-  }.`;
+  return `${
+    result.snapshot.dispatchedCommandCount
+  } comando(s) enviados. Estado: ${runtimeStateLabels[result.snapshot.state]}.`;
 }
 
 function formatErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : 'Error desconocido en el flujo demo.';
+  return error instanceof Error
+    ? error.message
+    : 'Error desconocido en el flujo demo.';
 }
 
 const runtimeStateLabels = {

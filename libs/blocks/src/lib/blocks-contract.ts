@@ -56,7 +56,9 @@ export interface BlocksEditorProvider {
   createEmptyWorkspace(behaviorId: string): BlocksWorkspaceArtifact;
   loadWorkspace(artifact: BlocksWorkspaceArtifact): BlocksWorkspaceSession;
   exportWorkspace(session: BlocksWorkspaceSession): BlocksWorkspaceArtifact;
-  validateWorkspace(artifact: BlocksWorkspaceArtifact): BlocksWorkspaceValidationResult;
+  validateWorkspace(
+    artifact: BlocksWorkspaceArtifact
+  ): BlocksWorkspaceValidationResult;
   mountWorkspace(request: BlocksEditorMountRequest): BlocksEditorMountResponse;
 }
 
@@ -67,7 +69,7 @@ export function createBlocksWorkspaceArtifact(
   > & {
     createdAt?: string;
     validationErrors?: string[];
-  },
+  }
 ): BlocksWorkspaceArtifact {
   return {
     ...artifact,
@@ -78,9 +80,12 @@ export function createBlocksWorkspaceArtifact(
 }
 
 export function exportBlocksWorkspace(
-  artifact: BlocksWorkspaceArtifact,
+  artifact: BlocksWorkspaceArtifact
 ): string {
-  if (artifact.format === 'botlab-json' || artifact.format === 'turbowarp-json') {
+  if (
+    artifact.format === 'botlab-json' ||
+    artifact.format === 'turbowarp-json'
+  ) {
     return JSON.stringify(
       {
         id: artifact.id,
@@ -90,7 +95,7 @@ export function exportBlocksWorkspace(
         content: safeJsonParse(artifact.content),
       },
       null,
-      2,
+      2
     );
   }
 
@@ -185,7 +190,7 @@ export interface ScratchBlocksEditorBridge {
 }
 
 export function createScratchBlocksEditorProvider(
-  bridge?: ScratchBlocksEditorBridge,
+  bridge?: ScratchBlocksEditorBridge
 ): BlocksEditorProvider {
   return {
     id: 'scratch-blocks',
@@ -199,7 +204,8 @@ export function createScratchBlocksEditorProvider(
         format: 'scratch-xml',
         engine: 'scratch-blocks',
         status: 'empty',
-        content: '<xml xmlns="https://developers.google.com/blockly/xml"></xml>',
+        content:
+          '<xml xmlns="https://developers.google.com/blockly/xml"></xml>',
       });
     },
     loadWorkspace(artifact) {
@@ -253,7 +259,7 @@ export function createScratchBlocksEditorProvider(
 }
 
 export function createBlocksEditorProvider(
-  engine: BlocksEditorEngine,
+  engine: BlocksEditorEngine
 ): BlocksEditorProvider {
   if (engine === 'scratch-blocks') {
     return createScratchBlocksEditorProvider();
@@ -271,7 +277,7 @@ export const sampleBlocksWorkspaceArtifact = importBlocksWorkspace({
 
 export const sampleScratchBlocksWorkspaceArtifact = importBlocksWorkspace({
   id: 'sample-scratch-blocks-workspace',
-  behaviorId: 'sample-behavior',
+  behaviorId: 'microduck-led-demo',
   label: 'Sample Scratch Blocks workspace',
   content:
     '<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_whenflagclicked" id="botlab-start" x="32" y="32"><next><block type="botlab_microduck_set_leds" id="botlab-leds" /></next></block></xml>',
@@ -280,7 +286,7 @@ export const sampleScratchBlocksWorkspaceArtifact = importBlocksWorkspace({
 });
 
 function detectWorkspaceFormat(
-  content: string,
+  content: string
 ): BlocksWorkspaceArtifact['format'] {
   const trimmed = content.trim();
 
@@ -292,7 +298,7 @@ function detectWorkspaceFormat(
 }
 
 function validateWorkspaceContent(
-  artifact: BlocksWorkspaceArtifact,
+  artifact: BlocksWorkspaceArtifact
 ): BlocksWorkspaceValidationResult {
   if (!artifact.content.trim()) {
     return {
@@ -306,7 +312,9 @@ function validateWorkspaceContent(
 
     return {
       valid,
-      errors: valid ? [] : [`Workspace ${artifact.id} is not valid Scratch XML.`],
+      errors: valid
+        ? []
+        : [`Workspace ${artifact.id} is not valid Scratch XML.`],
     };
   }
 
@@ -322,7 +330,9 @@ function validateWorkspaceContent(
   if (!Array.isArray((parsed as { blocks?: unknown }).blocks)) {
     return {
       valid: false,
-      errors: [`Workspace ${artifact.id} JSON content must include a blocks array.`],
+      errors: [
+        `Workspace ${artifact.id} JSON content must include a blocks array.`,
+      ],
     };
   }
 

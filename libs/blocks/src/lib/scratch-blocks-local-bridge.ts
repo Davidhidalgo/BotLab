@@ -125,9 +125,9 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
           type: 'field_dropdown',
           name: 'PATTERN',
           options: [
-            ['todos', 'all'],
-            ['izquierda', 'left'],
-            ['derecha', 'right'],
+            ['sonrisa', 'smile'],
+            ['parpadeo', 'blink'],
+            ['solido', 'solid'],
             ['apagar', 'off'],
           ],
         },

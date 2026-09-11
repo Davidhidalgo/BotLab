@@ -13,6 +13,7 @@ describe('botLabFlowMachine', () => {
       simulation: 'idle',
       execution: 'ready',
     });
+    expect(actor.getSnapshot().context.selectedTargetId).toBe('microduck-sim');
 
     const compiled = new Promise<void>((resolve, reject) => {
       const subscription = actor.subscribe((snapshot) => {
@@ -74,6 +75,9 @@ describe('botLabFlowMachine', () => {
     expect(actor.getSnapshot().context.compiledArtifact?.id).toBe(
       'artifact-microduck-leds-plan',
     );
+    expect(actor.getSnapshot().context.compiledArtifact?.targetId).toBe(
+      'microduck-sim',
+    );
     expect(actor.getSnapshot().context.simulationResult).toMatchObject({
       artifactId: 'artifact-microduck-leds-plan',
       status: 'passed',
@@ -82,5 +86,21 @@ describe('botLabFlowMachine', () => {
       expect.arrayContaining(['build', 'simulation', 'execution']),
     );
     expect(actor.getSnapshot().context.runMessage).toContain('1 comando(s) enviados');
+  });
+
+  it('blocks compilation for planned or incompatible targets', () => {
+    const actor = createActor(botLabFlowMachine);
+
+    actor.start();
+    actor.send({ type: 'target.selected', targetId: 'stackchan-planned' });
+    actor.send({ type: 'build.compile' });
+
+    expect(actor.getSnapshot().value).toMatchObject({
+      build: 'stale',
+      simulation: 'stale',
+      execution: 'ready',
+    });
+    expect(actor.getSnapshot().context.selectedTargetId).toBe('stackchan-planned');
+    expect(actor.getSnapshot().context.compiledArtifact).toBeUndefined();
   });
 });

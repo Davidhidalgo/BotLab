@@ -23,6 +23,23 @@ describe('App', () => {
     expect(getAllByText('Editado').length).toBeGreaterThan(0);
   });
 
+  it('should show and enforce target selection', async () => {
+    const { getAllByText, getByRole } = render(<App />);
+
+    expect(getAllByText('MicroDuck Simulator').length).toBeGreaterThan(0);
+    expect(getAllByText('Seleccionado').length).toBeGreaterThan(0);
+
+    fireEvent.click(getByRole('button', { name: /StackChan/i }));
+
+    expect(getAllByText(/Planificado o no compatible/i).length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(getByRole('button', { name: 'Compilar demo' })).toHaveProperty(
+        'disabled',
+        true,
+      );
+    });
+  });
+
   it('should run the MicroDuck runtime demo from the UI', async () => {
     const { getAllByText, getByRole, getByText } = render(<App />);
 

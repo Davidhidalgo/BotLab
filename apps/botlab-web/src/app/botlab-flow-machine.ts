@@ -14,6 +14,7 @@ import {
   samplePolicies,
   sampleSchedulers,
   sampleSkills,
+  type Target,
 } from '@botlab/model';
 import {
   createBotLabRuntime,
@@ -60,6 +61,7 @@ export interface BotLabSimulationResult {
 }
 
 export type BotLabFlowLogCategory =
+  | 'target'
   | 'workspace'
   | 'build'
   | 'simulation'
@@ -75,6 +77,7 @@ export interface BotLabFlowLogEntry {
 export interface BotLabFlowContext {
   runtime: BotLabRuntime;
   demoSessionId: string;
+  selectedTargetId: string;
   workspaceArtifact: BlocksWorkspaceArtifact;
   compiledArtifact?: CompiledBehaviorArtifact;
   simulationResult?: BotLabSimulationResult;
@@ -119,6 +122,7 @@ interface CompileWorkspaceInput {
   runtime: BotLabRuntime;
   demoSessionId: string;
   artifact: BlocksWorkspaceArtifact;
+  targetId: string;
 }
 
 interface CompileWorkspaceOutput {
@@ -129,6 +133,7 @@ interface CompileWorkspaceOutput {
 
 interface SimulatePlanInput {
   artifact?: CompiledBehaviorArtifact;
+  target?: Target;
 }
 
 interface SimulatePlanOutput {
@@ -140,6 +145,7 @@ export const botLabFlowMachine = setup({
   types: {} as {
     context: BotLabFlowContext;
     events:
+      | { type: 'target.selected'; targetId: string }
       | { type: 'workspace.changed'; artifact: BlocksWorkspaceArtifact }
       | { type: 'workspace.validate' }
       | { type: 'build.compile' }
@@ -169,16 +175,23 @@ export const botLabFlowMachine = setup({
           throw new Error('Workspace invalido. Valida o corrige antes de compilar.');
         }
 
-        input.runtime.loadCompiledBehavior(
-          input.demoSessionId,
-          sampleMicroDuckCompiledBehaviorArtifact,
-        );
+        const target = input.runtime
+          .listTargets()
+          .find((candidate) => candidate.id === input.targetId);
+
+        if (!target || target.status !== 'available') {
+          throw new Error('Selecciona un target disponible antes de compilar.');
+        }
+
+        const compiledArtifact = createMicroDuckArtifactForTarget(input.targetId);
+
+        input.runtime.loadCompiledBehavior(input.demoSessionId, compiledArtifact);
         input.runtime.confirmPolicy(input.demoSessionId);
 
         return {
-          compiledArtifact: sampleMicroDuckCompiledBehaviorArtifact,
+          compiledArtifact,
           runtimeSnapshot: input.runtime.inspectRuntime(),
-          buildMessage: `Plan ${sampleMicroDuckCompiledBehaviorArtifact.id} compilado para MicroDuck.`,
+          buildMessage: `Plan ${compiledArtifact.id} compilado para ${target.name}.`,
         };
       },
     ),
@@ -193,12 +206,14 @@ export const botLabFlowMachine = setup({
 
       return {
         simulationResult: {
-          simulatorId: 'microduck-official-sim',
+          simulatorId:
+            input.target?.profile?.simulator?.integrationId ??
+            'microduck-official-sim',
           artifactId: input.artifact.id,
           status: 'passed' as const,
           commandCount: input.artifact.commands.length,
         },
-        simulationMessage: `Simulacion completa: ${input.artifact.commands.length} comando(s) verificados en MicroDuck official simulator.`,
+        simulationMessage: `Simulacion completa: ${input.artifact.commands.length} comando(s) verificados para ${input.target?.name ?? 'MicroDuck'}.`,
       };
     }),
     queueDemo: fromPromise(async ({ input }: { input: QueueDemoInput }) => {
@@ -218,6 +233,16 @@ export const botLabFlowMachine = setup({
     }),
   },
   actions: {
+    selectTarget: assign({
+      selectedTargetId: (_, params: { targetId: string }) => params.targetId,
+      compiledArtifact: () => undefined,
+      simulationResult: () => undefined,
+      buildMessage: ({ context }, params: { targetId: string }) =>
+        createTargetMessage(context.runtime, params.targetId),
+      simulationMessage: () => 'Simulacion pendiente para el target seleccionado.',
+      runMessage: () => 'Compila y simula antes de ejecutar el target seleccionado.',
+      errorMessage: () => undefined,
+    }),
     appendFlowLog: assign({
       flowLogCounter: ({ context }) => context.flowLogCounter + 1,
       flowLog: (
@@ -292,7 +317,9 @@ export const botLabFlowMachine = setup({
     }),
   },
   guards: {
-    buildCanCompile: ({ context }) => context.workspaceArtifact.status !== 'invalid',
+    buildCanCompile: ({ context }) =>
+      context.workspaceArtifact.status !== 'invalid' &&
+      targetCanRunMicroDuckDemo(context.runtime, context.selectedTargetId),
     hasCompiledArtifact: ({ context }) => Boolean(context.compiledArtifact),
     hasPassedSimulation: ({ context }) =>
       context.simulationResult?.status === 'passed',
@@ -465,6 +492,22 @@ export const botLabFlowMachine = setup({
     build: {
       initial: 'draft',
       on: {
+        'target.selected': {
+          target: '.stale',
+          actions: [
+            {
+              type: 'selectTarget',
+              params: ({ event }) => ({ targetId: event.targetId }),
+            },
+            {
+              type: 'appendFlowLog',
+              params: ({ event }) => ({
+                category: 'target',
+                message: `Target seleccionado: ${event.targetId}.`,
+              }),
+            },
+          ],
+        },
         'workspace.changed': {
           target: '.stale',
           actions: [{ type: 'clearCompiledArtifact' }, { type: 'clearSimulationResult' }],
@@ -496,6 +539,7 @@ export const botLabFlowMachine = setup({
               runtime: context.runtime,
               demoSessionId: context.demoSessionId,
               artifact: context.workspaceArtifact,
+              targetId: context.selectedTargetId,
             }),
             onDone: {
               target: 'compiled',
@@ -556,6 +600,9 @@ export const botLabFlowMachine = setup({
     simulation: {
       initial: 'idle',
       on: {
+        'target.selected': {
+          target: '.idle',
+        },
         'workspace.changed': {
           target: '.stale',
           actions: [{ type: 'clearSimulationResult' }],
@@ -589,6 +636,9 @@ export const botLabFlowMachine = setup({
             src: 'simulatePlan',
             input: ({ context }) => ({
               artifact: context.compiledArtifact,
+              target: context.runtime
+                .listTargets()
+                .find((target) => target.id === context.selectedTargetId),
             }),
             onDone: {
               target: 'passed',
@@ -648,6 +698,11 @@ export const botLabFlowMachine = setup({
     },
     execution: {
       initial: 'ready',
+      on: {
+        'target.selected': {
+          target: '.ready',
+        },
+      },
       states: {
         ready: {
           tags: ['idle'],
@@ -868,19 +923,35 @@ function createBotLabFlowContext(): BotLabFlowContext {
           };
         },
       },
+      {
+        targetId: 'microduck-sim',
+        async dispatch(command) {
+          await new Promise((resolve) => {
+            globalThis.setTimeout(resolve, 120);
+          });
+
+          return {
+            commandId: command.id,
+            status: 'dispatched',
+            message: `Simulated dispatch ${command.commandId}.`,
+          };
+        },
+      },
     ],
   });
   const session = runtime.createSession({ id: 'demo-microduck-leds' });
+  const selectedTargetId = 'microduck-sim';
 
   return {
     runtime,
     demoSessionId: session.id,
+    selectedTargetId,
     workspaceArtifact: sampleBlocksWorkspaceArtifact,
     runtimeSnapshot: runtime.inspectRuntime(),
     workspaceMessage: 'Workspace cargado desde la muestra.',
-    buildMessage: 'Compila el workspace para generar un plan ejecutable.',
+    buildMessage: createTargetMessage(runtime, selectedTargetId),
     simulationMessage: 'Simula el plan compilado antes de ejecutar.',
-    runMessage: 'Demo preparada para MicroDuck',
+    runMessage: 'Demo preparada para MicroDuck Simulator',
     flowLog: [
       {
         id: 'flow-log-0',
@@ -890,6 +961,44 @@ function createBotLabFlowContext(): BotLabFlowContext {
     ],
     flowLogCounter: 0,
   };
+}
+
+function createMicroDuckArtifactForTarget(
+  targetId: string,
+): CompiledBehaviorArtifact {
+  return {
+    ...sampleMicroDuckCompiledBehaviorArtifact,
+    targetId,
+    commands: sampleMicroDuckCompiledBehaviorArtifact.commands.map((command) => ({
+      ...command,
+      targetId,
+    })),
+  };
+}
+
+function targetCanRunMicroDuckDemo(runtime: BotLabRuntime, targetId: string) {
+  const target = runtime.listTargets().find((candidate) => candidate.id === targetId);
+  const capability = runtime
+    .listCapabilities()
+    .find((candidate) => candidate.id === 'microduck-leds');
+
+  return Boolean(
+    target?.status === 'available' && capability?.targetIds.includes(targetId),
+  );
+}
+
+function createTargetMessage(runtime: BotLabRuntime, targetId: string) {
+  const target = runtime.listTargets().find((candidate) => candidate.id === targetId);
+
+  if (!target) {
+    return 'Target desconocido. Selecciona un destino valido.';
+  }
+
+  if (!targetCanRunMicroDuckDemo(runtime, targetId)) {
+    return `${target.name} aun no puede ejecutar la demo MicroDuck.`;
+  }
+
+  return `Target ${target.name} seleccionado. Compila el workspace para generar un plan ejecutable.`;
 }
 
 function formatRunMessage(result: RuntimeRunResult | undefined) {

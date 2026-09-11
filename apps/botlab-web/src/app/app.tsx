@@ -40,6 +40,7 @@ export function App() {
     runMessage,
     buildMessage,
     flowLog,
+    selectedTargetId,
     simulationMessage,
     simulationResult,
     workspaceArtifact,
@@ -56,6 +57,13 @@ export function App() {
   const isSimulating = flowSnapshot.hasTag('simulation-busy');
   const targets = runtime.listTargets();
   const capabilities = runtime.listCapabilities();
+  const selectedTarget = targets.find((target) => target.id === selectedTargetId);
+  const selectedCapabilities = capabilities.filter((capability) =>
+    capability.targetIds.includes(selectedTargetId),
+  );
+  const selectedTargetCanRunDemo =
+    selectedTarget?.status === 'available' &&
+    selectedCapabilities.some((capability) => capability.id === 'microduck-leds');
   const queue = runtimeSnapshot.queue;
 
   return (
@@ -98,7 +106,10 @@ export function App() {
             <Button
               variant="secondary"
               onClick={() => sendFlow({ type: 'build.compile' })}
-              disabled={!flowSnapshot.can({ type: 'build.compile' })}
+              disabled={
+                !flowSnapshot.can({ type: 'build.compile' }) ||
+                !selectedTargetCanRunDemo
+              }
             >
               <Cpu className="h-4 w-4" />
               {isCompiling ? 'Compilando' : 'Compilar demo'}
@@ -151,6 +162,10 @@ export function App() {
               value={botLabSimulationStateLabels[flowState.simulation]}
             />
             <Metric
+              label="Destino"
+              value={selectedTarget?.name ?? 'Sin seleccionar'}
+            />
+            <Metric
               label="Simulador"
               value={simulationResult?.simulatorId ?? 'Sin ejecutar'}
             />
@@ -162,6 +177,10 @@ export function App() {
           </Panel>
 
           <Panel title="Runtime">
+            <Metric
+              label="Target activo"
+              value={selectedTarget?.name ?? 'Sin seleccionar'}
+            />
             <Metric label="Targets" value={targets.length.toString()} />
             <Metric label="Capabilities" value={capabilities.length.toString()} />
             <Metric
@@ -243,6 +262,68 @@ export function App() {
             </div>
           </Panel>
 
+          <Panel title="Targets">
+            <div className="mb-3 rounded-md border bg-background p-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">Destino activo</span>
+                <Badge>{targetKindLabels[selectedTarget?.kind ?? 'simulator']}</Badge>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                {selectedTarget?.name ?? 'Selecciona un target'} · {selectedCapabilities.length} capacidad(es) compatibles
+              </p>
+            </div>
+            <div className="space-y-3">
+              {targets.map((target) => {
+                const isSelected = target.id === selectedTargetId;
+                const compatibleCapabilities = capabilities.filter((capability) =>
+                  capability.targetIds.includes(target.id),
+                );
+                const canRunDemo =
+                  target.status === 'available' &&
+                  compatibleCapabilities.some(
+                    (capability) => capability.id === 'microduck-leds',
+                  );
+
+                return (
+                  <button
+                    key={target.id}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() =>
+                      sendFlow({ type: 'target.selected', targetId: target.id })
+                    }
+                    className={`w-full rounded-md border bg-background p-3 text-left transition-colors hover:border-primary/60 ${
+                      isSelected ? 'border-primary ring-2 ring-primary/20' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-medium">{target.name}</span>
+                      <Badge
+                        variant={
+                          isSelected
+                            ? 'default'
+                            : target.status === 'available'
+                              ? 'secondary'
+                              : 'outline'
+                        }
+                      >
+                        {isSelected ? 'Seleccionado' : targetStatusLabels[target.status]}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {targetKindLabels[target.kind]} · {target.profile?.connection.defaultMode ?? 'manual'}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {canRunDemo
+                        ? `${compatibleCapabilities.length} capacidad(es) listas para la demo.`
+                        : 'Planificado o no compatible con la demo MicroDuck actual.'}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </Panel>
+
           <Panel title="Historial">
             <div className="space-y-2">
               {flowLog.map((entry) => (
@@ -259,21 +340,6 @@ export function App() {
             </div>
           </Panel>
 
-          <Panel title="Targets">
-            <div className="space-y-3">
-              {targets.map((target) => (
-                <div key={target.id} className="rounded-md border bg-background p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="font-medium">{target.name}</span>
-                    <Badge variant={target.status === 'available' ? 'default' : 'secondary'}>
-                      {target.status}
-                    </Badge>
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{target.kind}</p>
-                </div>
-              ))}
-            </div>
-          </Panel>
         </aside>
       </section>
 
@@ -340,11 +406,23 @@ const runtimeStateLabels = {
 };
 
 const flowLogLabels = {
+  target: 'Target',
   workspace: 'Workspace',
   build: 'Build',
   simulation: 'Simulacion',
   execution: 'Ejecucion',
   error: 'Error',
+};
+
+const targetKindLabels = {
+  robot: 'Hardware',
+  simulator: 'Simulador',
+};
+
+const targetStatusLabels = {
+  available: 'Disponible',
+  planned: 'Planificado',
+  offline: 'Offline',
 };
 
 function RuntimeList({

@@ -3,9 +3,9 @@ import type { SimulatorIntegration } from '@botlab/model';
 export const officialSimulatorIntegrations: SimulatorIntegration[] = [
   {
     id: 'microduck-official-sim',
-    name: 'MicroDuck official simulator',
-    status: 'planned',
-    dependencyStrategy: 'official-package',
+    name: 'MicroDuck demo simulator bridge',
+    status: 'available',
+    dependencyStrategy: 'manual-bridge',
   },
   {
     id: 'stackchan-sim-bridge',

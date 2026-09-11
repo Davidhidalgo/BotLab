@@ -54,6 +54,7 @@ Implemented:
 - The web app uses an initial XState v5 parallel flow machine for workspace, build, simulation, and execution lifecycles.
 - The UI now exposes a demo compile step that produces a compiled plan artifact before runtime execution is enabled.
 - The UI now exposes a demo simulation step that verifies the compiled plan before runtime execution is enabled.
+- The UI now exposes a target selector that defaults to the MicroDuck simulator demo target and blocks planned or incompatible targets from compilation.
 
 Not implemented yet:
 

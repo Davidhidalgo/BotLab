@@ -21,7 +21,7 @@ export function createMicroDuckAdapter(): BotLabAdapter {
           },
           simulator: {
             supported: true,
-            integrationId: 'microduck-sim',
+            integrationId: 'microduck-official-sim',
           },
           connection: {
             modes: ['usb', 'serial'],
@@ -35,7 +35,7 @@ export function createMicroDuckAdapter(): BotLabAdapter {
         name: 'MicroDuck Simulator',
         kind: 'simulator',
         adapterId: 'microduck',
-        status: 'planned',
+        status: 'available',
         profile: {
           hardware: {
             family: 'MicroDuck',
@@ -43,12 +43,12 @@ export function createMicroDuckAdapter(): BotLabAdapter {
           },
           simulator: {
             supported: true,
-            integrationId: 'microduck-sim',
+            integrationId: 'microduck-official-sim',
           },
           connection: {
             modes: ['simulator'],
             defaultMode: 'simulator',
-            discovery: 'planned',
+            discovery: 'automatic',
           },
         },
       },

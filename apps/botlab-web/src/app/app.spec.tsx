@@ -64,5 +64,7 @@ describe('App', () => {
     });
     expect(getAllByText('Completada').length).toBeGreaterThan(0);
     expect(getByText('Ejecucion demo completada.')).toBeTruthy();
+    expect(getByText('Comando enviado')).toBeTruthy();
+    expect(getAllByText('Simulated dispatch set-led-pattern.').length).toBeGreaterThan(0);
   });
 });

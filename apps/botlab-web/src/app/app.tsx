@@ -65,6 +65,10 @@ export function App() {
     selectedTarget?.status === 'available' &&
     selectedCapabilities.some((capability) => capability.id === 'microduck-leds');
   const queue = runtimeSnapshot.queue;
+  const activeSession = runtimeSnapshot.sessions[0];
+  const recentEvents = runtimeSnapshot.recentEvents.slice(-5).reverse();
+  const recentTrace = activeSession?.trace.slice(-5).reverse() ?? [];
+  const diagnostics = runtimeSnapshot.diagnostics.slice(-5).reverse();
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -324,6 +328,36 @@ export function App() {
             </div>
           </Panel>
 
+          <Panel title="Runtime log">
+            <RuntimeLogSection
+              title="Eventos"
+              emptyMessage="Sin eventos recientes"
+              items={recentEvents.map((event) => ({
+                id: event.id,
+                label: runtimeEventLabels[event.type],
+                detail: event.message,
+              }))}
+            />
+            <RuntimeLogSection
+              title="Trace"
+              emptyMessage="Sin trace de sesion"
+              items={recentTrace.map((entry) => ({
+                id: entry.id,
+                label: runtimeTraceLabels[entry.category],
+                detail: entry.message,
+              }))}
+            />
+            <RuntimeLogSection
+              title="Diagnosticos"
+              emptyMessage="Sin diagnosticos"
+              items={diagnostics.map((diagnostic) => ({
+                id: diagnostic.id,
+                label: runtimeDiagnosticLabels[diagnostic.category],
+                detail: diagnostic.message,
+              }))}
+            />
+          </Panel>
+
           <Panel title="Historial">
             <div className="space-y-2">
               {flowLog.map((entry) => (
@@ -425,6 +459,44 @@ const targetStatusLabels = {
   offline: 'Offline',
 };
 
+const runtimeEventLabels = {
+  'session-created': 'Sesion creada',
+  'artifact-loaded': 'Artifact cargado',
+  'policy-evaluated': 'Politica evaluada',
+  'policy-confirmed': 'Politica confirmada',
+  'session-queued': 'Sesion en cola',
+  'session-dequeued': 'Sesion iniciada',
+  'session-started': 'Runtime iniciado',
+  'command-dispatched': 'Comando enviado',
+  'session-paused': 'Sesion pausada',
+  'session-resumed': 'Sesion reanudada',
+  'session-stopped': 'Sesion completada',
+  'session-disposed': 'Sesion cerrada',
+  'runtime-error': 'Error runtime',
+};
+
+const runtimeTraceLabels = {
+  lifecycle: 'Lifecycle',
+  load: 'Load',
+  policy: 'Policy',
+  scheduler: 'Scheduler',
+  arbitration: 'Arbitration',
+  dispatch: 'Dispatch',
+  validation: 'Validation',
+  error: 'Error',
+};
+
+const runtimeDiagnosticLabels = {
+  validation: 'Validation',
+  policy: 'Policy',
+  adapter: 'Adapter',
+  transport: 'Transport',
+  scheduler: 'Scheduler',
+  arbitration: 'Arbitration',
+  simulator: 'Simulator',
+  lifecycle: 'Lifecycle',
+};
+
 function RuntimeList({
   icon,
   label,
@@ -441,6 +513,39 @@ function RuntimeList({
         <span className="text-sm font-medium">{label}</span>
       </div>
       <p className="text-sm leading-6 text-muted-foreground">{value}</p>
+    </div>
+  );
+}
+
+function RuntimeLogSection({
+  title,
+  emptyMessage,
+  items,
+}: {
+  title: string;
+  emptyMessage: string;
+  items: Array<{ id: string; label: string; detail: string }>;
+}) {
+  return (
+    <div className="mb-4 last:mb-0">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="text-sm font-medium">{title}</span>
+        <Badge variant="outline">{items.length}</Badge>
+      </div>
+      <div className="space-y-2">
+        {items.length === 0 ? (
+          <p className="rounded-md border bg-background p-3 text-sm text-muted-foreground">
+            {emptyMessage}
+          </p>
+        ) : (
+          items.map((item) => (
+            <div key={item.id} className="rounded-md border bg-background p-3">
+              <div className="mb-1 text-sm font-medium">{item.label}</div>
+              <p className="text-sm leading-6 text-muted-foreground">{item.detail}</p>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }

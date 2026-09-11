@@ -26,6 +26,12 @@ describe('App', () => {
   it('should run the MicroDuck runtime demo from the UI', async () => {
     const { getAllByText, getByRole, getByText } = render(<App />);
 
+    fireEvent.click(getByRole('button', { name: 'Compilar demo' }));
+
+    await waitFor(() => {
+      expect(getAllByText(/artifact-microduck-leds-plan/i).length).toBeGreaterThan(0);
+    });
+
     fireEvent.click(getByRole('button', { name: 'Ejecutar demo' }));
 
     expect(getAllByText(/Ejecutando/i).length).toBeGreaterThan(0);

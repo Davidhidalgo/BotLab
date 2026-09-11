@@ -5,11 +5,14 @@ import { useMachine } from '@xstate/react';
 import { Activity, Blocks, Cpu, GitBranch, Lock, Play, ShieldCheck, Workflow } from 'lucide-react';
 import { type ReactNode } from 'react';
 import {
+  botLabBuildStateLabels,
+  botLabBuildSteps,
   botLabExecutionStateLabels,
   botLabExecutionSteps,
   botLabFlowMachine,
   botLabWorkspaceStateLabels,
   botLabWorkspaceSteps,
+  type BotLabBuildState,
   type BotLabExecutionState,
   type BotLabWorkspaceState,
 } from './botlab-flow-machine';
@@ -27,13 +30,22 @@ const conceptIcons = {
 
 export function App() {
   const [flowSnapshot, sendFlow] = useMachine(botLabFlowMachine);
-  const { runtime, runtimeSnapshot, runMessage, workspaceArtifact, workspaceMessage } =
-    flowSnapshot.context;
+  const {
+    compiledArtifact,
+    runtime,
+    runtimeSnapshot,
+    runMessage,
+    buildMessage,
+    workspaceArtifact,
+    workspaceMessage,
+  } = flowSnapshot.context;
   const flowState = flowSnapshot.value as {
     workspace: BotLabWorkspaceState;
+    build: BotLabBuildState;
     execution: BotLabExecutionState;
   };
   const isRunningDemo = flowSnapshot.hasTag('execution-busy');
+  const isCompiling = flowSnapshot.hasTag('build-busy');
   const targets = runtime.listTargets();
   const capabilities = runtime.listCapabilities();
   const queue = runtimeSnapshot.queue;
@@ -75,6 +87,14 @@ export function App() {
               <ShieldCheck className="h-4 w-4" />
               Validar workspace
             </Button>
+            <Button
+              variant="secondary"
+              onClick={() => sendFlow({ type: 'build.compile' })}
+              disabled={!flowSnapshot.can({ type: 'build.compile' })}
+            >
+              <Cpu className="h-4 w-4" />
+              {isCompiling ? 'Compilando' : 'Compilar demo'}
+            </Button>
           </div>
         </div>
       </section>
@@ -95,6 +115,18 @@ export function App() {
             <Metric label="Artifact" value={workspaceArtifact.id} />
             <Metric label="Formato" value={workspaceArtifact.format} />
             <p className="mt-3 text-sm leading-6 text-muted-foreground">{workspaceMessage}</p>
+          </Panel>
+
+          <Panel title="Build">
+            <Metric
+              label="Estado"
+              value={botLabBuildStateLabels[flowState.build]}
+            />
+            <Metric
+              label="Plan"
+              value={compiledArtifact?.id ?? 'Sin compilar'}
+            />
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">{buildMessage}</p>
           </Panel>
 
           <Panel title="Runtime">
@@ -149,6 +181,15 @@ export function App() {
                 </Badge>
               </div>
               <FlowRail steps={botLabWorkspaceSteps} activeState={flowState.workspace} />
+            </div>
+            <div className="mt-3 rounded-md border bg-background p-3">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">Flujo compilación</span>
+                <Badge variant="outline">
+                  {botLabBuildStateLabels[flowState.build]}
+                </Badge>
+              </div>
+              <FlowRail steps={botLabBuildSteps} activeState={flowState.build} />
             </div>
             <div className="mt-3 rounded-md border bg-background p-3">
               <div className="mb-3 flex items-center justify-between gap-3">

@@ -7,6 +7,7 @@ import {
   type BlocksWorkspaceValidationResult,
 } from '@botlab/blocks';
 import {
+  type CompiledBehaviorArtifact,
   sampleArbitrationStrategies,
   sampleMicroDuckCompiledBehaviorArtifact,
   sampleMicroDuckLedBehavior,
@@ -37,12 +38,21 @@ export type BotLabExecutionState =
   | 'completed'
   | 'failed';
 
+export type BotLabBuildState =
+  | 'draft'
+  | 'stale'
+  | 'compiling'
+  | 'compiled'
+  | 'failed';
+
 export interface BotLabFlowContext {
   runtime: BotLabRuntime;
   demoSessionId: string;
   workspaceArtifact: BlocksWorkspaceArtifact;
+  compiledArtifact?: CompiledBehaviorArtifact;
   runtimeSnapshot: RuntimeIntrospectionSnapshot;
   workspaceMessage: string;
+  buildMessage: string;
   runMessage: string;
   errorMessage?: string;
 }
@@ -74,12 +84,25 @@ interface ValidateWorkspaceOutput {
   validation: BlocksWorkspaceValidationResult;
 }
 
+interface CompileWorkspaceInput {
+  runtime: BotLabRuntime;
+  demoSessionId: string;
+  artifact: BlocksWorkspaceArtifact;
+}
+
+interface CompileWorkspaceOutput {
+  compiledArtifact: CompiledBehaviorArtifact;
+  runtimeSnapshot: RuntimeIntrospectionSnapshot;
+  buildMessage: string;
+}
+
 export const botLabFlowMachine = setup({
   types: {} as {
     context: BotLabFlowContext;
     events:
       | { type: 'workspace.changed'; artifact: BlocksWorkspaceArtifact }
       | { type: 'workspace.validate' }
+      | { type: 'build.compile' }
       | { type: 'demo.run' };
   },
   actors: {
@@ -96,6 +119,25 @@ export const botLabFlowMachine = setup({
             status: validation.valid ? 'loaded' : 'invalid',
             validationErrors: validation.errors,
           },
+        };
+      },
+    ),
+    compileWorkspace: fromPromise(
+      async ({ input }: { input: CompileWorkspaceInput }) => {
+        if (input.artifact.status === 'invalid') {
+          throw new Error('Workspace invalido. Valida o corrige antes de compilar.');
+        }
+
+        input.runtime.loadCompiledBehavior(
+          input.demoSessionId,
+          sampleMicroDuckCompiledBehaviorArtifact,
+        );
+        input.runtime.confirmPolicy(input.demoSessionId);
+
+        return {
+          compiledArtifact: sampleMicroDuckCompiledBehaviorArtifact,
+          runtimeSnapshot: input.runtime.inspectRuntime(),
+          buildMessage: `Plan ${sampleMicroDuckCompiledBehaviorArtifact.id} compilado para MicroDuck.`,
         };
       },
     ),
@@ -123,6 +165,10 @@ export const botLabFlowMachine = setup({
         `Workspace ${workspaceStatusLabels[params.artifact.status]}.`,
       errorMessage: () => undefined,
     }),
+    clearCompiledArtifact: assign({
+      compiledArtifact: () => undefined,
+      buildMessage: () => 'Workspace editado. Compila de nuevo antes de ejecutar.',
+    }),
     setWorkspaceValidation: assign({
       workspaceArtifact: (_, params: ValidateWorkspaceOutput) => params.artifact,
       workspaceMessage: (_, params: ValidateWorkspaceOutput) =>
@@ -131,6 +177,16 @@ export const botLabFlowMachine = setup({
           : params.validation.errors.join(' '),
       errorMessage: (_, params: ValidateWorkspaceOutput) =>
         params.validation.valid ? undefined : params.validation.errors.join(' '),
+    }),
+    setCompiledArtifact: assign({
+      compiledArtifact: (_, params: CompileWorkspaceOutput) => params.compiledArtifact,
+      runtimeSnapshot: (_, params: CompileWorkspaceOutput) => params.runtimeSnapshot,
+      buildMessage: (_, params: CompileWorkspaceOutput) => params.buildMessage,
+      errorMessage: () => undefined,
+    }),
+    setBuildError: assign({
+      buildMessage: (_, params: { message: string }) => params.message,
+      errorMessage: (_, params: { message: string }) => params.message,
     }),
     setQueuedSnapshot: assign({
       runtimeSnapshot: (_, params: QueueDemoOutput) => params.runtimeSnapshot,
@@ -148,6 +204,8 @@ export const botLabFlowMachine = setup({
     }),
   },
   guards: {
+    buildCanCompile: ({ context }) => context.workspaceArtifact.status !== 'invalid',
+    hasCompiledArtifact: ({ context }) => Boolean(context.compiledArtifact),
     workspaceCanRun: ({ context }) => context.workspaceArtifact.status !== 'invalid',
     workspaceIsValid: (_, params: BlocksWorkspaceValidationResult) => params.valid,
   },
@@ -272,6 +330,83 @@ export const botLabFlowMachine = setup({
         },
       },
     },
+    build: {
+      initial: 'draft',
+      on: {
+        'workspace.changed': {
+          target: '.stale',
+          actions: [{ type: 'clearCompiledArtifact' }],
+        },
+      },
+      states: {
+        draft: {
+          on: {
+            'build.compile': {
+              guard: { type: 'buildCanCompile' },
+              target: 'compiling',
+            },
+          },
+        },
+        stale: {
+          tags: ['dirty'],
+          on: {
+            'build.compile': {
+              guard: { type: 'buildCanCompile' },
+              target: 'compiling',
+            },
+          },
+        },
+        compiling: {
+          tags: ['build-busy'],
+          invoke: {
+            src: 'compileWorkspace',
+            input: ({ context }) => ({
+              runtime: context.runtime,
+              demoSessionId: context.demoSessionId,
+              artifact: context.workspaceArtifact,
+            }),
+            onDone: {
+              target: 'compiled',
+              actions: [
+                {
+                  type: 'setCompiledArtifact',
+                  params: ({ event }) => event.output,
+                },
+              ],
+            },
+            onError: {
+              target: 'failed',
+              actions: [
+                {
+                  type: 'setBuildError',
+                  params: ({ event }) => ({
+                    message: formatErrorMessage(event.error),
+                  }),
+                },
+              ],
+            },
+          },
+        },
+        compiled: {
+          tags: ['build-ready'],
+          on: {
+            'build.compile': {
+              guard: { type: 'buildCanCompile' },
+              target: 'compiling',
+            },
+          },
+        },
+        failed: {
+          tags: ['error'],
+          on: {
+            'build.compile': {
+              guard: { type: 'buildCanCompile' },
+              target: 'compiling',
+            },
+          },
+        },
+      },
+    },
     execution: {
       initial: 'ready',
       states: {
@@ -279,7 +414,7 @@ export const botLabFlowMachine = setup({
           tags: ['idle'],
           on: {
             'demo.run': {
-              guard: { type: 'workspaceCanRun' },
+              guard: { type: 'hasCompiledArtifact' },
               target: 'queueing',
             },
           },
@@ -347,7 +482,7 @@ export const botLabFlowMachine = setup({
           tags: ['completed'],
           on: {
             'demo.run': {
-              guard: { type: 'workspaceCanRun' },
+              guard: { type: 'hasCompiledArtifact' },
               target: 'queueing',
             },
           },
@@ -356,7 +491,7 @@ export const botLabFlowMachine = setup({
           tags: ['error'],
           on: {
             'demo.run': {
-              guard: { type: 'workspaceCanRun' },
+              guard: { type: 'hasCompiledArtifact' },
               target: 'queueing',
             },
           },
@@ -388,12 +523,31 @@ export const botLabExecutionSteps: Array<{
   { state: 'failed', label: 'Error' },
 ];
 
+export const botLabBuildSteps: Array<{
+  state: BotLabBuildState;
+  label: string;
+}> = [
+  { state: 'draft', label: 'Pendiente' },
+  { state: 'stale', label: 'Desactualizado' },
+  { state: 'compiling', label: 'Compilando' },
+  { state: 'compiled', label: 'Compilado' },
+  { state: 'failed', label: 'Error' },
+];
+
 export const botLabWorkspaceStateLabels: Record<BotLabWorkspaceState, string> = {
   loaded: 'Cargado',
   dirty: 'Editado',
   validating: 'Validando',
   valid: 'Listo',
   invalid: 'Invalido',
+};
+
+export const botLabBuildStateLabels: Record<BotLabBuildState, string> = {
+  draft: 'Pendiente',
+  stale: 'Desactualizado',
+  compiling: 'Compilando',
+  compiled: 'Compilado',
+  failed: 'Error',
 };
 
 export const botLabExecutionStateLabels: Record<BotLabExecutionState, string> = {
@@ -432,15 +586,13 @@ function createBotLabFlowContext(): BotLabFlowContext {
   });
   const session = runtime.createSession({ id: 'demo-microduck-leds' });
 
-  runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
-  runtime.confirmPolicy(session.id);
-
   return {
     runtime,
     demoSessionId: session.id,
     workspaceArtifact: sampleBlocksWorkspaceArtifact,
     runtimeSnapshot: runtime.inspectRuntime(),
     workspaceMessage: 'Workspace cargado desde la muestra.',
+    buildMessage: 'Compila el workspace para generar un plan ejecutable.',
     runMessage: 'Demo preparada para MicroDuck',
   };
 }

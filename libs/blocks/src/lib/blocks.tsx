@@ -1,5 +1,5 @@
 import { Badge } from '@botlab/ui';
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   createBlocksEditorProvider,
   createScratchBlocksEditorProvider,
@@ -20,6 +20,7 @@ export interface BlocksEditorShellProps {
   readOnly?: boolean;
   validationErrors?: string[];
   provider?: BlocksEditorProvider;
+  autoMountNativeEditor?: boolean;
   onArtifactChange?: (artifact: BlocksWorkspaceArtifact) => void;
 }
 
@@ -31,21 +32,38 @@ export function BlocksEditorShell({
   workspaceStatus = artifact.status,
   readOnly = workspaceStatus === 'read-only',
   validationErrors = artifact.validationErrors,
-  provider =
-    artifact.engine === 'scratch-blocks'
-      ? createScratchBlocksEditorProvider(createLocalScratchBlocksEditorBridge())
-      : createBlocksEditorProvider(artifact.engine),
+  provider,
+  autoMountNativeEditor = true,
   onArtifactChange,
 }: BlocksEditorShellProps) {
+  const resolvedProvider = useMemo(
+    () =>
+      provider ??
+      (artifact.engine === 'scratch-blocks'
+        ? createScratchBlocksEditorProvider(
+            createLocalScratchBlocksEditorBridge()
+          )
+        : createBlocksEditorProvider(artifact.engine)),
+    [artifact.engine, provider]
+  );
   const badgeVariant = workspaceStatus === 'invalid' ? 'outline' : 'secondary';
   const statusLabel = status ?? workspaceStatusLabels[workspaceStatus];
   const mountElementRef = useRef<HTMLDivElement>(null);
   const mountHandleRef = useRef<BlocksEditorMountHandle | undefined>(undefined);
+  const mountedArtifactIdRef = useRef<string | undefined>(undefined);
+  const [isNativeMounted, setIsNativeMounted] = useState(false);
+  const [isMounting, setIsMounting] = useState(false);
   const [mountMessage, setMountMessage] = useState(
-    provider.supportsNativeMount
+    resolvedProvider.supportsNativeMount
       ? 'Scratch Blocks listo para montar.'
-      : 'Bridge Scratch Blocks pendiente.',
+      : 'Bridge Scratch Blocks pendiente.'
   );
+  const showPreviewSidebar = !resolvedProvider.supportsNativeMount;
+  const editorGridClassName = showPreviewSidebar
+    ? 'grid min-h-[340px] gap-4 p-4 md:grid-cols-[220px_1fr]'
+    : 'grid min-h-[420px] gap-4 p-4';
+  const canAutoMountNativeEditor =
+    autoMountNativeEditor && !isJsdomEnvironment();
 
   function markDirty() {
     if (readOnly) {
@@ -58,26 +76,58 @@ export function BlocksEditorShell({
     });
   }
 
-  async function openNativeEditor() {
+  const openNativeEditor = useCallback(async () => {
     if (!mountElementRef.current) {
       return;
     }
 
     mountHandleRef.current?.dispose();
-    const result = await provider.mountWorkspace({
-      element: mountElementRef.current,
-      artifact,
-      onArtifactChange,
-    });
+    setIsMounting(true);
 
-    if (!result.mounted) {
-      setMountMessage(result.reason);
+    try {
+      const result = await resolvedProvider.mountWorkspace({
+        element: mountElementRef.current,
+        artifact,
+        onArtifactChange,
+      });
+
+      if (!result.mounted) {
+        setIsNativeMounted(false);
+        setMountMessage(result.reason);
+        return;
+      }
+
+      mountHandleRef.current = result.handle;
+      mountedArtifactIdRef.current = artifact.id;
+      setIsNativeMounted(true);
+      setMountMessage(`${resolvedProvider.name} montado.`);
+    } finally {
+      setIsMounting(false);
+    }
+  }, [artifact, onArtifactChange, resolvedProvider]);
+
+  useEffect(() => {
+    if (
+      !resolvedProvider.supportsNativeMount ||
+      !canAutoMountNativeEditor ||
+      mountedArtifactIdRef.current === artifact.id
+    ) {
       return;
     }
 
-    mountHandleRef.current = result.handle;
-    setMountMessage(`${provider.name} montado.`);
-  }
+    void openNativeEditor();
+  }, [
+    artifact.id,
+    canAutoMountNativeEditor,
+    openNativeEditor,
+    resolvedProvider.supportsNativeMount,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      mountHandleRef.current?.dispose();
+    };
+  }, []);
 
   return (
     <section className="min-h-[420px] rounded-lg border bg-card">
@@ -87,30 +137,35 @@ export function BlocksEditorShell({
           <h2 className="text-lg font-semibold">{workspaceName}</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge>{provider.name}</Badge>
+          <Badge>{resolvedProvider.name}</Badge>
           <Badge variant={badgeVariant}>{statusLabel}</Badge>
           <Badge variant="outline">{artifact.format}</Badge>
         </div>
       </header>
 
-      <div className="grid min-h-[340px] gap-4 p-4 md:grid-cols-[220px_1fr]">
-        <aside className="rounded-md border bg-muted p-3">
-          <p className="mb-3 text-sm font-medium">Bloques</p>
-          <div className="space-y-2">
-            {blocks.map((block) => (
-              <div key={block} className="rounded-md bg-background px-3 py-2 text-sm shadow-sm">
-                {block}
-              </div>
-            ))}
-          </div>
-        </aside>
+      <div className={editorGridClassName}>
+        {showPreviewSidebar ? (
+          <aside className="rounded-md border bg-muted p-3">
+            <p className="mb-3 text-sm font-medium">Previsualizacion</p>
+            <div className="space-y-2">
+              {blocks.map((block) => (
+                <div
+                  key={block}
+                  className="rounded-md bg-background px-3 py-2 text-sm shadow-sm"
+                >
+                  {block}
+                </div>
+              ))}
+            </div>
+          </aside>
+        ) : null}
 
-        <div className="flex min-h-[280px] flex-col rounded-md border border-dashed bg-background p-6">
+        <div className="flex min-h-[380px] flex-col rounded-md border border-dashed bg-background p-4">
           <div
             ref={mountElementRef}
-            className="flex flex-1 items-center justify-center rounded-md bg-muted/40 text-center"
+            className="relative h-[420px] min-h-[360px] overflow-hidden rounded-md bg-muted/40"
           >
-            <div>
+            <div className="flex h-full items-center justify-center text-center">
               <p className="text-base font-medium">Área de trabajo</p>
               <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
                 {artifact.label}
@@ -118,6 +173,18 @@ export function BlocksEditorShell({
               <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
                 {mountMessage}
               </p>
+              {resolvedProvider.supportsNativeMount ? null : (
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                  {blocks.map((block) => (
+                    <span
+                      key={block}
+                      className="rounded-md border bg-background px-3 py-2 text-sm"
+                    >
+                      {block}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -131,10 +198,12 @@ export function BlocksEditorShell({
             <button
               type="button"
               className="rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
-              disabled={readOnly}
+              disabled={readOnly || isMounting}
               onClick={openNativeEditor}
             >
-              Abrir {provider.name}
+              {isNativeMounted
+                ? 'Reiniciar editor real'
+                : `Abrir ${resolvedProvider.name}`}
             </button>
             <button
               type="button"
@@ -160,3 +229,10 @@ const workspaceStatusLabels: Record<BlocksWorkspaceStatus, string> = {
   invalid: 'Invalido',
   'read-only': 'Solo lectura',
 };
+
+function isJsdomEnvironment() {
+  return (
+    typeof navigator !== 'undefined' &&
+    navigator.userAgent.toLowerCase().includes('jsdom')
+  );
+}

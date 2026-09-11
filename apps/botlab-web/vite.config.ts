@@ -11,6 +11,10 @@ import {
 } from 'vite';
 
 const scratchBlocksMediaPrefix = '/vendor/scratch-blocks/media/';
+const scratchBlocksMediaSourceDirs = [
+  resolve(__dirname, '../../node_modules/scratch-blocks/media'),
+  resolve(__dirname, '../../node_modules/blockly/media'),
+];
 
 export default defineConfig({
   root: __dirname,
@@ -58,10 +62,6 @@ export default defineConfig({
 });
 
 function scratchBlocksMedia(): Plugin {
-  const sourceDir = resolve(
-    __dirname,
-    '../../node_modules/scratch-blocks/media'
-  );
   let resolvedConfig: ResolvedConfig;
 
   return {
@@ -70,27 +70,27 @@ function scratchBlocksMedia(): Plugin {
       resolvedConfig = config;
     },
     configureServer(server) {
-      serveScratchBlocksMedia(server, sourceDir);
+      serveScratchBlocksMedia(server, scratchBlocksMediaSourceDirs);
     },
     async closeBundle() {
       if (resolvedConfig.command !== 'build') {
         return;
       }
 
-      await cp(
-        sourceDir,
-        resolve(
-          resolvedConfig.root,
-          resolvedConfig.build.outDir,
-          `.${scratchBlocksMediaPrefix}`
-        ),
-        { recursive: true }
+      const outputDir = resolve(
+        resolvedConfig.root,
+        resolvedConfig.build.outDir,
+        `.${scratchBlocksMediaPrefix}`
       );
+
+      for (const sourceDir of [...scratchBlocksMediaSourceDirs].reverse()) {
+        await cp(sourceDir, outputDir, { recursive: true });
+      }
     },
   };
 }
 
-function serveScratchBlocksMedia(server: ViteDevServer, sourceDir: string) {
+function serveScratchBlocksMedia(server: ViteDevServer, sourceDirs: string[]) {
   server.middlewares.use(async (request, response, next) => {
     const requestPath = decodeURIComponent(request.url?.split('?')[0] ?? '');
 
@@ -100,23 +100,15 @@ function serveScratchBlocksMedia(server: ViteDevServer, sourceDir: string) {
     }
 
     const relativePath = requestPath.slice(scratchBlocksMediaPrefix.length);
-    const filePath = resolve(sourceDir, relativePath);
+    const filePath = await findMediaFile(sourceDirs, relativePath);
 
-    if (!isInsideDirectory(filePath, sourceDir)) {
+    if (!filePath) {
       response.statusCode = 404;
       response.end();
       return;
     }
 
     try {
-      const fileStat = await stat(filePath);
-
-      if (!fileStat.isFile()) {
-        response.statusCode = 404;
-        response.end();
-        return;
-      }
-
       response.setHeader('Content-Type', getMediaContentType(filePath));
       createReadStream(filePath).pipe(response);
     } catch {
@@ -124,6 +116,28 @@ function serveScratchBlocksMedia(server: ViteDevServer, sourceDir: string) {
       response.end();
     }
   });
+}
+
+async function findMediaFile(sourceDirs: string[], relativePath: string) {
+  for (const sourceDir of sourceDirs) {
+    const filePath = resolve(sourceDir, relativePath);
+
+    if (!isInsideDirectory(filePath, sourceDir)) {
+      continue;
+    }
+
+    try {
+      const fileStat = await stat(filePath);
+
+      if (fileStat.isFile()) {
+        return filePath;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return undefined;
 }
 
 function isInsideDirectory(filePath: string, directory: string) {

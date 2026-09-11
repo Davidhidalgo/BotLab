@@ -35,7 +35,7 @@ describe('App', () => {
     fireEvent.click(getByRole('button', { name: 'Simular demo' }));
 
     await waitFor(() => {
-      expect(getByText(/Simulacion completa/i)).toBeTruthy();
+      expect(getByText(/Simulacion completa: 1 comando/i)).toBeTruthy();
     });
 
     fireEvent.click(getByRole('button', { name: 'Ejecutar demo' }));
@@ -46,5 +46,6 @@ describe('App', () => {
       expect(getByText(/1 comando\(s\) enviados/i)).toBeTruthy();
     });
     expect(getAllByText('Completada').length).toBeGreaterThan(0);
+    expect(getByText('Ejecucion demo completada.')).toBeTruthy();
   });
 });

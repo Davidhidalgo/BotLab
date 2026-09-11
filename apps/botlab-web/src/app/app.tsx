@@ -39,6 +39,7 @@ export function App() {
     runtimeSnapshot,
     runMessage,
     buildMessage,
+    flowLog,
     simulationMessage,
     simulationResult,
     workspaceArtifact,
@@ -242,6 +243,22 @@ export function App() {
             </div>
           </Panel>
 
+          <Panel title="Historial">
+            <div className="space-y-2">
+              {flowLog.map((entry) => (
+                <div key={entry.id} className="rounded-md border bg-background p-3">
+                  <div className="mb-1 flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium">{flowLogLabels[entry.category]}</span>
+                    <Badge variant={entry.category === 'error' ? 'outline' : 'secondary'}>
+                      {entry.id.replace('flow-log-', '#')}
+                    </Badge>
+                  </div>
+                  <p className="text-sm leading-6 text-muted-foreground">{entry.message}</p>
+                </div>
+              ))}
+            </div>
+          </Panel>
+
           <Panel title="Targets">
             <div className="space-y-3">
               {targets.map((target) => (
@@ -320,6 +337,14 @@ const runtimeStateLabels = {
   stopped: 'Completada',
   error: 'Error',
   disposed: 'Cerrada',
+};
+
+const flowLogLabels = {
+  workspace: 'Workspace',
+  build: 'Build',
+  simulation: 'Simulacion',
+  execution: 'Ejecucion',
+  error: 'Error',
 };
 
 function RuntimeList({

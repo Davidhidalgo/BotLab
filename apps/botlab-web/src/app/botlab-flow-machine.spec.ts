@@ -78,6 +78,9 @@ describe('botLabFlowMachine', () => {
       artifactId: 'artifact-microduck-leds-plan',
       status: 'passed',
     });
+    expect(actor.getSnapshot().context.flowLog.map((entry) => entry.category)).toEqual(
+      expect.arrayContaining(['build', 'simulation', 'execution']),
+    );
     expect(actor.getSnapshot().context.runMessage).toContain('1 comando(s) enviados');
   });
 });

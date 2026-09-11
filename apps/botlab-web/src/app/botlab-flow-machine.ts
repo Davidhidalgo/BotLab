@@ -59,6 +59,19 @@ export interface BotLabSimulationResult {
   commandCount: number;
 }
 
+export type BotLabFlowLogCategory =
+  | 'workspace'
+  | 'build'
+  | 'simulation'
+  | 'execution'
+  | 'error';
+
+export interface BotLabFlowLogEntry {
+  id: string;
+  category: BotLabFlowLogCategory;
+  message: string;
+}
+
 export interface BotLabFlowContext {
   runtime: BotLabRuntime;
   demoSessionId: string;
@@ -71,6 +84,8 @@ export interface BotLabFlowContext {
   simulationMessage: string;
   runMessage: string;
   errorMessage?: string;
+  flowLog: BotLabFlowLogEntry[];
+  flowLogCounter: number;
 }
 
 interface QueueDemoInput {
@@ -203,6 +218,21 @@ export const botLabFlowMachine = setup({
     }),
   },
   actions: {
+    appendFlowLog: assign({
+      flowLogCounter: ({ context }) => context.flowLogCounter + 1,
+      flowLog: (
+        { context },
+        params: { category: BotLabFlowLogCategory; message: string },
+      ) =>
+        [
+          {
+            id: `flow-log-${context.flowLogCounter + 1}`,
+            category: params.category,
+            message: params.message,
+          },
+          ...context.flowLog,
+        ].slice(0, 8),
+    }),
     setWorkspaceArtifact: assign({
       workspaceArtifact: (_, params: { artifact: BlocksWorkspaceArtifact }) =>
         params.artifact,
@@ -287,6 +317,13 @@ export const botLabFlowMachine = setup({
                   type: 'setWorkspaceArtifact',
                   params: ({ event }) => ({ artifact: event.artifact }),
                 },
+                {
+                  type: 'appendFlowLog',
+                  params: {
+                    category: 'workspace',
+                    message: 'Workspace editado. El plan debe recompilarse.',
+                  },
+                },
               ],
             },
             'workspace.validate': {
@@ -302,6 +339,13 @@ export const botLabFlowMachine = setup({
                 {
                   type: 'setWorkspaceArtifact',
                   params: ({ event }) => ({ artifact: event.artifact }),
+                },
+                {
+                  type: 'appendFlowLog',
+                  params: {
+                    category: 'workspace',
+                    message: 'Workspace editado.',
+                  },
                 },
               ],
             },
@@ -329,6 +373,13 @@ export const botLabFlowMachine = setup({
                     type: 'setWorkspaceValidation',
                     params: ({ event }) => event.output,
                   },
+                  {
+                    type: 'appendFlowLog',
+                    params: {
+                      category: 'workspace',
+                      message: 'Workspace validado correctamente.',
+                    },
+                  },
                 ],
               },
               {
@@ -337,6 +388,13 @@ export const botLabFlowMachine = setup({
                   {
                     type: 'setWorkspaceValidation',
                     params: ({ event }) => event.output,
+                  },
+                  {
+                    type: 'appendFlowLog',
+                    params: {
+                      category: 'error',
+                      message: 'Workspace invalido.',
+                    },
                   },
                 ],
               },
@@ -364,6 +422,13 @@ export const botLabFlowMachine = setup({
                   type: 'setWorkspaceArtifact',
                   params: ({ event }) => ({ artifact: event.artifact }),
                 },
+                {
+                  type: 'appendFlowLog',
+                  params: {
+                    category: 'workspace',
+                    message: 'Workspace editado tras validacion.',
+                  },
+                },
               ],
             },
             'workspace.validate': {
@@ -380,6 +445,13 @@ export const botLabFlowMachine = setup({
                 {
                   type: 'setWorkspaceArtifact',
                   params: ({ event }) => ({ artifact: event.artifact }),
+                },
+                {
+                  type: 'appendFlowLog',
+                  params: {
+                    category: 'workspace',
+                    message: 'Workspace corregido; vuelve a validar.',
+                  },
                 },
               ],
             },
@@ -432,6 +504,13 @@ export const botLabFlowMachine = setup({
                   type: 'setCompiledArtifact',
                   params: ({ event }) => event.output,
                 },
+                {
+                  type: 'appendFlowLog',
+                  params: {
+                    category: 'build',
+                    message: 'Plan compilado para MicroDuck.',
+                  },
+                },
               ],
             },
             onError: {
@@ -442,6 +521,13 @@ export const botLabFlowMachine = setup({
                   params: ({ event }) => ({
                     message: formatErrorMessage(event.error),
                   }),
+                },
+                {
+                  type: 'appendFlowLog',
+                  params: {
+                    category: 'error',
+                    message: 'La compilacion fallo.',
+                  },
                 },
               ],
             },
@@ -511,6 +597,13 @@ export const botLabFlowMachine = setup({
                   type: 'setSimulationResult',
                   params: ({ event }) => event.output,
                 },
+                {
+                  type: 'appendFlowLog',
+                  params: {
+                    category: 'simulation',
+                    message: 'Simulacion completada correctamente.',
+                  },
+                },
               ],
             },
             onError: {
@@ -521,6 +614,13 @@ export const botLabFlowMachine = setup({
                   params: ({ event }) => ({
                     message: formatErrorMessage(event.error),
                   }),
+                },
+                {
+                  type: 'appendFlowLog',
+                  params: {
+                    category: 'error',
+                    message: 'La simulacion fallo.',
+                  },
                 },
               ],
             },
@@ -573,6 +673,13 @@ export const botLabFlowMachine = setup({
                   type: 'setQueuedSnapshot',
                   params: ({ event }) => event.output,
                 },
+                {
+                  type: 'appendFlowLog',
+                  params: {
+                    category: 'execution',
+                    message: 'Sesion encolada; iniciando runtime.',
+                  },
+                },
               ],
             },
             onError: {
@@ -583,6 +690,13 @@ export const botLabFlowMachine = setup({
                   params: ({ event }) => ({
                     message: formatErrorMessage(event.error),
                   }),
+                },
+                {
+                  type: 'appendFlowLog',
+                  params: {
+                    category: 'error',
+                    message: 'No se pudo encolar la ejecucion.',
+                  },
                 },
               ],
             },
@@ -602,6 +716,13 @@ export const botLabFlowMachine = setup({
                   type: 'setRunResult',
                   params: ({ event }) => event.output,
                 },
+                {
+                  type: 'appendFlowLog',
+                  params: {
+                    category: 'execution',
+                    message: 'Ejecucion demo completada.',
+                  },
+                },
               ],
             },
             onError: {
@@ -612,6 +733,13 @@ export const botLabFlowMachine = setup({
                   params: ({ event }) => ({
                     message: formatErrorMessage(event.error),
                   }),
+                },
+                {
+                  type: 'appendFlowLog',
+                  params: {
+                    category: 'error',
+                    message: 'La ejecucion fallo.',
+                  },
                 },
               ],
             },
@@ -753,6 +881,14 @@ function createBotLabFlowContext(): BotLabFlowContext {
     buildMessage: 'Compila el workspace para generar un plan ejecutable.',
     simulationMessage: 'Simula el plan compilado antes de ejecutar.',
     runMessage: 'Demo preparada para MicroDuck',
+    flowLog: [
+      {
+        id: 'flow-log-0',
+        category: 'workspace',
+        message: 'Workspace de muestra cargado.',
+      },
+    ],
+    flowLogCounter: 0,
   };
 }
 

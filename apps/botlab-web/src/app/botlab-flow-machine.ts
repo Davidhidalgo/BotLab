@@ -149,6 +149,7 @@ interface SimulatePlanOutput {
 export const botLabFlowMachine = setup({
   types: {} as {
     context: BotLabFlowContext;
+    input: { workspace?: BlocksWorkspaceArtifact } | undefined;
     events:
       | { type: 'target.selected'; targetId: string }
       | { type: 'workspace.changed'; artifact: BlocksWorkspaceArtifact }
@@ -373,7 +374,7 @@ export const botLabFlowMachine = setup({
   },
 }).createMachine({
   id: 'botlabFlow',
-  context: createBotLabFlowContext,
+  context: ({ input }) => createBotLabFlowContext(input?.workspace),
   type: 'parallel',
   states: {
     workspace: {
@@ -952,7 +953,7 @@ export const botLabExecutionStateLabels: Record<BotLabExecutionState, string> =
     failed: 'Error',
   };
 
-function createBotLabFlowContext(): BotLabFlowContext {
+function createBotLabFlowContext(workspace?: BlocksWorkspaceArtifact): BotLabFlowContext {
   const runtime = createBotLabRuntime({
     adapters: [createMicroDuckAdapter(), createStackChanAdapter()],
     simulators: microDuckSimulatorIntegrations,
@@ -999,7 +1000,7 @@ function createBotLabFlowContext(): BotLabFlowContext {
     runtime,
     demoSessionId: session.id,
     selectedTargetId,
-    workspaceArtifact: sampleScratchBlocksWorkspaceArtifact,
+    workspaceArtifact: workspace ?? sampleScratchBlocksWorkspaceArtifact,
     runtimeSnapshot: runtime.inspectRuntime(),
     workspaceMessage: 'Workspace loaded from sample.',
     buildMessage: createTargetMessage(runtime, selectedTargetId),

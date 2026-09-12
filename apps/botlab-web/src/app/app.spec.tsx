@@ -11,6 +11,7 @@ import App, {
 } from './app';
 
 describe('App', () => {
+  beforeEach(() => localStorage.clear());
   afterEach(() => {
     jest.useRealTimers();
     jest.restoreAllMocks();

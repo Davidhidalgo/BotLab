@@ -99,6 +99,14 @@ Use the affected scripts for everyday validation when only part of the workspace
 
 `npm run microduck:sim -- --start` prepares a local checkout of the official MicroDuck browser simulator under `tmp/microduck-simulator`, hydrates Git LFS assets into that ignored checkout, injects the BotLab postMessage control source, and starts the patched simulator host. Keep `npm run dev` running separately for the BotLab app.
 
+## Workspace Persistence
+
+<!-- workspace document schema and storage behavior from apps/botlab-web/src/app/workspace-storage.ts -->
+
+BotLab automatically saves Scratch XML, the selected UI language, and the last simulator execution trace in this browser's local storage (`botlab.workspace.v1`). The versioned JSON document is limited to 2 MB and retains up to 64 execution events with their original control-frame plan. Reloading restores the workspace but not compiled approval, a connection, or running execution; a previously active trace is marked interrupted. Invalid documents and failed writes do not overwrite the last stored copy.
+
+The editor toolbar imports and exports `botlab-workspace.json` documents. Importing replaces the current workspace and disconnects the simulator. Storage is local to the browser and exact site origin, not synchronized between devices; use export/import when moving devices or changing a temporary tunnel URL. These controls do not recover work lost before autosave was introduced.
+
 ## Remote Preview
 
 <!-- simulator URL configuration from apps/botlab-web/vite.config.ts and apps/botlab-web/src/app/app.tsx -->

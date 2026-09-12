@@ -24,6 +24,7 @@ jest.mock('@botlab/blocks', () => ({
 }));
 
 describe('One-click simulator execution', () => {
+  beforeEach(() => localStorage.clear());
   afterEach(() => {
     jest.useRealTimers();
     jest.restoreAllMocks();
@@ -112,6 +113,15 @@ describe('One-click simulator execution', () => {
       'Execució confirmada'
     );
     expect(view.getByTitle('MicroDuck official simulator preview')).toBe(frame);
+    view.unmount();
+    const restored = render(<App />);
+    expect(
+      restored.queryByTitle('MicroDuck official simulator preview')
+    ).toBeNull();
+    expect(
+      restored.getByText(/Última execució: Execució confirmada/)
+    ).toBeTruthy();
+    expect(restored.getByText(second.source.artifactId)).toBeTruthy();
   });
 
   it('closes the iframe if stopping is not acknowledged', async () => {
@@ -171,5 +181,68 @@ describe('One-click simulator execution', () => {
     expect(
       view.getByRole('button', { name: 'Executar', exact: true })
     ).toHaveProperty('disabled', false);
+  });
+
+  it('restores edited blocks and locale after remount without starting the simulator', () => {
+    const first = render(<App />);
+    const editor = first.getByLabelText(
+      'Test workspace'
+    ) as HTMLTextAreaElement;
+    const xml = new DOMParser().parseFromString(editor.value, 'text/xml');
+    xml.querySelector('field[name="DISTANCE"]')!.textContent = '12';
+    const content = new XMLSerializer().serializeToString(xml);
+    fireEvent.change(editor, { target: { value: content } });
+    fireEvent.change(first.getByRole('combobox'), { target: { value: 'en' } });
+    first.unmount();
+    const second = render(<App />);
+    expect(second.getByLabelText('Test workspace')).toHaveProperty(
+      'value',
+      content
+    );
+    expect(second.getByRole('combobox')).toHaveProperty('value', 'en');
+    expect(
+      second.queryByTitle('MicroDuck official simulator preview')
+    ).toBeNull();
+    expect(second.getByText('compiled-plan-pending')).toBeTruthy();
+    expect(second.getByLabelText('Simulator execution').textContent).toBe(
+      'Not run'
+    );
+  });
+
+  it('imports a versioned program and rejects invalid files without replacing current blocks', async () => {
+    const view = render(<App />);
+    const editor = view.getByLabelText('Test workspace') as HTMLTextAreaElement;
+    const input = view.getByLabelText('Importar programa', {
+      selector: 'input',
+    });
+    const original = editor.value;
+    fireEvent.change(input, {
+      target: { files: [{ size: 2, text: async () => '{}' }] },
+    });
+    expect(await view.findByRole('alert')).toBeTruthy();
+    expect(editor.value).toBe(original);
+    const { sampleScratchBlocksWorkspaceArtifact } =
+      jest.requireActual('@botlab/blocks');
+    const json = JSON.stringify({
+      schemaVersion: 1,
+      locale: 'es',
+      workspace: {
+        ...sampleScratchBlocksWorkspaceArtifact,
+        content: '<xml><block type="event_whenflagclicked"/></xml>',
+      },
+    });
+    fireEvent.change(input, {
+      target: { files: [{ size: json.length, text: async () => json }] },
+    });
+    await waitFor(() =>
+      expect(view.getByRole('combobox')).toHaveProperty('value', 'es')
+    );
+    expect(view.getByLabelText('Test workspace')).toHaveProperty(
+      'value',
+      '<xml><block type="event_whenflagclicked"/></xml>'
+    );
+    expect(
+      view.queryByTitle('MicroDuck official simulator preview')
+    ).toBeNull();
   });
 });

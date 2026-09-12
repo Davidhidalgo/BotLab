@@ -25,6 +25,8 @@ import {
   Radar,
   ShieldCheck,
   Square,
+  Download,
+  Upload,
   Workflow,
 } from 'lucide-react';
 import {
@@ -53,6 +55,7 @@ import {
 } from './i18n';
 import { simulatorLaunchMachine } from './simulator-launch-machine';
 import { simulatorExecutionMachine } from './simulator-execution-machine';
+import { decodeWorkspaceDocument, encodeWorkspaceDocument, maxWorkspaceFileBytes, readWorkspaceDocument, saveWorkspaceDocument, type SavedExecution } from './workspace-storage';
 
 const featuredConcepts = botLabConcepts.filter(({ concept }) =>
   ['policy', 'skill', 'behavior', 'arbitration'].includes(concept)
@@ -100,13 +103,22 @@ export function scheduleMicroDuckSimulatorControlSourceDelivery(
 }
 
 export function App() {
-  const [flowSnapshot, sendFlow, flowActor] = useMachine(botLabFlowMachine);
+  const [restored] = useState(readWorkspaceDocument);
+  const [flowSnapshot, sendFlow, flowActor] = useMachine(botLabFlowMachine, {
+    input: { workspace: restored.document?.workspace },
+  });
   const [launchSnapshot, sendLaunch] = useMachine(simulatorLaunchMachine);
   const [executionSnapshot, sendExecution] = useMachine(simulatorExecutionMachine);
   const executionBusy = executionSnapshot.hasTag('busy');
   const executionState = typeof executionSnapshot.value === 'string'
     ? executionSnapshot.value : executionSnapshot.value.active;
-  const [locale, setLocale] = useState<BotLabLocale>('ca');
+  const [locale, setLocale] = useState<BotLabLocale>(restored.document?.locale ?? 'ca');
+  const [lastExecution, setLastExecution] = useState<SavedExecution | undefined>(restored.document?.lastExecution);
+  const [storageEnabled, setStorageEnabled] = useState(!restored.error);
+  const [saveFailed, setSaveFailed] = useState(restored.error);
+  const [fileFailed, setFileFailed] = useState(false);
+  const [editorRevision, setEditorRevision] = useState(0);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const [officialSimulatorHostResult, setOfficialSimulatorHostResult] =
     useState<MicroDuckOfficialSimulatorHostResult>();
   const [officialSimulatorFrameReady, setOfficialSimulatorFrameReady] =
@@ -209,6 +221,24 @@ export function App() {
     officialSimulatorHostResult?.state === 'running'
       ? officialSimulatorHostResult.controlSource
       : undefined;
+  const latestWorkspace = useRef(workspaceArtifact);
+  latestWorkspace.current = workspaceArtifact;
+  useEffect(() => {
+    if (!storageEnabled) return;
+    setSaveFailed(!saveWorkspaceDocument({ schemaVersion: 1, workspace: workspaceArtifact, locale, lastExecution }));
+  }, [workspaceArtifact, locale, lastExecution, storageEnabled]);
+  useEffect(() => {
+    const { update, request } = executionSnapshot.context;
+    if (!update || !request) return;
+    const status = executionState === 'failed' ? 'failed' : executionState === 'stopped' ? 'stopped' : update.status;
+    setLastExecution(previous => {
+      const events = previous?.executionId === update.executionId ? previous.events : [];
+      const last = events[events.length - 1];
+      if (last?.status === status && last.frameIndex === update.frameIndex) return previous;
+      return { source: request.source, executionId: update.executionId, status,
+        events: [...events, { status, frameIndex: update.frameIndex, at: new Date().toISOString() }].slice(-64) };
+    });
+  }, [executionSnapshot.context.update, executionSnapshot.context.request, executionState]);
   useEffect(() => {
     sendLaunch({ type: 'cancel' });
     sendExecution({ type: 'stop' });
@@ -347,6 +377,35 @@ export function App() {
     if (executionBusy) sendExecution({ type: 'stop' });
     else disconnectOfficialSimulatorRuntimePreview();
   }
+  function exportWorkspaceFile() {
+    try {
+      const text = encodeWorkspaceDocument({ schemaVersion: 1, workspace: workspaceArtifact, locale, lastExecution });
+      const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = 'botlab-workspace.json';
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setFileFailed(false);
+    } catch { setFileFailed(true); }
+  }
+  async function importWorkspaceFile(file?: File) {
+    if (!file) return;
+    const initialWorkspace = latestWorkspace.current;
+    try {
+      if (file.size > maxWorkspaceFileBytes) throw new Error('Workspace file too large.');
+      const imported = decodeWorkspaceDocument(await file.text());
+      if (latestWorkspace.current !== initialWorkspace) throw new Error('Workspace changed during import.');
+      disconnectOfficialSimulatorRuntimePreview();
+      setEditorRevision(value => value + 1);
+      sendFlow({ type: 'workspace.changed', artifact: imported.workspace });
+      setLocale(imported.locale);
+      setLastExecution(imported.lastExecution);
+      setStorageEnabled(true);
+      setFileFailed(false);
+    } catch { setFileFailed(true); }
+    if (importInputRef.current) importInputRef.current.value = '';
+  }
   const artifactCards = [
     {
       id: workspaceArtifact.id,
@@ -434,7 +493,25 @@ export function App() {
 
       <section className="mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-[1.35fr_0.65fr]">
         <div className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span role="status" aria-label={copy.storage.label} className="text-sm text-muted-foreground">
+              {saveFailed ? copy.storage.failed : copy.storage.saved}
+            </span>
+            <div className="flex gap-2">
+              <Button size="icon" variant="secondary" onClick={() => importInputRef.current?.click()}
+                disabled={isPreparingLaunch || executionBusy} title={copy.storage.import} aria-label={copy.storage.import}>
+                <Upload className="h-4 w-4" />
+              </Button>
+              <Button size="icon" variant="secondary" onClick={exportWorkspaceFile} title={copy.storage.export} aria-label={copy.storage.export}>
+                <Download className="h-4 w-4" />
+              </Button>
+              <input ref={importInputRef} type="file" accept=".json,application/json" hidden
+                aria-label={copy.storage.import} onChange={event => void importWorkspaceFile(event.target.files?.[0])} />
+            </div>
+          </div>
+          {fileFailed ? <p role="alert" className="text-sm text-destructive">{copy.storage.fileFailed}</p> : null}
           <BlocksEditorShell
+            key={editorRevision}
             workspaceName={copy.blocks.workspaceName}
             labels={copy.blocks}
             status={getWorkspaceArtifactStatusLabel(
@@ -495,6 +572,20 @@ export function App() {
             simulationMessage={translateFlowMessage(simulationMessage, copy)}
             copy={copy}
           />
+          {lastExecution ? (
+            <details className="border-t pt-3 text-sm">
+              <summary className="cursor-pointer font-medium">
+                {copy.storage.lastExecution}: {copy.host.executionStates[lastExecution.status === 'accepted' ? 'awaiting' : lastExecution.status]}
+              </summary>
+              <p className="mt-2 break-all text-muted-foreground">{lastExecution.source.artifactId}</p>
+              <ol className="mt-2 space-y-1">
+                {lastExecution.events.map((event, index) => (
+                  <li key={index}>{new Date(event.at).toLocaleTimeString(locale)} · {copy.host.executionStates[event.status === 'accepted' ? 'awaiting' : event.status]}
+                    {event.frameIndex === undefined ? '' : ` · ${event.frameIndex + 1}/${lastExecution.source.frames.length}`}</li>
+                ))}
+              </ol>
+            </details>
+          ) : null}
         </div>
 
         <aside className="space-y-4">

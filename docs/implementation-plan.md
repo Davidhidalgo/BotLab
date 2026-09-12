@@ -417,6 +417,8 @@ The demo compiler now follows the `next` chain of one green-flag script, preserv
 
 ## Milestone 9: Artifacts and Persistence
 
+Persistence update: a versioned browser-local document now saves Scratch XML, locale and the last confirmed simulator trace with its source plan. The editor exposes JSON import/export (2 MB limit), failed writes preserve the previous copy, malformed/unknown-version stored data is not silently replaced, and active traces restore as interrupted without reconnecting, running or restoring approvals. This is one local workspace per site origin, not cross-device sync or a multi-project artifact repository.
+
 Consolidation update: the embedded official simulator now reports identified execution acceptance, frame progress, completion, stop and polling failure. The app no longer runs its local fake dispatcher before launching a simulator plan and does not infer engine completion from validation. Stop clears buffered/current frames, blocks late retries, and requires acknowledgment; missing startup/progress/stop feedback closes the iframe. This completes the simulator-specific stop/status path, not shared runtime interruption or hardware safety. Tests cover both the library generator and the setup tool's generated receiver.
 
 Goal: make user work durable and inspectable.

@@ -1,4 +1,7 @@
-import type { RuntimeCommandDispatchResult } from './runtime';
+import type {
+  RuntimeCommandDispatcher,
+  RuntimeCommandDispatchResult,
+} from './runtime';
 import { createBotLabRuntime } from './runtime';
 import {
   sampleMicroDuckCompiledBehaviorArtifact,
@@ -30,7 +33,10 @@ describe('runtime', () => {
     const runtime = createTestRuntime();
     const session = runtime.createSession({ id: 'session-introspection' });
 
-    runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
+    runtime.loadCompiledBehavior(
+      session.id,
+      sampleMicroDuckCompiledBehaviorArtifact,
+    );
 
     expect(runtime.inspectRuntime()).toMatchObject({
       generatedAt: '2026-09-10T00:00:00.000Z',
@@ -115,7 +121,10 @@ describe('runtime', () => {
     });
 
     const session = runtime.createSession({ id: 'session-dispatch' });
-    runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
+    runtime.loadCompiledBehavior(
+      session.id,
+      sampleMicroDuckCompiledBehaviorArtifact,
+    );
     runtime.confirmPolicy(session.id);
 
     const result = await runtime.startSession(session.id);
@@ -154,7 +163,10 @@ describe('runtime', () => {
     const unsubscribe = runtime.subscribe((event) => events.push(event.type));
     const session = runtime.createSession({ id: 'session-events' });
 
-    runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
+    runtime.loadCompiledBehavior(
+      session.id,
+      sampleMicroDuckCompiledBehaviorArtifact,
+    );
     runtime.confirmPolicy(session.id);
     await runtime.startSession(session.id);
     unsubscribe();
@@ -162,8 +174,8 @@ describe('runtime', () => {
 
     expect(events).toEqual([
       'session-created',
-      'artifact-loaded',
       'policy-evaluated',
+      'artifact-loaded',
       'policy-confirmed',
       'session-started',
       'command-dispatched',
@@ -220,7 +232,10 @@ describe('runtime', () => {
     const runtime = createTestRuntime();
     const session = runtime.createSession({ id: 'session-target-error' });
 
-    runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
+    runtime.loadCompiledBehavior(
+      session.id,
+      sampleMicroDuckCompiledBehaviorArtifact,
+    );
     runtime.confirmPolicy(session.id);
     await runtime.startSession(session.id);
 
@@ -246,7 +261,10 @@ describe('runtime', () => {
     });
     const session = runtime.createSession({ id: 'session-needs-confirmation' });
 
-    runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
+    runtime.loadCompiledBehavior(
+      session.id,
+      sampleMicroDuckCompiledBehaviorArtifact,
+    );
     const result = await runtime.startSession(session.id);
 
     expect(result.dispatchResults).toEqual([]);
@@ -275,8 +293,12 @@ describe('runtime', () => {
         };
       },
     });
-    const lowPrioritySession = runtime.createSession({ id: 'session-low-priority' });
-    const highPrioritySession = runtime.createSession({ id: 'session-high-priority' });
+    const lowPrioritySession = runtime.createSession({
+      id: 'session-low-priority',
+    });
+    const highPrioritySession = runtime.createSession({
+      id: 'session-high-priority',
+    });
 
     runtime.loadCompiledBehavior(
       lowPrioritySession.id,
@@ -290,7 +312,9 @@ describe('runtime', () => {
     runtime.confirmPolicy(highPrioritySession.id);
 
     runtime.queueSession(lowPrioritySession.id, { priority: 1 });
-    const queue = runtime.queueSession(highPrioritySession.id, { priority: 10 });
+    const queue = runtime.queueSession(highPrioritySession.id, {
+      priority: 10,
+    });
 
     expect(queue.entries.map((entry) => entry.sessionId)).toEqual([
       'session-high-priority',
@@ -307,9 +331,9 @@ describe('runtime', () => {
       state: 'stopped',
       dispatchedCommandCount: 1,
     });
-    expect(runtime.inspectQueue().entries.map((entry) => entry.sessionId)).toEqual([
-      'session-low-priority',
-    ]);
+    expect(
+      runtime.inspectQueue().entries.map((entry) => entry.sessionId),
+    ).toEqual(['session-low-priority']);
   });
 
   it('prevents concurrent sessions from locking the same capability', async () => {
@@ -329,10 +353,18 @@ describe('runtime', () => {
       },
     });
     const firstSession = runtime.createSession({ id: 'session-lock-owner' });
-    const secondSession = runtime.createSession({ id: 'session-lock-conflict' });
+    const secondSession = runtime.createSession({
+      id: 'session-lock-conflict',
+    });
 
-    runtime.loadCompiledBehavior(firstSession.id, sampleMicroDuckCompiledBehaviorArtifact);
-    runtime.loadCompiledBehavior(secondSession.id, sampleMicroDuckCompiledBehaviorArtifact);
+    runtime.loadCompiledBehavior(
+      firstSession.id,
+      sampleMicroDuckCompiledBehaviorArtifact,
+    );
+    runtime.loadCompiledBehavior(
+      secondSession.id,
+      sampleMicroDuckCompiledBehaviorArtifact,
+    );
     runtime.confirmPolicy(firstSession.id);
     runtime.confirmPolicy(secondSession.id);
 
@@ -403,13 +435,390 @@ describe('runtime', () => {
       }),
     ]);
   });
+
+  it('pauses at a command boundary and resumes without replaying commands', async () => {
+    const first = deferred<RuntimeCommandDispatchResult>();
+    const calls: string[] = [];
+    const runtime = createTestRuntime({
+      dispatch(command) {
+        calls.push(command.id);
+        return calls.length === 1 ? first.promise : dispatched(command.id);
+      },
+    });
+    const session = loadTwoCommandSession(runtime);
+    const run = runtime.startSession(session.id);
+    runtime.pauseSession(session.id);
+    first.resolve(dispatched('first'));
+    await flushMicrotasks();
+    expect(calls).toEqual(['first']);
+    expect(runtime.inspectSession(session.id).state).toBe('paused');
+    expect((await runtime.startSession(session.id)).dispatchResults).toEqual(
+      [],
+    );
+    runtime.queueSession(session.id);
+    expect(runtime.inspectQueue().entries).toEqual([]);
+    runtime.resumeSession(session.id);
+    const result = await run;
+    expect(calls).toEqual(['first', 'second']);
+    expect(result.snapshot).toMatchObject({
+      state: 'stopped',
+      dispatchedCommandCount: 2,
+    });
+    expect(runtime.inspectQueue().capabilityLocks).toEqual([]);
+  });
+
+  it.each(['stopSession', 'disposeSession'] as const)(
+    '%s prevents the next dispatch and preserves terminal state after a late result',
+    async (action) => {
+      const first = deferred<RuntimeCommandDispatchResult>();
+      const calls: string[] = [];
+      let signal: AbortSignal | undefined;
+      const runtime = createTestRuntime({
+        dispatch(command, context) {
+          calls.push(command.id);
+          signal = context.signal;
+          return first.promise;
+        },
+      });
+      const session = loadTwoCommandSession(runtime);
+      const run = runtime.startSession(session.id);
+      const terminal = runtime[action](session.id).state;
+      expect(signal?.aborted).toBe(true);
+      // An uncooperative transport still owns its in-flight capability.
+      expect(runtime.inspectQueue().capabilityLocks).toHaveLength(1);
+      expect((await runtime.startSession(session.id)).dispatchResults).toEqual(
+        [],
+      );
+      first.resolve(dispatched('first'));
+      const result = await run;
+      expect(calls).toEqual(['first']);
+      expect(result.snapshot.state).toBe(terminal);
+      expect(
+        result.snapshot.trace.some((entry) =>
+          entry.message.includes('completed.'),
+        ),
+      ).toBe(false);
+      expect(runtime.inspectQueue().capabilityLocks).toEqual([]);
+      expect((await runtime.startSession(session.id)).dispatchResults).toEqual(
+        [],
+      );
+    },
+  );
+
+  it('preserves cancellation when an abort-aware dispatcher rejects', async () => {
+    const calls: string[] = [];
+    const runtime = createTestRuntime({
+      dispatch(command, { signal }) {
+        calls.push(command.id);
+        return new Promise((_resolve, reject) => {
+          signal.addEventListener(
+            'abort',
+            () => reject(new Error('Transport cancelled.')),
+            { once: true },
+          );
+        });
+      },
+    });
+    const session = loadTwoCommandSession(runtime);
+    const run = runtime.startSession(session.id);
+    runtime.stopSession(session.id);
+    expect((await run).snapshot.state).toBe('stopped');
+    expect(calls).toEqual(['first']);
+    expect(runtime.inspectQueue().capabilityLocks).toEqual([]);
+  });
+
+  it('can stop a run waiting for resume without dispatching another command', async () => {
+    const first = deferred<RuntimeCommandDispatchResult>();
+    const calls: string[] = [];
+    const runtime = createTestRuntime({
+      dispatch(command) {
+        calls.push(command.id);
+        return first.promise;
+      },
+    });
+    const session = loadTwoCommandSession(runtime);
+    const run = runtime.startSession(session.id);
+    runtime.pauseSession(session.id);
+    first.resolve(dispatched('first'));
+    await flushMicrotasks();
+    runtime.stopSession(session.id);
+    expect((await run).snapshot.state).toBe('stopped');
+    expect(calls).toEqual(['first']);
+  });
+
+  it.each(['stopSession', 'disposeSession'] as const)(
+    '%s removes queued work permanently',
+    async (action) => {
+      const calls: string[] = [];
+      const runtime = createTestRuntime({
+        dispatch(command) {
+          calls.push(command.id);
+          return dispatched(command.id);
+        },
+      });
+      const session = loadTwoCommandSession(runtime);
+      runtime.queueSession(session.id);
+      const terminal = runtime[action](session.id).state;
+      expect(runtime.inspectQueue().entries).toEqual([]);
+      expect(await runtime.runNextQueuedSession()).toBeUndefined();
+      runtime.queueSession(session.id);
+      expect(runtime.inspectQueue().entries).toEqual([]);
+      expect(runtime.inspectSession(session.id).state).toBe(terminal);
+      expect(calls).toEqual([]);
+    },
+  );
+
+  it('removes a queue entry when the same session is started directly', async () => {
+    const runtime = createTestRuntime({
+      dispatch: (command) => dispatched(command.id),
+    });
+    const session = loadTwoCommandSession(runtime);
+    runtime.queueSession(session.id);
+    await runtime.startSession(session.id);
+    expect(await runtime.runNextQueuedSession()).toBeUndefined();
+    expect(runtime.inspectSession(session.id).dispatchedCommandCount).toBe(2);
+  });
+
+  it('rejects plan replacement during dispatch and invalidates approval on later load', async () => {
+    const first = deferred<RuntimeCommandDispatchResult>();
+    const runtime = createTestRuntime({ dispatch: () => first.promise });
+    const session = loadTwoCommandSession(runtime);
+    const run = runtime.startSession(session.id);
+    expect(
+      runtime.loadCompiledBehavior(
+        session.id,
+        sampleMicroDuckCompiledBehaviorArtifact,
+      ).validation.valid,
+    ).toBe(false);
+    expect(
+      runtime.loadBehavior(session.id, sampleMicroDuckLedBehavior).validation
+        .valid,
+    ).toBe(false);
+    expect(runtime.inspectSession(session.id).state).toBe('running');
+    runtime.stopSession(session.id);
+    expect(
+      runtime.loadCompiledBehavior(
+        session.id,
+        sampleMicroDuckCompiledBehaviorArtifact,
+      ).validation.valid,
+    ).toBe(false);
+    first.resolve(dispatched('first'));
+    await run;
+    expect(
+      runtime.loadCompiledBehavior(
+        session.id,
+        sampleMicroDuckCompiledBehaviorArtifact,
+      ).validation.valid,
+    ).toBe(true);
+    expect((await runtime.startSession(session.id)).snapshot.state).toBe(
+      'awaiting-confirmation',
+    );
+  });
+
+  it('cannot resurrect a disposed session by loading or resuming', () => {
+    const runtime = createTestRuntime();
+    const session = loadTwoCommandSession(runtime);
+    runtime.disposeSession(session.id);
+    expect(
+      runtime.loadCompiledBehavior(
+        session.id,
+        sampleMicroDuckCompiledBehaviorArtifact,
+      ).validation.valid,
+    ).toBe(false);
+    expect(
+      runtime.loadBehavior(session.id, sampleMicroDuckLedBehavior).validation
+        .valid,
+    ).toBe(false);
+    expect(runtime.resumeSession(session.id).state).toBe('disposed');
+  });
+
+  it('does not resume a ready or stopped session without an active run', () => {
+    const runtime = createTestRuntime();
+    const session = loadTwoCommandSession(runtime);
+    expect(runtime.resumeSession(session.id).state).toBe('ready');
+    expect(runtime.pauseSession(session.id).state).toBe('ready');
+    runtime.stopSession(session.id);
+    expect(runtime.resumeSession(session.id).state).toBe('stopped');
+  });
+
+  it('clears stale plans and queue entries when loading a new behavior or invalid artifact', async () => {
+    const runtime = createTestRuntime({
+      dispatch: (command) => dispatched(command.id),
+    });
+    const session = loadTwoCommandSession(runtime);
+    runtime.queueSession(session.id);
+    runtime.loadBehavior(session.id, sampleMicroDuckLedBehavior);
+    expect(runtime.inspectQueue().entries).toEqual([]);
+    expect((await runtime.startSession(session.id)).dispatchResults).toEqual(
+      [],
+    );
+    runtime.loadCompiledBehavior(
+      session.id,
+      sampleMicroDuckCompiledBehaviorArtifact,
+    );
+    runtime.confirmPolicy(session.id);
+    runtime.loadCompiledBehavior(session.id, {
+      ...sampleMicroDuckCompiledBehaviorArtifact,
+      targetId: 'unknown',
+    });
+    expect((await runtime.startSession(session.id)).dispatchResults).toEqual(
+      [],
+    );
+  });
+
+  it('stops the sequence on a dispatch failure', async () => {
+    const calls: string[] = [];
+    const runtime = createTestRuntime({
+      dispatch(command) {
+        calls.push(command.id);
+        return {
+          commandId: command.id,
+          status: 'failed',
+          message: 'Disconnected.',
+        };
+      },
+    });
+    const session = loadTwoCommandSession(runtime);
+    expect((await runtime.startSession(session.id)).snapshot.state).toBe(
+      'error',
+    );
+    expect(calls).toEqual(['first']);
+  });
+
+  it('honors stop requested by the session-started listener before the first command', async () => {
+    const calls: string[] = [];
+    const runtime = createTestRuntime({
+      dispatch(command) {
+        calls.push(command.id);
+        return dispatched(command.id);
+      },
+    });
+    const session = loadTwoCommandSession(runtime);
+    runtime.subscribe((event) => {
+      if (event.type === 'session-started') runtime.stopSession(session.id);
+    });
+    expect((await runtime.startSession(session.id)).dispatchResults).toEqual(
+      [],
+    );
+    expect(calls).toEqual([]);
+    expect(runtime.inspectQueue().capabilityLocks).toEqual([]);
+  });
+
+  it('resumes during an in-flight command without dispatching it twice', async () => {
+    const first = deferred<RuntimeCommandDispatchResult>();
+    const calls: string[] = [];
+    const runtime = createTestRuntime({
+      dispatch(command) {
+        calls.push(command.id);
+        return calls.length === 1 ? first.promise : dispatched(command.id);
+      },
+    });
+    const session = loadTwoCommandSession(runtime);
+    const run = runtime.startSession(session.id);
+    runtime.pauseSession(session.id);
+    runtime.resumeSession(session.id);
+    expect(calls).toEqual(['first']);
+    first.resolve(dispatched('first'));
+    await run;
+    expect(calls).toEqual(['first', 'second']);
+  });
+
+  it('retains locks after cancellation until transport settles, then permits a fresh run', async () => {
+    const first = deferred<RuntimeCommandDispatchResult>();
+    let calls = 0;
+    const runtime = createTestRuntime({
+      dispatch(command) {
+        calls += 1;
+        return calls === 1 ? first.promise : dispatched(command.id);
+      },
+    });
+    const owner = loadTwoCommandSession(runtime);
+    const other = loadTwoCommandSession(runtime);
+    const run = runtime.startSession(owner.id);
+    runtime.stopSession(owner.id);
+    expect((await runtime.startSession(other.id)).dispatchResults).toEqual([]);
+    first.resolve(dispatched('first'));
+    await run;
+    runtime.loadCompiledBehavior(
+      other.id,
+      sampleMicroDuckCompiledBehaviorArtifact,
+    );
+    runtime.confirmPolicy(other.id);
+    expect((await runtime.startSession(other.id)).dispatchResults).toHaveLength(
+      1,
+    );
+  });
+
+  it('does not wait for resume after a paused in-flight command fails', async () => {
+    const first = deferred<RuntimeCommandDispatchResult>();
+    const runtime = createTestRuntime({ dispatch: () => first.promise });
+    const session = loadTwoCommandSession(runtime);
+    const run = runtime.startSession(session.id);
+    runtime.pauseSession(session.id);
+    first.resolve({ commandId: 'first', status: 'failed', message: 'Failed.' });
+    expect((await run).snapshot.state).toBe('error');
+    expect(runtime.inspectQueue().capabilityLocks).toEqual([]);
+  });
+
+  it('does not replace an existing session with a duplicate id', () => {
+    const runtime = createTestRuntime();
+    const session = loadTwoCommandSession(runtime);
+    expect(() => runtime.createSession({ id: session.id })).toThrow(
+      'already registered',
+    );
+    expect(runtime.inspectSession(session.id).state).toBe('ready');
+  });
+
+  it('does not overwrite disposal requested by an artifact-loaded listener', () => {
+    const runtime = createTestRuntime();
+    const session = runtime.createSession();
+    runtime.subscribe(event => {
+      if (event.type === 'artifact-loaded') runtime.disposeSession(session.id);
+    });
+    runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
+    expect(runtime.inspectSession(session.id).state).toBe('disposed');
+  });
 });
 
-function createTestRuntime(dispatcher?: {
-  dispatch(
-    command: CompiledCommand,
-  ): RuntimeCommandDispatchResult | Promise<RuntimeCommandDispatchResult>;
-}, policies = samplePolicies) {
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((accept) => {
+    resolve = accept;
+  });
+  return { promise, resolve };
+}
+
+async function flushMicrotasks() {
+  for (let index = 0; index < 5; index += 1) await Promise.resolve();
+}
+
+function dispatched(commandId: string): RuntimeCommandDispatchResult {
+  return {
+    commandId,
+    status: 'dispatched',
+    message: `Dispatched ${commandId}.`,
+  };
+}
+
+function loadTwoCommandSession(
+  runtime: ReturnType<typeof createBotLabRuntime>,
+) {
+  const session = runtime.createSession();
+  runtime.loadCompiledBehavior(session.id, {
+    ...sampleMicroDuckCompiledBehaviorArtifact,
+    commands: ['first', 'second'].map((id) => ({
+      ...sampleMicroDuckCompiledBehaviorArtifact.commands[0],
+      id,
+    })),
+  });
+  runtime.confirmPolicy(session.id);
+  return session;
+}
+
+function createTestRuntime(
+  dispatcher?: Pick<RuntimeCommandDispatcher, 'dispatch'>,
+  policies = samplePolicies,
+) {
   return createBotLabRuntime({
     adapters: [microDuckAdapter],
     simulators: [],

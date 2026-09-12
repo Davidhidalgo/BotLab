@@ -99,12 +99,14 @@ Observed gaps:
 
 Tasks:
 
-- [ ] Enforce legal session transitions and check cancellation/pause state between commands. Define pause/resume cursor semantics so resuming does not replay completed commands.
-- [ ] Remove or invalidate stopped/disposed queue entries and prevent late asynchronous results from reviving a terminal session.
+- [x] Enforce legal session transitions and check cancellation/pause state between commands. Define pause/resume cursor semantics so resuming does not replay completed commands.
+- [x] Remove or invalidate stopped/disposed queue entries and prevent late asynchronous results from reviving a terminal session.
 - [ ] Define dispatcher cancellation and in-flight command behavior. Distinguish preventing subsequent dispatches from stopping an already active hardware command; require an explicit transport stop contract before hardware execution is enabled.
 - [ ] Remove automatic policy confirmation from compilation. Require a user action when the evaluated policy requests confirmation, and bind that confirmation to the exact plan revision and target.
 - [ ] Invalidate confirmation when the plan or target changes, and validate current target availability, capability support, and applicable policies before dispatch.
 - [ ] Add regression coverage for interruption during the first of two commands, queued cancellation/disposal, late results, replacement plans, and unavailable targets.
+
+Lifecycle consolidation update: the shared runtime now retains one invocation across pause/resume, aborts dispatch cooperatively on stop/dispose, keeps capability locks until in-flight transport settles, rejects replacement loads while unsettled, clears old plans/queue entries/approval on subsequent loads, and fails fast on dispatch errors. Nineteen additional regressions cover interruption, late results, queue cancellation, lock ownership, duplicate session IDs, replacement loads, and lifecycle listeners. Current target eligibility, app-side automatic confirmation, full revision-bound approval, structured run outcomes, and an acknowledged hardware stop contract remain open; these changes do not enable physical robot execution.
 
 Acceptance criteria:
 

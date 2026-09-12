@@ -63,7 +63,11 @@ BotLab starts with these concepts in the model:
 
 ### Runtime and adapters stay separate
 
+<!-- runtime configuration and lifecycle from libs/runtime/src/lib/runtime.ts -->
+
 `@botlab/runtime` accepts adapters and simulator integrations as configuration. MicroDuck and StackChan packages expose targets and capabilities through the shared `BotLabAdapter` contract.
+
+The runtime pauses between commands, cancels queued work on stop/dispose, and supplies dispatchers with a cooperative abort signal. Locks remain held until any in-flight dispatch settles. This is not a hardware emergency-stop guarantee; see the [runtime lifecycle contract](libs/runtime/README.md).
 
 ### Simulators are dependencies where possible
 

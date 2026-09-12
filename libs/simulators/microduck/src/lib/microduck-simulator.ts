@@ -111,17 +111,30 @@ export interface MicroDuckBotLabPostMessageSourceModuleOptions {
   className?: string;
 }
 
+export interface MicroDuckOfficialSimulatorPatchOptions
+  extends MicroDuckBotLabPostMessageSourceModuleOptions {
+  velocityLimitsExpression?: string;
+}
+
 export interface MicroDuckOfficialSimulatorPatchInstructions {
   modulePath: string;
+  gamePath: string;
   importLine: string;
   sourceFactoryLine: string;
   controllerSourceName: string;
+}
+
+export interface MicroDuckOfficialSimulatorGamePatchResult {
+  source: string;
+  changed: boolean;
+  warnings: string[];
 }
 
 export const MICRODUCK_SIMULATOR_CONTROL_MESSAGE_TYPE =
   'botlab.microduck.control-source.v1';
 export const MICRODUCK_BOTLAB_SOURCE_MODULE_PATH =
   'app/src/game/controls/botlab.js';
+export const MICRODUCK_SIMULATOR_GAME_SOURCE_PATH = 'app/src/game/game.js';
 
 export interface MicroDuckOfficialSimulatorController {
   readonly sources?: MicroDuckOfficialSimulatorSource[];
@@ -711,15 +724,68 @@ function clampUnit(value) {
 }
 
 export function createMicroDuckOfficialSimulatorPatchInstructions(
-  options: MicroDuckBotLabPostMessageSourceModuleOptions = {}
+  options: MicroDuckOfficialSimulatorPatchOptions = {}
 ): MicroDuckOfficialSimulatorPatchInstructions {
   const className = options.className ?? 'BotLabSource';
+  const velocityLimitsExpression =
+    options.velocityLimitsExpression ?? 'velLims()';
 
   return {
     modulePath: MICRODUCK_BOTLAB_SOURCE_MODULE_PATH,
+    gamePath: MICRODUCK_SIMULATOR_GAME_SOURCE_PATH,
     importLine: `import { ${className} } from "./controls/botlab.js";`,
-    sourceFactoryLine: `const botLabSource = new ${className}({ getVelocityLimits: () => model.getVelocityLimits() });`,
+    sourceFactoryLine: `const botLabSource = new ${className}({ getVelocityLimits: () => ${velocityLimitsExpression} });`,
     controllerSourceName: 'botLabSource',
+  };
+}
+
+export function patchMicroDuckOfficialSimulatorGameSource(
+  source: string,
+  options: MicroDuckOfficialSimulatorPatchOptions = {}
+): MicroDuckOfficialSimulatorGamePatchResult {
+  const instructions =
+    createMicroDuckOfficialSimulatorPatchInstructions(options);
+  const warnings: string[] = [];
+  let patched = source;
+
+  if (!patched.includes(instructions.importLine)) {
+    patched = insertAfterLastImport(patched, instructions.importLine);
+  }
+
+  if (!patched.includes(instructions.sourceFactoryLine)) {
+    const next = insertBeforeControllerConstruction(
+      patched,
+      instructions.sourceFactoryLine
+    );
+
+    if (next === patched) {
+      warnings.push(
+        'Could not find the official simulator Controller construction. Add the BotLabSource factory manually near initControls().'
+      );
+    }
+
+    patched = next;
+  }
+
+  if (!controllerSourcesInclude(patched, instructions.controllerSourceName)) {
+    const next = insertControllerSource(
+      patched,
+      instructions.controllerSourceName
+    );
+
+    if (next === patched) {
+      warnings.push(
+        'Could not find a Controller sources array. Add botLabSource to the sources list manually.'
+      );
+    }
+
+    patched = next;
+  }
+
+  return {
+    source: patched,
+    changed: patched !== source,
+    warnings,
   };
 }
 
@@ -826,6 +892,73 @@ function isMicroDuckBotLabOfficialSource(
     typeof (source as MicroDuckBotLabOfficialSource).load === 'function' &&
     typeof (source as MicroDuckBotLabOfficialSource).clear === 'function'
   );
+}
+
+function insertAfterLastImport(source: string, importLine: string) {
+  const importMatches = [...source.matchAll(/^import\s.+;$/gm)];
+  const lastImport = importMatches[importMatches.length - 1];
+
+  if (!lastImport || lastImport.index === undefined) {
+    return `${importLine}\n${source}`;
+  }
+
+  const insertAt = lastImport.index + lastImport[0].length;
+
+  return `${source.slice(0, insertAt)}\n${importLine}${source.slice(insertAt)}`;
+}
+
+function insertBeforeControllerConstruction(
+  source: string,
+  sourceFactoryLine: string
+) {
+  const controllerMatch = source.match(
+    /^(\s*)(?:controller|const\s+controller|let\s+controller)\s*=\s*new Controller\(\{\s*sources:\s*\[/m
+  );
+
+  if (!controllerMatch || controllerMatch.index === undefined) {
+    return source;
+  }
+
+  const indent = controllerMatch[1] ?? '';
+
+  return `${source.slice(0, controllerMatch.index)}${indent}${sourceFactoryLine}\n${source.slice(
+    controllerMatch.index
+  )}`;
+}
+
+function controllerSourcesInclude(source: string, sourceName: string) {
+  const sourcesArray = readControllerSourcesArray(source);
+
+  return sourcesArray?.includes(sourceName) ?? false;
+}
+
+function insertControllerSource(source: string, sourceName: string) {
+  const sourcesMatch = source.match(/sources:\s*\[/m);
+
+  if (!sourcesMatch || sourcesMatch.index === undefined) {
+    return source;
+  }
+
+  const insertAt = sourcesMatch.index + sourcesMatch[0].length;
+
+  return `${source.slice(0, insertAt)}${sourceName}, ${source.slice(insertAt)}`;
+}
+
+function readControllerSourcesArray(source: string) {
+  const sourcesMatch = source.match(/sources:\s*\[/m);
+
+  if (!sourcesMatch || sourcesMatch.index === undefined) {
+    return undefined;
+  }
+
+  const start = sourcesMatch.index + sourcesMatch[0].length;
+  const end = source.indexOf(']', start);
+
+  if (end === -1) {
+    return undefined;
+  }
+
+  return source.slice(start, end);
 }
 
 function isMicroDuckSimulatorControlSource(

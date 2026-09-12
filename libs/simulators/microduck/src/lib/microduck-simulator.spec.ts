@@ -23,6 +23,7 @@ import {
   createMicroDuckSimulatorControlSource,
   loadMicroDuckOfficialSimulatorHost,
   parseMicroDuckSimulatorControlMessage,
+  patchMicroDuckOfficialSimulatorGameSource,
   postMicroDuckSimulatorControlSource,
   type MicroDuckOfficialSimulatorSource,
 } from './microduck-simulator';
@@ -364,11 +365,45 @@ describe('microDuckSimulatorBridge', () => {
 
     expect(createMicroDuckOfficialSimulatorPatchInstructions()).toEqual({
       modulePath: 'app/src/game/controls/botlab.js',
+      gamePath: 'app/src/game/game.js',
       importLine: 'import { BotLabSource } from "./controls/botlab.js";',
       sourceFactoryLine:
-        'const botLabSource = new BotLabSource({ getVelocityLimits: () => model.getVelocityLimits() });',
+        'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims() });',
       controllerSourceName: 'botLabSource',
     });
+  });
+
+  it('patches official simulator game source to register BotLabSource', () => {
+    const officialGameSource = [
+      'import { Controller } from "./controls/controller.js";',
+      'import { KeyboardSource } from "./controls/keyboard.js";',
+      '',
+      'function initControls(model) {',
+      '  const kbSource = new KeyboardSource({ getVelocityLimits: () => model.getVelocityLimits() });',
+      '  controller = new Controller({ sources: [kbSource] });',
+      '}',
+      '',
+    ].join('\n');
+
+    const result =
+      patchMicroDuckOfficialSimulatorGameSource(officialGameSource);
+
+    expect(result.warnings).toEqual([]);
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain(
+      'import { BotLabSource } from "./controls/botlab.js";'
+    );
+    expect(result.source).toContain(
+      'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims() });'
+    );
+    expect(result.source).toContain(
+      'controller = new Controller({ sources: [botLabSource, kbSource] });'
+    );
+
+    const second = patchMicroDuckOfficialSimulatorGameSource(result.source);
+
+    expect(second.changed).toBe(false);
+    expect(second.source).toBe(result.source);
   });
 
   it('allows educational preview host loading while assets still need review', async () => {

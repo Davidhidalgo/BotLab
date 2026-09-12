@@ -2,6 +2,7 @@ import { BlocksEditorShell } from '@botlab/blocks';
 import { botLabConcepts } from '@botlab/model';
 import {
   createMicroDuckSimulatorAssetCachePlan,
+  createMicroDuckSimulatorControlSource,
   loadMicroDuckOfficialSimulatorHost,
   microDuckSimulatorAssetManifest,
   postMicroDuckSimulatorControlSource,
@@ -75,13 +76,20 @@ export function scheduleMicroDuckSimulatorControlSourceDelivery(
   controlSource: MicroDuckSimulatorControlSource,
   targetOrigin: string
 ) {
-  postMicroDuckSimulatorControlSource(targetWindow, controlSource, targetOrigin);
+  const executionId = Array.from(
+    window.crypto.getRandomValues(new Uint32Array(4)),
+    (value) => value.toString(16)
+  ).join('-');
+  postMicroDuckSimulatorControlSource(
+    targetWindow, controlSource, targetOrigin, executionId
+  );
   return microDuckSimulatorDeliveryDelays.slice(1).map((delay) =>
     window.setTimeout(() => {
       postMicroDuckSimulatorControlSource(
         targetWindow,
         controlSource,
-        targetOrigin
+        targetOrigin,
+        executionId
       );
     }, delay)
   );
@@ -271,6 +279,31 @@ export function App() {
       });
     }
   }
+  function runDemo() {
+    if (!flowSnapshot.can({ type: 'demo.run' })) {
+      return;
+    }
+
+    sendFlow({ type: 'demo.run' });
+
+    if (
+      officialSimulatorHostResult?.state !== 'running' ||
+      selectedTarget?.kind !== 'simulator' ||
+      !compiledArtifact ||
+      compiledArtifact.targetId !== selectedTargetId
+    ) {
+      return;
+    }
+
+    const controlSource = createMicroDuckSimulatorControlSource(compiledArtifact);
+    if (controlSource.errors.length > 0) {
+      return;
+    }
+
+    setOfficialSimulatorHostResult((current) =>
+      current && { ...current, controlSource, messages: controlSource.messages }
+    );
+  }
   function failOfficialSimulatorRuntimePreview(message: string) {
     setOfficialSimulatorFrameReady(false);
     setOfficialSimulatorHostResult((current) => ({
@@ -369,7 +402,7 @@ export function App() {
               </select>
             </label>
             <Button
-              onClick={() => sendFlow({ type: 'demo.run' })}
+              onClick={runDemo}
               disabled={!flowSnapshot.can({ type: 'demo.run' })}
             >
               <Play className="h-4 w-4" />

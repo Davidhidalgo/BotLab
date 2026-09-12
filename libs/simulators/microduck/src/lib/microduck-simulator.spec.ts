@@ -340,6 +340,38 @@ describe('microDuckSimulatorBridge', () => {
     expect(source.pressed).toEqual({});
   });
 
+  it('distinguishes a replay from retries of a completed execution', () => {
+    const fakeWindow = createFakeMessageWindow();
+    const source = createMicroDuckBotLabPostMessageSource({
+      window: fakeWindow,
+      allowedOrigins: ['https://botlab.test'],
+      getVelocityLimits: () => [2, -1, 3],
+    });
+    const controlSource = createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact());
+    const deliver = (executionId: string) => fakeWindow.dispatch({
+      origin: 'https://botlab.test',
+      data: createMicroDuckSimulatorControlMessage(controlSource, executionId),
+    });
+    source.init?.();
+    deliver('first');
+    source.poll?.(0.02);
+    source.axes.jaw = 0;
+    deliver('first');
+    source.poll?.(0.02);
+    expect(source.axes.jaw).toBe(0);
+    deliver('second');
+    source.poll?.(0.02);
+    expect(source.axes.jaw).toBe(0.5);
+    source.axes.jaw = 0;
+    deliver('first');
+    source.poll?.(0.02);
+    expect(source.axes.jaw).toBe(0);
+    expect(parseMicroDuckSimulatorControlMessage({
+      ...createMicroDuckSimulatorControlMessage(controlSource), executionId: 123,
+    })).toBeUndefined();
+    source.dispose?.();
+  });
+
   it('ignores postMessage control frames from untrusted origins', () => {
     const fakeWindow = createFakeMessageWindow();
     const source = createMicroDuckBotLabPostMessageSource({
@@ -449,9 +481,9 @@ describe('microDuckSimulatorBridge', () => {
       }],
       messages: [], errors: [],
     };
-    const deliver = (origin = 'http://127.0.0.1:4200') => {
+    const deliver = (origin = 'http://127.0.0.1:4200', executionId?: string) => {
       receiverWindow.dispatchEvent(new MessageEvent('message', {
-        origin, data: createMicroDuckSimulatorControlMessage(sourceData),
+        origin, data: createMicroDuckSimulatorControlMessage(sourceData, executionId),
       }));
     };
 
@@ -474,6 +506,16 @@ describe('microDuckSimulatorBridge', () => {
     expect(Array.from(source.command)).toEqual([0, 0, 0]);
 
     deliver();
+    source.poll(0.02);
+    expect(source.cursor).toBe(1);
+    expect(source.isActive()).toBe(false);
+
+    deliver('http://127.0.0.1:4200', 'run-2');
+    source.poll(0.04);
+    expect(Array.from(source.command)).toEqual([2, 0, 0]);
+    deliver();
+    deliver('http://127.0.0.1:4200', 'run-2');
+    source.poll(0.06);
     source.poll(0.02);
     expect(source.cursor).toBe(1);
     expect(source.isActive()).toBe(false);

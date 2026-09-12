@@ -404,7 +404,7 @@ function createBotLabSourceModule({ allowedOrigins }) {
 const ALLOWED_ORIGINS = ${JSON.stringify(allowedOrigins)};
 const ACTIVE_SOURCES = new Set();
 let latestControlSource;
-let latestControlSourceKey;
+const receivedExecutions = new Set();
 
 window.addEventListener("message", (event) => {
   const controlSource = parseControlSourceMessage(event);
@@ -413,11 +413,13 @@ window.addEventListener("message", (event) => {
     return;
   }
 
-  const key = JSON.stringify(controlSource);
-  if (key === latestControlSourceKey) {
+  const key = event.data.executionId
+    ? "run:" + event.data.executionId
+    : "legacy:" + JSON.stringify(controlSource);
+  if (receivedExecutions.has(key)) {
     return;
   }
-  latestControlSourceKey = key;
+  receivedExecutions.add(key);
   latestControlSource = controlSource;
 
   for (const source of ACTIVE_SOURCES) {
@@ -584,6 +586,8 @@ function parseControlSourceMessage(event) {
     !message ||
     message.type !== MESSAGE_TYPE ||
     message.version !== 1 ||
+    (message.executionId !== undefined &&
+      (typeof message.executionId !== "string" || message.executionId.length === 0)) ||
     message.simulatorId !== "microduck-official-sim" ||
     !message.source ||
     !Array.isArray(message.source.frames)

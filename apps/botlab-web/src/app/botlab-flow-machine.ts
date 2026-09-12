@@ -1016,69 +1016,86 @@ function createBotLabFlowContext(): BotLabFlowContext {
   };
 }
 
-function compileMicroDuckWorkspaceArtifact(
+export function compileMicroDuckWorkspaceArtifact(
   artifact: BlocksWorkspaceArtifact,
   targetId: string
 ): CompiledBehaviorArtifact {
   const program = readMicroDuckProgramFromWorkspace(artifact);
-  const motionDurationMs = Math.round(
-    (program.distanceMeters / MICRODUCK_DEMO_WALK_SPEED_METERS_PER_SECOND) *
-      1000
-  );
-
-  return {
-    ...sampleMicroDuckCompiledBehaviorArtifact,
-    id: `artifact-${artifact.behaviorId}-${targetId}-${program.pattern}-walk-${formatArtifactNumber(
-      program.distanceMeters
-    )}m-plan`,
-    label: `MicroDuck ${program.pattern} and ${program.distanceMeters}m walk plan`,
-    behaviorId: artifact.behaviorId,
-    targetId,
-    commands: [
-      {
-        id: `command-microduck-leds-${program.pattern}`,
+  const commands: CompiledBehaviorArtifact['commands'] = [];
+  const planParts: string[] = [];
+  for (const [index, step] of program.entries()) {
+    if (step.type === 'leds') {
+      planParts.push(step.pattern);
+      commands.push({
+        id: `command-microduck-leds-${index}`,
         capabilityId: 'microduck-leds',
         commandId: 'set-led-pattern',
         targetId,
-        inputs: {
-          pattern: program.pattern,
-          brightness: 50,
-        },
+        inputs: { pattern: step.pattern, brightness: 50 },
+      });
+      continue;
+    }
+    const walking = step.type === 'walk';
+    const durationMs = walking
+      ? Math.round(
+          (step.distanceMeters / MICRODUCK_DEMO_WALK_SPEED_METERS_PER_SECOND) *
+            1000
+        )
+      : Math.round(step.seconds * 1000);
+    planParts.push(
+      walking
+        ? `walk-${formatArtifactNumber(step.distanceMeters)}m`
+        : `wait-${formatArtifactNumber(step.seconds)}s`
+    );
+    commands.push({
+      id: `command-microduck-${step.type}-${index}`,
+      capabilityId: 'microduck-motion',
+      commandId: 'drive-differential',
+      targetId,
+      inputs: {
+        leftPower: walking ? 1 : 0,
+        rightPower: walking ? 1 : 0,
+        durationMs,
+        ...(walking ? { distanceMeters: step.distanceMeters } : {}),
       },
-      {
-        id: `command-microduck-walk-${formatArtifactNumber(
-          program.distanceMeters
-        )}m`,
-        capabilityId: 'microduck-motion',
-        commandId: 'drive-differential',
-        targetId,
-        inputs: {
-          leftPower: 1,
-          rightPower: 1,
-          durationMs: motionDurationMs,
-          distanceMeters: program.distanceMeters,
-        },
-      },
-      {
-        id: 'command-microduck-stop',
-        capabilityId: 'microduck-motion',
-        commandId: 'drive-differential',
-        targetId,
-        inputs: {
-          leftPower: 0,
-          rightPower: 0,
-          durationMs: 250,
-        },
-      },
-    ],
+    });
+  }
+  commands.push({
+    id: 'command-microduck-stop',
+    capabilityId: 'microduck-motion',
+    commandId: 'drive-differential',
+    targetId,
+    inputs: { leftPower: 0, rightPower: 0, durationMs: 250 },
+  });
+
+  return {
+    ...sampleMicroDuckCompiledBehaviorArtifact,
+    id: `artifact-${artifact.behaviorId}-${targetId}-${planParts.join(
+      '-'
+    )}-plan`,
+    label: `MicroDuck ${program.length}-step plan`,
+    behaviorId: artifact.behaviorId,
+    targetId,
+    commands,
   };
 }
 
 const MICRODUCK_DEMO_WALK_SPEED_METERS_PER_SECOND = 2;
 
-function readMicroDuckProgramFromWorkspace(
-  artifact: BlocksWorkspaceArtifact
-) {
+type MicroDuckProgramStep =
+  | { type: 'leds'; pattern: string }
+  | { type: 'walk'; distanceMeters: number }
+  | { type: 'wait'; seconds: number };
+
+function directXmlChild(element: Element, tag: string, name?: string) {
+  return Array.from(element.children).find(
+    (child) =>
+      child.localName === tag &&
+      (name === undefined || child.getAttribute('name') === name)
+  );
+}
+
+function readMicroDuckProgramFromWorkspace(artifact: BlocksWorkspaceArtifact) {
   if (artifact.format !== 'scratch-xml') {
     throw new Error('Only Scratch XML can be compiled in this demo.');
   }
@@ -1099,41 +1116,87 @@ function readMicroDuckProgramFromWorkspace(
     throw new Error('The workspace does not contain valid Scratch XML.');
   }
 
-  const startBlock = root.querySelector('block[type="event_whenflagclicked"]');
+  const starts = Array.from(root.children).filter(
+    (child) =>
+      child.localName === 'block' &&
+      child.getAttribute('type') === 'event_whenflagclicked' &&
+      child.getAttribute('disabled') !== 'true'
+  );
+  const startBlock = starts[0];
 
   if (!startBlock) {
-    throw new Error(
-      'Add a green flag start block before compiling.'
-    );
+    throw new Error('Add a green flag start block before compiling.');
   }
 
-  const ledBlock = root.querySelector(
-    'block[type="botlab_microduck_set_leds"]'
-  );
-
-  if (!ledBlock) {
+  if (starts.length !== 1) {
     throw new Error(
-      'Add the BotLab MicroDuck LEDs block before compiling.'
+      'Use one green flag script. Parallel scripts are not supported yet.'
     );
   }
-
-  const patternField = ledBlock.querySelector('field[name="PATTERN"]');
-  const walkBlock = root.querySelector(
-    'block[type="botlab_microduck_walk_distance"]'
-  );
-
-  if (!walkBlock) {
-    throw new Error(
-      'Add the BotLab MicroDuck walk block before compiling.'
-    );
+  const steps: MicroDuckProgramStep[] = [];
+  let next = directXmlChild(startBlock, 'next');
+  while (next) {
+    const block = directXmlChild(next, 'block');
+    if (!block) break;
+    next = directXmlChild(block, 'next');
+    if (block.getAttribute('disabled') === 'true') continue;
+    const type = block.getAttribute('type');
+    switch (type) {
+      case 'botlab_microduck_set_leds':
+        steps.push({
+          type: 'leds',
+          pattern: normalizeMicroDuckLedPattern(
+            directXmlChild(block, 'field', 'PATTERN')?.textContent
+          ),
+        });
+        break;
+      case 'botlab_microduck_walk_distance':
+        steps.push({
+          type: 'walk',
+          distanceMeters: normalizeMicroDuckWalkDistance(
+            directXmlChild(block, 'field', 'DISTANCE')?.textContent
+          ),
+        });
+        break;
+      case 'control_wait': {
+        const input = directXmlChild(block, 'value', 'DURATION');
+        const value =
+          input &&
+          (directXmlChild(input, 'block') ?? directXmlChild(input, 'shadow'));
+        if (
+          !value ||
+          ![
+            'math_number',
+            'math_positive_number',
+            'math_whole_number',
+            'math_integer',
+          ].includes(value.getAttribute('type') ?? '')
+        ) {
+          throw new Error(
+            'Wait requires a numeric duration. Expressions are not supported yet.'
+          );
+        }
+        const text = directXmlChild(value, 'field', 'NUM')?.textContent?.trim();
+        const seconds = text ? Number(text) : NaN;
+        if (
+          !Number.isFinite(seconds) ||
+          seconds < 0 ||
+          !Number.isFinite(seconds * 1000)
+        ) {
+          throw new Error(
+            'Wait duration must be a finite, non-negative number of seconds.'
+          );
+        }
+        steps.push({ type: 'wait', seconds });
+        break;
+      }
+      default:
+        throw new Error(`Unsupported connected block: ${type ?? 'unknown'}.`);
+    }
   }
-
-  const distanceField = walkBlock.querySelector('field[name="DISTANCE"]');
-
-  return {
-    pattern: normalizeMicroDuckLedPattern(patternField?.textContent),
-    distanceMeters: normalizeMicroDuckWalkDistance(distanceField?.textContent),
-  };
+  if (steps.length === 0)
+    throw new Error('Connect at least one block to the green flag.');
+  return steps;
 }
 
 function normalizeMicroDuckLedPattern(value: string | null | undefined) {

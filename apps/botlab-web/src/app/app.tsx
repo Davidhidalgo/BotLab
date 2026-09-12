@@ -1416,6 +1416,10 @@ function getRuntimeEventLabel(type: string, copy: BotLabCopy) {
 
 function translateFlowMessage(message: string, copy: BotLabCopy) {
   const exactMessages: Record<string, string> = {
+    'Use one green flag script. Parallel scripts are not supported yet.': copy.messages.singleScript,
+    'Wait requires a numeric duration. Expressions are not supported yet.': copy.messages.numericWait,
+    'Wait duration must be a finite, non-negative number of seconds.': copy.messages.invalidWait,
+    'Connect at least one block to the green flag.': copy.messages.emptyScript,
     'Compile the demo to evaluate policies.': copy.messages.compilePolicies,
     'Workspace loaded from sample.': copy.messages.workspaceLoaded,
     'Sample workspace loaded.': copy.messages.sampleWorkspaceLoaded,
@@ -1432,6 +1436,11 @@ function translateFlowMessage(message: string, copy: BotLabCopy) {
 
   if (exactMessages[message]) {
     return exactMessages[message];
+  }
+
+  const unsupportedBlock = message.match(/^Unsupported connected block: (.+)\.$/);
+  if (unsupportedBlock) {
+    return `${copy.messages.unsupportedBlock} ${unsupportedBlock[1]}.`;
   }
 
   const targetSelected = message.match(

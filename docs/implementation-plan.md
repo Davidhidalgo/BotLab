@@ -413,6 +413,8 @@ Next handoff:
 
 The simulator now has one Run action beside the preview, replacing the separate compile, validate, simulate, execute, and runtime-load controls. It compiles the current workspace, validates the simulator plan, dispatches the local demo, and loads the preview runtime automatically when needed. Subsequent runs reuse the iframe and send the newly compiled plan. Preparation failures stop delivery, workspace or target changes cancel preparation, and load errors or timeouts allow retrying with the same button. Each execution uses a fresh ID, retries share that ID, and the receiver ignores delayed retries from previous executions. Replaying replaces the active sequence without remounting the iframe or resetting the scene. App regression coverage includes first-run setup, editing the distance, rejecting stale execution, replaying identical content, cancelling superseded retries, disconnect cleanup, and all three button locales; it does not equate local demo dispatch completion with engine completion.
 
+The demo compiler now follows the `next` chain of one green-flag script, preserving repeated LED and walk blocks and lowering numeric `control_wait` durations to timed zero-power motion frames. Detached blocks are ignored; unsupported connected blocks, expressions, invalid durations, empty scripts, and multiple green-flag scripts fail explicitly. A final stop frame is appended. Regression tests exercise walk/wait/walk through both the TypeScript and generated simulator receivers. This is sequential subset support, not a full Scratch interpreter; distance remains time-estimated rather than measured by the physics engine.
+
 ## Milestone 9: Artifacts and Persistence
 
 Goal: make user work durable and inspectable.

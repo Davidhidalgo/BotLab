@@ -300,13 +300,16 @@ function patchBotLabArena(source) {
 function patchGameSource(source) {
   const importLine = 'import { BotLabSource } from "./controls/botlab.js";';
   const factoryLine =
-    'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]] });';
+    'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos) });';
   const warnings = [];
   let patched = source.replace(
     'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims() });',
     factoryLine
   ).replace(
     'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked });',
+    factoryLine
+  ).replace(
+    'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]] });',
     factoryLine
   );
 
@@ -451,6 +454,42 @@ const createDistanceTracker = function(target, readPosition) {
   };
 };
 
+const createTurnTracker = function(target, readHeading) {
+  let previous;
+  let rotation = 0;
+  let elapsed = 0;
+  let lastProgressAt = 0;
+  let best = 0;
+  return (dt) => {
+    if (!Number.isFinite(target) || Math.abs(target) > 360 || !Number.isFinite(dt) || dt < 0) {
+      return { turnedDegrees: 0, done: false, powerScale: 0, error: 'invalid-frame' };
+    }
+    if (target === 0) return { turnedDegrees: 0, done: true, powerScale: 0 };
+    let heading;
+    try { heading = readHeading?.(); } catch { heading = undefined; }
+    if (heading === undefined || !Number.isFinite(heading)) {
+      return { turnedDegrees: best, done: false, powerScale: 0, error: 'telemetry-unavailable' };
+    }
+    const delta = previous === undefined ? 0 : Math.atan2(Math.sin(heading - previous), Math.cos(heading - previous));
+    if (Math.abs(delta) > Math.max(0.7, dt * 8)) {
+      return { turnedDegrees: best, done: false, powerScale: 0, error: 'position-reset' };
+    }
+    previous = heading;
+    rotation -= delta * 180 / Math.PI;
+    const turnedDegrees = Math.max(0, rotation * Math.sign(target));
+    const remaining = Math.abs(target) - turnedDegrees;
+    elapsed += dt;
+    if (remaining <= 0) return { turnedDegrees, done: true, powerScale: 0 };
+    if (turnedDegrees > best + 1) {
+      best = turnedDegrees;
+      lastProgressAt = elapsed;
+    }
+    const error = elapsed - lastProgressAt >= 10 ? 'motion-stalled'
+      : elapsed > Math.max(30, Math.abs(target) / 3) ? 'motion-timeout' : undefined;
+    return { turnedDegrees, done: false, powerScale: Math.max(0.5, Math.min(1, remaining / 45)), error };
+  };
+};
+
 function reportExecution(execution, status, frameIndex, progress = {}) {
   if (!execution) return;
   execution.status = status;
@@ -526,7 +565,7 @@ window.addEventListener("message", (event) => {
 });
 
 export class BotLabSource {
-  constructor({ getVelocityLimits, isInputLocked, getPosition } = {}) {
+  constructor({ getVelocityLimits, isInputLocked, getPosition, getHeading } = {}) {
     this.id = "botlab";
     this.connected = true;
     this.command = new Float32Array(3);
@@ -536,10 +575,12 @@ export class BotLabSource {
     this.getVelocityLimits = getVelocityLimits ?? (() => [2, -1, 3]);
     this.isInputLocked = isInputLocked ?? (() => false);
     this.getPosition = getPosition;
+    this.getHeading = getHeading;
     this.frames = [];
     this.cursor = 0;
     this.frameElapsedMs = 0;
     this.distanceTracker = undefined;
+    this.turnTracker = undefined;
     this.active = false;
   }
 
@@ -566,6 +607,7 @@ export class BotLabSource {
     this.reportedCursor = -1;
     this.heartbeatElapsed = 0;
     this.distanceTracker = undefined;
+    this.turnTracker = undefined;
     this.frames = [...controlSource.frames];
     this.cursor = 0;
     this.frameElapsedMs = 0;
@@ -578,6 +620,7 @@ export class BotLabSource {
     reportExecution(this.execution, status, this.frames[this.cursor] ? this.cursor : undefined, { errorCode });
     this.execution = undefined;
     this.distanceTracker = undefined;
+    this.turnTracker = undefined;
     this.frames = [];
     this.cursor = 0;
     this.frameElapsedMs = 0;
@@ -620,10 +663,16 @@ export class BotLabSource {
     }
 
     const distanceFrame = frame.type === "differential-drive" && frame.distanceMeters !== undefined;
+    const turnFrame = frame.type === "differential-drive" && frame.angleDegrees !== undefined;
     let progress;
-    if (distanceFrame) {
-      this.distanceTracker ??= createDistanceTracker(frame.distanceMeters, this.getPosition);
-      progress = this.distanceTracker(dt);
+    if (distanceFrame || turnFrame) {
+      if (turnFrame) {
+        this.turnTracker ??= createTurnTracker(frame.angleDegrees, this.getHeading);
+        progress = this.turnTracker(dt);
+      } else {
+        this.distanceTracker ??= createDistanceTracker(frame.distanceMeters, this.getPosition);
+        progress = this.distanceTracker(dt);
+      }
       if (progress.error) {
         this.clear("failed", progress.error);
         return;
@@ -635,22 +684,25 @@ export class BotLabSource {
       reportExecution(this.execution, "running", this.cursor, {
         elapsedMs: this.frameElapsedMs,
         distanceMeters: progress?.distanceMeters,
+        turnedDegrees: progress?.turnedDegrees,
       });
       this.reportedCursor = this.cursor;
       this.heartbeatElapsed = 0;
     }
-    if (distanceFrame && progress.done) {
+    if ((distanceFrame || turnFrame) && progress.done) {
       this.cursor += 1;
       this.frameElapsedMs = 0;
       this.distanceTracker = undefined;
+      this.turnTracker = undefined;
       this.resetCommand();
       this.resetPressed();
       this.active = true;
       return;
     }
     this.applyFrame(frame);
+    if (turnFrame) this.command[2] *= progress.powerScale;
     this.active = true;
-    if (distanceFrame) return;
+    if (distanceFrame || turnFrame) return;
     const durationMs = getFrameDurationMs(frame);
 
     if (durationMs <= 0) {

@@ -121,6 +121,13 @@ export function createMicroDuckAdapter(): BotLabAdapter {
                   min: 0,
                 },
                 {
+                  name: 'angleDegrees',
+                  type: 'number',
+                  required: false,
+                  min: -360,
+                  max: 360,
+                },
+                {
                   name: 'distanceMeters',
                   type: 'number',
                   required: false,

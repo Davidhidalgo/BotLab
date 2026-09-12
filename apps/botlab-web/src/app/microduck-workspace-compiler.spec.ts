@@ -44,6 +44,33 @@ function compile(blocks: string[], detached = '') {
 }
 
 describe('sequential MicroDuck compilation', () => {
+  it('compiles all eight movement blocks with stable IDs, units and clockwise positive angles', () => {
+    const blocks = ['walk_steps', 'back_steps', 'turn_left', 'turn_right', 'turn_around', 'walk_distance', 'back_distance', 'turn_degrees'];
+    const artifact = compile(blocks.map((type) => `<block type="botlab_microduck_${type}" id="${type}"/>`));
+    expect(artifact.commands.slice(0, -1).map(({ inputs }) => inputs)).toEqual([
+      { leftPower: 1, rightPower: 1, distanceMeters: 0.5 },
+      { leftPower: -1, rightPower: -1, distanceMeters: 0.5 },
+      { leftPower: -1, rightPower: 1, angleDegrees: -90 },
+      { leftPower: 1, rightPower: -1, angleDegrees: 90 },
+      { leftPower: 1, rightPower: -1, angleDegrees: 180 },
+      { leftPower: 1, rightPower: 1, distanceMeters: 5 },
+      { leftPower: -1, rightPower: -1, distanceMeters: 1 },
+      { leftPower: 1, rightPower: -1, angleDegrees: 90 },
+    ]);
+    const source = createMicroDuckSimulatorControlSource(artifact);
+    expect(source.errors).toEqual([]);
+    expect(source.frames.slice(0, -1).map(({ sourceBlockId }) => sourceBlockId)).toEqual(blocks);
+  });
+  it.each([-360, -90, 0, 90, 360])('preserves a signed turn of %s degrees', (angle) => {
+    const artifact = compile([`<block type="botlab_microduck_turn_degrees"><field name="ANGLE">${angle}</field></block>`]);
+    expect(artifact.commands[0].inputs).toMatchObject({ angleDegrees: angle, leftPower: Math.sign(angle), rightPower: -Math.sign(angle) });
+  });
+  it.each(['-1', '41', '0.5', 'NaN', ''])('rejects invalid step counts %s', (value) => {
+    expect(() => compile([`<block type="botlab_microduck_walk_steps"><field name="STEPS">${value}</field></block>`])).toThrow();
+  });
+  it.each(['-361', '361', 'Infinity', '90x', ''])('rejects invalid angles %s', (value) => {
+    expect(() => compile([`<block type="botlab_microduck_turn_degrees"><field name="ANGLE">${value}</field></block>`])).toThrow('Invalid motion ANGLE');
+  });
   it('compiles walk, wait, walk in connection order, with unique command IDs', () => {
     const artifact = compile([walk(2), wait('2.5'), walk(2)]);
     expect(artifact.commands.map(({ inputs }) => inputs)).toEqual([

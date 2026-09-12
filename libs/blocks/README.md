@@ -8,6 +8,22 @@ This library was generated with [Nx](https://nx.dev).
 
 The `control_wait` toolbox entry includes an editable `math_positive_number` shadow with a default of one second. Loading an older workspace repairs missing or empty `DURATION` inputs without replacing existing numeric values or connected blocks. Decimal values are preserved when exporting and reloading the workspace. Compilation and execution belong to the app and simulator, not this editor bridge.
 
+## Movement Blocks
+
+<!-- movement palette and fields from src/lib/scratch-blocks-local-bridge.ts and src/lib/microduck-block-messages.ts; execution units from apps/botlab-web/src/app/botlab-flow-machine.ts -->
+
+All movement blocks combine a bundled Lucide SVG with localized text. The two categories can be mixed in one script:
+
+| Category | Block type (prefix `botlab_microduck_`) | Input / meaning |
+| --- | --- | --- |
+| Movement | `walk_steps`, `back_steps` | `STEPS`, default 1, whole numbers 0–40; one BotLab step is 0.5 m |
+| Movement | `turn_left`, `turn_right` | Fixed -90 / +90 degrees |
+| Movement | `turn_around` | Fixed +180 degrees |
+| Precise movement | `walk_distance`, `back_distance` | `DISTANCE` in meters, 0–20; defaults 5 / 1 |
+| Precise movement | `turn_degrees` | `ANGLE`, default 90, range -360 to 360 |
+
+Negative angles turn left, positive angles turn right, relative to the robot heading. The variable turn's icon follows the sign and is not serialized. The existing `walk_distance` type, `DISTANCE` field and `walk` translation key remain compatible with saved programs and translation overlays. Numeric defaults supply Scratch's text-field configuration as well as Blockly's numeric configuration; Scratch's field limits primarily configure its keypad, so the compiler also validates all inputs.
+
 ## Active Block
 
 <!-- active block rendering from src/lib/blocks.tsx and src/lib/scratch-blocks-local-bridge.ts -->

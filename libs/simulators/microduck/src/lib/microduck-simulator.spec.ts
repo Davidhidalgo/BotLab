@@ -413,7 +413,7 @@ describe('microDuckSimulatorBridge', () => {
       gamePath: 'app/src/game/game.js',
       importLine: 'import { BotLabSource } from "./controls/botlab.js";',
       sourceFactoryLine:
-        'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]] });',
+        'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos) });',
       controllerSourceName: 'botLabSource',
     });
   });
@@ -439,7 +439,7 @@ describe('microDuckSimulatorBridge', () => {
       'import { BotLabSource } from "./controls/botlab.js";'
     );
     expect(result.source).toContain(
-      'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]] });'
+      'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos) });'
     );
     expect(result.source).toContain(
       'controller = new Controller({ sources: [botLabSource, kbSource] });'

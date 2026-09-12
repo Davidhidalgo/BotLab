@@ -1208,11 +1208,13 @@ function MicroDuckSimulatorHost({
           <p className="text-sm tabular-nums">
             {executionFrame.distanceMeters !== undefined
               ? `${copy.host.walking}: ${(executionUpdate?.distanceMeters ?? 0).toFixed(2)} / ${executionFrame.distanceMeters} m`
+              : executionFrame.angleDegrees !== undefined
+                ? `${copy.host.turning}: ${(executionUpdate?.turnedDegrees ?? 0).toFixed(0)} / ${Math.abs(executionFrame.angleDegrees)}°`
               : `${copy.host.waiting}: ${(Math.max(0, (executionFrame.durationMs ?? 0) - (executionUpdate?.elapsedMs ?? 0)) / 1000).toFixed(1)} s`}
           </p>
           <progress className="block h-2 w-full accent-emerald-600" aria-label={copy.host.progressLabel}
-            max={Math.max(executionFrame.distanceMeters ?? executionFrame.durationMs ?? 1, 0.001)}
-            value={executionFrame.distanceMeters !== undefined ? executionUpdate?.distanceMeters ?? 0 : executionUpdate?.elapsedMs ?? 0} />
+            max={Math.max(executionFrame.distanceMeters ?? (executionFrame.angleDegrees !== undefined ? Math.abs(executionFrame.angleDegrees) : executionFrame.durationMs) ?? 1, 0.001)}
+            value={executionFrame.distanceMeters !== undefined ? executionUpdate?.distanceMeters ?? 0 : executionFrame.angleDegrees !== undefined ? executionUpdate?.turnedDegrees ?? 0 : executionUpdate?.elapsedMs ?? 0} />
         </div>
       ) : null}
       {executionState === 'failed' && executionUpdate?.errorCode ? (
@@ -1559,6 +1561,7 @@ function translateFlowMessage(message: string, copy: BotLabCopy) {
     'Use one green flag script. Parallel scripts are not supported yet.': copy.messages.singleScript,
     'Wait requires a numeric duration. Expressions are not supported yet.': copy.messages.numericWait,
     'Wait duration must be a finite, non-negative number of seconds.': copy.messages.invalidWait,
+    'Steps must be a whole number.': copy.messages.invalidSteps,
     'Connect at least one block to the green flag.': copy.messages.emptyScript,
     'Compile the demo to evaluate policies.': copy.messages.compilePolicies,
     'Workspace loaded from sample.': copy.messages.workspaceLoaded,
@@ -1577,6 +1580,9 @@ function translateFlowMessage(message: string, copy: BotLabCopy) {
   if (exactMessages[message]) {
     return exactMessages[message];
   }
+  if (message.startsWith('Invalid motion STEPS:')) return copy.messages.invalidSteps;
+  if (message.startsWith('Invalid motion ANGLE:')) return copy.messages.invalidAngle;
+  if (message.startsWith('Invalid motion DISTANCE:') || message.startsWith('Unsupported walk distance:')) return copy.messages.invalidDistance;
 
   const unsupportedBlock = message.match(/^Unsupported connected block: (.+)\.$/);
   if (unsupportedBlock) {

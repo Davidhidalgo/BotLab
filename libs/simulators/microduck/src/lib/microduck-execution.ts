@@ -16,6 +16,7 @@ export interface MicroDuckExecutionUpdate {
   frameIndex?: number;
   elapsedMs?: number;
   distanceMeters?: number;
+  turnedDegrees?: number;
   errorCode?: string;
 }
 export interface MicroDuckExecutionRequest {
@@ -100,7 +101,7 @@ export function observeMicroDuckExecution(
     )
       return;
     if (
-      [data.elapsedMs, data.distanceMeters].some(
+      [data.elapsedMs, data.distanceMeters, data.turnedDegrees].some(
         (value) =>
           value !== undefined &&
           (typeof value !== 'number' || !Number.isFinite(value) || value < 0)
@@ -123,8 +124,8 @@ export function observeMicroDuckExecution(
     if (
       data.status === 'running' &&
       frame?.type === 'differential-drive' &&
-      frame.distanceMeters !== undefined &&
-      data.distanceMeters >= frame.distanceMeters
+      ((frame.distanceMeters !== undefined && data.distanceMeters >= frame.distanceMeters) ||
+        (frame.angleDegrees !== undefined && data.turnedDegrees >= Math.abs(frame.angleDegrees)))
     ) {
       reachedDistanceFrames.add(data.frameIndex);
     }
@@ -135,7 +136,7 @@ export function observeMicroDuckExecution(
         ? source.frames.findIndex(
             (frame, index) =>
               frame.type === 'differential-drive' &&
-              frame.distanceMeters !== undefined &&
+              (frame.distanceMeters !== undefined || frame.angleDegrees !== undefined) &&
               !reachedDistanceFrames.has(index)
           )
         : -1;
@@ -156,6 +157,7 @@ export function observeMicroDuckExecution(
       frameIndex: data.frameIndex,
       elapsedMs: data.elapsedMs,
       distanceMeters: data.distanceMeters,
+      turnedDegrees: data.turnedDegrees,
       errorCode: data.errorCode,
     });
   }

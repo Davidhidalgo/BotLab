@@ -10,9 +10,9 @@ describe('block message catalogs', () => {
 
   it('resolves bundled Catalan, Spanish and English text', () => {
     const resolve = createBlockMessageResolver(microDuckBlockMessages);
-    expect(resolve('walk', 'ca')).toBe('mou el MicroDuck %1 m');
+    expect(resolve('walk', 'ca')).toBe('avança %1 m');
     expect(resolve('smile', 'es')).toBe('sonrisa');
-    expect(resolve('walk', 'en')).toBe('walk MicroDuck %1 m');
+    expect(resolve('walk', 'en')).toBe('move forward %1 m');
   });
 
   it('adds local external translations without modifying the original catalog', () => {

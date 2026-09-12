@@ -1,4 +1,7 @@
 import type * as ScratchBlocksModule from 'scratch-blocks';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { ArrowUp, ArrowDown, CornerUpLeft, CornerUpRight, Undo2 } from 'lucide-react';
 import { createBlockMessageResolver, type BlocksLocale, type BlockTranslationOverlay } from './block-messages';
 import { microDuckBlockMessages } from './microduck-block-messages';
 import type {
@@ -201,7 +204,32 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
     return;
   }
 
+  const icon = (component: typeof ArrowUp) => `data:image/svg+xml,${encodeURIComponent(renderToStaticMarkup(
+    createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', width: 31, height: 28, viewBox: '0 0 31 28' },
+      createElement(component, { x: 7.5, y: 4.5, color: 'white', size: 25, strokeWidth: 2.5 }))
+  ))}`;
+  const icons = { forward: icon(ArrowUp), backward: icon(ArrowDown), left: icon(CornerUpLeft), right: icon(CornerUpRight), around: icon(Undo2) };
+  const message = (key: string) => `%{BKY_BOTLAB_MICRODUCK_${key.toUpperCase()}}`;
+  const movementBlocks = [
+    { type: 'walk_steps', key: 'forwardSteps', tooltip: 'stepsTooltip', icon: icons.forward, field: 'STEPS', value: 1, min: 0, max: 40, precision: 1 },
+    { type: 'back_steps', key: 'backwardSteps', tooltip: 'stepsTooltip', icon: icons.backward, field: 'STEPS', value: 1, min: 0, max: 40, precision: 1 },
+    { type: 'turn_left', key: 'turnLeft', tooltip: 'turnLeftTooltip', icon: icons.left },
+    { type: 'turn_right', key: 'turnRight', tooltip: 'turnRightTooltip', icon: icons.right },
+    { type: 'turn_around', key: 'turnAround', tooltip: 'turnAroundTooltip', icon: icons.around },
+    { type: 'walk_distance', key: 'walk', tooltip: 'walkTooltip', icon: icons.forward, field: 'DISTANCE', value: 5, min: 0, max: 20, precision: 0.1 },
+    { type: 'back_distance', key: 'backwardMeters', tooltip: 'backwardTooltip', icon: icons.backward, field: 'DISTANCE', value: 1, min: 0, max: 20, precision: 0.1 },
+    { type: 'turn_degrees', key: 'turnDegrees', tooltip: 'turnTooltip', icon: icons.right, field: 'ANGLE', value: 90, min: -360, max: 360, precision: 1 },
+  ];
   scratchBlocks.defineBlocksWithJsonArray([
+    ...movementBlocks.map((block) => ({
+      type: `botlab_microduck_${block.type}`,
+      message0: `%${block.field ? 2 : 1} ${message(block.key)}`,
+      args0: [
+        ...(block.field ? [{ type: 'field_number', name: block.field, value: block.value, text: String(block.value), min: block.min, max: block.max, precision: block.precision }] : []),
+        { type: 'field_image', name: 'DIRECTION', src: block.icon, width: 31, height: 28, alt: message(block.tooltip) },
+      ],
+      style: 'motion', extensions: ['shape_statement'], tooltip: message(block.tooltip),
+    })),
     {
       type: 'botlab_microduck_set_leds',
       message0: '%{BKY_BOTLAB_MICRODUCK_LEDS}',
@@ -221,25 +249,16 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
       extensions: ['shape_statement'],
       tooltip: '%{BKY_BOTLAB_MICRODUCK_LEDSTOOLTIP}',
     },
-    {
-      type: 'botlab_microduck_walk_distance',
-      message0: '%{BKY_BOTLAB_MICRODUCK_WALK}',
-      args0: [
-        {
-          type: 'field_number',
-          name: 'DISTANCE',
-          value: 5,
-          min: 0,
-          max: 20,
-          precision: 0.1,
-        },
-      ],
-      style: 'motion',
-      extensions: ['shape_statement'],
-      tooltip:
-        '%{BKY_BOTLAB_MICRODUCK_WALKTOOLTIP}',
-    },
   ]);
+  const turnDefinition = scratchBlocks.Blocks.botlab_microduck_turn_degrees;
+  const initializeTurn = turnDefinition.init;
+  turnDefinition.init = function () {
+    initializeTurn.call(this);
+    this.getField('ANGLE').setValidator((value: number) => {
+      this.getField('DIRECTION').setValue(value < 0 ? icons.left : icons.right);
+      return value;
+    });
+  };
 
   botLabBlocksRegistered = true;
 }
@@ -251,6 +270,7 @@ function getBotLabScratchBlocksTheme(scratchBlocks: ScratchBlocksApi) {
       name: 'botlab-scratch-blocks',
       blockStyles: createScratchBlockStyles(scratchBlocks),
       categoryStyles: {
+        motion_category: { colour: '#4C97FF' },
         control_category: {
           colour: '#FFAB19',
         },
@@ -339,11 +359,22 @@ function createBotLabToolbox(scratchBlocks: ScratchBlocksApi) {
       },
       {
         kind: 'category',
+        name: scratchBlocks.Msg['BOTLAB_MICRODUCK_MOVEMENT'],
+        categorystyle: 'motion_category',
+        contents: ['walk_steps', 'back_steps', 'turn_left', 'turn_right', 'turn_around'].map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` })),
+      },
+      {
+        kind: 'category',
+        name: scratchBlocks.Msg['BOTLAB_MICRODUCK_PRECISEMOVEMENT'],
+        categorystyle: 'motion_category',
+        contents: ['walk_distance', 'back_distance', 'turn_degrees'].map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` })),
+      },
+      {
+        kind: 'category',
         name: 'BotLab',
         categorystyle: 'botlab_category',
         contents: [
           { kind: 'block', type: 'botlab_microduck_set_leds' },
-          { kind: 'block', type: 'botlab_microduck_walk_distance' },
         ],
       },
       {

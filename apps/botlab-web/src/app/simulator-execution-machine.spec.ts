@@ -3,7 +3,7 @@ import { simulatorExecutionMachine } from './simulator-execution-machine';
 
 describe('simulator execution lifecycle', () => {
   afterEach(() => jest.useRealTimers());
-  function fixture() {
+  function fixture(angleDegrees?: number) {
     jest.useFakeTimers();
     const postMessage = jest.fn();
     const targetWindow = { postMessage } as unknown as Window;
@@ -25,14 +25,14 @@ describe('simulator execution lifecycle', () => {
               targetId: 'microduck-sim',
               leftPower: 0,
               rightPower: 0,
-              durationMs: 60000,
+              ...(angleDegrees === undefined ? { durationMs: 60000 } : { angleDegrees }),
             },
           ],
         },
       },
     });
     const request = postMessage.mock.calls[0][0];
-    function status(value: string) {
+    function status(value: string, turnedDegrees?: number) {
       window.dispatchEvent(
         new MessageEvent('message', {
           origin: 'https://sim.test',
@@ -45,12 +45,34 @@ describe('simulator execution lifecycle', () => {
             artifactId: 'plan',
             status: value,
             frameIndex: 0,
+            turnedDegrees,
           },
         })
       );
     }
     return { actor, postMessage, status };
   }
+
+  it('requires measured angular arrival before accepting completion', () => {
+    const f = fixture(-90);
+    f.status('running', 89);
+    f.status('completed');
+    expect(f.actor.getSnapshot().matches('failed')).toBe(true);
+    expect(f.actor.getSnapshot().context.update?.errorCode).toBe('telemetry-unavailable');
+    f.actor.stop();
+  });
+
+  it.each([-180, -90, 0, 90, 180])('accepts measured arrival for a %s degree turn', angle => {
+    const f = fixture(angle);
+    f.status('running', NaN);
+    expect(f.actor.getSnapshot().matches({ active: 'awaiting' })).toBe(true);
+    f.status('running', -1);
+    expect(f.actor.getSnapshot().matches({ active: 'awaiting' })).toBe(true);
+    f.status('running', Math.abs(angle));
+    f.status('completed');
+    expect(f.actor.getSnapshot().matches('completed')).toBe(true);
+    f.actor.stop();
+  });
 
   it('does not treat acceptance as completion and times out without engine progress', () => {
     const f = fixture();

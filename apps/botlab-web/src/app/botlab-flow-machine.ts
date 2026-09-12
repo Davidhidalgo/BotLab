@@ -1038,10 +1038,12 @@ export function compileMicroDuckWorkspaceArtifact(
       continue;
     }
     const walking = step.type === 'walk';
+    const turning = step.type === 'turn';
     planParts.push(
       walking
-        ? `walk-${formatArtifactNumber(step.distanceMeters)}m`
-        : `wait-${formatArtifactNumber(step.seconds)}s`
+        ? `${step.backward ? 'back' : 'walk'}-${formatArtifactNumber(step.distanceMeters)}m`
+        : turning ? `turn-${formatArtifactNumber(step.angleDegrees)}deg`
+          : `wait-${formatArtifactNumber(step.seconds)}s`
     );
     commands.push({
       id: `command-microduck-${step.type}-${index}`,
@@ -1050,10 +1052,11 @@ export function compileMicroDuckWorkspaceArtifact(
       commandId: 'drive-differential',
       targetId,
       inputs: {
-        leftPower: walking ? 1 : 0,
-        rightPower: walking ? 1 : 0,
+        leftPower: walking ? (step.backward ? -1 : 1) : turning ? Math.sign(step.angleDegrees) : 0,
+        rightPower: walking ? (step.backward ? -1 : 1) : turning ? -Math.sign(step.angleDegrees) : 0,
         ...(walking ? { distanceMeters: step.distanceMeters }
-          : { durationMs: Math.round(step.seconds * 1000) }),
+          : turning ? { angleDegrees: step.angleDegrees }
+            : { durationMs: Math.round(step.seconds * 1000) }),
       },
     });
   }
@@ -1079,7 +1082,8 @@ export function compileMicroDuckWorkspaceArtifact(
 
 type MicroDuckProgramStep = { sourceBlockId?: string } & (
   | { type: 'leds'; pattern: string }
-  | { type: 'walk'; distanceMeters: number }
+  | { type: 'walk'; distanceMeters: number; backward?: boolean }
+  | { type: 'turn'; angleDegrees: number }
   | { type: 'wait'; seconds: number });
 
 function directXmlChild(element: Element, tag: string, name?: string) {
@@ -1147,12 +1151,31 @@ function readMicroDuckProgramFromWorkspace(artifact: BlocksWorkspaceArtifact) {
         });
         break;
       case 'botlab_microduck_walk_distance':
+      case 'botlab_microduck_back_distance':
         steps.push({
           type: 'walk',
+          backward: type === 'botlab_microduck_back_distance',
           sourceBlockId: block.getAttribute('id') ?? undefined,
-          distanceMeters: normalizeMicroDuckWalkDistance(
+          distanceMeters: type === 'botlab_microduck_back_distance' ? readMotionNumber(block, 'DISTANCE', 1, 0, 20) : normalizeMicroDuckWalkDistance(
             directXmlChild(block, 'field', 'DISTANCE')?.textContent
           ),
+        });
+        break;
+      case 'botlab_microduck_walk_steps':
+      case 'botlab_microduck_back_steps': {
+        const count = readMotionNumber(block, 'STEPS', 1, 0, 40);
+        if (!Number.isInteger(count)) throw new Error('Steps must be a whole number.');
+        steps.push({ type: 'walk', backward: type === 'botlab_microduck_back_steps', distanceMeters: count * 0.5, sourceBlockId: block.getAttribute('id') ?? undefined });
+        break;
+      }
+      case 'botlab_microduck_turn_left':
+      case 'botlab_microduck_turn_right':
+      case 'botlab_microduck_turn_around':
+      case 'botlab_microduck_turn_degrees':
+        steps.push({ type: 'turn', sourceBlockId: block.getAttribute('id') ?? undefined,
+          angleDegrees: type === 'botlab_microduck_turn_left' ? -90
+            : type === 'botlab_microduck_turn_right' ? 90
+              : type === 'botlab_microduck_turn_around' ? 180 : readMotionNumber(block, 'ANGLE', 90, -360, 360),
         });
         break;
       case 'control_wait': {
@@ -1222,6 +1245,15 @@ function normalizeMicroDuckWalkDistance(value: string | null | undefined) {
   }
 
   return distance;
+}
+
+function readMotionNumber(block: Element, name: string, fallback: number, min: number, max: number) {
+  const text = directXmlChild(block, 'field', name)?.textContent;
+  const value = text == null ? fallback : Number(text.trim() || NaN);
+  if (!Number.isFinite(value) || value < min || value > max) {
+    throw new Error(`Invalid motion ${name}: expected a number from ${min} to ${max}.`);
+  }
+  return value;
 }
 
 function formatArtifactNumber(value: number) {

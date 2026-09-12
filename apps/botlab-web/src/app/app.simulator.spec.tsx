@@ -198,7 +198,7 @@ describe('One-click simulator execution', () => {
         executionId: message.executionId, artifactId: message.source.artifactId, status: 'completed',
       },
     })));
-    expect(view.getByText('No es pot llegir la posició del robot.')).toBeTruthy();
+    expect(view.getByText('No es pot llegir la posició o l’orientació del robot.')).toBeTruthy();
     expect(view.queryByTitle('MicroDuck official simulator preview')).toBeNull();
     expect(view.getByLabelText('Test workspace').getAttribute('data-active-block')).toBe('botlab-walk');
   });
@@ -232,7 +232,7 @@ describe('One-click simulator execution', () => {
     status({ frameIndex: 0, distanceMeters: Infinity });
     expect(editor.dataset.activeBlock).toBe('wait');
     status({ status: 'failed', frameIndex: 0, errorCode: 'motion-stalled' });
-    expect(view.getByText('El robot no avança. Comprova si hi ha un obstacle.')).toBeTruthy();
+    expect(view.getByText('El robot no es mou com s’esperava. Comprova si hi ha un obstacle.')).toBeTruthy();
     expect(editor.dataset.activeBlock).toBe('walk');
     expect(view.queryByTitle('MicroDuck official simulator preview')).toBeNull();
     fireEvent.change(editor, { target: { value: original.replace('>5<', '>2<') } });

@@ -42,10 +42,12 @@ describe.each([
     )(receiver);
     let locked = true;
     let position: number[] = [0, 0];
+    let heading = 0;
     const source = new Source({
       getVelocityLimits: () => [2, -1, 3],
       isInputLocked: () => locked,
       getPosition: () => position,
+      getHeading: () => heading,
     });
     const control = {
       type: 'botlab.microduck.control-source.v1',
@@ -102,6 +104,7 @@ describe.each([
       send,
       stop,
       parent,
+      turnTo: (degrees: number) => { heading = -degrees * Math.PI / 180; },
       moveTo: (x: number, y = 0) => {
         position = [x, y];
       },
@@ -112,6 +115,45 @@ describe.each([
         parent.postMessage.mock.calls.map(([data]) => data.status),
     };
   }
+
+  it.each([-90, 90, 180])('measures a %s degree turn, waits, reverses, then accepts a new run', (angle) => {
+    const f = fixture();
+    const first = f.control.source.frames[0];
+    Reflect.deleteProperty(first, 'durationMs');
+    Object.assign(first, { angleDegrees: angle, leftPower: Math.sign(angle), rightPower: -Math.sign(angle) });
+    Object.assign(f.control.source.frames[2], { leftPower: -1, rightPower: -1 });
+    f.send(); f.source.init(); f.unlock(); f.source.poll(0.02);
+    expect(Math.sign(f.source.command[2])).toBe(-Math.sign(angle));
+    expect(f.source.cursor).toBe(0);
+    f.turnTo(angle / 2); f.source.poll(1);
+    expect(f.source.cursor).toBe(0);
+    f.turnTo(angle * 1.001); f.source.poll(1);
+    expect(f.source.cursor).toBe(1);
+    expect(f.parent.postMessage.mock.calls.some(([message]) => message.turnedDegrees >= Math.abs(angle))).toBe(true);
+    f.source.poll(5);
+    expect(Array.from(f.source.command)).toEqual([0, 0, 0]);
+    f.source.poll(1);
+    expect(f.source.command[0]).toBe(-1);
+    f.source.poll(0.02);
+    expect(f.statuses().at(-1)).toBe('completed');
+    f.send({ ...f.control, executionId: 'run-2' });
+    f.source.poll(0.02);
+    expect(f.source.cursor).toBe(0);
+    expect(Math.sign(f.source.command[2])).toBe(-Math.sign(angle));
+    f.source.dispose();
+  });
+
+  it('cancels a measured turn without dispatching the next frame', () => {
+    const f = fixture();
+    Reflect.deleteProperty(f.control.source.frames[0], 'durationMs');
+    Object.assign(f.control.source.frames[0], { angleDegrees: -90, leftPower: -1, rightPower: 1 });
+    f.send(); f.source.init(); f.unlock(); f.source.poll(0.02);
+    f.stop(); f.source.poll(1);
+    expect(f.statuses().at(-1)).toBe('stopped');
+    expect(Array.from(f.source.command)).toEqual([0, 0, 0]);
+    expect(f.source.frames).toHaveLength(0);
+    f.source.dispose();
+  });
 
   it('acknowledges buffering, starts only after unlock, and confirms consumption once', () => {
     const f = fixture();

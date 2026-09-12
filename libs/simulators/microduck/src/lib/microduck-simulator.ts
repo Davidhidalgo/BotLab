@@ -12,6 +12,7 @@ import {
 } from '@botlab/simulators-core';
 import type { MicroDuckSimulatorAssetCachePlan } from './microduck-simulator-assets';
 import { createMicroDuckDistanceTracker } from './microduck-distance';
+import { createMicroDuckTurnTracker } from './microduck-turn';
 
 export const microDuckOfficialSimulatorIntegration = defineSimulatorIntegration(
   {
@@ -50,6 +51,7 @@ export interface MicroDuckSimulatorDifferentialDriveFrame {
   rightPower: number;
   durationMs?: number;
   distanceMeters?: number;
+  angleDegrees?: number;
 }
 
 export type MicroDuckSimulatorControlFrame =
@@ -94,6 +96,7 @@ export interface MicroDuckBotLabOfficialSourceOptions {
   id?: string;
   getVelocityLimits: () => readonly [number, number, number];
   getPosition?: () => readonly number[];
+  getHeading?: () => number;
 }
 
 export interface MicroDuckBotLabPostMessageSourceOptions
@@ -166,6 +169,8 @@ export interface MicroDuckOfficialSimulatorConnection {
 export interface MicroDuckOfficialSimulatorConnectionOptions {
   loadRuntime: MicroDuckOfficialSimulatorRuntimeLoader;
   getVelocityLimits: () => readonly [number, number, number];
+  getPosition?: () => readonly number[];
+  getHeading?: () => number;
   sourceId?: string;
 }
 
@@ -372,6 +377,8 @@ export async function connectMicroDuckBotLabSourceToOfficialSimulator(
     : createMicroDuckBotLabOfficialSource({
         id: sourceId,
         getVelocityLimits: options.getVelocityLimits,
+        getPosition: options.getPosition,
+        getHeading: options.getHeading,
       });
 
   if (!existingSource) {
@@ -407,6 +414,7 @@ export function createMicroDuckBotLabOfficialSource(
   let cursor = 0;
   let frameElapsedMs = 0;
   let distanceTracker: ReturnType<typeof createMicroDuckDistanceTracker> | undefined;
+  let turnTracker: ReturnType<typeof createMicroDuckTurnTracker> | undefined;
   let active = false;
 
   function applyFrame(frame: MicroDuckSimulatorControlFrame) {
@@ -443,6 +451,7 @@ export function createMicroDuckBotLabOfficialSource(
     cursor = 0;
     frameElapsedMs = 0;
     distanceTracker = undefined;
+    turnTracker = undefined;
     active = false;
     resetCommand(command);
     resetPressed(pressed);
@@ -464,6 +473,7 @@ export function createMicroDuckBotLabOfficialSource(
       cursor = 0;
       frameElapsedMs = 0;
       distanceTracker = undefined;
+      turnTracker = undefined;
       active = false;
       resetCommand(command);
       resetPressed(pressed);
@@ -488,6 +498,24 @@ export function createMicroDuckBotLabOfficialSource(
         return;
       }
 
+      if (frame.type === 'differential-drive' && frame.angleDegrees !== undefined) {
+        turnTracker ??= createMicroDuckTurnTracker(frame.angleDegrees, options.getHeading);
+        const progress = turnTracker(dt);
+        if (progress.error) { clear(); throw new Error(progress.error); }
+        if (progress.done) {
+          cursor += 1;
+          turnTracker = undefined;
+          frameElapsedMs = 0;
+          resetCommand(command);
+          resetPressed(pressed);
+          active = true;
+          return;
+        }
+        applyFrame(frame);
+        command[2] *= progress.powerScale;
+        active = true;
+        return;
+      }
       if (frame.type === 'differential-drive' && frame.distanceMeters !== undefined) {
         distanceTracker ??= createMicroDuckDistanceTracker(frame.distanceMeters, options.getPosition);
         const progress = distanceTracker(dt);
@@ -654,6 +682,7 @@ let latestExecution;
 const receivedExecutions = new Set();
 const executions = new Map();
 const createDistanceTracker = (${createMicroDuckDistanceTracker.toString()});
+const createTurnTracker = (${createMicroDuckTurnTracker.toString()});
 
 function reportExecution(execution, status, frameIndex, progress = {}) {
   if (!execution) return;
@@ -730,7 +759,7 @@ window.addEventListener("message", (event) => {
 });
 
 export class ${className} {
-  constructor({ getVelocityLimits, isInputLocked, getPosition } = {}) {
+  constructor({ getVelocityLimits, isInputLocked, getPosition, getHeading } = {}) {
     this.id = "botlab";
     this.connected = true;
     this.command = new Float32Array(3);
@@ -740,10 +769,12 @@ export class ${className} {
     this.getVelocityLimits = getVelocityLimits ?? (() => [2, -1, 3]);
     this.isInputLocked = isInputLocked ?? (() => false);
     this.getPosition = getPosition;
+    this.getHeading = getHeading;
     this.frames = [];
     this.cursor = 0;
     this.frameElapsedMs = 0;
     this.distanceTracker = undefined;
+    this.turnTracker = undefined;
     this.active = false;
   }
 
@@ -770,6 +801,7 @@ export class ${className} {
     this.reportedCursor = -1;
     this.heartbeatElapsed = 0;
     this.distanceTracker = undefined;
+    this.turnTracker = undefined;
     this.frames = [...controlSource.frames];
     this.cursor = 0;
     this.frameElapsedMs = 0;
@@ -782,6 +814,7 @@ export class ${className} {
     reportExecution(this.execution, status, this.frames[this.cursor] ? this.cursor : undefined, { errorCode });
     this.execution = undefined;
     this.distanceTracker = undefined;
+    this.turnTracker = undefined;
     this.frames = [];
     this.cursor = 0;
     this.frameElapsedMs = 0;
@@ -824,10 +857,16 @@ export class ${className} {
     }
 
     const distanceFrame = frame.type === "differential-drive" && frame.distanceMeters !== undefined;
+    const turnFrame = frame.type === "differential-drive" && frame.angleDegrees !== undefined;
     let progress;
-    if (distanceFrame) {
-      this.distanceTracker ??= createDistanceTracker(frame.distanceMeters, this.getPosition);
-      progress = this.distanceTracker(dt);
+    if (distanceFrame || turnFrame) {
+      if (turnFrame) {
+        this.turnTracker ??= createTurnTracker(frame.angleDegrees, this.getHeading);
+        progress = this.turnTracker(dt);
+      } else {
+        this.distanceTracker ??= createDistanceTracker(frame.distanceMeters, this.getPosition);
+        progress = this.distanceTracker(dt);
+      }
       if (progress.error) {
         this.clear("failed", progress.error);
         return;
@@ -839,22 +878,25 @@ export class ${className} {
       reportExecution(this.execution, "running", this.cursor, {
         elapsedMs: this.frameElapsedMs,
         distanceMeters: progress?.distanceMeters,
+        turnedDegrees: progress?.turnedDegrees,
       });
       this.reportedCursor = this.cursor;
       this.heartbeatElapsed = 0;
     }
-    if (distanceFrame && progress.done) {
+    if ((distanceFrame || turnFrame) && progress.done) {
       this.cursor += 1;
       this.frameElapsedMs = 0;
       this.distanceTracker = undefined;
+      this.turnTracker = undefined;
       this.resetCommand();
       this.resetPressed();
       this.active = true;
       return;
     }
     this.applyFrame(frame);
+    if (turnFrame) this.command[2] *= progress.powerScale;
     this.active = true;
-    if (distanceFrame) return;
+    if (distanceFrame || turnFrame) return;
     const durationMs = getFrameDurationMs(frame);
 
     if (durationMs <= 0) {
@@ -965,7 +1007,7 @@ export function createMicroDuckOfficialSimulatorPatchInstructions(
     modulePath: MICRODUCK_BOTLAB_SOURCE_MODULE_PATH,
     gamePath: MICRODUCK_SIMULATOR_GAME_SOURCE_PATH,
     importLine: `import { ${className} } from "./controls/botlab.js";`,
-    sourceFactoryLine: `const botLabSource = new ${className}({ getVelocityLimits: () => ${velocityLimitsExpression}, isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]] });`,
+    sourceFactoryLine: `const botLabSource = new ${className}({ getVelocityLimits: () => ${velocityLimitsExpression}, isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos) });`,
     controllerSourceName: 'botLabSource',
   };
 }
@@ -977,13 +1019,15 @@ export function patchMicroDuckOfficialSimulatorGameSource(
   const instructions =
     createMicroDuckOfficialSimulatorPatchInstructions(options);
   const warnings: string[] = [];
-  const lockedFactoryLine = instructions.sourceFactoryLine.replace(
+  const distanceFactoryLine = instructions.sourceFactoryLine.replace(', getHeading: () => duckYaw(data.qpos)', '');
+  const lockedFactoryLine = distanceFactoryLine.replace(
     ', getPosition: () => [data.qpos[0], data.qpos[1]]',
     ''
   );
   const previousFactoryLine = lockedFactoryLine.replace(', isInputLocked: () => inputLocked', '');
   let patched = source.replace(previousFactoryLine, instructions.sourceFactoryLine)
-    .replace(lockedFactoryLine, instructions.sourceFactoryLine);
+    .replace(lockedFactoryLine, instructions.sourceFactoryLine)
+    .replace(distanceFactoryLine, instructions.sourceFactoryLine);
 
   if (!patched.includes(instructions.importLine)) {
     patched = insertAfterLastImport(patched, instructions.importLine);
@@ -1098,6 +1142,7 @@ function createMicroDuckSimulatorControlFrame(
     const rightPower = command.inputs['rightPower'];
     const durationMs = command.inputs['durationMs'];
     const distanceMeters = command.inputs['distanceMeters'];
+    const angleDegrees = command.inputs['angleDegrees'];
 
     if (typeof leftPower !== 'number' || typeof rightPower !== 'number') {
       return `MicroDuck simulator command ${command.id} needs numeric differential drive inputs.`;
@@ -1110,6 +1155,9 @@ function createMicroDuckSimulatorControlFrame(
     if (distanceMeters !== undefined && (typeof distanceMeters !== 'number' || !Number.isFinite(distanceMeters) || distanceMeters < 0)) {
       return `MicroDuck simulator command ${command.id} needs numeric distance.`;
     }
+    if (angleDegrees !== undefined && (typeof angleDegrees !== 'number' || !Number.isFinite(angleDegrees) || Math.abs(angleDegrees) > 360 || distanceMeters !== undefined || durationMs !== undefined)) {
+      return `MicroDuck simulator command ${command.id} needs an exclusive angle from -360 to 360 degrees.`;
+    }
 
     return {
       id: command.id,
@@ -1120,6 +1168,7 @@ function createMicroDuckSimulatorControlFrame(
       rightPower,
       durationMs,
       distanceMeters,
+      angleDegrees,
     };
   }
 
@@ -1260,7 +1309,9 @@ function isMicroDuckSimulatorControlFrame(
     (value['durationMs'] === undefined ||
       (typeof value['durationMs'] === 'number' && Number.isFinite(value['durationMs']) && value['durationMs'] >= 0)) &&
     (value['distanceMeters'] === undefined ||
-      (typeof value['distanceMeters'] === 'number' && Number.isFinite(value['distanceMeters']) && value['distanceMeters'] >= 0))
+      (typeof value['distanceMeters'] === 'number' && Number.isFinite(value['distanceMeters']) && value['distanceMeters'] >= 0)) &&
+    (value['angleDegrees'] === undefined ||
+      (typeof value['angleDegrees'] === 'number' && Number.isFinite(value['angleDegrees']) && Math.abs(value['angleDegrees']) <= 360 && value['distanceMeters'] === undefined && value['durationMs'] === undefined))
   );
 }
 
@@ -1304,5 +1355,6 @@ function formatControlFrameMessage(frame: MicroDuckSimulatorControlFrame) {
     rightPower: frame.rightPower,
     durationMs: frame.durationMs,
     distanceMeters: frame.distanceMeters,
+    angleDegrees: frame.angleDegrees,
   })}`;
 }

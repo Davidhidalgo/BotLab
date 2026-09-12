@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "locale": "ca",
+  "workspace": {
+    "id": "microduck-movement-example",
+    "kind": "blocks",
+    "engine": "scratch-blocks",
+    "format": "scratch-xml",
+    "behaviorId": "microduck-movement-example",
+    "label": "MicroDuck movement example",
+    "content": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"32\" y=\"32\"><next><block type=\"botlab_microduck_walk_steps\" id=\"forward\"><field name=\"STEPS\">2</field><next><block type=\"botlab_microduck_turn_left\" id=\"left\"><next><block type=\"botlab_microduck_walk_steps\" id=\"forward-again\"><field name=\"STEPS\">2</field><next><block type=\"control_wait\" id=\"wait\"><value name=\"DURATION\"><shadow type=\"math_positive_number\"><field name=\"NUM\">1</field></shadow></value><next><block type=\"botlab_microduck_turn_around\" id=\"around\"><next><block type=\"botlab_microduck_back_steps\" id=\"back\"><field name=\"STEPS\">1</field></block></next></block></next></block></next></block></next></block></next></block></next></block></xml>"
+  }
+}

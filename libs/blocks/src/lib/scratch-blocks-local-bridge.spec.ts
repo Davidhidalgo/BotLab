@@ -46,6 +46,49 @@ describe('createLocalScratchBlocksEditorBridge', () => {
     }
   });
 
+  it('offers eight visual movement blocks and preserves signed turns across languages', async () => {
+    const element = document.createElement('div');
+    const result = await createLocalScratchBlocksEditorBridge().mount({ element, artifact: sampleScratchBlocksWorkspaceArtifact });
+    expect(result.mounted).toBe(true);
+    if (!result.mounted) return;
+    try {
+      const scratch = await import('scratch-blocks');
+      const workspace = scratch.getMainWorkspace() as InstanceType<typeof scratch.WorkspaceSvg>;
+      const palette = workspace.getFlyout()!.getWorkspace();
+      for (const type of ['walk_steps', 'back_steps', 'turn_left', 'turn_right', 'turn_around', 'walk_distance', 'back_distance', 'turn_degrees']) {
+        const block = palette.getBlocksByType(`botlab_microduck_${type}`, false)[0];
+        expect(block).toBeDefined();
+        expect(block.getField('DIRECTION')!.getValue()).toMatch(/^data:image\/svg\+xml,/);
+        const image = new DOMParser().parseFromString(decodeURIComponent(block.getFieldValue('DIRECTION').split(',')[1]), 'image/svg+xml');
+        const glyph = image.documentElement.firstElementChild!;
+        expect(glyph.getAttribute('width')).toBe('25');
+        expect(glyph.getAttribute('height')).toBe('25');
+        expect(glyph.getAttribute('x')).toBe('7.5');
+        expect(glyph.getAttribute('y')).toBe('4.5');
+        if (type.endsWith('_steps')) expect(block.getFieldValue('STEPS')).toBe('1');
+        if (type === 'turn_degrees') expect(block.getFieldValue('ANGLE')).toBe('90');
+        if (type === 'back_distance') expect(block.getFieldValue('DISTANCE')).toBe('1');
+      }
+      const turn = workspace.newBlock('botlab_microduck_turn_degrees', 'turn-test');
+      turn.initSvg(); turn.render();
+      const rightIcon = turn.getFieldValue('DIRECTION');
+      turn.setFieldValue('-90', 'ANGLE');
+      const leftIcon = turn.getFieldValue('DIRECTION');
+      expect(leftIcon).not.toBe(rightIcon);
+      const xml = result.handle.exportWorkspace().content;
+      expect(xml).not.toContain('data:image');
+      for (const [locale, category, turnText] of [['es', 'Movimiento preciso', 'gira'], ['en', 'Precise movement', 'turn'], ['ca', 'Moviment precís', 'gira']] as const) {
+        result.handle.setLocale?.(locale);
+        expect(element.textContent).toContain(category);
+        const translated = workspace.getBlockById('turn-test')!;
+        expect(translated.getFieldValue('ANGLE')).toBe('-90');
+        expect(translated.getFieldValue('DIRECTION')).toBe(leftIcon);
+        expect(translated.toString()).toContain(turnText);
+        expect(result.handle.exportWorkspace().content).toBe(xml);
+      }
+    } finally { result.handle.dispose(); }
+  });
+
   it('reports invalid XML without mounting an iframe or external editor', async () => {
     const bridge = createLocalScratchBlocksEditorBridge();
     const result = await bridge.mount({
@@ -154,9 +197,9 @@ describe('createLocalScratchBlocksEditorBridge', () => {
       result.handle.highlightBlock?.('botlab-walk');
       onArtifactChange.mockClear();
       for (const [locale, walk, wait, smile, events] of [
-        ['es', 'mueve MicroDuck', 'esperar', 'sonrisa', 'Eventos'],
-        ['en', 'walk MicroDuck', 'wait', 'smile', 'Events'],
-        ['ca', 'mou el MicroDuck', 'espera', 'somriure', 'Esdeveniments'],
+        ['es', 'avanza', 'esperar', 'sonrisa', 'Eventos'],
+        ['en', 'move forward', 'wait', 'smile', 'Events'],
+        ['ca', 'avança', 'espera', 'somriure', 'Esdeveniments'],
       ] as const) {
         result.handle.setLocale?.(locale);
         await new Promise(resolve => setTimeout(resolve, 20));
@@ -209,7 +252,7 @@ describe('createLocalScratchBlocksEditorBridge', () => {
     try {
       const scratch = await import('scratch-blocks');
       result.handle.setLocale?.('es');
-      expect(scratch.getMainWorkspace().getBlockById('botlab-walk')!.toString()).toContain('mueve');
+      expect(scratch.getMainWorkspace().getBlockById('botlab-walk')!.toString()).toContain('avanza');
     } finally { result.handle.dispose(); }
     expect(() => result.handle.setLocale?.('en')).not.toThrow();
   });

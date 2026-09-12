@@ -11,6 +11,16 @@ const DEFAULT_ORIGIN =
 const DEFAULT_CHECKOUT = 'tmp/microduck-simulator';
 const MODULE_PATH = 'app/src/game/controls/botlab.js';
 const GAME_PATH = 'app/src/game/game.js';
+const LFS_DISABLED_GIT_CONFIG = [
+  '-c',
+  'filter.lfs.required=false',
+  '-c',
+  'filter.lfs.smudge=',
+  '-c',
+  'filter.lfs.clean=',
+  '-c',
+  'filter.lfs.process=',
+];
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const options = parseArgs(process.argv.slice(2));
@@ -96,7 +106,16 @@ function parseArgs(args) {
 function ensureCheckout(checkoutDir, { origin, revision }) {
   if (!existsSync(checkoutDir)) {
     mkdirSync(dirname(checkoutDir), { recursive: true });
-    run('git', ['clone', '--depth', '1', '--branch', revision, origin, checkoutDir]);
+    run('git', [
+      ...LFS_DISABLED_GIT_CONFIG,
+      'clone',
+      '--depth',
+      '1',
+      '--branch',
+      revision,
+      origin,
+      checkoutDir,
+    ]);
     return;
   }
 
@@ -104,7 +123,7 @@ function ensureCheckout(checkoutDir, { origin, revision }) {
     throw new Error(`${checkoutDir} exists but is not a git checkout.`);
   }
 
-  const status = run('git', ['status', '--short'], {
+  const status = run('git', [...LFS_DISABLED_GIT_CONFIG, 'status', '--short'], {
     cwd: checkoutDir,
     stdio: 'pipe',
   }).stdout.trim();
@@ -129,10 +148,16 @@ function ensureCheckout(checkoutDir, { origin, revision }) {
     return;
   }
 
-  run('git', ['fetch', '--depth', '1', 'origin', revision], {
+  run(
+    'git',
+    [...LFS_DISABLED_GIT_CONFIG, 'fetch', '--depth', '1', 'origin', revision],
+    {
+      cwd: checkoutDir,
+    }
+  );
+  run('git', [...LFS_DISABLED_GIT_CONFIG, 'checkout', 'FETCH_HEAD'], {
     cwd: checkoutDir,
   });
-  run('git', ['checkout', 'FETCH_HEAD'], { cwd: checkoutDir });
 }
 
 function writeGeneratedFile(path, source) {

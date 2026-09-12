@@ -181,7 +181,7 @@ describe('microDuckSimulatorBridge', () => {
     expect(source.isActive()).toBe(false);
   });
 
-  it('represents LED control frames without claiming twist authority', () => {
+  it('holds zero twist while executing an LED frame', () => {
     const source = createMicroDuckBotLabOfficialSource({
       getVelocityLimits: () => [2, -1, 3],
     });
@@ -196,7 +196,7 @@ describe('microDuckSimulatorBridge', () => {
     expect(source.pressed).toEqual({
       'led:smile': true,
     });
-    expect(source.isActive()).toBe(false);
+    expect(source.isActive()).toBe(true);
   });
 
   it('clears official source state when disposed', () => {
@@ -413,7 +413,7 @@ describe('microDuckSimulatorBridge', () => {
       gamePath: 'app/src/game/game.js',
       importLine: 'import { BotLabSource } from "./controls/botlab.js";',
       sourceFactoryLine:
-        'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked });',
+        'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]] });',
       controllerSourceName: 'botLabSource',
     });
   });
@@ -439,7 +439,7 @@ describe('microDuckSimulatorBridge', () => {
       'import { BotLabSource } from "./controls/botlab.js";'
     );
     expect(result.source).toContain(
-      'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked });'
+      'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]] });'
     );
     expect(result.source).toContain(
       'controller = new Controller({ sources: [botLabSource, kbSource] });'

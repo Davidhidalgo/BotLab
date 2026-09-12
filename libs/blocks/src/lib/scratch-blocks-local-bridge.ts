@@ -81,6 +81,9 @@ function mountLocalScratchBlocksWorkspace(
     return {
       mounted: true,
       handle: {
+        highlightBlock(blockId) {
+          workspace.highlightBlock(blockId && workspace.getBlockById(blockId) ? blockId : null);
+        },
         exportWorkspace() {
           return {
             ...request.artifact,
@@ -145,6 +148,7 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
           name: 'DISTANCE',
           value: 5,
           min: 0,
+          max: 20,
           precision: 0.1,
         },
       ],

@@ -129,7 +129,6 @@ describe('botLabFlowMachine', () => {
       inputs: {
         leftPower: 1,
         rightPower: 1,
-        durationMs: 2500,
         distanceMeters: 5,
       },
     });
@@ -209,7 +208,6 @@ describe('botLabFlowMachine', () => {
       actor.getSnapshot().context.compiledArtifact?.commands[1].inputs
     ).toMatchObject({
       distanceMeters: 2.5,
-      durationMs: 1250,
     });
   });
 });

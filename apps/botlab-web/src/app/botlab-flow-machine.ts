@@ -1029,6 +1029,7 @@ export function compileMicroDuckWorkspaceArtifact(
       planParts.push(step.pattern);
       commands.push({
         id: `command-microduck-leds-${index}`,
+        sourceBlockId: step.sourceBlockId,
         capabilityId: 'microduck-leds',
         commandId: 'set-led-pattern',
         targetId,
@@ -1037,12 +1038,6 @@ export function compileMicroDuckWorkspaceArtifact(
       continue;
     }
     const walking = step.type === 'walk';
-    const durationMs = walking
-      ? Math.round(
-          (step.distanceMeters / MICRODUCK_DEMO_WALK_SPEED_METERS_PER_SECOND) *
-            1000
-        )
-      : Math.round(step.seconds * 1000);
     planParts.push(
       walking
         ? `walk-${formatArtifactNumber(step.distanceMeters)}m`
@@ -1050,14 +1045,15 @@ export function compileMicroDuckWorkspaceArtifact(
     );
     commands.push({
       id: `command-microduck-${step.type}-${index}`,
+      sourceBlockId: step.sourceBlockId,
       capabilityId: 'microduck-motion',
       commandId: 'drive-differential',
       targetId,
       inputs: {
         leftPower: walking ? 1 : 0,
         rightPower: walking ? 1 : 0,
-        durationMs,
-        ...(walking ? { distanceMeters: step.distanceMeters } : {}),
+        ...(walking ? { distanceMeters: step.distanceMeters }
+          : { durationMs: Math.round(step.seconds * 1000) }),
       },
     });
   }
@@ -1081,12 +1077,10 @@ export function compileMicroDuckWorkspaceArtifact(
   };
 }
 
-const MICRODUCK_DEMO_WALK_SPEED_METERS_PER_SECOND = 2;
-
-type MicroDuckProgramStep =
+type MicroDuckProgramStep = { sourceBlockId?: string } & (
   | { type: 'leds'; pattern: string }
   | { type: 'walk'; distanceMeters: number }
-  | { type: 'wait'; seconds: number };
+  | { type: 'wait'; seconds: number });
 
 function directXmlChild(element: Element, tag: string, name?: string) {
   return Array.from(element.children).find(
@@ -1146,6 +1140,7 @@ function readMicroDuckProgramFromWorkspace(artifact: BlocksWorkspaceArtifact) {
       case 'botlab_microduck_set_leds':
         steps.push({
           type: 'leds',
+          sourceBlockId: block.getAttribute('id') ?? undefined,
           pattern: normalizeMicroDuckLedPattern(
             directXmlChild(block, 'field', 'PATTERN')?.textContent
           ),
@@ -1154,6 +1149,7 @@ function readMicroDuckProgramFromWorkspace(artifact: BlocksWorkspaceArtifact) {
       case 'botlab_microduck_walk_distance':
         steps.push({
           type: 'walk',
+          sourceBlockId: block.getAttribute('id') ?? undefined,
           distanceMeters: normalizeMicroDuckWalkDistance(
             directXmlChild(block, 'field', 'DISTANCE')?.textContent
           ),
@@ -1188,7 +1184,7 @@ function readMicroDuckProgramFromWorkspace(artifact: BlocksWorkspaceArtifact) {
             'Wait duration must be a finite, non-negative number of seconds.'
           );
         }
-        steps.push({ type: 'wait', seconds });
+        steps.push({ type: 'wait', seconds, sourceBlockId: block.getAttribute('id') ?? undefined });
         break;
       }
       default:
@@ -1219,13 +1215,13 @@ function normalizeMicroDuckLedPattern(value: string | null | undefined) {
 }
 
 function normalizeMicroDuckWalkDistance(value: string | null | undefined) {
-  const distance = Number.parseFloat(value?.trim() || '5');
+  const distance = value == null ? 5 : Number(value.trim() || NaN);
 
-  if (!Number.isFinite(distance) || distance <= 0) {
+  if (!Number.isFinite(distance) || distance < 0 || distance > 20) {
     throw new Error(`Unsupported walk distance: ${value ?? ''}.`);
   }
 
-  return Math.min(distance, 20);
+  return distance;
 }
 
 function formatArtifactNumber(value: number) {

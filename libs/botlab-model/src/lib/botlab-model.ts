@@ -220,6 +220,7 @@ export interface BehaviorArtifact extends Artifact {
 
 export interface CompiledCommand {
   id: string;
+  sourceBlockId?: string;
   capabilityId: string;
   commandId: string;
   targetId: string;

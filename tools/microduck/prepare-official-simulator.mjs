@@ -58,6 +58,8 @@ writeGeneratedFile(
 );
 
 patchOfficialGame(resolve(checkoutDir, GAME_PATH));
+const arenaPath = resolve(checkoutDir, 'app/src/game/constants.js');
+writeGeneratedFile(arenaPath, patchBotLabArena(readFileSync(arenaPath, 'utf8')));
 
 if (!options.noInstall && !existsSync(resolve(appDir, 'node_modules'))) {
   run('npm', ['install'], { cwd: appDir });
@@ -289,13 +291,22 @@ function patchOfficialGame(path) {
   }
 }
 
+function patchBotLabArena(source) {
+  const declaration = /export const ARENA_HALF = (?:1\.5|6);/;
+  if (!declaration.test(source)) throw new Error('Unknown official arena size declaration. Review the BotLab arena patch.');
+  return source.replace(declaration, 'export const ARENA_HALF = 6;');
+}
+
 function patchGameSource(source) {
   const importLine = 'import { BotLabSource } from "./controls/botlab.js";';
   const factoryLine =
-    'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked });';
+    'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]] });';
   const warnings = [];
   let patched = source.replace(
     'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims() });',
+    factoryLine
+  ).replace(
+    'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked });',
     factoryLine
   );
 
@@ -407,16 +418,49 @@ let latestControlSource;
 let latestExecution;
 const receivedExecutions = new Set();
 const executions = new Map();
+const createDistanceTracker = function(target, readPosition) {
+  let origin;
+  let previous;
+  let elapsed = 0;
+  let lastProgressAt = 0;
+  let best = 0;
+  return (dt) => {
+    if (!Number.isFinite(target) || target < 0 || !Number.isFinite(dt) || dt < 0)
+      return { distanceMeters: 0, done: false, error: "invalid-frame" };
+    if (target === 0) return { distanceMeters: 0, done: true };
+    let position;
+    try { position = readPosition?.(); }
+    catch { return { distanceMeters: best, done: false, error: "telemetry-unavailable" }; }
+    if (!position || !Number.isFinite(position[0]) || !Number.isFinite(position[1]))
+      return { distanceMeters: 0, done: false, error: "telemetry-unavailable" };
+    const point = [position[0], position[1]];
+    origin ??= point;
+    if (previous && Math.hypot(point[0] - previous[0], point[1] - previous[1]) > Math.max(0.5, dt * 5))
+      return { distanceMeters: best, done: false, error: "position-reset" };
+    previous = point;
+    elapsed += dt;
+    const distanceMeters = Math.hypot(point[0] - origin[0], point[1] - origin[1]);
+    if (distanceMeters >= target) return { distanceMeters, done: true };
+    if (distanceMeters > best + 0.01) {
+      best = distanceMeters;
+      lastProgressAt = elapsed;
+    }
+    const error = elapsed - lastProgressAt >= 10 ? "motion-stalled"
+      : elapsed > Math.max(30, target / 0.05) ? "motion-timeout" : undefined;
+    return { distanceMeters, done: false, error };
+  };
+};
 
-function reportExecution(execution, status, frameIndex) {
+function reportExecution(execution, status, frameIndex, progress = {}) {
   if (!execution) return;
   execution.status = status;
   execution.frameIndex = frameIndex;
+  execution.progress = progress;
   execution.reply?.postMessage({
     type: "botlab.microduck.execution.v1", version: 1,
     simulatorId: "microduck-official-sim",
     executionId: execution.id, artifactId: execution.artifactId,
-    status, frameIndex,
+    status, frameIndex, ...progress,
   }, execution.origin);
 }
 
@@ -458,7 +502,7 @@ window.addEventListener("message", (event) => {
     : "legacy:" + JSON.stringify(controlSource);
   if (receivedExecutions.has(key)) {
     const existing = executions.get(message.executionId);
-    if (existing) reportExecution(existing, existing.status, existing.frameIndex);
+    if (existing) reportExecution(existing, existing.status, existing.frameIndex, existing.progress);
     return;
   }
   receivedExecutions.add(key);
@@ -475,10 +519,14 @@ window.addEventListener("message", (event) => {
   for (const source of ACTIVE_SOURCES) {
     source.load(controlSource, latestExecution);
   }
+  if (ACTIVE_SOURCES.size > 0) {
+    latestControlSource = undefined;
+    latestExecution = undefined;
+  }
 });
 
 export class BotLabSource {
-  constructor({ getVelocityLimits, isInputLocked } = {}) {
+  constructor({ getVelocityLimits, isInputLocked, getPosition } = {}) {
     this.id = "botlab";
     this.connected = true;
     this.command = new Float32Array(3);
@@ -487,9 +535,11 @@ export class BotLabSource {
     this.onAction = () => {};
     this.getVelocityLimits = getVelocityLimits ?? (() => [2, -1, 3]);
     this.isInputLocked = isInputLocked ?? (() => false);
+    this.getPosition = getPosition;
     this.frames = [];
     this.cursor = 0;
     this.frameElapsedMs = 0;
+    this.distanceTracker = undefined;
     this.active = false;
   }
 
@@ -499,6 +549,8 @@ export class BotLabSource {
 
     if (latestControlSource) {
       this.load(latestControlSource, latestExecution);
+      latestControlSource = undefined;
+      latestExecution = undefined;
     }
   }
 
@@ -513,6 +565,7 @@ export class BotLabSource {
     this.execution = execution;
     this.reportedCursor = -1;
     this.heartbeatElapsed = 0;
+    this.distanceTracker = undefined;
     this.frames = [...controlSource.frames];
     this.cursor = 0;
     this.frameElapsedMs = 0;
@@ -521,9 +574,10 @@ export class BotLabSource {
     this.resetPressed();
   }
 
-  clear(status = "stopped") {
-    reportExecution(this.execution, status);
+  clear(status = "stopped", errorCode) {
+    reportExecution(this.execution, status, this.frames[this.cursor] ? this.cursor : undefined, { errorCode });
     this.execution = undefined;
+    this.distanceTracker = undefined;
     this.frames = [];
     this.cursor = 0;
     this.frameElapsedMs = 0;
@@ -550,6 +604,7 @@ export class BotLabSource {
 
   pollFrame(dt) {
     if (this.isInputLocked()) {
+      if (this.reportedCursor >= 0 && this.execution) this.clear("failed", "scene-interrupted");
       this.active = false;
       this.resetCommand();
       return;
@@ -564,13 +619,38 @@ export class BotLabSource {
       return;
     }
 
+    const distanceFrame = frame.type === "differential-drive" && frame.distanceMeters !== undefined;
+    let progress;
+    if (distanceFrame) {
+      this.distanceTracker ??= createDistanceTracker(frame.distanceMeters, this.getPosition);
+      progress = this.distanceTracker(dt);
+      if (progress.error) {
+        this.clear("failed", progress.error);
+        return;
+      }
+    }
+    this.frameElapsedMs += dt * 1000;
     this.heartbeatElapsed += dt;
-    if (this.reportedCursor !== this.cursor || this.heartbeatElapsed >= 1) {
-      reportExecution(this.execution, "running", this.cursor);
+    if (this.reportedCursor !== this.cursor || this.heartbeatElapsed >= 0.1 || progress?.done) {
+      reportExecution(this.execution, "running", this.cursor, {
+        elapsedMs: this.frameElapsedMs,
+        distanceMeters: progress?.distanceMeters,
+      });
       this.reportedCursor = this.cursor;
       this.heartbeatElapsed = 0;
     }
+    if (distanceFrame && progress.done) {
+      this.cursor += 1;
+      this.frameElapsedMs = 0;
+      this.distanceTracker = undefined;
+      this.resetCommand();
+      this.resetPressed();
+      this.active = true;
+      return;
+    }
     this.applyFrame(frame);
+    this.active = true;
+    if (distanceFrame) return;
     const durationMs = getFrameDurationMs(frame);
 
     if (durationMs <= 0) {
@@ -578,8 +658,6 @@ export class BotLabSource {
       this.frameElapsedMs = 0;
       return;
     }
-
-    this.frameElapsedMs += dt * 1000;
 
     if (this.frameElapsedMs >= durationMs) {
       this.cursor += 1;

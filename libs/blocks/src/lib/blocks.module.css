@@ -1,7 +1,5 @@
-/*
- * Replace this with your own classes
- *
- * e.g.
- * .container {
- * }
-*/
+.workspace :global(.blocklyHighlighted) > :global(.blocklyPath) {
+  stroke: #facc15;
+  stroke-width: 4px;
+  filter: drop-shadow(0 0 2px #854d0e);
+}

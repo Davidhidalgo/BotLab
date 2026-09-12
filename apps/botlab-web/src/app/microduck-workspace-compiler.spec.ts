@@ -47,9 +47,9 @@ describe('sequential MicroDuck compilation', () => {
   it('compiles walk, wait, walk in connection order, with unique command IDs', () => {
     const artifact = compile([walk(2), wait('2.5'), walk(2)]);
     expect(artifact.commands.map(({ inputs }) => inputs)).toEqual([
-      { leftPower: 1, rightPower: 1, durationMs: 1000, distanceMeters: 2 },
+      { leftPower: 1, rightPower: 1, distanceMeters: 2 },
       { leftPower: 0, rightPower: 0, durationMs: 2500 },
-      { leftPower: 1, rightPower: 1, durationMs: 1000, distanceMeters: 2 },
+      { leftPower: 1, rightPower: 1, distanceMeters: 2 },
       { leftPower: 0, rightPower: 0, durationMs: 250 },
     ]);
     expect(new Set(artifact.commands.map(({ id }) => id)).size).toBe(4);
@@ -67,6 +67,31 @@ describe('sequential MicroDuck compilation', () => {
     ]);
     expect(artifact.commands[1].inputs.durationMs).toBe(0);
   });
+
+  it('preserves zero distance and source block identities without inventing a duration', () => {
+    const artifact = compile([
+      '<block type="botlab_microduck_walk_distance" id="walk-zero"><field name="DISTANCE">0</field></block>',
+    ]);
+    expect(artifact.commands[0]).toMatchObject({
+      sourceBlockId: 'walk-zero',
+      inputs: { distanceMeters: 0 },
+    });
+    expect(artifact.commands[0].inputs.durationMs).toBeUndefined();
+    expect(
+      createMicroDuckSimulatorControlSource(artifact).frames[0].sourceBlockId
+    ).toBe('walk-zero');
+  });
+
+  it.each(['5x', '', '-1', '21', 'Infinity'])(
+    'rejects invalid walk distance %s instead of truncating or clamping it',
+    (distance) => {
+      expect(() =>
+        compile([
+          `<block type="botlab_microduck_walk_distance"><field name="DISTANCE">${distance}</field></block>`,
+        ])
+      ).toThrow('Unsupported walk distance');
+    }
+  );
 
   it.each(['-1', 'NaN', 'Infinity', '', '2x', '1e309'])(
     'rejects invalid wait duration %s',
@@ -97,10 +122,13 @@ describe('sequential MicroDuck compilation', () => {
         compile([walk(2), wait('2.5'), walk(2)])
       );
       expect(controlSource.errors).toEqual([]);
+      let x = 0;
+      const getPosition = () => [x, 0];
       const source =
         receiver === 'native'
           ? createMicroDuckBotLabOfficialSource({
               getVelocityLimits: () => [2, -1, 3],
+              getPosition,
             })
           : new (new Function(
               'window',
@@ -108,16 +136,24 @@ describe('sequential MicroDuck compilation', () => {
                 allowedOrigins: ['http://localhost'],
               }).replace('export class BotLabSource', 'class BotLabSource') +
                 '\nreturn BotLabSource;'
-            )(new EventTarget()))({ getVelocityLimits: () => [2, -1, 3] });
+            )(new EventTarget()))({
+              getVelocityLimits: () => [2, -1, 3],
+              getPosition,
+            });
       source.load(controlSource);
       source.poll(1);
       expect(source.command[0]).toBe(2);
+      x = 2;
+      source.poll(1);
+      expect(Array.from(source.command)).toEqual([0, 0, 0]);
       for (let i = 0; i < 5; i++) {
         source.poll(0.5);
         expect(Array.from(source.command)).toEqual([0, 0, 0]);
       }
       source.poll(1);
       expect(source.command[0]).toBe(2);
+      x = 4;
+      source.poll(1);
       source.poll(0.25);
       expect(Array.from(source.command)).toEqual([0, 0, 0]);
       source.dispose();

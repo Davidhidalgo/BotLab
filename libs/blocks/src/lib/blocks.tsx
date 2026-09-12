@@ -10,6 +10,7 @@ import {
   type BlocksWorkspaceStatus,
 } from './blocks-contract';
 import { createLocalScratchBlocksEditorBridge } from './scratch-blocks-local-bridge';
+import styles from './blocks.module.css';
 
 export interface BlocksEditorShellProps {
   workspaceName: string;
@@ -23,6 +24,7 @@ export interface BlocksEditorShellProps {
   provider?: BlocksEditorProvider;
   autoMountNativeEditor?: boolean;
   onArtifactChange?: (artifact: BlocksWorkspaceArtifact) => void;
+  activeBlockId?: string;
 }
 
 export interface BlocksEditorShellLabels {
@@ -49,6 +51,7 @@ export function BlocksEditorShell({
   provider,
   autoMountNativeEditor = true,
   onArtifactChange,
+  activeBlockId,
 }: BlocksEditorShellProps) {
   const copy = useMemo(
     () => ({ ...defaultBlocksEditorShellLabels, ...labels }),
@@ -142,6 +145,10 @@ export function BlocksEditorShell({
   ]);
 
   useEffect(() => {
+    mountHandleRef.current?.highlightBlock?.(activeBlockId);
+  }, [activeBlockId, isNativeMounted]);
+
+  useEffect(() => {
     return () => {
       mountHandleRef.current?.dispose();
     };
@@ -181,7 +188,7 @@ export function BlocksEditorShell({
         <div className="flex min-h-[380px] flex-col rounded-md border border-dashed bg-background p-4">
           <div
             ref={mountElementRef}
-            className="relative h-[420px] min-h-[360px] overflow-hidden rounded-md bg-muted/40"
+            className={`${styles.workspace} relative h-[420px] min-h-[360px] overflow-hidden rounded-md bg-muted/40`}
           >
             <div className="flex h-full items-center justify-center text-center">
               <p className="text-base font-medium">{copy.workspaceArea}</p>

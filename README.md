@@ -103,6 +103,14 @@ Use the affected scripts for everyday validation when only part of the workspace
 
 `npm run microduck:sim -- --start` prepares a local checkout of the official MicroDuck browser simulator under `tmp/microduck-simulator`, hydrates Git LFS assets into that ignored checkout, injects the BotLab postMessage control source, and starts the patched simulator host. Keep `npm run dev` running separately for the BotLab app.
 
+## Simulator Progress
+
+<!-- measured movement, source block tracking, and local arena from libs/simulators/microduck/src/lib/microduck-distance.ts, apps/botlab-web/src/app/app.tsx, and tools/microduck/prepare-official-simulator.mjs -->
+
+MicroDuck walk blocks now finish on measured horizontal displacement from each block's start position, not a speed-to-duration estimate. Wait blocks hold zero motion for their duration. The editor highlights the active block, and the simulator panel displays distance progress, a wait countdown, or localized execution errors. Lost position telemetry, scene interruptions, implausible position jumps, and stalled movement fail the run instead of claiming arrival. This is straight-line displacement, not the HUD's accumulated odometer, and physics can drift slightly after the stop command.
+
+The setup tool expands the ignored official checkout's arena to 12 x 12 meters so the sample 5-meter walk has room. Existing checkouts need `npm run microduck:sim -- --no-install --no-lfs-hydrate` to refresh the generated bridge and arena patch. No official assets are added to Git.
+
 ## Workspace Persistence
 
 <!-- workspace document schema and storage behavior from apps/botlab-web/src/app/workspace-storage.ts -->

@@ -11,6 +11,7 @@ import {
   type SimulatorSnapshot,
 } from '@botlab/simulators-core';
 import type { MicroDuckSimulatorAssetCachePlan } from './microduck-simulator-assets';
+import { createMicroDuckDistanceTracker } from './microduck-distance';
 
 export const microDuckOfficialSimulatorIntegration = defineSimulatorIntegration(
   {
@@ -33,6 +34,7 @@ export type MicroDuckLedPattern = 'smile' | 'blink' | 'solid' | 'off';
 
 export interface MicroDuckSimulatorLedFrame {
   id: string;
+  sourceBlockId?: string;
   type: 'led-pattern';
   targetId: string;
   pattern: MicroDuckLedPattern;
@@ -41,6 +43,7 @@ export interface MicroDuckSimulatorLedFrame {
 
 export interface MicroDuckSimulatorDifferentialDriveFrame {
   id: string;
+  sourceBlockId?: string;
   type: 'differential-drive';
   targetId: string;
   leftPower: number;
@@ -90,6 +93,7 @@ export interface MicroDuckBotLabOfficialSource
 export interface MicroDuckBotLabOfficialSourceOptions {
   id?: string;
   getVelocityLimits: () => readonly [number, number, number];
+  getPosition?: () => readonly number[];
 }
 
 export interface MicroDuckBotLabPostMessageSourceOptions
@@ -402,6 +406,7 @@ export function createMicroDuckBotLabOfficialSource(
   let frames: MicroDuckSimulatorControlFrame[] = [];
   let cursor = 0;
   let frameElapsedMs = 0;
+  let distanceTracker: ReturnType<typeof createMicroDuckDistanceTracker> | undefined;
   let active = false;
 
   function applyFrame(frame: MicroDuckSimulatorControlFrame) {
@@ -437,6 +442,7 @@ export function createMicroDuckBotLabOfficialSource(
     frames = [];
     cursor = 0;
     frameElapsedMs = 0;
+    distanceTracker = undefined;
     active = false;
     resetCommand(command);
     resetPressed(pressed);
@@ -457,6 +463,7 @@ export function createMicroDuckBotLabOfficialSource(
       frames = [...controlSource.frames];
       cursor = 0;
       frameElapsedMs = 0;
+      distanceTracker = undefined;
       active = false;
       resetCommand(command);
       resetPressed(pressed);
@@ -481,7 +488,28 @@ export function createMicroDuckBotLabOfficialSource(
         return;
       }
 
+      if (frame.type === 'differential-drive' && frame.distanceMeters !== undefined) {
+        distanceTracker ??= createMicroDuckDistanceTracker(frame.distanceMeters, options.getPosition);
+        const progress = distanceTracker(dt);
+        if (progress.error) {
+          clear();
+          throw new Error(progress.error);
+        }
+        if (progress.done) {
+          cursor += 1;
+          distanceTracker = undefined;
+          frameElapsedMs = 0;
+          resetCommand(command);
+          resetPressed(pressed);
+          active = true;
+          return;
+        }
+        applyFrame(frame);
+        active = true;
+        return;
+      }
       applyFrame(frame);
+      active = true;
       const durationMs = getFrameDurationMs(frame);
 
       if (durationMs <= 0) {
@@ -625,16 +653,18 @@ let latestControlSource;
 let latestExecution;
 const receivedExecutions = new Set();
 const executions = new Map();
+const createDistanceTracker = (${createMicroDuckDistanceTracker.toString()});
 
-function reportExecution(execution, status, frameIndex) {
+function reportExecution(execution, status, frameIndex, progress = {}) {
   if (!execution) return;
   execution.status = status;
   execution.frameIndex = frameIndex;
+  execution.progress = progress;
   execution.reply?.postMessage({
     type: "botlab.microduck.execution.v1", version: 1,
     simulatorId: "microduck-official-sim",
     executionId: execution.id, artifactId: execution.artifactId,
-    status, frameIndex,
+    status, frameIndex, ...progress,
   }, execution.origin);
 }
 
@@ -676,7 +706,7 @@ window.addEventListener("message", (event) => {
     : "legacy:" + JSON.stringify(controlSource);
   if (receivedExecutions.has(key)) {
     const existing = executions.get(message.executionId);
-    if (existing) reportExecution(existing, existing.status, existing.frameIndex);
+    if (existing) reportExecution(existing, existing.status, existing.frameIndex, existing.progress);
     return;
   }
   receivedExecutions.add(key);
@@ -693,10 +723,14 @@ window.addEventListener("message", (event) => {
   for (const source of ACTIVE_SOURCES) {
     source.load(controlSource, latestExecution);
   }
+  if (ACTIVE_SOURCES.size > 0) {
+    latestControlSource = undefined;
+    latestExecution = undefined;
+  }
 });
 
 export class ${className} {
-  constructor({ getVelocityLimits, isInputLocked } = {}) {
+  constructor({ getVelocityLimits, isInputLocked, getPosition } = {}) {
     this.id = "botlab";
     this.connected = true;
     this.command = new Float32Array(3);
@@ -705,9 +739,11 @@ export class ${className} {
     this.onAction = () => {};
     this.getVelocityLimits = getVelocityLimits ?? (() => [2, -1, 3]);
     this.isInputLocked = isInputLocked ?? (() => false);
+    this.getPosition = getPosition;
     this.frames = [];
     this.cursor = 0;
     this.frameElapsedMs = 0;
+    this.distanceTracker = undefined;
     this.active = false;
   }
 
@@ -717,6 +753,8 @@ export class ${className} {
 
     if (latestControlSource) {
       this.load(latestControlSource, latestExecution);
+      latestControlSource = undefined;
+      latestExecution = undefined;
     }
   }
 
@@ -731,6 +769,7 @@ export class ${className} {
     this.execution = execution;
     this.reportedCursor = -1;
     this.heartbeatElapsed = 0;
+    this.distanceTracker = undefined;
     this.frames = [...controlSource.frames];
     this.cursor = 0;
     this.frameElapsedMs = 0;
@@ -739,9 +778,10 @@ export class ${className} {
     this.resetPressed();
   }
 
-  clear(status = "stopped") {
-    reportExecution(this.execution, status);
+  clear(status = "stopped", errorCode) {
+    reportExecution(this.execution, status, this.frames[this.cursor] ? this.cursor : undefined, { errorCode });
     this.execution = undefined;
+    this.distanceTracker = undefined;
     this.frames = [];
     this.cursor = 0;
     this.frameElapsedMs = 0;
@@ -768,6 +808,7 @@ export class ${className} {
 
   pollFrame(dt) {
     if (this.isInputLocked()) {
+      if (this.reportedCursor >= 0 && this.execution) this.clear("failed", "scene-interrupted");
       this.active = false;
       this.resetCommand();
       return;
@@ -782,13 +823,38 @@ export class ${className} {
       return;
     }
 
+    const distanceFrame = frame.type === "differential-drive" && frame.distanceMeters !== undefined;
+    let progress;
+    if (distanceFrame) {
+      this.distanceTracker ??= createDistanceTracker(frame.distanceMeters, this.getPosition);
+      progress = this.distanceTracker(dt);
+      if (progress.error) {
+        this.clear("failed", progress.error);
+        return;
+      }
+    }
+    this.frameElapsedMs += dt * 1000;
     this.heartbeatElapsed += dt;
-    if (this.reportedCursor !== this.cursor || this.heartbeatElapsed >= 1) {
-      reportExecution(this.execution, "running", this.cursor);
+    if (this.reportedCursor !== this.cursor || this.heartbeatElapsed >= 0.1 || progress?.done) {
+      reportExecution(this.execution, "running", this.cursor, {
+        elapsedMs: this.frameElapsedMs,
+        distanceMeters: progress?.distanceMeters,
+      });
       this.reportedCursor = this.cursor;
       this.heartbeatElapsed = 0;
     }
+    if (distanceFrame && progress.done) {
+      this.cursor += 1;
+      this.frameElapsedMs = 0;
+      this.distanceTracker = undefined;
+      this.resetCommand();
+      this.resetPressed();
+      this.active = true;
+      return;
+    }
     this.applyFrame(frame);
+    this.active = true;
+    if (distanceFrame) return;
     const durationMs = getFrameDurationMs(frame);
 
     if (durationMs <= 0) {
@@ -796,8 +862,6 @@ export class ${className} {
       this.frameElapsedMs = 0;
       return;
     }
-
-    this.frameElapsedMs += dt * 1000;
 
     if (this.frameElapsedMs >= durationMs) {
       this.cursor += 1;
@@ -901,7 +965,7 @@ export function createMicroDuckOfficialSimulatorPatchInstructions(
     modulePath: MICRODUCK_BOTLAB_SOURCE_MODULE_PATH,
     gamePath: MICRODUCK_SIMULATOR_GAME_SOURCE_PATH,
     importLine: `import { ${className} } from "./controls/botlab.js";`,
-    sourceFactoryLine: `const botLabSource = new ${className}({ getVelocityLimits: () => ${velocityLimitsExpression}, isInputLocked: () => inputLocked });`,
+    sourceFactoryLine: `const botLabSource = new ${className}({ getVelocityLimits: () => ${velocityLimitsExpression}, isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]] });`,
     controllerSourceName: 'botLabSource',
   };
 }
@@ -913,11 +977,13 @@ export function patchMicroDuckOfficialSimulatorGameSource(
   const instructions =
     createMicroDuckOfficialSimulatorPatchInstructions(options);
   const warnings: string[] = [];
-  const previousFactoryLine = instructions.sourceFactoryLine.replace(
-    ', isInputLocked: () => inputLocked',
+  const lockedFactoryLine = instructions.sourceFactoryLine.replace(
+    ', getPosition: () => [data.qpos[0], data.qpos[1]]',
     ''
   );
-  let patched = source.replace(previousFactoryLine, instructions.sourceFactoryLine);
+  const previousFactoryLine = lockedFactoryLine.replace(', isInputLocked: () => inputLocked', '');
+  let patched = source.replace(previousFactoryLine, instructions.sourceFactoryLine)
+    .replace(lockedFactoryLine, instructions.sourceFactoryLine);
 
   if (!patched.includes(instructions.importLine)) {
     patched = insertAfterLastImport(patched, instructions.importLine);
@@ -1017,6 +1083,7 @@ function createMicroDuckSimulatorControlFrame(
     return {
       id: command.id,
       type: 'led-pattern',
+      sourceBlockId: command.sourceBlockId,
       targetId: command.targetId,
       pattern,
       brightness,
@@ -1036,17 +1103,18 @@ function createMicroDuckSimulatorControlFrame(
       return `MicroDuck simulator command ${command.id} needs numeric differential drive inputs.`;
     }
 
-    if (durationMs !== undefined && typeof durationMs !== 'number') {
+    if (durationMs !== undefined && (typeof durationMs !== 'number' || !Number.isFinite(durationMs) || durationMs < 0)) {
       return `MicroDuck simulator command ${command.id} needs numeric duration.`;
     }
 
-    if (distanceMeters !== undefined && typeof distanceMeters !== 'number') {
+    if (distanceMeters !== undefined && (typeof distanceMeters !== 'number' || !Number.isFinite(distanceMeters) || distanceMeters < 0)) {
       return `MicroDuck simulator command ${command.id} needs numeric distance.`;
     }
 
     return {
       id: command.id,
       type: 'differential-drive',
+      sourceBlockId: command.sourceBlockId,
       targetId: command.targetId,
       leftPower,
       rightPower,
@@ -1166,7 +1234,7 @@ function isMicroDuckSimulatorControlSource(
 function isMicroDuckSimulatorControlFrame(
   value: unknown
 ): value is MicroDuckSimulatorControlFrame {
-  if (!isRecord(value)) {
+  if (!isRecord(value) || (value['sourceBlockId'] !== undefined && typeof value['sourceBlockId'] !== 'string')) {
     return false;
   }
 
@@ -1176,6 +1244,7 @@ function isMicroDuckSimulatorControlFrame(
     typeof value['targetId'] === 'string' &&
     isMicroDuckLedPattern(value['pattern']) &&
     typeof value['brightness'] === 'number'
+    && Number.isFinite(value['brightness'])
   ) {
     return true;
   }
@@ -1185,11 +1254,13 @@ function isMicroDuckSimulatorControlFrame(
     typeof value['id'] === 'string' &&
     typeof value['targetId'] === 'string' &&
     typeof value['leftPower'] === 'number' &&
+    Number.isFinite(value['leftPower']) &&
     typeof value['rightPower'] === 'number' &&
+    Number.isFinite(value['rightPower']) &&
     (value['durationMs'] === undefined ||
-      typeof value['durationMs'] === 'number') &&
+      (typeof value['durationMs'] === 'number' && Number.isFinite(value['durationMs']) && value['durationMs'] >= 0)) &&
     (value['distanceMeters'] === undefined ||
-      typeof value['distanceMeters'] === 'number')
+      (typeof value['distanceMeters'] === 'number' && Number.isFinite(value['distanceMeters']) && value['distanceMeters'] >= 0))
   );
 }
 

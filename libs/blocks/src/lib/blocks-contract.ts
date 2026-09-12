@@ -11,6 +11,7 @@ export type BlocksEditorEngine = 'mock' | 'scratch-blocks';
 
 export interface BlocksEditorMountHandle {
   exportWorkspace(): BlocksWorkspaceArtifact;
+  highlightBlock?(blockId?: string): void;
   dispose(): void;
 }
 

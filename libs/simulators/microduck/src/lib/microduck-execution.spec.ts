@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import ts from 'typescript';
+import * as ts from 'typescript';
 import { createMicroDuckBotLabPostMessageSourceModule } from './microduck-simulator';
 
 const toolSource = ts.createSourceFile(
@@ -41,9 +41,11 @@ describe.each([
       ) + ';return BotLabSource;'
     )(receiver);
     let locked = true;
+    let position: number[] = [0, 0];
     const source = new Source({
       getVelocityLimits: () => [2, -1, 3],
       isInputLocked: () => locked,
+      getPosition: () => position,
     });
     const control = {
       type: 'botlab.microduck.control-source.v1',
@@ -100,6 +102,9 @@ describe.each([
       send,
       stop,
       parent,
+      moveTo: (x: number, y = 0) => {
+        position = [x, y];
+      },
       unlock: () => {
         locked = false;
       },
@@ -187,4 +192,151 @@ describe.each([
     expect(Array.from(f.source.command)).toEqual([0, 0, 0]);
     f.source.dispose();
   });
+
+  it('uses measured distance, ignores the old duration estimate, then waits before the next walk', () => {
+    const f = fixture();
+    Object.assign(f.control.source.frames[0], {
+      distanceMeters: 2,
+      durationMs: 1,
+    });
+    Object.assign(f.control.source.frames[2], { distanceMeters: 2 });
+    f.send();
+    f.source.init();
+    f.unlock();
+    f.source.poll(1);
+    f.source.poll(2);
+    expect(f.source.cursor).toBe(0);
+    expect(f.source.command[0]).toBe(2);
+    f.moveTo(1);
+    f.source.poll(1);
+    expect(f.parent.postMessage.mock.calls.at(-1)![0]).toMatchObject({
+      status: 'running',
+      frameIndex: 0,
+      distanceMeters: 1,
+    });
+    f.moveTo(2);
+    f.source.poll(1);
+    expect(f.source.cursor).toBe(1);
+    expect(f.source.command[0]).toBe(0);
+    for (let i = 0; i < 5; i++) {
+      f.source.poll(1);
+      expect(f.source.command[0]).toBe(0);
+      expect(f.source.isActive()).toBe(true);
+    }
+    f.source.poll(1);
+    expect(f.source.command[0]).toBe(2);
+    f.moveTo(3);
+    f.source.poll(1);
+    expect(f.source.cursor).toBe(2);
+    f.moveTo(4);
+    f.source.poll(1);
+    f.source.poll(0.02);
+    expect(f.statuses().at(-1)).toBe('completed');
+    f.source.dispose();
+  });
+
+  it.each(['telemetry-unavailable', 'position-reset', 'motion-stalled'])(
+    'stops instead of claiming arrival on %s',
+    (reason) => {
+      const f = fixture();
+      Object.assign(f.control.source.frames[0], { distanceMeters: 5 });
+      f.send();
+      f.source.init();
+      f.unlock();
+      f.source.poll(0.02);
+      if (reason === 'telemetry-unavailable') f.moveTo(NaN);
+      if (reason === 'position-reset') f.moveTo(20);
+      if (reason === 'motion-stalled')
+        for (let i = 0; i < 100; i++) f.source.poll(0.1);
+      else f.source.poll(0.02);
+      expect(f.parent.postMessage.mock.calls.at(-1)![0]).toMatchObject({
+        status: 'failed',
+        frameIndex: 0,
+        errorCode: reason,
+      });
+      expect(Array.from(f.source.command)).toEqual([0, 0, 0]);
+      expect(f.statuses()).not.toContain('completed');
+      f.source.dispose();
+    }
+  );
+
+  it('treats zero distance as a no-op even without position telemetry', () => {
+    const f = fixture();
+    Object.assign(f.control.source.frames[0], { distanceMeters: 0 });
+    f.source.getPosition = undefined;
+    f.send();
+    f.source.init();
+    f.unlock();
+    f.source.poll(0.02);
+    expect(f.source.command[0]).toBe(0);
+    expect(f.source.cursor).toBe(1);
+    f.source.dispose();
+  });
+
+  it('fails an active run when the scene locks again', () => {
+    const f = fixture();
+    f.send();
+    f.source.init();
+    f.unlock();
+    f.source.poll(0.02);
+    f.source.isInputLocked = () => true;
+    f.source.poll(0.02);
+    expect(f.parent.postMessage.mock.calls.at(-1)![0]).toMatchObject({
+      status: 'failed',
+      errorCode: 'scene-interrupted',
+    });
+    expect(f.source.command[0]).toBe(0);
+    f.source.dispose();
+  });
+
+  it('does not replay consumed buffered work when the source is remounted', () => {
+    const f = fixture();
+    f.send(); f.source.init(); f.unlock();
+    f.source.poll(1); f.source.poll(5); f.source.poll(1); f.source.poll(0.02);
+    expect(f.statuses().at(-1)).toBe('completed');
+    f.source.dispose();
+    const remounted = new f.source.constructor({ getVelocityLimits: () => [2, -1, 3] });
+    remounted.init(); remounted.poll(1);
+    expect(remounted.command[0]).toBe(0);
+    expect(remounted.frames).toHaveLength(0);
+    remounted.dispose();
+  });
+});
+
+it('upgrades the tool factory without duplicating the source and expands only known arena declarations', () => {
+  const functions = [
+    'patchGameSource',
+    'insertAfterLastImport',
+    'insertBeforeControllerConstruction',
+    'controllerSourcesInclude',
+    'insertControllerSource',
+    'readControllerSourcesArray',
+    'patchBotLabArena',
+  ];
+  const text = toolSource.statements
+    .filter(
+      (node) =>
+        ts.isFunctionDeclaration(node) &&
+        functions.includes(node.name?.text ?? '')
+    )
+    .map((node) => node.getText(toolSource))
+    .join('\n');
+  const { patchGameSource, patchBotLabArena } = new Function(
+    text + ';return { patchGameSource, patchBotLabArena };'
+  )();
+  const old =
+    'import { BotLabSource } from "./controls/botlab.js";\nconst botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked });\nconst controller = new Controller({ sources: [botLabSource] });';
+  const patched = patchGameSource(old);
+  expect(patched.source.match(/new BotLabSource/g)).toHaveLength(1);
+  expect(patched.source).toContain(
+    'getPosition: () => [data.qpos[0], data.qpos[1]]'
+  );
+  expect(patchGameSource(patched.source).changed).toBe(false);
+  expect(patchBotLabArena('export const ARENA_HALF = 1.5;')).toBe(
+    'export const ARENA_HALF = 6;'
+  );
+  expect(patchBotLabArena('export const ARENA_HALF = 6;')).toBe(
+    'export const ARENA_HALF = 6;'
+  );
+  expect(() => patchBotLabArena('unknown')).toThrow('Unknown official arena');
 });

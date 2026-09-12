@@ -62,6 +62,29 @@ describe('createLocalScratchBlocksEditorBridge', () => {
     });
   });
 
+  it('highlights the active block without changing the workspace', async () => {
+    const onArtifactChange = vi.fn();
+    const result = await createLocalScratchBlocksEditorBridge().mount({
+      element: document.createElement('div'),
+      artifact: sampleScratchBlocksWorkspaceArtifact,
+      onArtifactChange,
+    });
+    expect(result.mounted).toBe(true);
+    if (!result.mounted) return;
+    try {
+      const scratch = await import('scratch-blocks');
+      const workspace = scratch.getMainWorkspace() as InstanceType<typeof scratch.WorkspaceSvg>;
+      const highlight = vi.spyOn(workspace, 'highlightBlock');
+      const before = result.handle.exportWorkspace().content;
+      result.handle.highlightBlock?.('botlab-walk');
+      expect(highlight).toHaveBeenLastCalledWith('botlab-walk');
+      result.handle.highlightBlock?.('missing');
+      expect(highlight).toHaveBeenLastCalledWith(null);
+      result.handle.highlightBlock?.();
+      expect(result.handle.exportWorkspace().content).toBe(before);
+    } finally { result.handle.dispose(); }
+  });
+
   it('provides an editable default number in the wait toolbox entry', async () => {
     const result = await createLocalScratchBlocksEditorBridge().mount({
       element: document.createElement('div'),

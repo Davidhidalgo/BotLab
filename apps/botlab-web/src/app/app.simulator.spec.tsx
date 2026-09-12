@@ -7,9 +7,11 @@ jest.mock('@botlab/blocks', () => ({
   BlocksEditorShell: ({
     artifact,
     onArtifactChange,
+    activeBlockId,
   }: BlocksEditorShellProps) => (
     <textarea
       aria-label="Test workspace"
+      data-active-block={activeBlockId}
       value={artifact?.content}
       onChange={(event) =>
         artifact &&
@@ -53,6 +55,15 @@ describe('One-click simulator execution', () => {
       origin = 'http://127.0.0.1:4300',
       sender: MessageEventSource | null = frame.contentWindow
     ) => {
+      if (state === 'completed') {
+        act(() => window.dispatchEvent(new MessageEvent('message', {
+          origin, source: sender, data: {
+            type: 'botlab.microduck.execution.v1', version: 1, simulatorId: 'microduck-official-sim',
+            executionId: message.executionId, artifactId: message.source.artifactId,
+            status: 'running', frameIndex: 1, distanceMeters: message.source.frames[1].distanceMeters,
+          },
+        })));
+      }
       act(() =>
         window.dispatchEvent(
           new MessageEvent('message', {
@@ -142,6 +153,61 @@ describe('One-click simulator execution', () => {
     expect(view.getByLabelText('Execució del simulador').textContent).toBe(
       'Sense confirmació del simulador'
     );
+  });
+
+  it('rejects completion from an old simulator that never confirmed measured arrival', async () => {
+    const view = render(<App />);
+    fireEvent.click(view.getByRole('button', { name: 'Executar', exact: true }));
+    const frame = await view.findByTitle('MicroDuck official simulator preview') as HTMLIFrameElement;
+    const post = jest.spyOn(frame.contentWindow!, 'postMessage');
+    fireEvent.load(frame);
+    await waitFor(() => expect(post).toHaveBeenCalled());
+    const message = post.mock.calls[0][0];
+    act(() => window.dispatchEvent(new MessageEvent('message', {
+      origin: 'http://127.0.0.1:4300', source: frame.contentWindow, data: {
+        type: 'botlab.microduck.execution.v1', version: 1, simulatorId: 'microduck-official-sim',
+        executionId: message.executionId, artifactId: message.source.artifactId, status: 'completed',
+      },
+    })));
+    expect(view.getByText('No es pot llegir la posició del robot.')).toBeTruthy();
+    expect(view.queryByTitle('MicroDuck official simulator preview')).toBeNull();
+    expect(view.getByLabelText('Test workspace').getAttribute('data-active-block')).toBe('botlab-walk');
+  });
+
+  it('links measured progress and failures to the source block without editing the program', async () => {
+    const view = render(<App />);
+    const editor = view.getByLabelText('Test workspace') as HTMLTextAreaElement;
+    fireEvent.change(editor, { target: { value: '<xml><block type="event_whenflagclicked"><next><block type="botlab_microduck_walk_distance" id="walk"><field name="DISTANCE">5</field><next><block type="control_wait" id="wait"><value name="DURATION"><shadow type="math_positive_number"><field name="NUM">3</field></shadow></value></block></next></block></next></block></xml>' } });
+    const original = editor.value;
+    fireEvent.click(view.getByRole('button', { name: 'Executar', exact: true }));
+    const frame = await view.findByTitle('MicroDuck official simulator preview') as HTMLIFrameElement;
+    const post = jest.spyOn(frame.contentWindow!, 'postMessage');
+    fireEvent.load(frame);
+    await waitFor(() => expect(post).toHaveBeenCalled());
+    const message = post.mock.calls[0][0];
+    const status = (data: Record<string, unknown>) => act(() => window.dispatchEvent(new MessageEvent('message', {
+      source: frame.contentWindow, origin: 'http://127.0.0.1:4300', data: {
+        type: 'botlab.microduck.execution.v1', version: 1, simulatorId: 'microduck-official-sim',
+        executionId: message.executionId, artifactId: message.source.artifactId, status: 'running', ...data,
+      },
+    })));
+    expect(message.source.frames[0].sourceBlockId).toBe('walk');
+    status({ frameIndex: 0, distanceMeters: 1.25, elapsedMs: 5000 });
+    expect(view.getByText('Caminant: 1.25 / 5 m')).toBeTruthy();
+    expect(editor.dataset.activeBlock).toBe('walk');
+    status({ frameIndex: 1, elapsedMs: 1250 });
+    expect(view.getByText('Esperant: 1.8 s')).toBeTruthy();
+    expect(editor.dataset.activeBlock).toBe('wait');
+    expect(editor.value).toBe(original);
+    // Malformed telemetry cannot replace valid progress.
+    status({ frameIndex: 0, distanceMeters: Infinity });
+    expect(editor.dataset.activeBlock).toBe('wait');
+    status({ status: 'failed', frameIndex: 0, errorCode: 'motion-stalled' });
+    expect(view.getByText('El robot no avança. Comprova si hi ha un obstacle.')).toBeTruthy();
+    expect(editor.dataset.activeBlock).toBe('walk');
+    expect(view.queryByTitle('MicroDuck official simulator preview')).toBeNull();
+    fireEvent.change(editor, { target: { value: original.replace('>5<', '>2<') } });
+    expect(editor.dataset.activeBlock).toBeUndefined();
   });
 
   it('stops on invalid XML and recovers after the user fixes it', async () => {

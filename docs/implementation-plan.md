@@ -8,6 +8,8 @@ BotLab should let a user build robot behaviors visually, test them safely in a s
 
 The first supported target is MicroDuck. StackChan is planned as the next robot family. The visual editor should use the official Scratch Blocks package first, while keeping TurboWarp or raw Blockly as future swappable options behind an internal BotLab boundary.
 
+Product focus (2026-09-12): refine the product against the MicroDuck simulator before further hardware work. Prioritize faithful block execution, visible per-block progress, scene/reset/camera ergonomics, a cleaner workbench, and saved educational programs. StackChan, already available to the project owner, will be the first physical target when that experience is ready. Hardware policy and transport tasks below remain requirements before hardware enablement, not blockers for simulator product development.
+
 ## Architecture Principles
 
 - Use Nx generators whenever possible for apps, libraries, components, and tooling.
@@ -418,6 +420,8 @@ The simulator now has one Run action beside the preview, replacing the separate 
 The demo compiler now follows the `next` chain of one green-flag script, preserving repeated LED and walk blocks and lowering numeric `control_wait` durations to timed zero-power motion frames. Detached blocks are ignored; unsupported connected blocks, expressions, invalid durations, empty scripts, and multiple green-flag scripts fail explicitly. A final stop frame is appended. Regression tests exercise walk/wait/walk through both the TypeScript and generated simulator receivers. This is sequential subset support, not a full Scratch interpreter; distance remains time-estimated rather than measured by the physics engine.
 
 ## Milestone 9: Artifacts and Persistence
+
+Simulator fidelity update: walk commands carry distance without an estimated duration and preserve source block IDs. The native and generated simulator sources measure horizontal displacement per walk, keep zero-motion ownership during waits, and reject missing telemetry, position resets, stalled movement, and motion timeouts. The app highlights active/failing blocks and displays live meters or wait countdowns in Catalan, Spanish, and English. The setup tool expands only its ignored upstream checkout to a 12 x 12 m arena. Historical speed-estimate limitations above are superseded for walking, but LED fidelity, scene reset UX, and richer block control flow remain future work.
 
 Persistence update: a versioned browser-local document now saves Scratch XML, locale and the last confirmed simulator trace with its source plan. The editor exposes JSON import/export (2 MB limit), failed writes preserve the previous copy, malformed/unknown-version stored data is not silently replaced, and active traces restore as interrupted without reconnecting, running or restoring approvals. This is one local workspace per site origin, not cross-device sync or a multi-project artifact repository.
 

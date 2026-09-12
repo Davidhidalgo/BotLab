@@ -10,6 +10,8 @@ import {
   type MicroDuckOfficialSimulatorHostResult,
   type MicroDuckOfficialSimulatorHostState,
   type MicroDuckOfficialSimulatorSource,
+  type MicroDuckExecutionUpdate,
+  type MicroDuckSimulatorControlFrame,
 } from '@botlab/simulators-microduck';
 import { Badge, Button } from '@botlab/ui';
 import { useMachine } from '@xstate/react';
@@ -222,6 +224,12 @@ export function App() {
       ? officialSimulatorHostResult.controlSource
       : undefined;
   const latestWorkspace = useRef(workspaceArtifact);
+  const executionUpdate = executionSnapshot.context.update;
+  const executionFrame = executionUpdate?.frameIndex === undefined ? undefined
+    : executionSnapshot.context.request?.source.frames[executionUpdate.frameIndex];
+  const activeBlockId = (executionState === 'running' || executionState === 'failed') &&
+    compiledArtifact?.id === executionSnapshot.context.request?.source.artifactId
+      ? executionFrame?.sourceBlockId : undefined;
   latestWorkspace.current = workspaceArtifact;
   useEffect(() => {
     if (!storageEnabled) return;
@@ -519,6 +527,7 @@ export function App() {
               copy
             )}
             artifact={workspaceArtifact}
+            activeBlockId={activeBlockId}
             blocks={[...copy.blocks.palette]}
             onArtifactChange={(artifact) =>
               sendFlow({ type: 'workspace.changed', artifact })
@@ -538,6 +547,8 @@ export function App() {
             onStop={stopSimulatorExecution}
             executionState={executionState}
             frameIndex={executionSnapshot.context.update?.frameIndex}
+            executionFrame={executionFrame}
+            executionUpdate={executionUpdate}
             frameCount={deliverySource?.frames.length ?? 0}
             runBusy={
               isPreparingLaunch || isRunningDemo || executionBusy ||
@@ -1096,6 +1107,8 @@ function MicroDuckSimulatorHost({
   onStop,
   executionState,
   frameIndex,
+  executionFrame,
+  executionUpdate,
   frameCount,
   runBusy,
   runDisabled,
@@ -1122,6 +1135,8 @@ function MicroDuckSimulatorHost({
   onStop: () => void;
   executionState: keyof BotLabCopy['host']['executionStates'];
   frameIndex?: number;
+  executionFrame?: MicroDuckSimulatorControlFrame;
+  executionUpdate?: MicroDuckExecutionUpdate;
   frameCount: number;
   runBusy: boolean;
   runDisabled: boolean;
@@ -1196,6 +1211,23 @@ function MicroDuckSimulatorHost({
         {executionState === 'running' && frameIndex !== undefined
           ? ` · ${frameIndex + 1}/${frameCount}` : ''}
       </p>
+      {executionState === 'running' && executionFrame?.type === 'differential-drive' ? (
+        <div className="mb-3 space-y-1" role="status" aria-label={copy.host.progressLabel}>
+          <p className="text-sm tabular-nums">
+            {executionFrame.distanceMeters !== undefined
+              ? `${copy.host.walking}: ${(executionUpdate?.distanceMeters ?? 0).toFixed(2)} / ${executionFrame.distanceMeters} m`
+              : `${copy.host.waiting}: ${(Math.max(0, (executionFrame.durationMs ?? 0) - (executionUpdate?.elapsedMs ?? 0)) / 1000).toFixed(1)} s`}
+          </p>
+          <progress className="block h-2 w-full accent-emerald-600" aria-label={copy.host.progressLabel}
+            max={Math.max(executionFrame.distanceMeters ?? executionFrame.durationMs ?? 1, 0.001)}
+            value={executionFrame.distanceMeters !== undefined ? executionUpdate?.distanceMeters ?? 0 : executionUpdate?.elapsedMs ?? 0} />
+        </div>
+      ) : null}
+      {executionState === 'failed' && executionUpdate?.errorCode ? (
+        <p role="alert" className="mb-3 text-sm text-destructive">
+          {copy.host.executionErrors[executionUpdate.errorCode as keyof typeof copy.host.executionErrors]}
+        </p>
+      ) : null}
       {runFailed ? (
         <p role="alert" className="mb-4 text-sm text-destructive">
           {copy.host.runFailed}

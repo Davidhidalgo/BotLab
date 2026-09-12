@@ -37,11 +37,11 @@ describe('App', () => {
     const { getAllByText, getByRole, getByText } = render(<App />);
 
     expect(getByText('MicroDuck Simulator Host')).toBeTruthy();
-    expect(getByText('Assets pendientes')).toBeTruthy();
-    expect(getByText('Runtime oficial bloqueado por revision')).toBeTruthy();
+    expect(getByText('Runtime oficial bloqueado por assets')).toBeTruthy();
+    expect(getByText('Estado host')).toBeTruthy();
     expect(getByText('Setup assets')).toBeTruthy();
     expect(getAllByText('Revision').length).toBeGreaterThan(0);
-    expect(getByRole('button', { name: 'Preparar assets' })).toHaveProperty(
+    expect(getByRole('button', { name: 'Cargar runtime' })).toHaveProperty(
       'disabled',
       true
     );

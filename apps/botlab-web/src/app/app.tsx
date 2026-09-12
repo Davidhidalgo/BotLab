@@ -3,6 +3,7 @@ import { botLabConcepts } from '@botlab/model';
 import {
   createMicroDuckSimulatorAssetCachePlan,
   microDuckSimulatorAssetManifest,
+  type MicroDuckOfficialSimulatorHostState,
 } from '@botlab/simulators-microduck';
 import { Badge, Button } from '@botlab/ui';
 import { useMachine } from '@xstate/react';
@@ -116,6 +117,13 @@ export function App() {
   );
   const simulatorAssetSummary =
     summarizeMicroDuckSimulatorAssetPlan(simulatorAssetPlan);
+  const officialSimulatorHostState = resolveMicroDuckOfficialSimulatorHostState(
+    {
+      assetReady: simulatorAssetPlan.ready,
+      simulationState: flowState.simulation,
+      simulatorOutputReady: Boolean(simulationResult?.outputArtifact),
+    }
+  );
   const artifactCards = [
     {
       id: workspaceArtifact.id,
@@ -240,6 +248,7 @@ export function App() {
             assetPlan={simulatorAssetPlan}
             assetSummary={simulatorAssetSummary}
             compiledCommandId={compiledCommand?.commandId}
+            hostState={officialSimulatorHostState}
             simulatorOutput={simulationResult?.outputArtifact}
             simulationState={botLabSimulationStateLabels[flowState.simulation]}
             simulationMessage={simulationMessage}
@@ -721,6 +730,7 @@ function MicroDuckSimulatorHost({
   assetPlan,
   assetSummary,
   compiledCommandId,
+  hostState,
   simulatorOutput,
   simulationState,
   simulationMessage,
@@ -730,10 +740,13 @@ function MicroDuckSimulatorHost({
   assetPlan: ReturnType<typeof createMicroDuckSimulatorAssetCachePlan>;
   assetSummary: ReturnType<typeof summarizeMicroDuckSimulatorAssetPlan>;
   compiledCommandId?: string;
+  hostState: MicroDuckOfficialSimulatorHostState;
   simulatorOutput?: NonNullable<BotLabSimulationResult['outputArtifact']>;
   simulationState: string;
   simulationMessage: string;
 }) {
+  const hostReadyToLoad = assetReady && Boolean(simulatorOutput);
+
   return (
     <section className="rounded-lg border bg-card p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -742,12 +755,12 @@ function MicroDuckSimulatorHost({
           <h2 className="font-semibold">MicroDuck Simulator Host</h2>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant={assetReady ? 'secondary' : 'outline'}>
-            {assetReady ? 'Runtime listo' : 'Assets pendientes'}
+          <Badge variant={hostState === 'running' ? 'secondary' : 'outline'}>
+            {officialSimulatorHostStateLabels[hostState]}
           </Badge>
-          <Button size="sm" variant="secondary" disabled={!assetReady}>
+          <Button size="sm" variant="secondary" disabled={!hostReadyToLoad}>
             <Download className="h-4 w-4" />
-            Preparar assets
+            Cargar runtime
           </Button>
         </div>
       </div>
@@ -764,14 +777,10 @@ function MicroDuckSimulatorHost({
               <Radar className="h-10 w-10 text-primary" />
             </div>
             <h3 className="text-lg font-semibold">
-              {assetReady
-                ? 'Runtime oficial preparado'
-                : 'Runtime oficial bloqueado por revision'}
+              {officialSimulatorHostTitles[hostState]}
             </h3>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              {assetReady
-                ? 'El siguiente paso es montar el canvas oficial y conectar la source BotLab.'
-                : 'El host ya esta reservado; faltan licencias y hashes verificados antes de descargar assets oficiales.'}
+              {officialSimulatorHostDescriptions[hostState]}
             </p>
           </div>
         </div>
@@ -779,6 +788,10 @@ function MicroDuckSimulatorHost({
         <div className="grid content-start gap-3">
           <CommandFact label="Target" value={targetName} />
           <CommandFact label="Estado sim" value={simulationState} />
+          <CommandFact
+            label="Estado host"
+            value={officialSimulatorHostStateLabels[hostState]}
+          />
           <CommandFact
             label="Plan"
             value={compiledCommandId ?? 'Sin plan compilado'}
@@ -911,6 +924,48 @@ const assetCacheStatusLabels = {
   stale: 'Desactualizado',
   'pending-review': 'Revision',
   blocked: 'Bloqueado',
+};
+
+const officialSimulatorHostStateLabels: Record<
+  MicroDuckOfficialSimulatorHostState,
+  string
+> = {
+  blocked: 'Bloqueado',
+  loading: 'Cargando',
+  ready: 'Listo',
+  running: 'Ejecutando',
+  failed: 'Error',
+  disconnected: 'Desconectado',
+};
+
+const officialSimulatorHostTitles: Record<
+  MicroDuckOfficialSimulatorHostState,
+  string
+> = {
+  blocked: 'Runtime oficial bloqueado por assets',
+  loading: 'Runtime oficial cargando',
+  ready: 'Runtime oficial listo para source BotLab',
+  running: 'Runtime oficial conectado a BotLab',
+  failed: 'Runtime oficial con error de carga',
+  disconnected: 'Runtime oficial desconectado',
+};
+
+const officialSimulatorHostDescriptions: Record<
+  MicroDuckOfficialSimulatorHostState,
+  string
+> = {
+  blocked:
+    'El host esta reservado; faltan licencias y hashes verificados antes de descargar assets oficiales.',
+  loading:
+    'BotLab esta preparando la conexion con el controller/source boundary oficial.',
+  ready:
+    'Los assets estan listos. Ejecuta la simulacion para cargar frames BotLab en el runtime oficial.',
+  running:
+    'El artifact de salida ya puede alimentar la source BotLab del simulador oficial.',
+  failed:
+    'La carga del runtime oficial fallo. El bridge mantiene el error visible para diagnostico.',
+  disconnected:
+    'La conexion oficial se cerro y puede volver a prepararse cuando haga falta.',
 };
 
 const ledPatternLabels: Record<string, string> = {
@@ -1114,4 +1169,32 @@ function summarizeMicroDuckSimulatorAssetPlan(
       blocked: 0,
     }
   );
+}
+
+function resolveMicroDuckOfficialSimulatorHostState({
+  assetReady,
+  simulationState,
+  simulatorOutputReady,
+}: {
+  assetReady: boolean;
+  simulationState: BotLabSimulationState;
+  simulatorOutputReady: boolean;
+}): MicroDuckOfficialSimulatorHostState {
+  if (!assetReady) {
+    return 'blocked';
+  }
+
+  if (simulationState === 'simulating') {
+    return 'loading';
+  }
+
+  if (simulationState === 'failed') {
+    return 'failed';
+  }
+
+  if (simulatorOutputReady) {
+    return 'running';
+  }
+
+  return 'ready';
 }

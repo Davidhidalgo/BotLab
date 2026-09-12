@@ -10,6 +10,7 @@ import {
   type SimulatorBridge,
   type SimulatorSnapshot,
 } from '@botlab/simulators-core';
+import type { MicroDuckSimulatorAssetCachePlan } from './microduck-simulator-assets';
 
 export const microDuckOfficialSimulatorIntegration = defineSimulatorIntegration(
   {
@@ -115,6 +116,27 @@ export interface MicroDuckOfficialSimulatorConnectionOptions {
   sourceId?: string;
 }
 
+export type MicroDuckOfficialSimulatorHostState =
+  | 'blocked'
+  | 'loading'
+  | 'ready'
+  | 'running'
+  | 'failed'
+  | 'disconnected';
+
+export interface MicroDuckOfficialSimulatorHostResult {
+  state: MicroDuckOfficialSimulatorHostState;
+  messages: string[];
+  connection?: MicroDuckOfficialSimulatorConnection;
+  controlSource?: MicroDuckSimulatorControlSource;
+}
+
+export interface LoadMicroDuckOfficialSimulatorHostOptions
+  extends MicroDuckOfficialSimulatorConnectionOptions {
+  assetPlan: MicroDuckSimulatorAssetCachePlan;
+  artifact?: CompiledBehaviorArtifact;
+}
+
 export function createMicroDuckSimulatorBridge(
   options: MicroDuckSimulatorBridgeOptions = {}
 ): SimulatorBridge {
@@ -218,6 +240,58 @@ export function createMicroDuckSimulatorBridge(
     snapshot() {
       return createSimulatorSnapshot(snapshot);
     },
+  };
+}
+
+export async function loadMicroDuckOfficialSimulatorHost(
+  options: LoadMicroDuckOfficialSimulatorHostOptions
+): Promise<MicroDuckOfficialSimulatorHostResult> {
+  if (!options.assetPlan.ready) {
+    const blockedAssets = options.assetPlan.entries
+      .filter((entry) => entry.status !== 'ready')
+      .map((entry) => `${entry.asset.label}: ${entry.status}`);
+
+    return {
+      state: 'blocked',
+      messages: [
+        'MicroDuck official simulator runtime is blocked until required assets are reviewed and cached.',
+        ...blockedAssets,
+      ],
+    };
+  }
+
+  if (!options.artifact) {
+    return {
+      state: 'ready',
+      messages: [
+        'MicroDuck official simulator assets are ready. Compile and simulate a plan to load BotLab control frames.',
+      ],
+    };
+  }
+
+  const controlSource = createMicroDuckSimulatorControlSource(options.artifact);
+
+  if (controlSource.errors.length > 0) {
+    return {
+      state: 'failed',
+      controlSource,
+      messages: controlSource.errors,
+    };
+  }
+
+  const connection = await connectMicroDuckBotLabSourceToOfficialSimulator(
+    options
+  );
+  connection.load(controlSource);
+
+  return {
+    state: 'running',
+    connection,
+    controlSource,
+    messages: [
+      `Loaded ${controlSource.frames.length} BotLab control frame(s) into the official simulator source.`,
+      ...controlSource.messages,
+    ],
   };
 }
 

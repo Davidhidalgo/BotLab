@@ -17,6 +17,7 @@ import {
   createMicroDuckBotLabOfficialSource,
   createMicroDuckSimulatorBridge,
   createMicroDuckSimulatorControlSource,
+  loadMicroDuckOfficialSimulatorHost,
   type MicroDuckOfficialSimulatorSource,
 } from './microduck-simulator';
 
@@ -245,6 +246,60 @@ describe('microDuckSimulatorBridge', () => {
 
     expect(runtime.controller.sources).toEqual([first.source]);
     expect(second.source).toBe(first.source);
+  });
+
+  it('blocks official simulator host loading while assets need review', async () => {
+    await expect(
+      loadMicroDuckOfficialSimulatorHost({
+        assetPlan: createMicroDuckSimulatorAssetCachePlan(
+          microDuckSimulatorAssetManifest
+        ),
+        artifact: createCompiledBehaviorArtifact(),
+        loadRuntime: createFakeOfficialRuntime,
+        getVelocityLimits: () => [2, -1, 3],
+      })
+    ).resolves.toMatchObject({
+      state: 'blocked',
+      messages: [
+        'MicroDuck official simulator runtime is blocked until required assets are reviewed and cached.',
+        'MicroDuck MuJoCo robot models: pending-review',
+        'MicroDuck official policy manifest: pending-review',
+        'MicroDuck browser sandbox source: pending-review',
+      ],
+    });
+  });
+
+  it('loads BotLab control frames into an official simulator host when assets are ready', async () => {
+    const runtime = createFakeOfficialRuntime();
+    const result = await loadMicroDuckOfficialSimulatorHost({
+      assetPlan: createMicroDuckSimulatorAssetCachePlan(
+        createReviewedAssetManifest(),
+        [{ id: 'reviewed-policy', sha256: 'a'.repeat(64) }]
+      ),
+      artifact: createCompiledBehaviorArtifact(),
+      loadRuntime: () => runtime,
+      getVelocityLimits: () => [2, -1, 3],
+    });
+
+    expect(result).toMatchObject({
+      state: 'running',
+      controlSource: {
+        artifactId: 'artifact-microduck-led-demo-microduck-sim-smile-plan',
+        frames: [{ type: 'led-pattern' }],
+      },
+      messages: [
+        'Loaded 1 BotLab control frame(s) into the official simulator source.',
+        'led-pattern -> {"pattern":"smile","brightness":50}',
+      ],
+    });
+    expect(runtime.controller.sources).toHaveLength(1);
+    expect(runtime.controller.sources[0].pressed).toEqual({});
+
+    runtime.controller.sources[0].poll?.(1 / 50);
+
+    expect(runtime.controller.sources[0].pressed).toEqual({
+      'led:smile': true,
+    });
   });
 });
 

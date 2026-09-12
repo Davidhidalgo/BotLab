@@ -1,4 +1,6 @@
 import type * as ScratchBlocksModule from 'scratch-blocks';
+import { createBlockMessageResolver, type BlocksLocale, type BlockTranslationOverlay } from './block-messages';
+import { microDuckBlockMessages } from './microduck-block-messages';
 import type {
   BlocksEditorMountRequest,
   BlocksEditorMountResult,
@@ -17,12 +19,14 @@ let botLabScratchBlocksTheme:
 
 const SCRATCH_BLOCKS_MEDIA_PATH = '/vendor/scratch-blocks/media/';
 
-export function createLocalScratchBlocksEditorBridge(): ScratchBlocksEditorBridge {
+export function createLocalScratchBlocksEditorBridge(translations?: BlockTranslationOverlay): ScratchBlocksEditorBridge {
+  const translate = createBlockMessageResolver(microDuckBlockMessages, translations);
   return {
     async mount(request) {
       return mountLocalScratchBlocksWorkspace(
         request,
-        await loadScratchBlocks()
+        await loadScratchBlocks(),
+        translate
       );
     },
   };
@@ -35,8 +39,20 @@ function loadScratchBlocks() {
 
 function mountLocalScratchBlocksWorkspace(
   request: BlocksEditorMountRequest,
-  scratchBlocks: ScratchBlocksApi
+  scratchBlocks: ScratchBlocksApi,
+  translate: ReturnType<typeof createBlockMessageResolver>
 ): BlocksEditorMountResult {
+  let locale = request.locale ?? 'ca';
+  let highlightedBlock: string | undefined;
+  let disposed = false;
+  function applyLocale(value: BlocksLocale) {
+    scratchBlocks.ScratchMsgs.setLocale('en');
+    scratchBlocks.ScratchMsgs.setLocale(value);
+    for (const key of Object.keys(microDuckBlockMessages.messages)) {
+      scratchBlocks.Msg[`BOTLAB_MICRODUCK_${key.toUpperCase()}`] = translate(key, value);
+    }
+  }
+  applyLocale(locale);
   registerBotLabBlocks(scratchBlocks);
 
   request.element.replaceChildren();
@@ -50,7 +66,7 @@ function mountLocalScratchBlocksWorkspace(
       readOnly: request.artifact.status === 'read-only',
       scrollbars: true,
       theme: getBotLabScratchBlocksTheme(scratchBlocks),
-      toolbox: createBotLabToolbox(),
+      toolbox: createBotLabToolbox(scratchBlocks),
       zoom: {
         controls: true,
         startScale: 0.85,
@@ -104,6 +120,40 @@ function mountLocalScratchBlocksWorkspace(
     return {
       mounted: true,
       handle: {
+        setLocale(nextLocale) {
+          if (disposed || nextLocale === locale) return;
+          const xml = scratchBlocks.Xml.workspaceToDom(workspace);
+          const scroll = { x: workspace.scrollX, y: workspace.scrollY };
+          const paletteVisible = workspace.getFlyout()?.isVisible();
+          const undo = [...workspace.getUndoStack()];
+          const redo = [...workspace.getRedoStack()];
+          // Rebuild display fields with the same serialized IDs, values and connections.
+          scratchBlocks.Events.disable();
+          try {
+            applyLocale(nextLocale);
+            const toolbox = workspace.getToolbox();
+            const flyout = workspace.getFlyout();
+            const recycling = flyout && 'setRecyclingEnabled' in flyout && typeof flyout.setRecyclingEnabled === 'function'
+              ? flyout.setRecyclingEnabled.bind(flyout) : undefined;
+            // Scratch caches flyout blocks; changing category names alone leaves old labels.
+            recycling?.(false);
+            try {
+              if (toolbox) {
+                workspace.updateToolbox(createBotLabToolbox(scratchBlocks));
+                if ('forceRerender' in toolbox && typeof toolbox.forceRerender === 'function') toolbox.forceRerender();
+              }
+            } finally { recycling?.(true); }
+            scratchBlocks.clearWorkspaceAndLoadFromXml(xml, workspace);
+            workspace.getUndoStack().splice(0, Infinity, ...undo);
+            workspace.getRedoStack().splice(0, Infinity, ...redo);
+            workspace.getFlyout()?.setVisible(paletteVisible ?? !compact);
+            workspace.scroll(scroll.x, scroll.y);
+            workspace.highlightBlock(highlightedBlock && workspace.getBlockById(highlightedBlock) ? highlightedBlock : null);
+            locale = nextLocale;
+          } finally {
+            scratchBlocks.Events.enable();
+          }
+        },
         togglePalette() {
           const flyout = workspace.getFlyout();
           if (compact && flyout) {
@@ -112,6 +162,7 @@ function mountLocalScratchBlocksWorkspace(
           }
         },
         highlightBlock(blockId) {
+          highlightedBlock = blockId;
           workspace.highlightBlock(blockId && workspace.getBlockById(blockId) ? blockId : null);
         },
         exportWorkspace() {
@@ -122,6 +173,8 @@ function mountLocalScratchBlocksWorkspace(
           };
         },
         dispose() {
+          if (disposed) return;
+          disposed = true;
           resizeObserver?.disconnect();
           workspace.dispose();
         },
@@ -132,7 +185,7 @@ function mountLocalScratchBlocksWorkspace(
 
     return {
       mounted: false,
-      reason: `Scratch Blocks no se ha podido montar: ${
+      reason: `Could not mount Scratch Blocks: ${
         error instanceof Error ? error.message : String(error)
       }`,
     };
@@ -140,8 +193,6 @@ function mountLocalScratchBlocksWorkspace(
 }
 
 function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
-  scratchBlocks.ScratchMsgs.setLocale('en');
-
   if (
     botLabBlocksRegistered ||
     scratchBlocks.Blocks.botlab_microduck_set_leds
@@ -153,26 +204,26 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
   scratchBlocks.defineBlocksWithJsonArray([
     {
       type: 'botlab_microduck_set_leds',
-      message0: 'set MicroDuck LEDs %1',
+      message0: '%{BKY_BOTLAB_MICRODUCK_LEDS}',
       args0: [
         {
           type: 'field_dropdown',
           name: 'PATTERN',
           options: [
-            ['smile', 'smile'],
-            ['blink', 'blink'],
-            ['solid', 'solid'],
-            ['off', 'off'],
+            ['%{BKY_BOTLAB_MICRODUCK_SMILE}', 'smile'],
+            ['%{BKY_BOTLAB_MICRODUCK_BLINK}', 'blink'],
+            ['%{BKY_BOTLAB_MICRODUCK_SOLID}', 'solid'],
+            ['%{BKY_BOTLAB_MICRODUCK_OFF}', 'off'],
           ],
         },
       ],
       style: 'more',
       extensions: ['shape_statement'],
-      tooltip: 'Controls the MicroDuck robot LEDs.',
+      tooltip: '%{BKY_BOTLAB_MICRODUCK_LEDSTOOLTIP}',
     },
     {
       type: 'botlab_microduck_walk_distance',
-      message0: 'walk MicroDuck %1 m',
+      message0: '%{BKY_BOTLAB_MICRODUCK_WALK}',
       args0: [
         {
           type: 'field_number',
@@ -186,7 +237,7 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
       style: 'motion',
       extensions: ['shape_statement'],
       tooltip:
-        'Moves the MicroDuck simulator forward for the requested distance.',
+        '%{BKY_BOTLAB_MICRODUCK_WALKTOOLTIP}',
     },
   ]);
 
@@ -276,13 +327,13 @@ function createBlockStyle(
   };
 }
 
-function createBotLabToolbox() {
+function createBotLabToolbox(scratchBlocks: ScratchBlocksApi) {
   return {
     kind: 'categoryToolbox',
     contents: [
       {
         kind: 'category',
-        name: 'Events',
+        name: scratchBlocks.Msg['CATEGORY_EVENTS'],
         categorystyle: 'event_category',
         contents: [{ kind: 'block', type: 'event_whenflagclicked' }],
       },
@@ -297,7 +348,7 @@ function createBotLabToolbox() {
       },
       {
         kind: 'category',
-        name: 'Control',
+        name: scratchBlocks.Msg['CATEGORY_CONTROL'],
         categorystyle: 'control_category',
         contents: [
           {
@@ -324,7 +375,7 @@ function loadWorkspaceXml(
   const xml = document.documentElement;
 
   if (xml.nodeName.toLowerCase() !== 'xml') {
-    throw new Error('el artefacto no contiene XML de Scratch Blocks.');
+    throw new Error('The artifact does not contain Scratch Blocks XML.');
   }
 
   // Older toolbox entries created wait blocks without an editable number shadow.

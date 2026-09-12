@@ -12,6 +12,7 @@ import {
 } from './blocks-contract';
 import { createLocalScratchBlocksEditorBridge } from './scratch-blocks-local-bridge';
 import styles from './blocks.module.css';
+import type { BlocksLocale } from './block-messages';
 
 export interface BlocksEditorShellProps {
   workspaceName: string;
@@ -27,6 +28,7 @@ export interface BlocksEditorShellProps {
   onArtifactChange?: (artifact: BlocksWorkspaceArtifact) => void;
   activeBlockId?: string;
   workbench?: boolean;
+  locale?: BlocksLocale;
 }
 
 export interface BlocksEditorShellLabels {
@@ -56,6 +58,7 @@ export function BlocksEditorShell({
   onArtifactChange,
   activeBlockId,
   workbench = false,
+  locale = 'ca',
 }: BlocksEditorShellProps) {
   const copy = useMemo(
     () => ({ ...defaultBlocksEditorShellLabels, ...labels }),
@@ -113,6 +116,7 @@ export function BlocksEditorShell({
       const result = await resolvedProvider.mountWorkspace({
         element: mountElementRef.current,
         artifact,
+        locale,
         onArtifactChange,
       });
 
@@ -129,7 +133,7 @@ export function BlocksEditorShell({
     } finally {
       setIsMounting(false);
     }
-  }, [artifact, copy.mounted, onArtifactChange, resolvedProvider]);
+  }, [artifact, copy.mounted, locale, onArtifactChange, resolvedProvider]);
 
   useEffect(() => {
     if (
@@ -147,6 +151,10 @@ export function BlocksEditorShell({
     openNativeEditor,
     resolvedProvider.supportsNativeMount,
   ]);
+
+  useEffect(() => {
+    mountHandleRef.current?.setLocale?.(locale);
+  }, [locale, isNativeMounted]);
 
   useEffect(() => {
     mountHandleRef.current?.highlightBlock?.(activeBlockId);

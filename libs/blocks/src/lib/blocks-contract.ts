@@ -1,4 +1,5 @@
 import type { BehaviorArtifact } from '@botlab/model';
+import type { BlocksLocale } from './block-messages';
 
 export type BlocksWorkspaceStatus =
   | 'empty'
@@ -13,12 +14,14 @@ export interface BlocksEditorMountHandle {
   exportWorkspace(): BlocksWorkspaceArtifact;
   highlightBlock?(blockId?: string): void;
   togglePalette?(): void;
+  setLocale?(locale: BlocksLocale): void;
   dispose(): void;
 }
 
 export interface BlocksEditorMountRequest {
   element: HTMLElement;
   artifact: BlocksWorkspaceArtifact;
+  locale?: BlocksLocale;
   onArtifactChange?: (artifact: BlocksWorkspaceArtifact) => void;
 }
 

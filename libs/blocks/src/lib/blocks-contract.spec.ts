@@ -93,7 +93,7 @@ describe('blocksContract', () => {
     });
   });
 
-  it('delegates Scratch Blocks mounting to an injected bridge', () => {
+  it('delegates Scratch Blocks mounting to an injected bridge', async () => {
     const provider = createScratchBlocksEditorProvider({
       mount(request) {
         return {
@@ -113,7 +113,7 @@ describe('blocksContract', () => {
       },
     });
 
-    const result = provider.mountWorkspace({
+    const result = await provider.mountWorkspace({
       element: document.createElement('div'),
       artifact: sampleScratchBlocksWorkspaceArtifact,
     });

@@ -117,6 +117,10 @@ The setup tool expands the ignored official checkout's arena to 12 x 12 meters s
 
 The main workbench shows the block editor and simulator side by side from 1024 px upwards. Smaller screens use keyboard-accessible Program and Simulator tabs. Switching views keeps both surfaces mounted; inactive mobile views are offscreen and inert, rather than unloading the simulator. Diagnostic panels and simulator details are collapsed by default, while execution progress and errors remain visible. Narrow editors (up to 600 px) use an overlay block palette; the palette button and category list reopen it. Scratch resizes with its container without replacing the workspace. New workbench labels are available in Catalan, Spanish, and English.
 
+<!-- block localization from libs/blocks/src/lib/block-messages.ts and libs/blocks/src/lib/scratch-blocks-local-bridge.ts -->
+
+Blocks follow the selected UI locale (Catalan by default), including the palette, standard Scratch messages, MicroDuck dropdown labels and tooltips. Language changes preserve the program's executable identifiers and values and do not restart simulation. Versioned display-only catalogs and local translation overlays provide the extension point for external integrations; see `libs/blocks/README.md`. Repository/policy importing and automatic translation are not implemented by this catalog layer.
+
 <!-- scene reset lifecycle from apps/botlab-web/src/app/app.tsx and apps/botlab-web/src/app/simulator-execution-machine.ts -->
 
 The simulator toolbar's Reset scene action replaces only the simulator iframe, returning the robot and scene to their initial state. It cancels launch preparation, stops and disposes the previous command transport, and removes the pending program before reloading. Blocks and the last execution trace are preserved; an active trace is marked stopped. Reset does not compile or run anything. Run is disabled during the reload and must be pressed explicitly afterwards. This currently reloads the simulator runtime rather than resetting physics in place.

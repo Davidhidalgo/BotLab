@@ -8,10 +8,12 @@ jest.mock('@botlab/blocks', () => ({
     artifact,
     onArtifactChange,
     activeBlockId,
+    locale,
   }: BlocksEditorShellProps) => (
     <textarea
       aria-label="Test workspace"
       data-active-block={activeBlockId}
+      data-locale={locale}
       value={artifact?.content}
       onChange={(event) =>
         artifact &&
@@ -30,6 +32,33 @@ describe('One-click simulator execution', () => {
   afterEach(() => {
     jest.useRealTimers();
     jest.restoreAllMocks();
+  });
+
+  it('passes the locale to blocks without stopping or replaying a simulator execution', async () => {
+    const view = render(<App />);
+    fireEvent.click(view.getByRole('button', { name: 'Executar' }));
+    const frame = await view.findByTitle('MicroDuck official simulator preview') as HTMLIFrameElement;
+    const post = jest.spyOn(frame.contentWindow!, 'postMessage');
+    fireEvent.load(frame);
+    await waitFor(() => expect(post).toHaveBeenCalled());
+    const request = post.mock.calls[0][0];
+    act(() => window.dispatchEvent(new MessageEvent('message', {
+      source: frame.contentWindow, origin: 'http://127.0.0.1:4300', data: {
+        type: 'botlab.microduck.execution.v1', version: 1, simulatorId: 'microduck-official-sim',
+        executionId: request.executionId, artifactId: request.source.artifactId, status: 'running', frameIndex: 1,
+      },
+    })));
+    const editor = view.getByLabelText('Test workspace') as HTMLTextAreaElement;
+    const original = editor.value;
+    post.mockClear();
+    for (const locale of ['es', 'en', 'ca']) {
+      fireEvent.change(view.getByRole('combobox'), { target: { value: locale } });
+      expect(editor.dataset.locale).toBe(locale);
+      expect(editor.value).toBe(original);
+      expect(editor.dataset.activeBlock).toBe('botlab-walk');
+      expect(view.getByTitle('MicroDuck official simulator preview')).toBe(frame);
+      expect(post).not.toHaveBeenCalled();
+    }
   });
 
   it('requires simulator confirmation, stops pending retries, and runs the edited plan', async () => {

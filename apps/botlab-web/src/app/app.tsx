@@ -529,6 +529,7 @@ export function App() {
             )}
             artifact={workspaceArtifact}
             activeBlockId={activeBlockId}
+            locale={locale}
             workbench
             blocks={[...copy.blocks.palette]}
             onArtifactChange={(artifact) =>

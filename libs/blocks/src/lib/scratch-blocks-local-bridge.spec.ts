@@ -2,14 +2,14 @@ import { sampleScratchBlocksWorkspaceArtifact } from './blocks-contract';
 import { createLocalScratchBlocksEditorBridge } from './scratch-blocks-local-bridge';
 
 describe('createLocalScratchBlocksEditorBridge', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => { vi.unstubAllGlobals(); });
   beforeEach(() => {
     HTMLCanvasElement.prototype.getContext = vi.fn(
       () =>
         ({
           measureText: () => ({ width: 0 }),
         } as unknown as CanvasRenderingContext2D)
-    );
+    ) as unknown as typeof HTMLCanvasElement.prototype.getContext;
     globalThis.fetch = vi.fn(() =>
       Promise.resolve(new Response(new ArrayBuffer(0)))
     ) as unknown as typeof fetch;
@@ -59,7 +59,7 @@ describe('createLocalScratchBlocksEditorBridge', () => {
     expect(result).toEqual({
       mounted: false,
       reason:
-        'Scratch Blocks no se ha podido montar: el artefacto no contiene XML de Scratch Blocks.',
+        'Could not mount Scratch Blocks: The artifact does not contain Scratch Blocks XML.',
     });
   });
 
@@ -131,6 +131,87 @@ describe('createLocalScratchBlocksEditorBridge', () => {
       result.handle.highlightBlock?.();
       expect(result.handle.exportWorkspace().content).toBe(before);
     } finally { result.handle.dispose(); }
+  });
+
+  it('switches existing blocks, dropdowns and toolbox text without editing or losing undo', async () => {
+    const onArtifactChange = vi.fn();
+    const element = document.createElement('div');
+    const artifact = { ...sampleScratchBlocksWorkspaceArtifact,
+      content: sampleScratchBlocksWorkspaceArtifact.content.replace('</xml>', '<block type="control_wait" id="wait" x="600" y="300"><value name="DURATION"><shadow type="math_positive_number"><field name="NUM">2.5</field></shadow></value></block></xml>') };
+    const result = await createLocalScratchBlocksEditorBridge().mount({ element, artifact, onArtifactChange });
+    expect(result.mounted).toBe(true);
+    if (!result.mounted) return;
+    try {
+      const scratch = await import('scratch-blocks');
+      const workspace = scratch.getMainWorkspace() as InstanceType<typeof scratch.WorkspaceSvg>;
+      await new Promise(resolve => setTimeout(resolve, 20));
+      workspace.clearUndo();
+      workspace.getBlockById('botlab-walk')!.setFieldValue('7.5', 'DISTANCE');
+      await new Promise(resolve => setTimeout(resolve, 20));
+      const xml = result.handle.exportWorkspace().content;
+      const undoCount = workspace.getUndoStack().length;
+      expect(undoCount).toBeGreaterThan(0);
+      result.handle.highlightBlock?.('botlab-walk');
+      onArtifactChange.mockClear();
+      for (const [locale, walk, wait, smile, events] of [
+        ['es', 'mueve MicroDuck', 'esperar', 'sonrisa', 'Eventos'],
+        ['en', 'walk MicroDuck', 'wait', 'smile', 'Events'],
+        ['ca', 'mou el MicroDuck', 'espera', 'somriure', 'Esdeveniments'],
+      ] as const) {
+        result.handle.setLocale?.(locale);
+        await new Promise(resolve => setTimeout(resolve, 20));
+        expect(workspace.getBlockById('botlab-walk')!.toString()).toContain(walk);
+        expect(workspace.getBlockById('wait')!.toString()).toContain(wait);
+        expect(workspace.getBlockById('botlab-leds')!.getField('PATTERN')!.getText()).toBe(smile);
+        expect(workspace.getBlockById('botlab-leds')!.getFieldValue('PATTERN')).toBe('smile');
+        expect(element.textContent).toContain(events);
+        const palette = workspace.getFlyout()!.getWorkspace();
+        expect(palette.getBlocksByType('botlab_microduck_walk_distance', false)[0].toString()).toContain(walk);
+        expect(palette.getBlocksByType('control_wait', false)[0].toString()).toContain(wait);
+        expect(element.querySelectorAll('.blocklyHighlighted')).toHaveLength(1);
+        expect(result.handle.exportWorkspace().content).toBe(xml);
+        expect(workspace.getUndoStack()).toHaveLength(undoCount);
+        expect(onArtifactChange).not.toHaveBeenCalled();
+      }
+      workspace.undo(false);
+      expect(workspace.getBlockById('botlab-walk')!.getFieldValue('DISTANCE')).toBe('5');
+      await new Promise(resolve => setTimeout(resolve, 20));
+      expect(workspace.getUndoStack().map(event => event.toJson())).toEqual([]);
+      expect(workspace.getRedoStack().length).toBeGreaterThan(0);
+      result.handle.setLocale?.('en');
+      expect(workspace.getRedoStack().length).toBeGreaterThan(0);
+      workspace.undo(true);
+      expect(workspace.getBlockById('botlab-walk')!.getFieldValue('DISTANCE')).toBe('7.5');
+    } finally { result.handle.dispose(); }
+  });
+
+  it('uses local translation overlays for the built-in integration', async () => {
+    const result = await createLocalScratchBlocksEditorBridge({
+      schemaVersion: 1, namespace: 'botlab.microduck', revision: '1',
+      translations: { ca: { walk: 'avança %1 m' } },
+    }).mount({ element: document.createElement('div'), artifact: sampleScratchBlocksWorkspaceArtifact, locale: 'ca' });
+    expect(result.mounted).toBe(true);
+    if (!result.mounted) return;
+    try {
+      const scratch = await import('scratch-blocks');
+      expect(scratch.getMainWorkspace().getBlockById('botlab-walk')!.toString()).toContain('avança');
+      expect(result.handle.exportWorkspace().content).toContain('botlab_microduck_walk_distance');
+    } finally { result.handle.dispose(); }
+  });
+
+  it('translates read-only workspaces and ignores locale changes after disposal', async () => {
+    const result = await createLocalScratchBlocksEditorBridge().mount({
+      element: document.createElement('div'),
+      artifact: { ...sampleScratchBlocksWorkspaceArtifact, status: 'read-only' },
+    });
+    expect(result.mounted).toBe(true);
+    if (!result.mounted) return;
+    try {
+      const scratch = await import('scratch-blocks');
+      result.handle.setLocale?.('es');
+      expect(scratch.getMainWorkspace().getBlockById('botlab-walk')!.toString()).toContain('mueve');
+    } finally { result.handle.dispose(); }
+    expect(() => result.handle.setLocale?.('en')).not.toThrow();
   });
 
   it('provides an editable default number in the wait toolbox entry', async () => {

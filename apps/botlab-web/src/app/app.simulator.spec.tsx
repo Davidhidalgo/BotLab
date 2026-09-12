@@ -36,7 +36,7 @@ describe('One-click simulator execution', () => {
     jest.useFakeTimers();
     const view = render(<App />);
     const run = () =>
-      view.getByRole('button', { name: 'Executar', exact: true });
+      view.getByRole('button', { name: 'Executar' });
     fireEvent.click(run());
     const frame = (await view.findByTitle(
       'MicroDuck official simulator preview'
@@ -90,7 +90,7 @@ describe('One-click simulator execution', () => {
     expect(view.getByLabelText('Execució del simulador').textContent).toBe(
       'Executant al simulador'
     );
-    fireEvent.click(view.getByRole('button', { name: 'Aturar', exact: true }));
+    fireEvent.click(view.getByRole('button', { name: 'Aturar' }));
     expect(postMessage.mock.calls.at(-1)![0]).toMatchObject({
       type: 'botlab.microduck.stop.v1',
       executionId: first.executionId,
@@ -139,13 +139,13 @@ describe('One-click simulator execution', () => {
     jest.useFakeTimers();
     const view = render(<App />);
     fireEvent.click(
-      view.getByRole('button', { name: 'Executar', exact: true })
+      view.getByRole('button', { name: 'Executar' })
     );
     const frame = await view.findByTitle(
       'MicroDuck official simulator preview'
     );
     fireEvent.load(frame);
-    fireEvent.click(view.getByRole('button', { name: 'Aturar', exact: true }));
+    fireEvent.click(view.getByRole('button', { name: 'Aturar' }));
     act(() => jest.advanceTimersByTime(3000));
     expect(
       view.queryByTitle('MicroDuck official simulator preview')
@@ -157,7 +157,7 @@ describe('One-click simulator execution', () => {
 
   it('rejects completion from an old simulator that never confirmed measured arrival', async () => {
     const view = render(<App />);
-    fireEvent.click(view.getByRole('button', { name: 'Executar', exact: true }));
+    fireEvent.click(view.getByRole('button', { name: 'Executar' }));
     const frame = await view.findByTitle('MicroDuck official simulator preview') as HTMLIFrameElement;
     const post = jest.spyOn(frame.contentWindow!, 'postMessage');
     fireEvent.load(frame);
@@ -179,7 +179,7 @@ describe('One-click simulator execution', () => {
     const editor = view.getByLabelText('Test workspace') as HTMLTextAreaElement;
     fireEvent.change(editor, { target: { value: '<xml><block type="event_whenflagclicked"><next><block type="botlab_microduck_walk_distance" id="walk"><field name="DISTANCE">5</field><next><block type="control_wait" id="wait"><value name="DURATION"><shadow type="math_positive_number"><field name="NUM">3</field></shadow></value></block></next></block></next></block></xml>' } });
     const original = editor.value;
-    fireEvent.click(view.getByRole('button', { name: 'Executar', exact: true }));
+    fireEvent.click(view.getByRole('button', { name: 'Executar' }));
     const frame = await view.findByTitle('MicroDuck official simulator preview') as HTMLIFrameElement;
     const post = jest.spyOn(frame.contentWindow!, 'postMessage');
     fireEvent.load(frame);
@@ -216,7 +216,7 @@ describe('One-click simulator execution', () => {
     const validContent = editor.value;
     fireEvent.change(editor, { target: { value: '<xml><broken>' } });
     fireEvent.click(
-      view.getByRole('button', { name: 'Executar', exact: true })
+      view.getByRole('button', { name: 'Executar' })
     );
     expect(await view.findByRole('alert')).toBeTruthy();
     expect(
@@ -224,7 +224,7 @@ describe('One-click simulator execution', () => {
     ).toBeNull();
     fireEvent.change(editor, { target: { value: validContent } });
     fireEvent.click(
-      view.getByRole('button', { name: 'Executar', exact: true })
+      view.getByRole('button', { name: 'Executar' })
     );
     fireEvent.load(
       await view.findByTitle('MicroDuck official simulator preview')
@@ -237,7 +237,7 @@ describe('One-click simulator execution', () => {
     const editor = view.getByLabelText('Test workspace') as HTMLTextAreaElement;
     await act(async () => {
       fireEvent.click(
-        view.getByRole('button', { name: 'Executar', exact: true })
+        view.getByRole('button', { name: 'Executar' })
       );
       fireEvent.change(editor, { target: { value: '<xml></xml>' } });
     });
@@ -245,7 +245,7 @@ describe('One-click simulator execution', () => {
       view.queryByTitle('MicroDuck official simulator preview')
     ).toBeNull();
     expect(
-      view.getByRole('button', { name: 'Executar', exact: true })
+      view.getByRole('button', { name: 'Executar' })
     ).toHaveProperty('disabled', false);
   });
 

@@ -3,7 +3,7 @@ import { botLabFlowMachine } from './botlab-flow-machine';
 import { simulatorLaunchMachine } from './simulator-launch-machine';
 
 it('prepares the current program before requesting a simulator launch', async () => {
-  const flow = createActor(botLabFlowMachine).start();
+  const flow = createActor(botLabFlowMachine, { input: {} }).start();
   const launcher = createActor(simulatorLaunchMachine).start();
   const launch = jest.fn(async () => {});
   try {

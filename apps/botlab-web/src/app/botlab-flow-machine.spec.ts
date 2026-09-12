@@ -3,7 +3,7 @@ import { botLabFlowMachine } from './botlab-flow-machine';
 
 describe('botLabFlowMachine', () => {
   it('exposes MicroDuck hardware and simulator through shared adapter capabilities', () => {
-    const actor = createActor(botLabFlowMachine);
+    const actor = createActor(botLabFlowMachine, { input: {} });
 
     actor.start();
 
@@ -40,7 +40,7 @@ describe('botLabFlowMachine', () => {
   });
 
   it('models workspace and execution regions independently', async () => {
-    const actor = createActor(botLabFlowMachine);
+    const actor = createActor(botLabFlowMachine, { input: {} });
 
     actor.start();
 
@@ -150,7 +150,7 @@ describe('botLabFlowMachine', () => {
   });
 
   it('blocks compilation for planned or incompatible targets', () => {
-    const actor = createActor(botLabFlowMachine);
+    const actor = createActor(botLabFlowMachine, { input: {} });
 
     actor.start();
     actor.send({ type: 'target.selected', targetId: 'stackchan-planned' });
@@ -168,7 +168,7 @@ describe('botLabFlowMachine', () => {
   });
 
   it('compiles the selected MicroDuck LED pattern from Scratch XML', async () => {
-    const actor = createActor(botLabFlowMachine);
+    const actor = createActor(botLabFlowMachine, { input: {} });
 
     actor.start();
     actor.send({

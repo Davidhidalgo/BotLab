@@ -90,4 +90,25 @@ describe('simulator execution lifecycle', () => {
     expect(f.actor.getSnapshot().matches('stopped')).toBe(true);
     f.actor.stop();
   });
+
+  it.each(['awaiting', 'running', 'stopping', 'completed', 'stopped', 'failed'])(
+    'clears %s execution on scene reset without replaying it', (state) => {
+      const f = fixture();
+      if (state === 'stopping') f.actor.send({ type: 'stop' });
+      else if (state !== 'awaiting') f.status(state);
+      f.actor.send({ type: 'scene.reset' });
+      expect(f.actor.getSnapshot().matches('idle')).toBe(true);
+      expect(f.actor.getSnapshot().context).toEqual({ request: undefined, update: undefined });
+      if (['awaiting', 'running', 'stopping'].includes(state)) {
+        expect(f.postMessage.mock.calls.at(-1)![0].type).toBe('botlab.microduck.stop.v1');
+      }
+      f.postMessage.mockClear();
+      f.status('running');
+      f.status('completed');
+      jest.advanceTimersByTime(65000);
+      expect(f.postMessage).not.toHaveBeenCalled();
+      expect(f.actor.getSnapshot().matches('idle')).toBe(true);
+      f.actor.stop();
+    }
+  );
 });

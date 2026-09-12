@@ -113,6 +113,10 @@ The setup tool expands the ignored official checkout's arena to 12 x 12 meters s
 
 ## Workspace Persistence
 
+<!-- scene reset lifecycle from apps/botlab-web/src/app/app.tsx and apps/botlab-web/src/app/simulator-execution-machine.ts -->
+
+The simulator toolbar's Reset scene action replaces only the simulator iframe, returning the robot and scene to their initial state. It cancels launch preparation, stops and disposes the previous command transport, and removes the pending program before reloading. Blocks and the last execution trace are preserved; an active trace is marked stopped. Reset does not compile or run anything. Run is disabled during the reload and must be pressed explicitly afterwards. This currently reloads the simulator runtime rather than resetting physics in place.
+
 <!-- workspace document schema and storage behavior from apps/botlab-web/src/app/workspace-storage.ts -->
 
 BotLab automatically saves Scratch XML, the selected UI language, and the last simulator execution trace in this browser's local storage (`botlab.workspace.v1`). The versioned JSON document is limited to 2 MB and retains up to 64 execution events with their original control-frame plan. Reloading restores the workspace but not compiled approval, a connection, or running execution; a previously active trace is marked interrupted. Invalid documents and failed writes do not overwrite the last stored copy.

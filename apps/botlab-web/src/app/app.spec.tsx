@@ -28,7 +28,7 @@ describe('App', () => {
           id: 'led',
           type: 'led-pattern' as const,
           targetId: 'microduck-sim',
-          pattern: 'smile',
+          pattern: 'smile' as const,
           brightness: 50,
         },
       ],
@@ -68,10 +68,10 @@ describe('App', () => {
       .getByRole('heading', { name: 'MicroDuck Simulator Host' })
       .closest('section')!;
     expect(
-      within(host).getByRole('button', { name: 'Executar', exact: true })
+      within(host).getByRole('button', { name: 'Executar' })
     ).toHaveProperty('disabled', false);
     expect(
-      view.getAllByRole('button', { name: 'Executar', exact: true })
+      view.getAllByRole('button', { name: 'Executar' })
     ).toHaveLength(1);
     for (const name of [
       'Compilar demo',
@@ -79,7 +79,7 @@ describe('App', () => {
       'Executar demo',
       'Carregar runtime',
     ]) {
-      expect(view.queryByRole('button', { name, exact: true })).toBeNull();
+      expect(view.queryByRole('button', { name })).toBeNull();
     }
     expect(view.getByText('Artifacts')).toBeTruthy();
     expect(view.getByText('compiled-plan-pending')).toBeTruthy();
@@ -97,7 +97,10 @@ describe('App', () => {
       fireEvent.change(view.getByRole('combobox'), {
         target: { value: locale },
       });
-      expect(view.getByRole('button', { name, exact: true })).toBeTruthy();
+      expect(view.getByRole('button', { name })).toBeTruthy();
+      expect(view.getByRole('button', {
+        name: locale === 'en' ? 'Reset scene' : 'Reiniciar escena',
+      })).toHaveProperty('disabled', true);
     }
   });
 
@@ -105,7 +108,7 @@ describe('App', () => {
     const view = render(<App />);
     fireEvent.click(view.getByRole('button', { name: /StackChan/ }));
     expect(
-      view.getByRole('button', { name: 'Executar', exact: true })
+      view.getByRole('button', { name: 'Executar' })
     ).toHaveProperty('disabled', true);
   });
 
@@ -113,23 +116,23 @@ describe('App', () => {
     jest.useFakeTimers();
     const view = render(<App />);
     fireEvent.click(
-      view.getByRole('button', { name: 'Executar', exact: true })
+      view.getByRole('button', { name: 'Executar' })
     );
     const first = await view.findByTitle(
       'MicroDuck official simulator preview'
     );
     expect(
-      view.getByRole('button', { name: 'Carregant', exact: true })
+      view.getByRole('button', { name: 'Carregant' })
     ).toHaveProperty('disabled', true);
     act(() => jest.advanceTimersByTime(microDuckSimulatorPreviewLoadTimeoutMs));
     expect(
       await view.findByText('Runtime oficial amb error de carrega')
     ).toBeTruthy();
     expect(
-      view.getByRole('button', { name: 'Executar', exact: true })
+      view.getByRole('button', { name: 'Executar' })
     ).toHaveProperty('disabled', false);
     fireEvent.click(
-      view.getByRole('button', { name: 'Executar', exact: true })
+      view.getByRole('button', { name: 'Executar' })
     );
     const second = await view.findByTitle(
       'MicroDuck official simulator preview'
@@ -144,7 +147,7 @@ describe('App', () => {
   it('shows iframe errors without keeping the run button locked', async () => {
     const view = render(<App />);
     fireEvent.click(
-      view.getByRole('button', { name: 'Executar', exact: true })
+      view.getByRole('button', { name: 'Executar' })
     );
     fireEvent.error(
       await view.findByTitle('MicroDuck official simulator preview')
@@ -153,7 +156,67 @@ describe('App', () => {
       await view.findByText('Runtime oficial amb error de carrega')
     ).toBeTruthy();
     expect(
-      view.getByRole('button', { name: 'Executar', exact: true })
+      view.getByRole('button', { name: 'Executar' })
     ).toHaveProperty('disabled', false);
+  });
+
+  it('resets a running scene without changing the workspace or replaying commands', async () => {
+    const view = render(<App />);
+    fireEvent.click(view.getByRole('button', { name: 'Executar' }));
+    const first = await view.findByTitle('MicroDuck official simulator preview') as HTMLIFrameElement;
+    const oldWindow = first.contentWindow!;
+    const oldPost = jest.spyOn(oldWindow, 'postMessage');
+    fireEvent.load(first);
+    await waitFor(() => expect(oldPost).toHaveBeenCalled());
+    const command = oldPost.mock.calls[0][0];
+    const source = command.source;
+    const origin = oldPost.mock.calls[0][1] as string;
+    act(() => window.dispatchEvent(new MessageEvent('message', {
+      source: oldWindow, origin, data: {
+        type: 'botlab.microduck.execution.v1', version: 1,
+        simulatorId: 'microduck-official-sim', executionId: command.executionId,
+        artifactId: source.artifactId, status: 'running', frameIndex: 1, distanceMeters: 0.5,
+      },
+    })));
+    const savedWorkspace = JSON.parse(localStorage.getItem('botlab.workspace.v1')!).workspace;
+    expect(view.getByLabelText('Execució del simulador').textContent).toContain('Executant');
+    fireEvent.click(view.getByRole('button', { name: 'Reiniciar escena' }));
+    const second = view.getByTitle('MicroDuck official simulator preview') as HTMLIFrameElement;
+    expect(second).not.toBe(first);
+    expect(oldPost.mock.calls.at(-1)![0].type).toBe('botlab.microduck.stop.v1');
+    expect(view.getByRole('button', { name: 'Reiniciar escena' })).toHaveProperty('disabled', true);
+    const newPost = jest.spyOn(second.contentWindow!, 'postMessage');
+    fireEvent.load(second);
+    expect(view.getByLabelText('Execució del simulador').textContent).toBe('Sense executar');
+    const saved = JSON.parse(localStorage.getItem('botlab.workspace.v1')!);
+    expect(saved.workspace).toEqual(savedWorkspace);
+    expect(saved.lastExecution.status).toBe('stopped');
+    expect(saved.lastExecution.events.at(-1).status).toBe('stopped');
+    jest.useFakeTimers();
+    act(() => jest.advanceTimersByTime(65000));
+    expect(newPost).not.toHaveBeenCalled();
+    jest.useRealTimers();
+    fireEvent.click(view.getByRole('button', { name: 'Executar' }));
+    await waitFor(() => expect(newPost).toHaveBeenCalled());
+    expect(view.getByTitle('MicroDuck official simulator preview')).toBe(second);
+    expect(newPost.mock.calls[0][0].source.frames).toEqual(source.frames);
+    expect(newPost.mock.calls[0][0].executionId).not.toBe(command.executionId);
+  });
+
+  it('can reset again after a scene reload fails without running the program', async () => {
+    const view = render(<App />);
+    fireEvent.click(view.getByRole('button', { name: 'Executar' }));
+    const first = await view.findByTitle('MicroDuck official simulator preview');
+    fireEvent.load(first);
+    fireEvent.click(view.getByRole('button', { name: 'Reiniciar escena' }));
+    fireEvent.error(view.getByTitle('MicroDuck official simulator preview'));
+    expect(view.queryByTitle('MicroDuck official simulator preview')).toBeNull();
+    fireEvent.click(view.getByRole('button', { name: 'Reiniciar escena' }));
+    const second = view.getByTitle('MicroDuck official simulator preview') as HTMLIFrameElement;
+    const post = jest.spyOn(second.contentWindow!, 'postMessage');
+    fireEvent.load(second);
+    expect(post).not.toHaveBeenCalled();
+    expect(view.getByLabelText('Execució del simulador').textContent).toBe('Sense executar');
+    expect(view.getByRole('button', { name: 'Executar' })).toHaveProperty('disabled', false);
   });
 });

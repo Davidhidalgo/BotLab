@@ -25,6 +25,7 @@ import {
   Lock,
   Play,
   Radar,
+  RotateCcw,
   ShieldCheck,
   Square,
   Download,
@@ -125,6 +126,7 @@ export function App() {
     useState<MicroDuckOfficialSimulatorHostResult>();
   const [officialSimulatorFrameReady, setOfficialSimulatorFrameReady] =
     useState(false);
+  const [sceneRevision, setSceneRevision] = useState(0);
   const officialSimulatorFrameRef = useRef<HTMLIFrameElement>(null);
   const copy = botLabTranslations[locale];
   const {
@@ -302,6 +304,7 @@ export function App() {
     copy.host.previewLoadTimeoutMessage,
     officialSimulatorFrameReady,
     officialSimulatorHostResult?.state,
+    sceneRevision,
   ]);
   async function launchSimulatorProgram(
     artifact: CompiledBehaviorArtifact,
@@ -356,7 +359,9 @@ export function App() {
     if (
       !flowSnapshot.can({ type: 'build.compile' }) ||
       isPreparingLaunch ||
-      isRunningDemo || executionBusy
+      isRunningDemo || executionBusy ||
+      officialSimulatorHostState === 'loading' ||
+      (officialSimulatorHostState === 'running' && !officialSimulatorFrameReady)
     ) {
       return;
     }
@@ -384,6 +389,22 @@ export function App() {
     sendLaunch({ type: 'cancel' });
     if (executionBusy) sendExecution({ type: 'stop' });
     else disconnectOfficialSimulatorRuntimePreview();
+  }
+  function resetSimulatorScene() {
+    if (officialSimulatorHostState !== 'failed' &&
+        (officialSimulatorHostState !== 'running' || !officialSimulatorFrameReady)) return;
+    sendLaunch({ type: 'cancel' });
+    // Dispose the old transport before replacing its iframe and pending source.
+    sendExecution({ type: 'scene.reset' });
+    officialSimulatorHostResult?.connection?.disconnect();
+    setLastExecution(previous => {
+      if (!previous || !['accepted', 'running'].includes(previous.status)) return previous;
+      return { ...previous, status: 'stopped', events: [...previous.events,
+        { status: 'stopped' as const, at: new Date().toISOString() }].slice(-64) };
+    });
+    setOfficialSimulatorFrameReady(false);
+    setOfficialSimulatorHostResult({ state: 'running', messages: [] });
+    setSceneRevision(value => value + 1);
   }
   function exportWorkspaceFile() {
     try {
@@ -545,6 +566,11 @@ export function App() {
             onDisconnectRuntime={disconnectOfficialSimulatorRuntimePreview}
             onRun={runDemo}
             onStop={stopSimulatorExecution}
+            onResetScene={resetSimulatorScene}
+            resetDisabled={officialSimulatorHostState !== 'failed' &&
+              (officialSimulatorHostState !== 'running' || !officialSimulatorFrameReady)}
+            sceneRevision={sceneRevision}
+            sceneLoading={officialSimulatorHostState === 'running' && !officialSimulatorFrameReady}
             executionState={executionState}
             frameIndex={executionSnapshot.context.update?.frameIndex}
             executionFrame={executionFrame}
@@ -1105,6 +1131,10 @@ function MicroDuckSimulatorHost({
   onDisconnectRuntime,
   onRun,
   onStop,
+  onResetScene,
+  resetDisabled,
+  sceneRevision,
+  sceneLoading,
   executionState,
   frameIndex,
   executionFrame,
@@ -1133,6 +1163,10 @@ function MicroDuckSimulatorHost({
   onDisconnectRuntime: () => void;
   onRun: () => void;
   onStop: () => void;
+  onResetScene: () => void;
+  resetDisabled: boolean;
+  sceneRevision: number;
+  sceneLoading: boolean;
   executionState: keyof BotLabCopy['host']['executionStates'];
   frameIndex?: number;
   executionFrame?: MicroDuckSimulatorControlFrame;
@@ -1186,6 +1220,16 @@ function MicroDuckSimulatorHost({
           <Button
             size="icon"
             variant="secondary"
+            onClick={onResetScene}
+            disabled={resetDisabled}
+            title={copy.host.resetScene}
+            aria-label={copy.host.resetScene}
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="secondary"
             onClick={onStop}
             disabled={!runBusy || executionState === 'stopping'}
             title={copy.host.stop}
@@ -1207,7 +1251,7 @@ function MicroDuckSimulatorHost({
         </div>
       </div>
       <p role="status" className="mb-3 text-sm" aria-label={copy.host.executionLabel}>
-        {copy.host.executionStates[executionState]}
+        {sceneLoading ? copy.host.loading : copy.host.executionStates[executionState]}
         {executionState === 'running' && frameIndex !== undefined
           ? ` · ${frameIndex + 1}/${frameCount}` : ''}
       </p>
@@ -1238,6 +1282,7 @@ function MicroDuckSimulatorHost({
         <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-md border bg-background">
           {hostState === 'running' ? (
             <iframe
+              key={sceneRevision}
               title="MicroDuck official simulator preview"
               ref={previewRef}
               src={previewUrl}
@@ -1269,7 +1314,7 @@ function MicroDuckSimulatorHost({
             <div className="absolute left-3 top-3 rounded-md border bg-card/95 px-3 py-2 text-sm shadow-sm">
               <div className="font-medium">{copy.host.remotePreview}</div>
               <div className="text-xs text-muted-foreground">
-                {copy.host.sourceLoaded}
+                {sceneLoading ? copy.host.loading : copy.host.connected}
               </div>
             </div>
           ) : null}

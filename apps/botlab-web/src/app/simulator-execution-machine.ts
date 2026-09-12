@@ -15,6 +15,7 @@ export const simulatorExecutionMachine = setup({
       | { type: 'start'; request: MicroDuckExecutionRequest }
       | { type: 'status'; update: MicroDuckExecutionUpdate }
       | { type: 'stop' }
+      | { type: 'scene.reset' }
       | { type: 'detach' };
   },
   actors: {
@@ -39,6 +40,10 @@ export const simulatorExecutionMachine = setup({
   initial: 'idle',
   context: {},
   on: {
+    'scene.reset': {
+      target: '.idle',
+      actions: assign({ request: undefined, update: undefined }),
+    },
     start: {
       target: '.active',
       reenter: true,

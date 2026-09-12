@@ -52,6 +52,9 @@ const conceptIcons = {
   arbitration: GitBranch,
 };
 
+const microDuckOfficialSimulatorPreviewUrl =
+  'https://pollen-robotics-microduck-simulator.hf.space';
+
 export function App() {
   const [flowSnapshot, sendFlow] = useMachine(botLabFlowMachine);
   const [officialSimulatorHostResult, setOfficialSimulatorHostResult] =
@@ -284,6 +287,7 @@ export function App() {
             hostState={officialSimulatorHostState}
             hostMessages={officialSimulatorHostMessages}
             onLoadRuntime={loadOfficialSimulatorRuntimePreview}
+            previewUrl={microDuckOfficialSimulatorPreviewUrl}
             simulatorOutput={simulationResult?.outputArtifact}
             simulationState={botLabSimulationStateLabels[flowState.simulation]}
             simulationMessage={simulationMessage}
@@ -768,6 +772,7 @@ function MicroDuckSimulatorHost({
   hostState,
   hostMessages,
   onLoadRuntime,
+  previewUrl,
   simulatorOutput,
   simulationState,
   simulationMessage,
@@ -780,6 +785,7 @@ function MicroDuckSimulatorHost({
   hostState: MicroDuckOfficialSimulatorHostState;
   hostMessages: string[];
   onLoadRuntime: () => void;
+  previewUrl: string;
   simulatorOutput?: NonNullable<BotLabSimulationResult['outputArtifact']>;
   simulationState: string;
   simulationMessage: string;
@@ -811,22 +817,42 @@ function MicroDuckSimulatorHost({
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-md border bg-background">
-          <div className="absolute inset-0 grid grid-cols-8 grid-rows-6 opacity-60">
-            {Array.from({ length: 48 }).map((_, index) => (
-              <span key={index} className="border border-border/50" />
-            ))}
-          </div>
-          <div className="relative z-10 w-full max-w-md px-6 text-center">
-            <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-md border bg-card shadow-sm">
-              <Radar className="h-10 w-10 text-primary" />
+          {hostState === 'running' ? (
+            <iframe
+              title="MicroDuck official simulator preview"
+              src={previewUrl}
+              className="h-[520px] w-full border-0"
+              allow="accelerometer; autoplay; clipboard-read; clipboard-write; gamepad; fullscreen; xr-spatial-tracking"
+              sandbox="allow-downloads allow-forms allow-modals allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
+            />
+          ) : (
+            <>
+              <div className="absolute inset-0 grid grid-cols-8 grid-rows-6 opacity-60">
+                {Array.from({ length: 48 }).map((_, index) => (
+                  <span key={index} className="border border-border/50" />
+                ))}
+              </div>
+              <div className="relative z-10 w-full max-w-md px-6 text-center">
+                <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-md border bg-card shadow-sm">
+                  <Radar className="h-10 w-10 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold">
+                  {officialSimulatorHostTitles[hostState]}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  {officialSimulatorHostDescriptions[hostState]}
+                </p>
+              </div>
+            </>
+          )}
+          {hostState === 'running' ? (
+            <div className="absolute left-3 top-3 rounded-md border bg-card/95 px-3 py-2 text-sm shadow-sm">
+              <div className="font-medium">Preview remoto oficial</div>
+              <div className="text-xs text-muted-foreground">
+                BotLab source cargada en paralelo
+              </div>
             </div>
-            <h3 className="text-lg font-semibold">
-              {officialSimulatorHostTitles[hostState]}
-            </h3>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              {officialSimulatorHostDescriptions[hostState]}
-            </p>
-          </div>
+          ) : null}
         </div>
 
         <div className="grid content-start gap-3">

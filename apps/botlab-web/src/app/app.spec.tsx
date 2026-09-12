@@ -34,7 +34,7 @@ describe('App', () => {
   });
 
   it('should show the MicroDuck simulator host', () => {
-    const { getAllByText, getByRole, getByText } = render(<App />);
+    const { getAllByText, getByRole, getByText, getByTitle } = render(<App />);
 
     expect(getByText('MicroDuck Simulator Host')).toBeTruthy();
     expect(getByText('Runtime oficial listo en modo educativo')).toBeTruthy();
@@ -77,7 +77,7 @@ describe('App', () => {
   });
 
   it('should run the MicroDuck runtime demo from the UI', async () => {
-    const { getAllByText, getByRole, getByText } = render(<App />);
+    const { getAllByText, getByRole, getByText, getByTitle } = render(<App />);
 
     fireEvent.click(getByRole('button', { name: 'Compilar demo' }));
 
@@ -133,6 +133,12 @@ describe('App', () => {
     expect(
       getAllByText(/educational preview loading remains opt-in/i).length
     ).toBeGreaterThan(0);
+    expect(
+      getByText('Preview remoto oficial')
+    ).toBeTruthy();
+    expect(
+      getByTitle('MicroDuck official simulator preview').getAttribute('src')
+    ).toBe('https://pollen-robotics-microduck-simulator.hf.space');
 
     fireEvent.click(getByRole('button', { name: 'Ejecutar demo' }));
 

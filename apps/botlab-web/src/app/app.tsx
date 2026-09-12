@@ -5,6 +5,7 @@ import {
   loadMicroDuckOfficialSimulatorHost,
   microDuckSimulatorAssetManifest,
   postMicroDuckSimulatorControlSource,
+  type MicroDuckSimulatorControlSource,
   type MicroDuckOfficialSimulatorHostResult,
   type MicroDuckOfficialSimulatorHostState,
   type MicroDuckOfficialSimulatorSource,
@@ -62,8 +63,27 @@ const conceptIcons = {
 
 const microDuckOfficialSimulatorPreviewUrl =
   'http://127.0.0.1:4300/?boot=1';
+export const microDuckSimulatorDeliveryDelays = [
+  0, 1000, 3000, 8000, 15000,
+] as const;
 
 type BotLabCopy = (typeof botLabTranslations)[BotLabLocale];
+
+export function scheduleMicroDuckSimulatorControlSourceDelivery(
+  targetWindow: Pick<Window, 'postMessage'>,
+  controlSource: MicroDuckSimulatorControlSource,
+  targetOrigin: string
+) {
+  return microDuckSimulatorDeliveryDelays.map((delay) =>
+    window.setTimeout(() => {
+      postMicroDuckSimulatorControlSource(
+        targetWindow,
+        controlSource,
+        targetOrigin
+      );
+    }, delay)
+  );
+}
 
 export function App() {
   const [flowSnapshot, sendFlow] = useMachine(botLabFlowMachine);
@@ -182,15 +202,10 @@ export function App() {
     }
 
     const targetOrigin = new URL(microDuckOfficialSimulatorPreviewUrl).origin;
-    const deliveryDelays = [0, 1000, 3000, 8000, 15000];
-    const deliveryTimers = deliveryDelays.map((delay) =>
-      window.setTimeout(() => {
-        postMicroDuckSimulatorControlSource(
-          targetWindow,
-          controlSource,
-          targetOrigin
-        );
-      }, delay)
+    const deliveryTimers = scheduleMicroDuckSimulatorControlSourceDelivery(
+      targetWindow,
+      controlSource,
+      targetOrigin
     );
 
     setPostedSimulatorArtifactId(controlSource.artifactId);

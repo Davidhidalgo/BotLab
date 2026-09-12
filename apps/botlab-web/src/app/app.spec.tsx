@@ -1,8 +1,62 @@
-import { fireEvent, render, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, waitFor } from '@testing-library/react';
 
-import App from './app';
+import App, {
+  scheduleMicroDuckSimulatorControlSourceDelivery,
+} from './app';
 
 describe('App', () => {
+  it('should schedule repeated MicroDuck simulator control source delivery', () => {
+    jest.useFakeTimers();
+
+    const targetWindow = { postMessage: jest.fn() };
+
+    scheduleMicroDuckSimulatorControlSourceDelivery(
+      targetWindow,
+      {
+        artifactId: 'artifact-microduck-led-demo-microduck-sim-smile-plan',
+        targetId: 'microduck-sim',
+        frames: [
+          {
+            id: 'frame-led-smile',
+            type: 'led-pattern',
+            targetId: 'microduck-sim',
+            pattern: 'smile',
+            brightness: 50,
+          },
+        ],
+        messages: [],
+        errors: [],
+      },
+      'http://127.0.0.1:4300'
+    );
+
+    act(() => {
+      jest.advanceTimersByTime(15000);
+    });
+
+    expect(targetWindow.postMessage).toHaveBeenCalledTimes(5);
+    expect(targetWindow.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'botlab.microduck.control-source.v1',
+        version: 1,
+        simulatorId: 'microduck-official-sim',
+        source: expect.objectContaining({
+          artifactId: 'artifact-microduck-led-demo-microduck-sim-smile-plan',
+          frames: [
+            expect.objectContaining({
+              type: 'led-pattern',
+              pattern: 'smile',
+              brightness: 50,
+            }),
+          ],
+        }),
+      }),
+      'http://127.0.0.1:4300'
+    );
+
+    jest.useRealTimers();
+  });
+
   it('should render successfully', () => {
     const { baseElement } = render(<App />);
     expect(baseElement).toBeTruthy();
@@ -146,17 +200,20 @@ describe('App', () => {
     expect(
       getByText('Host local oficial')
     ).toBeTruthy();
+    const simulatorFrame = getByTitle(
+      'MicroDuck official simulator preview'
+    ) as HTMLIFrameElement;
+
+    expect(simulatorFrame.getAttribute('src')).toBe(
+      'http://127.0.0.1:4300/?boot=1'
+    );
+    fireEvent.load(simulatorFrame);
+
     expect(
-      getByTitle('MicroDuck official simulator preview').getAttribute('src')
-    ).toBe('http://127.0.0.1:4300/?boot=1');
-    fireEvent.load(getByTitle('MicroDuck official simulator preview'));
-    await waitFor(() => {
-      expect(
-        getByText(
-          'BotLab ha enviat 1 frame(s) de control al host del simulador BotLab-enabled.'
-        )
-      ).toBeTruthy();
-    });
+      getByText(
+        'BotLab ha enviat 1 frame(s) de control al host del simulador BotLab-enabled.'
+      )
+    ).toBeTruthy();
     expect(getByRole('button', { name: 'Desconnectar runtime' })).toBeTruthy();
 
     fireEvent.click(getByRole('button', { name: 'Desconnectar runtime' }));

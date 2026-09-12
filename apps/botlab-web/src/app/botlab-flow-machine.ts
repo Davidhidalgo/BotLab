@@ -14,6 +14,7 @@ import {
   samplePolicies,
   sampleSchedulers,
   sampleSkills,
+  type SimulatorOutputArtifact,
   type Target,
 } from '@botlab/model';
 import {
@@ -61,6 +62,7 @@ export interface BotLabSimulationResult {
   artifactId: string;
   status: 'passed' | 'failed';
   commandCount: number;
+  outputArtifact: SimulatorOutputArtifact;
 }
 
 export type BotLabFlowLogCategory =
@@ -219,13 +221,28 @@ export const botLabFlowMachine = setup({
         const simulator = createMicroDuckSimulatorBridge();
         await simulator.boot(input.target);
         const simulation = await simulator.simulate(input.artifact);
+        const outputArtifact: SimulatorOutputArtifact = {
+          id: `simout-${simulation.artifactId}`,
+          kind: 'simulator-output',
+          label: `MicroDuck simulator output for ${input.artifact.label}`,
+          createdAt: new Date().toISOString(),
+          simulatorId: simulation.simulatorId,
+          sourceArtifactId: input.artifact.id,
+          targetId: input.artifact.targetId,
+          status: simulation.status,
+          commandCount: simulation.commandCount,
+          commands: simulation.commands,
+          messages: simulation.messages,
+          snapshot: simulation.snapshot,
+        };
 
         return {
           simulationResult: {
             simulatorId: simulation.simulatorId,
-            artifactId: simulation.artifactId,
+            artifactId: outputArtifact.id,
             status: simulation.status,
             commandCount: simulation.commandCount,
+            outputArtifact,
           },
           simulationMessage: `Simulacion completa: ${simulation.commandCount} comando(s) verificados para ${input.target.name}.`,
         };

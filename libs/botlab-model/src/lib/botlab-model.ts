@@ -234,6 +234,25 @@ export interface CompiledBehaviorArtifact extends Artifact {
   requiredPolicyIds: string[];
 }
 
+export interface SimulatorOutputArtifact extends Artifact {
+  kind: 'simulator-output';
+  simulatorId: string;
+  sourceArtifactId: string;
+  targetId: string;
+  status: 'passed' | 'failed';
+  commandCount: number;
+  commands: CompiledCommand[];
+  messages: string[];
+  snapshot: {
+    simulatorId: string;
+    targetId?: string;
+    state: string;
+    commandCount: number;
+    artifactId?: string;
+    messages: string[];
+  };
+}
+
 export interface IntrospectionSnapshot {
   targetId: string;
   health: 'nominal' | 'degraded' | 'unknown';

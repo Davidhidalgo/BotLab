@@ -102,6 +102,12 @@ describe('App', () => {
         getAllByText(/Simulacion completa: 1 comando/i).length
       ).toBeGreaterThan(0);
     });
+    expect(
+      getAllByText(/simout-artifact-microduck-led-demo-microduck-sim-smile-plan/i)
+        .length
+    ).toBeGreaterThan(0);
+    expect(getByText('Output artifact')).toBeTruthy();
+    expect(getByText(/led-pattern ->/i)).toBeTruthy();
 
     fireEvent.click(getByRole('button', { name: 'Ejecutar demo' }));
 

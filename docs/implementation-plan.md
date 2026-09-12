@@ -303,13 +303,13 @@ Tasks:
 - Add a BotLab simulator control source that maps compiled BotLab commands to the official simulator controller contract. Started: compiled LED and differential drive commands now map into typed MicroDuck simulator control frames, and BotLab exposes a source compatible with the official simulator `Controller` source contract.
 - Spike loading the official simulator game core in the BotLab UI through `@botlab/simulators-microduck`. Started: a lazy runtime connector can register the BotLab source with the official simulator controller once the game runtime is loaded.
 - Map simulator capabilities to the same adapter contract as hardware.
-- Add simulator output artifacts.
+- Add simulator output artifacts. Started: the simulation flow now creates a typed `simulator-output` artifact with command count, command echoes, simulator messages, and the bridge snapshot, and the web app surfaces it in the artifact inventory and simulator host.
 - Add app UI for selecting hardware versus simulator target.
 
 Acceptance criteria:
 
 - Runtime sees simulator targets and hardware targets through the same target model.
-- A simulated MicroDuck behavior can produce an output artifact.
+- A simulated MicroDuck behavior can produce an output artifact. Started: the demo MicroDuck simulator path emits a `simulator-output` artifact for the compiled plan.
 - Simulator integration does not require copying official simulator source or assets into BotLab without license verification.
 - First-run simulator asset loading has clear pending, success, and failure states.
 - Updating upstream MicroDuck simulator inputs is a manifest/hash update plus adapter verification, not an ad hoc patch.

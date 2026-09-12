@@ -85,8 +85,13 @@ describe('botLabFlowMachine', () => {
       pattern: 'smile',
     });
     expect(actor.getSnapshot().context.simulationResult).toMatchObject({
-      artifactId: 'artifact-microduck-led-demo-microduck-sim-smile-plan',
+      artifactId: 'simout-artifact-microduck-led-demo-microduck-sim-smile-plan',
       status: 'passed',
+      outputArtifact: {
+        kind: 'simulator-output',
+        sourceArtifactId: 'artifact-microduck-led-demo-microduck-sim-smile-plan',
+        commandCount: 1,
+      },
     });
     expect(
       actor.getSnapshot().context.flowLog.map((entry) => entry.category)

@@ -32,6 +32,7 @@ import {
   botLabWorkspaceSteps,
   type BotLabBuildState,
   type BotLabExecutionState,
+  type BotLabSimulationResult,
   type BotLabSimulationState,
   type BotLabWorkspaceState,
 } from './botlab-flow-machine';
@@ -140,7 +141,7 @@ export function App() {
       kind: 'Simulator output',
       status: simulationResult ? 'Listo' : 'Pendiente',
       detail: simulationResult
-        ? `${simulationResult.commandCount} comando(s) verificados · ${simulationResult.simulatorId}`
+        ? `${simulationResult.commandCount} comando(s) · ${simulationResult.outputArtifact.snapshot.state}`
         : 'Simula el plan compilado para generar este artifact.',
     },
     {
@@ -239,6 +240,7 @@ export function App() {
             assetPlan={simulatorAssetPlan}
             assetSummary={simulatorAssetSummary}
             compiledCommandId={compiledCommand?.commandId}
+            simulatorOutput={simulationResult?.outputArtifact}
             simulationState={botLabSimulationStateLabels[flowState.simulation]}
             simulationMessage={simulationMessage}
           />
@@ -719,6 +721,7 @@ function MicroDuckSimulatorHost({
   assetPlan,
   assetSummary,
   compiledCommandId,
+  simulatorOutput,
   simulationState,
   simulationMessage,
 }: {
@@ -727,6 +730,7 @@ function MicroDuckSimulatorHost({
   assetPlan: ReturnType<typeof createMicroDuckSimulatorAssetCachePlan>;
   assetSummary: ReturnType<typeof summarizeMicroDuckSimulatorAssetPlan>;
   compiledCommandId?: string;
+  simulatorOutput?: NonNullable<BotLabSimulationResult['outputArtifact']>;
   simulationState: string;
   simulationMessage: string;
 }) {
@@ -780,6 +784,10 @@ function MicroDuckSimulatorHost({
             value={compiledCommandId ?? 'Sin plan compilado'}
           />
           <CommandFact
+            label="Output"
+            value={simulatorOutput?.id ?? 'Sin artifact de salida'}
+          />
+          <CommandFact
             label="Assets"
             value={`${assetSummary.ready} listos · ${assetSummary.pendingReview} pendientes`}
           />
@@ -816,6 +824,26 @@ function MicroDuckSimulatorHost({
           <p className="rounded-md border bg-background p-3 text-sm leading-6 text-muted-foreground">
             {simulationMessage}
           </p>
+          {simulatorOutput ? (
+            <div className="rounded-md border bg-background p-3">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">Output artifact</span>
+                <Badge variant="secondary">
+                  {simulatorOutput.commandCount} cmd
+                </Badge>
+              </div>
+              <div className="space-y-2">
+                {simulatorOutput.messages.map((message) => (
+                  <p
+                    key={message}
+                    className="rounded-md bg-muted px-3 py-2 text-sm leading-6 text-muted-foreground"
+                  >
+                    {message}
+                  </p>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

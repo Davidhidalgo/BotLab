@@ -217,19 +217,30 @@ export function App() {
       </section>
 
       <section className="mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-[1.35fr_0.65fr]">
-        <BlocksEditorShell
-          workspaceName="Editor de bloques BotLab"
-          artifact={workspaceArtifact}
-          blocks={[
-            'al iniciar robot',
-            'fijar LEDs MicroDuck',
-            'esperar capacidad',
-            'publicar artefacto',
-          ]}
-          onArtifactChange={(artifact) =>
-            sendFlow({ type: 'workspace.changed', artifact })
-          }
-        />
+        <div className="space-y-6">
+          <BlocksEditorShell
+            workspaceName="Editor de bloques BotLab"
+            artifact={workspaceArtifact}
+            blocks={[
+              'al iniciar robot',
+              'fijar LEDs MicroDuck',
+              'esperar capacidad',
+              'publicar artefacto',
+            ]}
+            onArtifactChange={(artifact) =>
+              sendFlow({ type: 'workspace.changed', artifact })
+            }
+          />
+
+          <MicroDuckSimulatorHost
+            targetName={selectedTarget?.name ?? 'Sin target'}
+            assetReady={simulatorAssetPlan.ready}
+            assetSummary={simulatorAssetSummary}
+            compiledCommandId={compiledCommand?.commandId}
+            simulationState={botLabSimulationStateLabels[flowState.simulation]}
+            simulationMessage={simulationMessage}
+          />
+        </div>
 
         <aside className="space-y-4">
           <Panel title="Editor">
@@ -697,6 +708,77 @@ function CommandFact({ label, value }: { label: string; value: string }) {
       </div>
       <div className="mt-1 text-sm font-semibold">{value}</div>
     </div>
+  );
+}
+
+function MicroDuckSimulatorHost({
+  targetName,
+  assetReady,
+  assetSummary,
+  compiledCommandId,
+  simulationState,
+  simulationMessage,
+}: {
+  targetName: string;
+  assetReady: boolean;
+  assetSummary: ReturnType<typeof summarizeMicroDuckSimulatorAssetPlan>;
+  compiledCommandId?: string;
+  simulationState: string;
+  simulationMessage: string;
+}) {
+  return (
+    <section className="rounded-lg border bg-card p-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Radar className="h-4 w-4 text-primary" />
+          <h2 className="font-semibold">MicroDuck Simulator Host</h2>
+        </div>
+        <Badge variant={assetReady ? 'secondary' : 'outline'}>
+          {assetReady ? 'Runtime listo' : 'Assets pendientes'}
+        </Badge>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-md border bg-background">
+          <div className="absolute inset-0 grid grid-cols-8 grid-rows-6 opacity-60">
+            {Array.from({ length: 48 }).map((_, index) => (
+              <span key={index} className="border border-border/50" />
+            ))}
+          </div>
+          <div className="relative z-10 w-full max-w-md px-6 text-center">
+            <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-md border bg-card shadow-sm">
+              <Radar className="h-10 w-10 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold">
+              {assetReady
+                ? 'Runtime oficial preparado'
+                : 'Runtime oficial bloqueado por revision'}
+            </h3>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              {assetReady
+                ? 'El siguiente paso es montar el canvas oficial y conectar la source BotLab.'
+                : 'El host ya esta reservado; faltan licencias y hashes verificados antes de descargar assets oficiales.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid content-start gap-3">
+          <CommandFact label="Target" value={targetName} />
+          <CommandFact label="Estado sim" value={simulationState} />
+          <CommandFact
+            label="Plan"
+            value={compiledCommandId ?? 'Sin plan compilado'}
+          />
+          <CommandFact
+            label="Assets"
+            value={`${assetSummary.ready} listos · ${assetSummary.pendingReview} pendientes`}
+          />
+          <p className="rounded-md border bg-background p-3 text-sm leading-6 text-muted-foreground">
+            {simulationMessage}
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 

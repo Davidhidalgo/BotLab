@@ -33,6 +33,14 @@ describe('App', () => {
     expect(getByText(/0 listos · 3 pendientes de revision/i)).toBeTruthy();
   });
 
+  it('should show the MicroDuck simulator host', () => {
+    const { getByText } = render(<App />);
+
+    expect(getByText('MicroDuck Simulator Host')).toBeTruthy();
+    expect(getByText('Assets pendientes')).toBeTruthy();
+    expect(getByText('Runtime oficial bloqueado por revision')).toBeTruthy();
+  });
+
   it('should receive workspace updates from the blocks boundary', () => {
     const { getAllByText, getByRole } = render(<App />);
 
@@ -84,7 +92,9 @@ describe('App', () => {
     fireEvent.click(getByRole('button', { name: 'Simular demo' }));
 
     await waitFor(() => {
-      expect(getByText(/Simulacion completa: 1 comando/i)).toBeTruthy();
+      expect(
+        getAllByText(/Simulacion completa: 1 comando/i).length
+      ).toBeGreaterThan(0);
     });
 
     fireEvent.click(getByRole('button', { name: 'Ejecutar demo' }));

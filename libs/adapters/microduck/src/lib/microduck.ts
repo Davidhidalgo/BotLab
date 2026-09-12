@@ -114,6 +114,18 @@ export function createMicroDuckAdapter(): BotLabAdapter {
                   min: -1,
                   max: 1,
                 },
+                {
+                  name: 'durationMs',
+                  type: 'number',
+                  required: false,
+                  min: 0,
+                },
+                {
+                  name: 'distanceMeters',
+                  type: 'number',
+                  required: false,
+                  min: 0,
+                },
               ],
             },
           ],

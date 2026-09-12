@@ -79,6 +79,8 @@ describe('microDuckSimulatorBridge', () => {
             inputs: {
               leftPower: 0.25,
               rightPower: -0.25,
+              durationMs: 1500,
+              distanceMeters: 3,
             },
           },
         ],
@@ -101,6 +103,8 @@ describe('microDuckSimulatorBridge', () => {
           targetId: 'microduck-sim',
           leftPower: 0.25,
           rightPower: -0.25,
+          durationMs: 1500,
+          distanceMeters: 3,
         },
       ],
     });
@@ -143,6 +147,7 @@ describe('microDuckSimulatorBridge', () => {
             inputs: {
               leftPower: 0.5,
               rightPower: 1,
+              durationMs: 100,
             },
           },
         ],
@@ -164,6 +169,12 @@ describe('microDuckSimulatorBridge', () => {
     expect([...source.command]).toEqual([1.5, 0, 0.75]);
     expect(source.isActive()).toBe(true);
 
+    source.poll?.(1 / 50);
+
+    expect([...source.command]).toEqual([1.5, 0, 0.75]);
+    expect(source.isActive()).toBe(true);
+
+    source.poll?.(0.08);
     source.poll?.(1 / 50);
 
     expect([...source.command]).toEqual([0, 0, 0]);

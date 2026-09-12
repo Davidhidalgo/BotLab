@@ -19,7 +19,7 @@ describe('App', () => {
     scheduleMicroDuckSimulatorControlSourceDelivery(
       targetWindow,
       {
-        artifactId: 'artifact-microduck-led-demo-microduck-sim-smile-plan',
+        artifactId: 'artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan',
         targetId: 'microduck-sim',
         frames: [
           {
@@ -47,7 +47,7 @@ describe('App', () => {
         version: 1,
         simulatorId: 'microduck-official-sim',
         source: expect.objectContaining({
-          artifactId: 'artifact-microduck-led-demo-microduck-sim-smile-plan',
+          artifactId: 'artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan',
           frames: [
             expect.objectContaining({
               type: 'led-pattern',
@@ -153,7 +153,7 @@ describe('App', () => {
 
     await waitFor(() => {
       expect(
-        getAllByText(/artifact-microduck-led-demo-microduck-sim-smile-plan/i)
+        getAllByText(/artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan/i)
           .length
       ).toBeGreaterThan(0);
     });
@@ -169,15 +169,17 @@ describe('App', () => {
 
     await waitFor(() => {
       expect(
-        getAllByText(/Simulacio completa: 1 comanda/i).length
+        getAllByText(/Simulacio completa: 3 comanda/i).length
       ).toBeGreaterThan(0);
     });
     expect(
-      getAllByText(/simout-artifact-microduck-led-demo-microduck-sim-smile-plan/i)
+      getAllByText(/simout-artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan/i)
         .length
     ).toBeGreaterThan(0);
     expect(getByText('Output artifact')).toBeTruthy();
     expect(getByText(/led-pattern ->/i)).toBeTruthy();
+    expect(getAllByText(/differential-drive ->/i).length).toBeGreaterThan(0);
+    expect(getAllByText(/2500/).length).toBeGreaterThan(0);
     expect(getByRole('button', { name: 'Carregar runtime' })).toHaveProperty(
       'disabled',
       false
@@ -191,13 +193,13 @@ describe('App', () => {
     await waitFor(() => {
       expect(
         getByText(
-          'BotLab ha carregat 1 frame(s) de control a la source del simulador oficial.'
+          'BotLab ha carregat 3 frame(s) de control a la source del simulador oficial.'
         )
       ).toBeTruthy();
     });
     expect(
       getAllByText(
-        'BotLab ha carregat 1 frame(s) de control a la source del simulador oficial.'
+        'BotLab ha carregat 3 frame(s) de control a la source del simulador oficial.'
       ).length
     ).toBeGreaterThan(0);
     expect(
@@ -217,7 +219,7 @@ describe('App', () => {
 
     expect(
       getByText(
-        'BotLab ha enviat 1 frame(s) de control al host del simulador BotLab-enabled.'
+        'BotLab ha enviat 3 frame(s) de control al host del simulador BotLab-enabled.'
       )
     ).toBeTruthy();
     expect(getByRole('button', { name: 'Desconnectar runtime' })).toBeTruthy();
@@ -240,13 +242,16 @@ describe('App', () => {
     expect(getAllByText(/Executant/i).length).toBeGreaterThan(0);
 
     await waitFor(() => {
-      expect(getByText(/1 comanda\(es\) enviades/i)).toBeTruthy();
+      expect(getByText(/3 comanda\(es\) enviades/i)).toBeTruthy();
     });
     expect(getAllByText('Completada').length).toBeGreaterThan(0);
     expect(getByText('Execucio demo completada.')).toBeTruthy();
     expect(getAllByText('Comanda generada').length).toBeGreaterThan(0);
     expect(
       getAllByText('Simulated dispatch set-led-pattern.').length
+    ).toBeGreaterThan(0);
+    expect(
+      getAllByText('Simulated dispatch drive-differential.').length
     ).toBeGreaterThan(0);
     expect(getByText('demo-microduck-leds-trace-artifact')).toBeTruthy();
   });
@@ -258,7 +263,7 @@ describe('App', () => {
 
     await waitFor(() => {
       expect(
-        getAllByText(/artifact-microduck-led-demo-microduck-sim-smile-plan/i)
+        getAllByText(/artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan/i)
           .length
       ).toBeGreaterThan(0);
     });
@@ -267,7 +272,7 @@ describe('App', () => {
 
     await waitFor(() => {
       expect(
-        getAllByText(/Simulacio completa: 1 comanda/i).length
+        getAllByText(/Simulacio completa: 3 comanda/i).length
       ).toBeGreaterThan(0);
     });
 
@@ -277,7 +282,7 @@ describe('App', () => {
     await waitFor(() => {
       expect(
         getByText(
-          'BotLab ha carregat 1 frame(s) de control a la source del simulador oficial.'
+          'BotLab ha carregat 3 frame(s) de control a la source del simulador oficial.'
         )
       ).toBeTruthy();
     });

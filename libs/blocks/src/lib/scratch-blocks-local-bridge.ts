@@ -98,7 +98,7 @@ function mountLocalScratchBlocksWorkspace(
 
     return {
       mounted: false,
-      reason: `Scratch Blocks could not be mounted: ${
+      reason: `Scratch Blocks no se ha podido montar: ${
         error instanceof Error ? error.message : String(error)
       }`,
     };
@@ -135,6 +135,22 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
       style: 'more',
       extensions: ['shape_statement'],
       tooltip: 'Controls the MicroDuck robot LEDs.',
+    },
+    {
+      type: 'botlab_microduck_walk_distance',
+      message0: 'walk MicroDuck %1 m',
+      args0: [
+        {
+          type: 'field_number',
+          name: 'DISTANCE',
+          value: 5,
+          min: 0,
+          precision: 0.1,
+        },
+      ],
+      style: 'motion',
+      extensions: ['shape_statement'],
+      tooltip: 'Moves the MicroDuck simulator forward for the requested distance.',
     },
   ]);
 
@@ -238,7 +254,10 @@ function createBotLabToolbox() {
         kind: 'category',
         name: 'BotLab',
         categorystyle: 'botlab_category',
-        contents: [{ kind: 'block', type: 'botlab_microduck_set_leds' }],
+        contents: [
+          { kind: 'block', type: 'botlab_microduck_set_leds' },
+          { kind: 'block', type: 'botlab_microduck_walk_distance' },
+        ],
       },
       {
         kind: 'category',

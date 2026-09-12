@@ -280,7 +280,7 @@ export const sampleScratchBlocksWorkspaceArtifact = importBlocksWorkspace({
   behaviorId: 'microduck-led-demo',
   label: 'Sample Scratch Blocks workspace',
   content:
-    '<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_whenflagclicked" id="botlab-start" x="32" y="32"><next><block type="botlab_microduck_set_leds" id="botlab-leds" /></next></block></xml>',
+    '<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_whenflagclicked" id="botlab-start" x="32" y="32"><next><block type="botlab_microduck_set_leds" id="botlab-leds"><next><block type="botlab_microduck_walk_distance" id="botlab-walk"><field name="DISTANCE">5</field></block></next></block></next></block></xml>',
   engine: 'scratch-blocks',
   format: 'scratch-xml',
 });

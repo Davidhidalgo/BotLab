@@ -45,6 +45,8 @@ export interface MicroDuckSimulatorDifferentialDriveFrame {
   targetId: string;
   leftPower: number;
   rightPower: number;
+  durationMs?: number;
+  distanceMeters?: number;
 }
 
 export type MicroDuckSimulatorControlFrame =
@@ -398,6 +400,7 @@ export function createMicroDuckBotLabOfficialSource(
   const pressed: Record<string, boolean> = {};
   let frames: MicroDuckSimulatorControlFrame[] = [];
   let cursor = 0;
+  let frameElapsedMs = 0;
   let active = false;
 
   function applyFrame(frame: MicroDuckSimulatorControlFrame) {
@@ -432,6 +435,7 @@ export function createMicroDuckBotLabOfficialSource(
   function clear() {
     frames = [];
     cursor = 0;
+    frameElapsedMs = 0;
     active = false;
     resetCommand(command);
     resetPressed(pressed);
@@ -451,6 +455,7 @@ export function createMicroDuckBotLabOfficialSource(
     load(controlSource) {
       frames = [...controlSource.frames];
       cursor = 0;
+      frameElapsedMs = 0;
       active = false;
       resetCommand(command);
       resetPressed(pressed);
@@ -466,7 +471,7 @@ export function createMicroDuckBotLabOfficialSource(
       this.connected = false;
       clear();
     },
-    poll() {
+    poll(dt = 1 / 50) {
       const frame = frames[cursor];
 
       if (!frame) {
@@ -476,7 +481,20 @@ export function createMicroDuckBotLabOfficialSource(
       }
 
       applyFrame(frame);
-      cursor += 1;
+      const durationMs = getFrameDurationMs(frame);
+
+      if (durationMs <= 0) {
+        cursor += 1;
+        frameElapsedMs = 0;
+        return;
+      }
+
+      frameElapsedMs += dt * 1000;
+
+      if (frameElapsedMs >= durationMs) {
+        cursor += 1;
+        frameElapsedMs = 0;
+      }
     },
   };
 }
@@ -611,6 +629,7 @@ export class ${className} {
     this.getVelocityLimits = getVelocityLimits ?? (() => [2, -1, 3]);
     this.frames = [];
     this.cursor = 0;
+    this.frameElapsedMs = 0;
     this.active = false;
   }
 
@@ -632,6 +651,7 @@ export class ${className} {
   load(controlSource) {
     this.frames = [...controlSource.frames];
     this.cursor = 0;
+    this.frameElapsedMs = 0;
     this.active = false;
     this.resetCommand();
     this.resetPressed();
@@ -640,6 +660,7 @@ export class ${className} {
   clear() {
     this.frames = [];
     this.cursor = 0;
+    this.frameElapsedMs = 0;
     this.active = false;
     this.resetCommand();
     this.resetPressed();
@@ -653,7 +674,7 @@ export class ${className} {
     return this.active;
   }
 
-  poll() {
+  poll(dt = 1 / 50) {
     const frame = this.frames[this.cursor];
 
     if (!frame) {
@@ -663,7 +684,20 @@ export class ${className} {
     }
 
     this.applyFrame(frame);
-    this.cursor += 1;
+    const durationMs = getFrameDurationMs(frame);
+
+    if (durationMs <= 0) {
+      this.cursor += 1;
+      this.frameElapsedMs = 0;
+      return;
+    }
+
+    this.frameElapsedMs += dt * 1000;
+
+    if (this.frameElapsedMs >= durationMs) {
+      this.cursor += 1;
+      this.frameElapsedMs = 0;
+    }
   }
 
   applyFrame(frame) {
@@ -714,6 +748,13 @@ export class ${className} {
 
 function clampUnit(value) {
   return Math.max(-1, Math.min(1, value));
+}
+
+function getFrameDurationMs(frame) {
+  return frame.type === "differential-drive" &&
+    typeof frame.durationMs === "number"
+    ? Math.max(frame.durationMs, 0)
+    : 0;
 }
 
 function parseControlSourceMessage(event) {
@@ -877,9 +918,19 @@ function createMicroDuckSimulatorControlFrame(
   ) {
     const leftPower = command.inputs['leftPower'];
     const rightPower = command.inputs['rightPower'];
+    const durationMs = command.inputs['durationMs'];
+    const distanceMeters = command.inputs['distanceMeters'];
 
     if (typeof leftPower !== 'number' || typeof rightPower !== 'number') {
       return `MicroDuck simulator command ${command.id} needs numeric differential drive inputs.`;
+    }
+
+    if (durationMs !== undefined && typeof durationMs !== 'number') {
+      return `MicroDuck simulator command ${command.id} needs numeric duration.`;
+    }
+
+    if (distanceMeters !== undefined && typeof distanceMeters !== 'number') {
+      return `MicroDuck simulator command ${command.id} needs numeric distance.`;
     }
 
     return {
@@ -888,6 +939,8 @@ function createMicroDuckSimulatorControlFrame(
       targetId: command.targetId,
       leftPower,
       rightPower,
+      durationMs,
+      distanceMeters,
     };
   }
 
@@ -1021,7 +1074,11 @@ function isMicroDuckSimulatorControlFrame(
     typeof value['id'] === 'string' &&
     typeof value['targetId'] === 'string' &&
     typeof value['leftPower'] === 'number' &&
-    typeof value['rightPower'] === 'number'
+    typeof value['rightPower'] === 'number' &&
+    (value['durationMs'] === undefined ||
+      typeof value['durationMs'] === 'number') &&
+    (value['distanceMeters'] === undefined ||
+      typeof value['distanceMeters'] === 'number')
   );
 }
 
@@ -1045,6 +1102,13 @@ function resetPressed(pressed: Record<string, boolean>) {
   }
 }
 
+function getFrameDurationMs(frame: MicroDuckSimulatorControlFrame) {
+  return frame.type === 'differential-drive' &&
+    typeof frame.durationMs === 'number'
+    ? Math.max(frame.durationMs, 0)
+    : 0;
+}
+
 function formatControlFrameMessage(frame: MicroDuckSimulatorControlFrame) {
   if (frame.type === 'led-pattern') {
     return `${frame.type} -> ${JSON.stringify({
@@ -1056,5 +1120,7 @@ function formatControlFrameMessage(frame: MicroDuckSimulatorControlFrame) {
   return `${frame.type} -> ${JSON.stringify({
     leftPower: frame.leftPower,
     rightPower: frame.rightPower,
+    durationMs: frame.durationMs,
+    distanceMeters: frame.distanceMeters,
   })}`;
 }

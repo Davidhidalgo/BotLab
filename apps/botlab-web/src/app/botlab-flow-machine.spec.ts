@@ -110,7 +110,7 @@ describe('botLabFlowMachine', () => {
       execution: 'completed',
     });
     expect(actor.getSnapshot().context.compiledArtifact?.id).toBe(
-      'artifact-microduck-led-demo-microduck-sim-smile-plan'
+      'artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan'
     );
     expect(actor.getSnapshot().context.compiledArtifact?.targetId).toBe(
       'microduck-sim'
@@ -121,20 +121,32 @@ describe('botLabFlowMachine', () => {
       brightness: 50,
       pattern: 'smile',
     });
+    expect(
+      actor.getSnapshot().context.compiledArtifact?.commands[1]
+    ).toMatchObject({
+      capabilityId: 'microduck-motion',
+      commandId: 'drive-differential',
+      inputs: {
+        leftPower: 1,
+        rightPower: 1,
+        durationMs: 2500,
+        distanceMeters: 5,
+      },
+    });
     expect(actor.getSnapshot().context.simulationResult).toMatchObject({
-      artifactId: 'simout-artifact-microduck-led-demo-microduck-sim-smile-plan',
+      artifactId: 'simout-artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan',
       status: 'passed',
       outputArtifact: {
         kind: 'simulator-output',
-        sourceArtifactId: 'artifact-microduck-led-demo-microduck-sim-smile-plan',
-        commandCount: 1,
+        sourceArtifactId: 'artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan',
+        commandCount: 3,
       },
     });
     expect(
       actor.getSnapshot().context.flowLog.map((entry) => entry.category)
     ).toEqual(expect.arrayContaining(['build', 'simulation', 'execution']));
     expect(actor.getSnapshot().context.runMessage).toContain(
-      '1 command(s) sent'
+      '3 command(s) sent'
     );
   });
 
@@ -165,7 +177,7 @@ describe('botLabFlowMachine', () => {
       artifact: {
         ...actor.getSnapshot().context.workspaceArtifact,
         content:
-          '<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_whenflagclicked" id="start"><next><block type="botlab_microduck_set_leds" id="leds"><field name="PATTERN">off</field></block></next></block></xml>',
+          '<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_whenflagclicked" id="start"><next><block type="botlab_microduck_set_leds" id="leds"><field name="PATTERN">off</field><next><block type="botlab_microduck_walk_distance" id="walk"><field name="DISTANCE">2.5</field></block></next></block></next></block></xml>',
         status: 'dirty',
       },
     });
@@ -192,6 +204,12 @@ describe('botLabFlowMachine', () => {
     ).toEqual({
       brightness: 50,
       pattern: 'off',
+    });
+    expect(
+      actor.getSnapshot().context.compiledArtifact?.commands[1].inputs
+    ).toMatchObject({
+      distanceMeters: 2.5,
+      durationMs: 1250,
     });
   });
 });

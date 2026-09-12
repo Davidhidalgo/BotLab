@@ -427,6 +427,7 @@ export class BotLabSource {
     this.getVelocityLimits = getVelocityLimits ?? (() => [2, -1, 3]);
     this.frames = [];
     this.cursor = 0;
+    this.frameElapsedMs = 0;
     this.active = false;
   }
 
@@ -448,6 +449,7 @@ export class BotLabSource {
   load(controlSource) {
     this.frames = [...controlSource.frames];
     this.cursor = 0;
+    this.frameElapsedMs = 0;
     this.active = false;
     this.resetCommand();
     this.resetPressed();
@@ -456,6 +458,7 @@ export class BotLabSource {
   clear() {
     this.frames = [];
     this.cursor = 0;
+    this.frameElapsedMs = 0;
     this.active = false;
     this.resetCommand();
     this.resetPressed();
@@ -469,7 +472,7 @@ export class BotLabSource {
     return this.active;
   }
 
-  poll() {
+  poll(dt = 1 / 50) {
     const frame = this.frames[this.cursor];
 
     if (!frame) {
@@ -479,7 +482,20 @@ export class BotLabSource {
     }
 
     this.applyFrame(frame);
-    this.cursor += 1;
+    const durationMs = getFrameDurationMs(frame);
+
+    if (durationMs <= 0) {
+      this.cursor += 1;
+      this.frameElapsedMs = 0;
+      return;
+    }
+
+    this.frameElapsedMs += dt * 1000;
+
+    if (this.frameElapsedMs >= durationMs) {
+      this.cursor += 1;
+      this.frameElapsedMs = 0;
+    }
   }
 
   applyFrame(frame) {
@@ -530,6 +546,13 @@ export class BotLabSource {
 
 function clampUnit(value) {
   return Math.max(-1, Math.min(1, value));
+}
+
+function getFrameDurationMs(frame) {
+  return frame.type === "differential-drive" &&
+    typeof frame.durationMs === "number"
+    ? Math.max(frame.durationMs, 0)
+    : 0;
 }
 
 function parseControlSourceMessage(event) {

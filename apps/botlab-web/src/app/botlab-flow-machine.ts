@@ -1020,30 +1020,63 @@ function compileMicroDuckWorkspaceArtifact(
   artifact: BlocksWorkspaceArtifact,
   targetId: string
 ): CompiledBehaviorArtifact {
-  const pattern = readMicroDuckLedPatternFromWorkspace(artifact);
+  const program = readMicroDuckProgramFromWorkspace(artifact);
+  const motionDurationMs = Math.round(
+    (program.distanceMeters / MICRODUCK_DEMO_WALK_SPEED_METERS_PER_SECOND) *
+      1000
+  );
 
   return {
     ...sampleMicroDuckCompiledBehaviorArtifact,
-    id: `artifact-${artifact.behaviorId}-${targetId}-${pattern}-plan`,
-    label: `MicroDuck LED ${pattern} compiled plan`,
+    id: `artifact-${artifact.behaviorId}-${targetId}-${program.pattern}-walk-${formatArtifactNumber(
+      program.distanceMeters
+    )}m-plan`,
+    label: `MicroDuck ${program.pattern} and ${program.distanceMeters}m walk plan`,
     behaviorId: artifact.behaviorId,
     targetId,
     commands: [
       {
-        id: `command-microduck-leds-${pattern}`,
+        id: `command-microduck-leds-${program.pattern}`,
         capabilityId: 'microduck-leds',
         commandId: 'set-led-pattern',
         targetId,
         inputs: {
-          pattern,
+          pattern: program.pattern,
           brightness: 50,
+        },
+      },
+      {
+        id: `command-microduck-walk-${formatArtifactNumber(
+          program.distanceMeters
+        )}m`,
+        capabilityId: 'microduck-motion',
+        commandId: 'drive-differential',
+        targetId,
+        inputs: {
+          leftPower: 1,
+          rightPower: 1,
+          durationMs: motionDurationMs,
+          distanceMeters: program.distanceMeters,
+        },
+      },
+      {
+        id: 'command-microduck-stop',
+        capabilityId: 'microduck-motion',
+        commandId: 'drive-differential',
+        targetId,
+        inputs: {
+          leftPower: 0,
+          rightPower: 0,
+          durationMs: 250,
         },
       },
     ],
   };
 }
 
-function readMicroDuckLedPatternFromWorkspace(
+const MICRODUCK_DEMO_WALK_SPEED_METERS_PER_SECOND = 2;
+
+function readMicroDuckProgramFromWorkspace(
   artifact: BlocksWorkspaceArtifact
 ) {
   if (artifact.format !== 'scratch-xml') {
@@ -1085,8 +1118,22 @@ function readMicroDuckLedPatternFromWorkspace(
   }
 
   const patternField = ledBlock.querySelector('field[name="PATTERN"]');
+  const walkBlock = root.querySelector(
+    'block[type="botlab_microduck_walk_distance"]'
+  );
 
-  return normalizeMicroDuckLedPattern(patternField?.textContent);
+  if (!walkBlock) {
+    throw new Error(
+      'Add the BotLab MicroDuck walk block before compiling.'
+    );
+  }
+
+  const distanceField = walkBlock.querySelector('field[name="DISTANCE"]');
+
+  return {
+    pattern: normalizeMicroDuckLedPattern(patternField?.textContent),
+    distanceMeters: normalizeMicroDuckWalkDistance(distanceField?.textContent),
+  };
 }
 
 function normalizeMicroDuckLedPattern(value: string | null | undefined) {
@@ -1107,16 +1154,35 @@ function normalizeMicroDuckLedPattern(value: string | null | undefined) {
   throw new Error(`Unsupported LED pattern: ${pattern}.`);
 }
 
+function normalizeMicroDuckWalkDistance(value: string | null | undefined) {
+  const distance = Number.parseFloat(value?.trim() || '5');
+
+  if (!Number.isFinite(distance) || distance <= 0) {
+    throw new Error(`Unsupported walk distance: ${value ?? ''}.`);
+  }
+
+  return Math.min(distance, 20);
+}
+
+function formatArtifactNumber(value: number) {
+  return value.toString().replace(/\./g, '_');
+}
+
 function targetCanRunMicroDuckDemo(runtime: BotLabRuntime, targetId: string) {
   const target = runtime
     .listTargets()
     .find((candidate) => candidate.id === targetId);
-  const capability = runtime
+  const ledCapability = runtime
     .listCapabilities()
     .find((candidate) => candidate.id === 'microduck-leds');
+  const motionCapability = runtime
+    .listCapabilities()
+    .find((candidate) => candidate.id === 'microduck-motion');
 
   return Boolean(
-    target?.status === 'available' && capability?.targetIds.includes(targetId)
+    target?.status === 'available' &&
+      ledCapability?.targetIds.includes(targetId) &&
+      motionCapability?.targetIds.includes(targetId)
   );
 }
 

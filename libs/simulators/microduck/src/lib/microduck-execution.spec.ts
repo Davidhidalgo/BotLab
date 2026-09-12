@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import * as ts from 'typescript';
-import { createMicroDuckBotLabPostMessageSourceModule } from './microduck-simulator';
+import { createMicroDuckBotLabPostMessageSourceModule, createMicroDuckOfficialSimulatorPatchInstructions } from './microduck-simulator';
 
 const toolSource = ts.createSourceFile(
   'prepare.mjs',
@@ -393,6 +393,12 @@ it('upgrades the tool factory without duplicating the source and expands only kn
     'getPosition: () => [data.qpos[0], data.qpos[1]]'
   );
   expect(patchGameSource(patched.source).changed).toBe(false);
+  const headingFactory = old.replace('isInputLocked: () => inputLocked',
+    'isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos)');
+  const upgraded = patchGameSource(headingFactory);
+  expect(upgraded.source.match(/new BotLabSource/g)).toHaveLength(1);
+  expect(upgraded.source).toContain(createMicroDuckOfficialSimulatorPatchInstructions().sourceFactoryLine);
+  expect(patchGameSource(upgraded.source).changed).toBe(false);
   expect(patchBotLabArena('export const ARENA_HALF = 1.5;')).toBe(
     'export const ARENA_HALF = 6;'
   );

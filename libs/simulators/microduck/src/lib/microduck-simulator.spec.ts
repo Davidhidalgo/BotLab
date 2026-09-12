@@ -413,9 +413,24 @@ describe('microDuckSimulatorBridge', () => {
       gamePath: 'app/src/game/game.js',
       importLine: 'import { BotLabSource } from "./controls/botlab.js";',
       sourceFactoryLine:
-        'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos) });',
+        'const botLabSource = new BotLabSource({ getVelocityLimits: () => (loco === "legs" ? [VEL_FWD, -0.4, VEL_ANG] : velLims()), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos) });',
       controllerSourceName: 'botLabSource',
     });
+  });
+
+  it('calibrates only the default Feet reverse input and preserves custom limits', () => {
+    const limits = (loco: string, velocityLimitsExpression?: string) => {
+      const { sourceFactoryLine } = createMicroDuckOfficialSimulatorPatchInstructions({ velocityLimitsExpression });
+      const source = new Function('BotLabSource', 'loco', 'VEL_FWD', 'VEL_ANG', 'velLims',
+        `${sourceFactoryLine}; return botLabSource;`)(
+        class { constructor(options: object) { Object.assign(this, options); } },
+        loco, 0.25, 1, () => loco === 'legs' ? [0.25, -0.2, 1] : [0.6, -0.5, 0.3]
+      );
+      return source.getVelocityLimits();
+    };
+    expect(limits('legs')).toEqual([0.25, -0.4, 1]);
+    expect(limits('rollers')).toEqual([0.6, -0.5, 0.3]);
+    expect(limits('legs', 'velLims()')).toEqual([0.25, -0.2, 1]);
   });
 
   it('patches official simulator game source to register BotLabSource', () => {
@@ -439,7 +454,7 @@ describe('microDuckSimulatorBridge', () => {
       'import { BotLabSource } from "./controls/botlab.js";'
     );
     expect(result.source).toContain(
-      'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos) });'
+      createMicroDuckOfficialSimulatorPatchInstructions().sourceFactoryLine
     );
     expect(result.source).toContain(
       'controller = new Controller({ sources: [botLabSource, kbSource] });'
@@ -451,14 +466,20 @@ describe('microDuckSimulatorBridge', () => {
     expect(second.source).toBe(result.source);
   });
 
-  it('upgrades an existing simulator patch without declaring the source twice', () => {
+  it.each([
+    '',
+    ', isInputLocked: () => inputLocked',
+    ', isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]]',
+    ', isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos)',
+  ])('upgrades an existing simulator patch without declaring the source twice: %s', (callbacks) => {
     const previous = [
-      'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims() });',
+      `const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims()${callbacks} });`,
       'const controller = new Controller({ sources: [botLabSource, kbSource] });',
     ].join('\n');
     const result = patchMicroDuckOfficialSimulatorGameSource(previous);
     expect(result.source.match(/const botLabSource =/g)).toHaveLength(1);
     expect(result.source).toContain('isInputLocked: () => inputLocked');
+    expect(result.source).toContain('[VEL_FWD, -0.4, VEL_ANG]');
     expect(patchMicroDuckOfficialSimulatorGameSource(result.source).changed).toBe(false);
   });
 

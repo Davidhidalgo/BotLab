@@ -1000,8 +1000,9 @@ export function createMicroDuckOfficialSimulatorPatchInstructions(
   options: MicroDuckOfficialSimulatorPatchOptions = {}
 ): MicroDuckOfficialSimulatorPatchInstructions {
   const className = options.className ?? 'BotLabSource';
+  // The bundled walking policy stalls at the upstream -0.2 reverse command.
   const velocityLimitsExpression =
-    options.velocityLimitsExpression ?? 'velLims()';
+    options.velocityLimitsExpression ?? '(loco === "legs" ? [VEL_FWD, -0.4, VEL_ANG] : velLims())';
 
   return {
     modulePath: MICRODUCK_BOTLAB_SOURCE_MODULE_PATH,
@@ -1019,7 +1020,10 @@ export function patchMicroDuckOfficialSimulatorGameSource(
   const instructions =
     createMicroDuckOfficialSimulatorPatchInstructions(options);
   const warnings: string[] = [];
-  const distanceFactoryLine = instructions.sourceFactoryLine.replace(', getHeading: () => duckYaw(data.qpos)', '');
+  const legacyFactoryLine = createMicroDuckOfficialSimulatorPatchInstructions({
+    ...options, velocityLimitsExpression: options.velocityLimitsExpression ?? 'velLims()',
+  }).sourceFactoryLine;
+  const distanceFactoryLine = legacyFactoryLine.replace(', getHeading: () => duckYaw(data.qpos)', '');
   const lockedFactoryLine = distanceFactoryLine.replace(
     ', getPosition: () => [data.qpos[0], data.qpos[1]]',
     ''
@@ -1027,7 +1031,8 @@ export function patchMicroDuckOfficialSimulatorGameSource(
   const previousFactoryLine = lockedFactoryLine.replace(', isInputLocked: () => inputLocked', '');
   let patched = source.replace(previousFactoryLine, instructions.sourceFactoryLine)
     .replace(lockedFactoryLine, instructions.sourceFactoryLine)
-    .replace(distanceFactoryLine, instructions.sourceFactoryLine);
+    .replace(distanceFactoryLine, instructions.sourceFactoryLine)
+    .replace(legacyFactoryLine, instructions.sourceFactoryLine);
 
   if (!patched.includes(instructions.importLine)) {
     patched = insertAfterLastImport(patched, instructions.importLine);

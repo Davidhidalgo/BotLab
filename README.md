@@ -115,6 +115,8 @@ A failure reported by the simulator stops the program but keeps the scene open, 
 
 The Movement category offers forward/backward BotLab steps (0.5 m each), left/right quarter turns, and a half turn. Precise movement offers forward/backward meters and signed degrees. Negative angles turn left; positive angles turn right. Each block has a bundled SVG icon and Catalan, Spanish and English labels. Turns finish on measured yaw and report progress in degrees; regenerate the simulator receiver with `npm run microduck:sim -- --no-install --no-lfs-hydrate` when updating an existing local checkout. Old meter-based programs remain compatible.
 
+BotLab's official-simulator connection uses a calibrated reverse command of -0.4 in Feet mode: the bundled walking policy can stall at the upstream -0.2 command. This is a policy input, not a guaranteed physical speed. Measured distance and stall detection still govern execution; manual controls and roller limits are unchanged.
+
 <!-- importable movement example from examples/microduck-movement.botlab.json -->
 
 Import `examples/microduck-movement.botlab.json` with the workbench's Import program action to try two steps forward, a left turn, two more steps, a one-second wait, a half turn, and one step backward. Importing does not execute the program.

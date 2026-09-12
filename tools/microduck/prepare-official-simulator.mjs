@@ -299,8 +299,9 @@ function patchBotLabArena(source) {
 
 function patchGameSource(source) {
   const importLine = 'import { BotLabSource } from "./controls/botlab.js";';
+  // The bundled walking policy stalls at the upstream -0.2 reverse command.
   const factoryLine =
-    'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos) });';
+    'const botLabSource = new BotLabSource({ getVelocityLimits: () => (loco === "legs" ? [VEL_FWD, -0.4, VEL_ANG] : velLims()), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos) });';
   const warnings = [];
   let patched = source.replace(
     'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims() });',
@@ -310,6 +311,9 @@ function patchGameSource(source) {
     factoryLine
   ).replace(
     'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]] });',
+    factoryLine
+  ).replace(
+    'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos) });',
     factoryLine
   );
 

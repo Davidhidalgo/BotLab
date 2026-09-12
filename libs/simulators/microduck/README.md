@@ -35,6 +35,8 @@ The generated browser source accepts `botlab.microduck.stop.v1` and replies with
 
 <!-- progress, distance and turn semantics from src/lib/microduck-execution.ts, src/lib/microduck-distance.ts, src/lib/microduck-turn.ts, and src/lib/microduck-simulator.ts -->
 
+The default official-simulator factory calibrates the Feet reverse velocity command to -0.4 because the bundled walking policy can stall at the upstream -0.2 input. It preserves forward/turn limits, roller limits, and manual controls. This calibration is simulator-only; it does not change the lower-level source's caller-provided limits or establish a hardware speed. Explicit `velocityLimitsExpression` overrides remain supported.
+
 `running` is emitted after startup unlock and approximately every 100 ms while the controller polls the source, with `frameIndex`, `elapsedMs`, and `distanceMeters` or `turnedDegrees` when applicable. Frames retain the compiled command's optional `sourceBlockId` for editor highlighting; replies do not select arbitrary blocks. The client rejects invalid numeric progress and unknown error codes.
 
 The client requires an arrival measurement for every distance or turn frame before accepting `completed`. Older patched hosts that acknowledge completion without measured arrival fail explicitly and must be regenerated with the setup tool.

@@ -136,9 +136,7 @@ describe('App', () => {
     expect(second).not.toBe(first);
     fireEvent.load(second);
     await waitFor(() =>
-      expect(
-        view.getByRole('button', { name: 'Executar', exact: true })
-      ).toHaveProperty('disabled', false)
+      expect(view.getByLabelText('Execució del simulador').textContent).toBe('Esperant el simulador')
     );
   });
 

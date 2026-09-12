@@ -34,6 +34,9 @@ export const simulatorLaunchMachine = setup({
         ] as const;
 
         for (const stage of stages) {
+          if (stage.event === 'demo.run' && initial.runtime.listTargets().some(
+            target => target.id === initial.selectedTargetId && target.kind === 'simulator'
+          )) continue;
           if (signal.aborted) throw new Error('Launch cancelled.');
           if (!flow.getSnapshot().can({ type: stage.event })) {
             throw new Error(`Cannot start ${stage.event}.`);

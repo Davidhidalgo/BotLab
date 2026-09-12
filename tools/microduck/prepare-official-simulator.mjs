@@ -404,9 +404,49 @@ function createBotLabSourceModule({ allowedOrigins }) {
 const ALLOWED_ORIGINS = ${JSON.stringify(allowedOrigins)};
 const ACTIVE_SOURCES = new Set();
 let latestControlSource;
+let latestExecution;
 const receivedExecutions = new Set();
+const executions = new Map();
+
+function reportExecution(execution, status, frameIndex) {
+  if (!execution) return;
+  execution.status = status;
+  execution.frameIndex = frameIndex;
+  execution.reply?.postMessage({
+    type: "botlab.microduck.execution.v1", version: 1,
+    simulatorId: "microduck-official-sim",
+    executionId: execution.id, artifactId: execution.artifactId,
+    status, frameIndex,
+  }, execution.origin);
+}
+
+function trustedSender(event) {
+  return (!window.parent || event.source === window.parent) &&
+    (ALLOWED_ORIGINS.length === 0 || ALLOWED_ORIGINS.includes(event.origin));
+}
 
 window.addEventListener("message", (event) => {
+  if (!trustedSender(event)) return;
+  const message = event.data;
+  if (message?.type === "botlab.microduck.stop.v1" && message.version === 1 &&
+      message.simulatorId === "microduck-official-sim" &&
+      typeof message.executionId === "string" && message.executionId.length > 0) {
+    const execution = executions.get(message.executionId) ?? {
+      id: message.executionId, artifactId: message.artifactId,
+      reply: event.source, origin: event.origin,
+    };
+    executions.set(execution.id, execution);
+    receivedExecutions.add("run:" + execution.id);
+    if (latestExecution?.id === execution.id) {
+      latestControlSource = undefined;
+      latestExecution = undefined;
+    }
+    for (const source of ACTIVE_SOURCES) {
+      if (source.execution?.id === execution.id) source.clear();
+    }
+    reportExecution(execution, execution.status === "completed" ? "completed" : "stopped");
+    return;
+  }
   const controlSource = parseControlSourceMessage(event);
 
   if (!controlSource) {
@@ -417,13 +457,23 @@ window.addEventListener("message", (event) => {
     ? "run:" + event.data.executionId
     : "legacy:" + JSON.stringify(controlSource);
   if (receivedExecutions.has(key)) {
+    const existing = executions.get(message.executionId);
+    if (existing) reportExecution(existing, existing.status, existing.frameIndex);
     return;
   }
   receivedExecutions.add(key);
   latestControlSource = controlSource;
+  latestExecution = message.executionId ? {
+    id: message.executionId, artifactId: controlSource.artifactId,
+    reply: event.source, origin: event.origin,
+  } : undefined;
+  if (latestExecution) {
+    executions.set(latestExecution.id, latestExecution);
+    reportExecution(latestExecution, "accepted");
+  }
 
   for (const source of ACTIVE_SOURCES) {
-    source.load(controlSource);
+    source.load(controlSource, latestExecution);
   }
 });
 
@@ -448,7 +498,7 @@ export class BotLabSource {
     ACTIVE_SOURCES.add(this);
 
     if (latestControlSource) {
-      this.load(latestControlSource);
+      this.load(latestControlSource, latestExecution);
     }
   }
 
@@ -458,7 +508,11 @@ export class BotLabSource {
     this.clear();
   }
 
-  load(controlSource) {
+  load(controlSource, execution) {
+    if (this.execution) this.clear();
+    this.execution = execution;
+    this.reportedCursor = -1;
+    this.heartbeatElapsed = 0;
     this.frames = [...controlSource.frames];
     this.cursor = 0;
     this.frameElapsedMs = 0;
@@ -467,7 +521,9 @@ export class BotLabSource {
     this.resetPressed();
   }
 
-  clear() {
+  clear(status = "stopped") {
+    reportExecution(this.execution, status);
+    this.execution = undefined;
     this.frames = [];
     this.cursor = 0;
     this.frameElapsedMs = 0;
@@ -485,6 +541,14 @@ export class BotLabSource {
   }
 
   poll(dt = 1 / 50) {
+    try {
+      this.pollFrame(dt);
+    } catch {
+      this.clear("failed");
+    }
+  }
+
+  pollFrame(dt) {
     if (this.isInputLocked()) {
       this.active = false;
       this.resetCommand();
@@ -493,11 +557,19 @@ export class BotLabSource {
     const frame = this.frames[this.cursor];
 
     if (!frame) {
+      reportExecution(this.execution, "completed");
+      this.execution = undefined;
       this.active = false;
       this.resetCommand();
       return;
     }
 
+    this.heartbeatElapsed += dt;
+    if (this.reportedCursor !== this.cursor || this.heartbeatElapsed >= 1) {
+      reportExecution(this.execution, "running", this.cursor);
+      this.reportedCursor = this.cursor;
+      this.heartbeatElapsed = 0;
+    }
     this.applyFrame(frame);
     const durationMs = getFrameDurationMs(frame);
 

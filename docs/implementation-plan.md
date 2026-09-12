@@ -417,6 +417,8 @@ The demo compiler now follows the `next` chain of one green-flag script, preserv
 
 ## Milestone 9: Artifacts and Persistence
 
+Consolidation update: the embedded official simulator now reports identified execution acceptance, frame progress, completion, stop and polling failure. The app no longer runs its local fake dispatcher before launching a simulator plan and does not infer engine completion from validation. Stop clears buffered/current frames, blocks late retries, and requires acknowledgment; missing startup/progress/stop feedback closes the iframe. This completes the simulator-specific stop/status path, not shared runtime interruption or hardware safety. Tests cover both the library generator and the setup tool's generated receiver.
+
 Goal: make user work durable and inspectable.
 
 Packages:

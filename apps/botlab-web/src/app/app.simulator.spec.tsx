@@ -29,33 +29,69 @@ describe('One-click simulator execution', () => {
     jest.restoreAllMocks();
   });
 
-  it('prepares, loads, edits and replays with one button and one iframe', async () => {
+  it('requires simulator confirmation, stops pending retries, and runs the edited plan', async () => {
     jest.useFakeTimers();
     const view = render(<App />);
     const run = () =>
       view.getByRole('button', { name: 'Executar', exact: true });
-    const ready = () =>
-      waitFor(() => expect(run()).toHaveProperty('disabled', false));
-    const initialButton = run();
-    fireEvent.click(initialButton);
-    expect(initialButton).toHaveProperty('disabled', true);
-    fireEvent.click(initialButton);
+    fireEvent.click(run());
     const frame = (await view.findByTitle(
       'MicroDuck official simulator preview'
     )) as HTMLIFrameElement;
     const postMessage = jest.spyOn(frame.contentWindow!, 'postMessage');
     fireEvent.load(frame);
-    await ready();
+    await waitFor(() => expect(postMessage).toHaveBeenCalled());
+    const first = postMessage.mock.calls[0][0];
+    expect(run()).toHaveProperty('disabled', true);
+    expect(view.getByLabelText('Execució del simulador').textContent).toBe(
+      'Esperant el simulador'
+    );
+    const status = (
+      state: string,
+      message = first,
+      origin = 'http://127.0.0.1:4300',
+      sender: MessageEventSource | null = frame.contentWindow
+    ) => {
+      act(() =>
+        window.dispatchEvent(
+          new MessageEvent('message', {
+            origin,
+            source: sender,
+            data: {
+              type: 'botlab.microduck.execution.v1',
+              version: 1,
+              simulatorId: 'microduck-official-sim',
+              executionId: message.executionId,
+              artifactId: message.source.artifactId,
+              status: state,
+            },
+          })
+        )
+      );
+    };
+    status('completed', first, 'https://untrusted.example');
+    status('completed', first, undefined, window);
+    expect(run()).toHaveProperty('disabled', true);
     act(() => jest.advanceTimersByTime(15000));
     expect(postMessage).toHaveBeenCalledTimes(5);
-    const initial = postMessage.mock.calls[0][0];
-    expect(
-      new Set(postMessage.mock.calls.map(([message]) => message.executionId))
-        .size
-    ).toBe(1);
-    expect(initial.source.frames).toHaveLength(3);
-    expect(view.getByText('Execucio demo completada.')).toBeTruthy();
+    status('running');
+    expect(view.getByLabelText('Execució del simulador').textContent).toBe(
+      'Executant al simulador'
+    );
+    fireEvent.click(view.getByRole('button', { name: 'Aturar', exact: true }));
+    expect(postMessage.mock.calls.at(-1)![0]).toMatchObject({
+      type: 'botlab.microduck.stop.v1',
+      executionId: first.executionId,
+    });
+    status('running');
+    expect(view.getByLabelText('Execució del simulador').textContent).toBe(
+      'Aturant'
+    );
+    status('stopped');
+    await waitFor(() => expect(run()).toHaveProperty('disabled', false));
     postMessage.mockClear();
+    act(() => jest.advanceTimersByTime(15000));
+    expect(postMessage).not.toHaveBeenCalled();
 
     const editor = view.getByLabelText('Test workspace') as HTMLTextAreaElement;
     const xml = new DOMParser().parseFromString(editor.value, 'text/xml');
@@ -63,54 +99,39 @@ describe('One-click simulator execution', () => {
     fireEvent.change(editor, {
       target: { value: new XMLSerializer().serializeToString(xml) },
     });
-    expect(run()).toHaveProperty('disabled', false);
-    expect(postMessage).not.toHaveBeenCalled();
     fireEvent.click(run());
-    await ready();
-    const edited = postMessage.mock.calls[0][0];
-    expect(edited.source.frames).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: 'differential-drive',
-          distanceMeters: 10,
-          durationMs: 5000,
-        }),
-      ])
+    await waitFor(() => expect(postMessage).toHaveBeenCalled());
+    const second = postMessage.mock.calls[0][0];
+    expect(second.executionId).not.toBe(first.executionId);
+    expect(second.source.frames[1].distanceMeters).toBe(10);
+    status('completed', first);
+    expect(run()).toHaveProperty('disabled', true);
+    status('completed', second);
+    await waitFor(() => expect(run()).toHaveProperty('disabled', false));
+    expect(view.getByLabelText('Execució del simulador').textContent).toBe(
+      'Execució confirmada'
     );
-    expect(edited.executionId).not.toBe(initial.executionId);
     expect(view.getByTitle('MicroDuck official simulator preview')).toBe(frame);
+  });
 
-    postMessage.mockClear();
-    fireEvent.click(run());
-    await ready();
-    const replay = postMessage.mock.calls[0][0];
-    expect(replay.source).toEqual(edited.source);
-    expect(replay.executionId).not.toBe(edited.executionId);
-    act(() => jest.advanceTimersByTime(15000));
-    expect(postMessage).toHaveBeenCalledTimes(5);
-    expect(
-      postMessage.mock.calls.every(
-        ([message]) => message.executionId === replay.executionId
-      )
-    ).toBe(true);
-    expect(view.getByTitle('MicroDuck official simulator preview')).toBe(frame);
-
-    fireEvent.click(run());
-    await ready();
-    fireEvent.click(view.getByRole('button', { name: 'Desconnectar runtime' }));
-    postMessage.mockClear();
-    act(() => jest.advanceTimersByTime(15000));
-    expect(postMessage).not.toHaveBeenCalled();
+  it('closes the iframe if stopping is not acknowledged', async () => {
+    jest.useFakeTimers();
+    const view = render(<App />);
+    fireEvent.click(
+      view.getByRole('button', { name: 'Executar', exact: true })
+    );
+    const frame = await view.findByTitle(
+      'MicroDuck official simulator preview'
+    );
+    fireEvent.load(frame);
+    fireEvent.click(view.getByRole('button', { name: 'Aturar', exact: true }));
+    act(() => jest.advanceTimersByTime(3000));
     expect(
       view.queryByTitle('MicroDuck official simulator preview')
     ).toBeNull();
-    fireEvent.click(run());
-    const reconnected = await view.findByTitle(
-      'MicroDuck official simulator preview'
+    expect(view.getByLabelText('Execució del simulador').textContent).toBe(
+      'Sense confirmació del simulador'
     );
-    expect(reconnected).not.toBe(frame);
-    fireEvent.load(reconnected);
-    await ready();
   });
 
   it('stops on invalid XML and recovers after the user fixes it', async () => {

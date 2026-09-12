@@ -24,6 +24,7 @@ import {
   Play,
   Radar,
   ShieldCheck,
+  Square,
   Workflow,
 } from 'lucide-react';
 import {
@@ -51,6 +52,7 @@ import {
   type BotLabLocale,
 } from './i18n';
 import { simulatorLaunchMachine } from './simulator-launch-machine';
+import { simulatorExecutionMachine } from './simulator-execution-machine';
 
 const featuredConcepts = botLabConcepts.filter(({ concept }) =>
   ['policy', 'skill', 'behavior', 'arbitration'].includes(concept)
@@ -100,6 +102,10 @@ export function scheduleMicroDuckSimulatorControlSourceDelivery(
 export function App() {
   const [flowSnapshot, sendFlow, flowActor] = useMachine(botLabFlowMachine);
   const [launchSnapshot, sendLaunch] = useMachine(simulatorLaunchMachine);
+  const [executionSnapshot, sendExecution] = useMachine(simulatorExecutionMachine);
+  const executionBusy = executionSnapshot.hasTag('busy');
+  const executionState = typeof executionSnapshot.value === 'string'
+    ? executionSnapshot.value : executionSnapshot.value.active;
   const [locale, setLocale] = useState<BotLabLocale>('ca');
   const [officialSimulatorHostResult, setOfficialSimulatorHostResult] =
     useState<MicroDuckOfficialSimulatorHostResult>();
@@ -205,12 +211,13 @@ export function App() {
       : undefined;
   useEffect(() => {
     sendLaunch({ type: 'cancel' });
+    sendExecution({ type: 'stop' });
     setOfficialSimulatorHostResult((current) =>
       current?.state === 'loading'
         ? { state: 'disconnected', messages: [] }
         : current
     );
-  }, [workspaceArtifact, selectedTargetId, sendLaunch]);
+  }, [workspaceArtifact, selectedTargetId, sendLaunch, sendExecution]);
   useEffect(() => {
     const controlSource = deliverySource;
     const targetWindow = officialSimulatorFrameRef.current?.contentWindow;
@@ -227,26 +234,17 @@ export function App() {
       microDuckOfficialSimulatorPreviewUrl,
       window.location.href
     ).origin;
-    const deliveryTimers = scheduleMicroDuckSimulatorControlSourceDelivery(
-      targetWindow,
-      controlSource,
-      targetOrigin
-    );
-
-    setOfficialSimulatorHostResult((current) =>
-      current && {
-        ...current,
-        messages: [
-          ...current.messages,
-          `Sent ${controlSource.frames.length} BotLab control frame(s) to the BotLab-enabled simulator host.`,
-        ],
-      }
-    );
+    sendExecution({ type: 'start', request: { targetWindow, source: controlSource, targetOrigin } });
 
     return () => {
-      deliveryTimers.forEach((timer) => window.clearTimeout(timer));
+      sendExecution({ type: 'detach' });
     };
-  }, [officialSimulatorFrameReady, deliverySource]);
+  }, [officialSimulatorFrameReady, deliverySource, sendExecution]);
+  useEffect(() => {
+    if (executionSnapshot.matches('failed')) {
+      failOfficialSimulatorRuntimePreview(copy.host.executionLost);
+    }
+  }, [executionSnapshot.value, copy.host.executionLost]);
   useEffect(() => {
     if (
       officialSimulatorHostResult?.state !== 'running' ||
@@ -320,7 +318,7 @@ export function App() {
     if (
       !flowSnapshot.can({ type: 'build.compile' }) ||
       isPreparingLaunch ||
-      isRunningDemo
+      isRunningDemo || executionBusy
     ) {
       return;
     }
@@ -336,12 +334,18 @@ export function App() {
 
   function disconnectOfficialSimulatorRuntimePreview() {
     sendLaunch({ type: 'cancel' });
+    sendExecution({ type: 'detach' });
     officialSimulatorHostResult?.connection?.disconnect();
     setOfficialSimulatorFrameReady(false);
     setOfficialSimulatorHostResult({
       state: 'disconnected',
       messages: [copy.host.disconnectedMessage],
     });
+  }
+  function stopSimulatorExecution() {
+    sendLaunch({ type: 'cancel' });
+    if (executionBusy) sendExecution({ type: 'stop' });
+    else disconnectOfficialSimulatorRuntimePreview();
   }
   const artifactCards = [
     {
@@ -454,8 +458,12 @@ export function App() {
             hostMessages={officialSimulatorHostMessages}
             onDisconnectRuntime={disconnectOfficialSimulatorRuntimePreview}
             onRun={runDemo}
+            onStop={stopSimulatorExecution}
+            executionState={executionState}
+            frameIndex={executionSnapshot.context.update?.frameIndex}
+            frameCount={deliverySource?.frames.length ?? 0}
             runBusy={
-              isPreparingLaunch || isRunningDemo ||
+              isPreparingLaunch || isRunningDemo || executionBusy ||
               officialSimulatorHostState === 'loading' ||
               (officialSimulatorHostState === 'running' && !officialSimulatorFrameReady)
             }
@@ -994,6 +1002,10 @@ function MicroDuckSimulatorHost({
   hostMessages,
   onDisconnectRuntime,
   onRun,
+  onStop,
+  executionState,
+  frameIndex,
+  frameCount,
   runBusy,
   runDisabled,
   runLabel,
@@ -1016,6 +1028,10 @@ function MicroDuckSimulatorHost({
   hostMessages: string[];
   onDisconnectRuntime: () => void;
   onRun: () => void;
+  onStop: () => void;
+  executionState: keyof BotLabCopy['host']['executionStates'];
+  frameIndex?: number;
+  frameCount: number;
   runBusy: boolean;
   runDisabled: boolean;
   runLabel: string;
@@ -1061,6 +1077,16 @@ function MicroDuckSimulatorHost({
             )}
             {runLabel}
           </Button>
+          <Button
+            size="icon"
+            variant="secondary"
+            onClick={onStop}
+            disabled={!runBusy || executionState === 'stopping'}
+            title={copy.host.stop}
+            aria-label={copy.host.stop}
+          >
+            <Square className="h-4 w-4" />
+          </Button>
           {hostState === 'running' || hostState === 'loading' ? (
             <Button
               size="icon"
@@ -1074,6 +1100,11 @@ function MicroDuckSimulatorHost({
           ) : null}
         </div>
       </div>
+      <p role="status" className="mb-3 text-sm" aria-label={copy.host.executionLabel}>
+        {copy.host.executionStates[executionState]}
+        {executionState === 'running' && frameIndex !== undefined
+          ? ` · ${frameIndex + 1}/${frameCount}` : ''}
+      </p>
       {runFailed ? (
         <p role="alert" className="mb-4 text-sm text-destructive">
           {copy.host.runFailed}
@@ -1386,7 +1417,7 @@ function getOfficialSimulatorHostStateLabel(
     blocked: copy.status.blocked,
     loading: copy.status.loading,
     ready: copy.status.ready,
-    running: copy.running,
+    running: copy.host.connected,
     failed: copy.status.error,
     disconnected: copy.status.disconnected,
   };

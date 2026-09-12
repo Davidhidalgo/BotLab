@@ -93,6 +93,11 @@ export const botLabTranslations = {
     host: {
       title: 'MicroDuck Simulator Host',
       loadRuntime: 'Carregar runtime',
+      connected: 'Connectat',
+      stop: "Aturar",
+      executionLabel: "Execució del simulador",
+      executionLost: "El simulador no confirma l’estat. S’ha tancat la vista per aturar-lo.",
+      executionStates: {"idle":"Sense executar","awaiting":"Esperant el simulador","running":"Executant al simulador","stopping":"Aturant","completed":"Execució confirmada","stopped":"Execució aturada","failed":"Sense confirmació del simulador"},
       run: 'Executar',
       preparing: 'Preparant',
       runFailed: "No s'ha pogut executar el programa. Revisa els blocs o la connexió i torna-ho a provar.",
@@ -208,7 +213,7 @@ export const botLabTranslations = {
       targetSelectedSuffix:
         'Compila el workspace per generar un pla executable.',
       simulationBeforeRun: 'Simula el pla compilat abans d executar.',
-      simulationCompletePrefix: 'Simulacio completa:',
+      simulationCompletePrefix: 'Validació completada:',
       simulationCompleteSuffix: 'comanda(es) verificades per a',
       commandSentSuffix: 'comanda(es) enviades. Estat:',
       demoReady: 'Demo preparada per a MicroDuck Simulator',
@@ -315,6 +320,11 @@ export const botLabTranslations = {
     host: {
       title: 'MicroDuck Simulator Host',
       loadRuntime: 'Cargar runtime',
+      connected: 'Conectado',
+      stop: "Detener",
+      executionLabel: "Ejecución del simulador",
+      executionLost: "El simulador no confirma el estado. Se ha cerrado la vista para detenerlo.",
+      executionStates: {"idle":"Sin ejecutar","awaiting":"Esperando al simulador","running":"Ejecutando en el simulador","stopping":"Deteniendo","completed":"Ejecución confirmada","stopped":"Ejecución detenida","failed":"Sin confirmación del simulador"},
       run: 'Ejecutar',
       preparing: 'Preparando',
       runFailed: 'No se ha podido ejecutar el programa. Revisa los bloques o la conexión y vuelve a intentarlo.',
@@ -430,7 +440,7 @@ export const botLabTranslations = {
       targetSelectedSuffix:
         'Compila el workspace para generar un plan ejecutable.',
       simulationBeforeRun: 'Simula el plan compilado antes de ejecutar.',
-      simulationCompletePrefix: 'Simulacion completa:',
+      simulationCompletePrefix: 'Validación completada:',
       simulationCompleteSuffix: 'comando(s) verificados para',
       commandSentSuffix: 'comando(s) enviados. Estado:',
       demoReady: 'Demo preparada para MicroDuck Simulator',
@@ -537,6 +547,11 @@ export const botLabTranslations = {
     host: {
       title: 'MicroDuck Simulator Host',
       loadRuntime: 'Load runtime',
+      connected: 'Connected',
+      stop: "Stop",
+      executionLabel: "Simulator execution",
+      executionLost: "The simulator did not confirm its state. The preview was closed to stop it.",
+      executionStates: {"idle":"Not run","awaiting":"Waiting for simulator","running":"Running in simulator","stopping":"Stopping","completed":"Execution confirmed","stopped":"Execution stopped","failed":"Simulator did not confirm"},
       run: 'Run',
       preparing: 'Preparing',
       runFailed: 'Could not run the program. Check the blocks or connection and try again.',
@@ -652,7 +667,7 @@ export const botLabTranslations = {
       targetSelectedSuffix:
         'Compile the workspace to generate an executable plan.',
       simulationBeforeRun: 'Simulate the compiled plan before running.',
-      simulationCompletePrefix: 'Simulation complete:',
+      simulationCompletePrefix: 'Validation complete:',
       simulationCompleteSuffix: 'command(s) verified for',
       commandSentSuffix: 'command(s) sent. State:',
       demoReady: 'Demo ready for MicroDuck Simulator',

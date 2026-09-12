@@ -1,5 +1,10 @@
-import { act, fireEvent, render, waitFor } from '@testing-library/react';
-
+import {
+  act,
+  fireEvent,
+  render,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import App, {
   microDuckSimulatorPreviewLoadTimeoutMs,
   scheduleMicroDuckSimulatorControlSourceDelivery,
@@ -11,315 +16,145 @@ describe('App', () => {
     jest.restoreAllMocks();
   });
 
-  it('should schedule repeated MicroDuck simulator control source delivery', () => {
+  it('schedules retries with one execution ID and the expected origin', () => {
     jest.useFakeTimers();
-
     const targetWindow = { postMessage: jest.fn() };
-
+    const source = {
+      artifactId: 'walk-plan',
+      targetId: 'microduck-sim',
+      frames: [
+        {
+          id: 'led',
+          type: 'led-pattern' as const,
+          targetId: 'microduck-sim',
+          pattern: 'smile',
+          brightness: 50,
+        },
+      ],
+      messages: [],
+      errors: [],
+    };
     scheduleMicroDuckSimulatorControlSourceDelivery(
       targetWindow,
-      {
-        artifactId: 'artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan',
-        targetId: 'microduck-sim',
-        frames: [
-          {
-            id: 'frame-led-smile',
-            type: 'led-pattern',
-            targetId: 'microduck-sim',
-            pattern: 'smile',
-            brightness: 50,
-          },
-        ],
-        messages: [],
-        errors: [],
-      },
+      source,
       'http://127.0.0.1:4300'
     );
-
-    act(() => {
-      jest.advanceTimersByTime(15000);
-    });
-
+    act(() => jest.advanceTimersByTime(15000));
     expect(targetWindow.postMessage).toHaveBeenCalledTimes(5);
     expect(targetWindow.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'botlab.microduck.control-source.v1',
         version: 1,
         simulatorId: 'microduck-official-sim',
-        source: expect.objectContaining({
-          artifactId: 'artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan',
-          frames: [
-            expect.objectContaining({
-              type: 'led-pattern',
-              pattern: 'smile',
-              brightness: 50,
-            }),
-          ],
-        }),
+        executionId: expect.any(String),
+        source,
       }),
       'http://127.0.0.1:4300'
     );
-
-    jest.useRealTimers();
-  });
-
-  it('should render successfully', () => {
-    const { baseElement } = render(<App />);
-    expect(baseElement).toBeTruthy();
-  });
-
-  it('should show the BotLab project screen', () => {
-    const { getByLabelText, getByText } = render(<App />);
     expect(
-      getByText(/Laboratori visual per a robots programables/i)
-    ).toBeTruthy();
-    expect(getByLabelText('Idioma')).toHaveProperty('value', 'ca');
-  });
-
-  it('should switch the shell language', () => {
-    const { getByLabelText, getByText } = render(<App />);
-
-    fireEvent.change(getByLabelText('Idioma'), { target: { value: 'en' } });
-
-    expect(getByText(/Visual lab for programmable robots/i)).toBeTruthy();
-    expect(getByText('Language')).toBeTruthy();
-  });
-
-  it('should show the artifact inventory', () => {
-    const { getAllByText, getByText } = render(<App />);
-
-    expect(getByText('Artifacts')).toBeTruthy();
-    expect(
-      getAllByText('sample-scratch-blocks-workspace').length
-    ).toBeGreaterThan(0);
-    expect(getByText('compiled-plan-pending')).toBeTruthy();
-    expect(getByText('simulation-output-pending')).toBeTruthy();
-  });
-
-  it('should show official simulator asset readiness', () => {
-    const { getByText } = render(<App />);
-
-    expect(getByText('Assets oficials')).toBeTruthy();
-    expect(getByText(/0 llest · 3 pendent revisio/i)).toBeTruthy();
-  });
-
-  it('should show the MicroDuck simulator host', () => {
-    const { getAllByText, getByRole, getByText, getByTitle } = render(<App />);
-
-    expect(getByText('MicroDuck Simulator Host')).toBeTruthy();
-    expect(getByText('Runtime oficial llest en mode educatiu')).toBeTruthy();
-    expect(getByText('Estat host')).toBeTruthy();
-    expect(getByText('Setup assets')).toBeTruthy();
-    expect(getAllByText('Revisio').length).toBeGreaterThan(0);
-    expect(getByRole('button', { name: 'Carregar runtime' })).toHaveProperty(
-      'disabled',
-      true
-    );
-  });
-
-  it('should receive workspace updates from the blocks boundary', () => {
-    const { getAllByText, getByRole } = render(<App />);
-
-    expect(getAllByText('Carregat').length).toBeGreaterThan(0);
-
-    fireEvent.click(getByRole('button', { name: 'Marcar editat' }));
-
-    expect(getAllByText('Editat').length).toBeGreaterThan(0);
-  });
-
-  it('should show and enforce target selection', async () => {
-    const { getAllByText, getByRole } = render(<App />);
-
-    expect(getAllByText('MicroDuck Simulator').length).toBeGreaterThan(0);
-    expect(getAllByText('Seleccionat').length).toBeGreaterThan(0);
-
-    fireEvent.click(getByRole('button', { name: /StackChan/i }));
-
-    expect(getAllByText(/Planificat o no compatible/i).length).toBeGreaterThan(
-      0
-    );
-    await waitFor(() => {
-      expect(getByRole('button', { name: 'Compilar demo' })).toHaveProperty(
-        'disabled',
-        true
-      );
-    });
-  });
-
-  it('should run the MicroDuck runtime demo from the UI', async () => {
-    const { getAllByText, getByRole, getByText, getByTitle } = render(<App />);
-
-    fireEvent.click(getByRole('button', { name: 'Compilar demo' }));
-
-    await waitFor(() => {
-      expect(
-        getAllByText(/artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan/i)
-          .length
-      ).toBeGreaterThan(0);
-    });
-    expect(getByText('Requereix confirmacio')).toBeTruthy();
-    expect(getAllByText('Confirmacio aplicada').length).toBeGreaterThan(0);
-    expect(getByText('confirm-led-output')).toBeTruthy();
-    expect(getAllByText('Comanda generada').length).toBeGreaterThan(0);
-    expect(getAllByText('set-led-pattern').length).toBeGreaterThan(0);
-    expect(getAllByText('somriure').length).toBeGreaterThan(0);
-    expect(getAllByText('50').length).toBeGreaterThan(0);
-
-    fireEvent.click(getByRole('button', { name: 'Simular demo' }));
-
-    await waitFor(() => {
-      expect(
-        getAllByText(/Simulacio completa: 3 comanda/i).length
-      ).toBeGreaterThan(0);
-    });
-    expect(
-      getAllByText(/simout-artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan/i)
-        .length
-    ).toBeGreaterThan(0);
-    expect(getByText('Output artifact')).toBeTruthy();
-    expect(getByText(/led-pattern ->/i)).toBeTruthy();
-    expect(getAllByText(/differential-drive ->/i).length).toBeGreaterThan(0);
-    expect(getAllByText(/2500/).length).toBeGreaterThan(0);
-    expect(getByRole('button', { name: 'Carregar runtime' })).toHaveProperty(
-      'disabled',
-      false
-    );
-
-    fireEvent.click(getByRole('button', { name: 'Carregar runtime' }));
-
-    await waitFor(() => {
-      expect(getByText('Runtime loader')).toBeTruthy();
-    });
-    await waitFor(() => {
-      expect(
-        getByText(
-          'BotLab ha carregat 3 frame(s) de control a la source del simulador oficial.'
+      new Set(
+        targetWindow.postMessage.mock.calls.map(
+          ([message]) => message.executionId
         )
-      ).toBeTruthy();
-    });
+      ).size
+    ).toBe(1);
+  });
+
+  it('shows one primary action next to the simulator, enabled before compilation', () => {
+    const view = render(<App />);
+    expect(view.getByLabelText('Idioma')).toHaveProperty('value', 'ca');
+    const host = view
+      .getByRole('heading', { name: 'MicroDuck Simulator Host' })
+      .closest('section')!;
     expect(
-      getAllByText(
-        'BotLab ha carregat 3 frame(s) de control a la source del simulador oficial.'
-      ).length
-    ).toBeGreaterThan(0);
+      within(host).getByRole('button', { name: 'Executar', exact: true })
+    ).toHaveProperty('disabled', false);
     expect(
-      getAllByText(/educational preview loading remains opt-in/i).length
-    ).toBeGreaterThan(0);
+      view.getAllByRole('button', { name: 'Executar', exact: true })
+    ).toHaveLength(1);
+    for (const name of [
+      'Compilar demo',
+      'Simular demo',
+      'Executar demo',
+      'Carregar runtime',
+    ]) {
+      expect(view.queryByRole('button', { name, exact: true })).toBeNull();
+    }
+    expect(view.getByText('Artifacts')).toBeTruthy();
+    expect(view.getByText('compiled-plan-pending')).toBeTruthy();
+    expect(view.getByText('simulation-output-pending')).toBeTruthy();
+    expect(view.getByText(/0 llest · 3 pendent revisio/)).toBeTruthy();
+  });
+
+  it('translates the main action into all three languages', () => {
+    const view = render(<App />);
+    for (const [locale, name] of [
+      ['es', 'Ejecutar'],
+      ['en', 'Run'],
+      ['ca', 'Executar'],
+    ]) {
+      fireEvent.change(view.getByRole('combobox'), {
+        target: { value: locale },
+      });
+      expect(view.getByRole('button', { name, exact: true })).toBeTruthy();
+    }
+  });
+
+  it('disables execution for an unavailable target', () => {
+    const view = render(<App />);
+    fireEvent.click(view.getByRole('button', { name: /StackChan/ }));
     expect(
-      getByText('Host local oficial')
-    ).toBeTruthy();
-    const simulatorFrame = getByTitle(
+      view.getByRole('button', { name: 'Executar', exact: true })
+    ).toHaveProperty('disabled', true);
+  });
+
+  it('shows a timeout and retries the full launch with the same button', async () => {
+    jest.useFakeTimers();
+    const view = render(<App />);
+    fireEvent.click(
+      view.getByRole('button', { name: 'Executar', exact: true })
+    );
+    const first = await view.findByTitle(
       'MicroDuck official simulator preview'
-    ) as HTMLIFrameElement;
-
-    expect(simulatorFrame.getAttribute('src')).toBe(
-      'http://127.0.0.1:4300/?boot=1'
     );
-    jest.useFakeTimers();
-    const postMessage = jest.spyOn(simulatorFrame.contentWindow!, 'postMessage');
-    fireEvent.load(simulatorFrame);
-    act(() => {
-      jest.advanceTimersByTime(15000);
-    });
-
-    expect(postMessage).toHaveBeenCalledTimes(5);
-    expect(postMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'botlab.microduck.control-source.v1',
-        source: expect.objectContaining({ frames: expect.any(Array) }),
-      }),
-      'http://127.0.0.1:4300'
-    );
-    jest.useRealTimers();
-
     expect(
-      getByText(
-        'BotLab ha enviat 3 frame(s) de control al host del simulador BotLab-enabled.'
-      )
+      view.getByRole('button', { name: 'Carregant', exact: true })
+    ).toHaveProperty('disabled', true);
+    act(() => jest.advanceTimersByTime(microDuckSimulatorPreviewLoadTimeoutMs));
+    expect(
+      await view.findByText('Runtime oficial amb error de carrega')
     ).toBeTruthy();
-    expect(getByRole('button', { name: 'Desconnectar runtime' })).toBeTruthy();
-
-    fireEvent.click(getByRole('button', { name: 'Desconnectar runtime' }));
-
-    expect(getByText('Runtime oficial desconnectat')).toBeTruthy();
     expect(
-      getByText(
-        'Runtime oficial desconnectat. Pots tornar a carregar-lo quan vulguis.'
-      )
-    ).toBeTruthy();
-    expect(getByRole('button', { name: 'Carregar runtime' })).toHaveProperty(
-      'disabled',
-      false
+      view.getByRole('button', { name: 'Executar', exact: true })
+    ).toHaveProperty('disabled', false);
+    fireEvent.click(
+      view.getByRole('button', { name: 'Executar', exact: true })
     );
-
-    fireEvent.click(getByRole('button', { name: 'Executar demo' }));
-
-    expect(getAllByText(/Executant/i).length).toBeGreaterThan(0);
-
-    await waitFor(() => {
-      expect(getByText(/3 comanda\(es\) enviades/i)).toBeTruthy();
-    });
-    expect(getAllByText('Completada').length).toBeGreaterThan(0);
-    expect(getByText('Execucio demo completada.')).toBeTruthy();
-    expect(getAllByText('Comanda generada').length).toBeGreaterThan(0);
-    expect(
-      getAllByText('Simulated dispatch set-led-pattern.').length
-    ).toBeGreaterThan(0);
-    expect(
-      getAllByText('Simulated dispatch drive-differential.').length
-    ).toBeGreaterThan(0);
-    expect(getByText('demo-microduck-leds-trace-artifact')).toBeTruthy();
+    const second = await view.findByTitle(
+      'MicroDuck official simulator preview'
+    );
+    expect(second).not.toBe(first);
+    fireEvent.load(second);
+    await waitFor(() =>
+      expect(
+        view.getByRole('button', { name: 'Executar', exact: true })
+      ).toHaveProperty('disabled', false)
+    );
   });
 
-  it('should show a failed host state when the simulator preview times out', async () => {
-    const { getAllByText, getByRole, getByText, getByTitle } = render(<App />);
-
-    fireEvent.click(getByRole('button', { name: 'Compilar demo' }));
-
-    await waitFor(() => {
-      expect(
-        getAllByText(/artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan/i)
-          .length
-      ).toBeGreaterThan(0);
-    });
-
-    fireEvent.click(getByRole('button', { name: 'Simular demo' }));
-
-    await waitFor(() => {
-      expect(
-        getAllByText(/Simulacio completa: 3 comanda/i).length
-      ).toBeGreaterThan(0);
-    });
-
-    jest.useFakeTimers();
-    fireEvent.click(getByRole('button', { name: 'Carregar runtime' }));
-
-    await waitFor(() => {
-      expect(
-        getByText(
-          'BotLab ha carregat 3 frame(s) de control a la source del simulador oficial.'
-        )
-      ).toBeTruthy();
-    });
-
-    expect(getByTitle('MicroDuck official simulator preview')).toBeTruthy();
-
-    act(() => {
-      jest.advanceTimersByTime(microDuckSimulatorPreviewLoadTimeoutMs);
-    });
-
-    await waitFor(() => {
-      expect(getByText('Runtime oficial amb error de carrega')).toBeTruthy();
-    });
-    expect(
-      getByText(
-        'El preview local del simulador oficial no ha acabat de carregar dins del temps esperat.'
-      )
-    ).toBeTruthy();
-    expect(getByRole('button', { name: 'Carregar runtime' })).toHaveProperty(
-      'disabled',
-      false
+  it('shows iframe errors without keeping the run button locked', async () => {
+    const view = render(<App />);
+    fireEvent.click(
+      view.getByRole('button', { name: 'Executar', exact: true })
     );
-    jest.useRealTimers();
+    fireEvent.error(
+      await view.findByTitle('MicroDuck official simulator preview')
+    );
+    expect(
+      await view.findByText('Runtime oficial amb error de carrega')
+    ).toBeTruthy();
+    expect(
+      view.getByRole('button', { name: 'Executar', exact: true })
+    ).toHaveProperty('disabled', false);
   });
 });

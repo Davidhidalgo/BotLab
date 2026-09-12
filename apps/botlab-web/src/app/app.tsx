@@ -1,5 +1,5 @@
 import { BlocksEditorShell } from '@botlab/blocks';
-import { botLabConcepts } from '@botlab/model';
+import { botLabConcepts, type CompiledBehaviorArtifact } from '@botlab/model';
 import {
   createMicroDuckSimulatorAssetCachePlan,
   createMicroDuckSimulatorControlSource,
@@ -15,9 +15,9 @@ import { Badge, Button } from '@botlab/ui';
 import { useMachine } from '@xstate/react';
 import {
   Activity,
-  Blocks,
   Cpu,
-  Download,
+  LoaderCircle,
+  Unplug,
   FileCode,
   GitBranch,
   Lock,
@@ -50,6 +50,7 @@ import {
   botLabTranslations,
   type BotLabLocale,
 } from './i18n';
+import { simulatorLaunchMachine } from './simulator-launch-machine';
 
 const featuredConcepts = botLabConcepts.filter(({ concept }) =>
   ['policy', 'skill', 'behavior', 'arbitration'].includes(concept)
@@ -96,7 +97,8 @@ export function scheduleMicroDuckSimulatorControlSourceDelivery(
 }
 
 export function App() {
-  const [flowSnapshot, sendFlow] = useMachine(botLabFlowMachine);
+  const [flowSnapshot, sendFlow, flowActor] = useMachine(botLabFlowMachine);
+  const [launchSnapshot, sendLaunch] = useMachine(simulatorLaunchMachine);
   const [locale, setLocale] = useState<BotLabLocale>('ca');
   const [officialSimulatorHostResult, setOfficialSimulatorHostResult] =
     useState<MicroDuckOfficialSimulatorHostResult>();
@@ -126,6 +128,7 @@ export function App() {
   const isRunningDemo = flowSnapshot.hasTag('execution-busy');
   const isCompiling = flowSnapshot.hasTag('build-busy');
   const isSimulating = flowSnapshot.hasTag('simulation-busy');
+  const isPreparingLaunch = launchSnapshot.hasTag('busy');
   const targets = runtime.listTargets();
   const capabilities = runtime.listCapabilities();
   const selectedTarget = targets.find(
@@ -200,6 +203,14 @@ export function App() {
       ? officialSimulatorHostResult.controlSource
       : undefined;
   useEffect(() => {
+    sendLaunch({ type: 'cancel' });
+    setOfficialSimulatorHostResult((current) =>
+      current?.state === 'loading'
+        ? { state: 'disconnected', messages: [] }
+        : current
+    );
+  }, [workspaceArtifact, selectedTargetId, sendLaunch]);
+  useEffect(() => {
     const controlSource = deliverySource;
     const targetWindow = officialSimulatorFrameRef.current?.contentWindow;
 
@@ -252,7 +263,22 @@ export function App() {
     officialSimulatorFrameReady,
     officialSimulatorHostResult?.state,
   ]);
-  async function loadOfficialSimulatorRuntimePreview() {
+  async function launchSimulatorProgram(
+    artifact: CompiledBehaviorArtifact,
+    signal: AbortSignal
+  ) {
+    if (selectedTarget?.kind !== 'simulator') return;
+    if (officialSimulatorHostResult?.state === 'running') {
+      const controlSource = createMicroDuckSimulatorControlSource(artifact);
+      if (controlSource.errors.length > 0) {
+        throw new Error(controlSource.errors.join('\n'));
+      }
+      if (signal.aborted) return;
+      setOfficialSimulatorHostResult((current) =>
+        current && { ...current, controlSource, messages: controlSource.messages }
+      );
+      return;
+    }
     setOfficialSimulatorHostResult({
       state: 'loading',
       messages: ['Preparing official runtime in educational preview mode.'],
@@ -262,13 +288,19 @@ export function App() {
     try {
       const result = await loadMicroDuckOfficialSimulatorHost({
         assetPlan: simulatorAssetPlan,
-        artifact: compiledArtifact,
+        artifact,
         loadRuntime: createMicroDuckOfficialSimulatorPreviewRuntime,
         getVelocityLimits: () => [2, -1, 3],
       });
 
+      if (signal.aborted) {
+        result.connection?.disconnect();
+        return;
+      }
       setOfficialSimulatorHostResult(result);
+      if (result.state !== 'running') throw new Error('Simulator could not start.');
     } catch (error) {
+      if (signal.aborted) return;
       setOfficialSimulatorHostResult({
         state: 'failed',
         messages: [
@@ -277,32 +309,18 @@ export function App() {
             : 'Could not load the official runtime.',
         ],
       });
+      throw error;
     }
   }
   function runDemo() {
-    if (!flowSnapshot.can({ type: 'demo.run' })) {
-      return;
-    }
-
-    sendFlow({ type: 'demo.run' });
-
     if (
-      officialSimulatorHostResult?.state !== 'running' ||
-      selectedTarget?.kind !== 'simulator' ||
-      !compiledArtifact ||
-      compiledArtifact.targetId !== selectedTargetId
+      !flowSnapshot.can({ type: 'build.compile' }) ||
+      isPreparingLaunch ||
+      isRunningDemo
     ) {
       return;
     }
-
-    const controlSource = createMicroDuckSimulatorControlSource(compiledArtifact);
-    if (controlSource.errors.length > 0) {
-      return;
-    }
-
-    setOfficialSimulatorHostResult((current) =>
-      current && { ...current, controlSource, messages: controlSource.messages }
-    );
+    sendLaunch({ type: 'run', flow: flowActor, launch: launchSimulatorProgram });
   }
   function failOfficialSimulatorRuntimePreview(message: string) {
     setOfficialSimulatorFrameReady(false);
@@ -313,6 +331,7 @@ export function App() {
   }
 
   function disconnectOfficialSimulatorRuntimePreview() {
+    sendLaunch({ type: 'cancel' });
     officialSimulatorHostResult?.connection?.disconnect();
     setOfficialSimulatorFrameReady(false);
     setOfficialSimulatorHostResult({
@@ -401,44 +420,6 @@ export function App() {
                 ))}
               </select>
             </label>
-            <Button
-              onClick={runDemo}
-              disabled={!flowSnapshot.can({ type: 'demo.run' })}
-            >
-              <Play className="h-4 w-4" />
-              {isRunningDemo ? copy.running : copy.runDemo}
-            </Button>
-            <Button variant="secondary">
-              <Blocks className="h-4 w-4" />
-              {copy.openEditor}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => sendFlow({ type: 'workspace.validate' })}
-              disabled={!flowSnapshot.can({ type: 'workspace.validate' })}
-            >
-              <ShieldCheck className="h-4 w-4" />
-              {copy.validateWorkspace}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => sendFlow({ type: 'build.compile' })}
-              disabled={
-                !flowSnapshot.can({ type: 'build.compile' }) ||
-                !selectedTargetCanRunDemo
-              }
-            >
-              <Cpu className="h-4 w-4" />
-              {isCompiling ? copy.compiling : copy.compileDemo}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => sendFlow({ type: 'simulation.run' })}
-              disabled={!flowSnapshot.can({ type: 'simulation.run' })}
-            >
-              <Radar className="h-4 w-4" />
-              {isSimulating ? copy.simulating : copy.simulateDemo}
-            </Button>
           </div>
         </div>
       </section>
@@ -468,7 +449,24 @@ export function App() {
             hostState={officialSimulatorHostState}
             hostMessages={officialSimulatorHostMessages}
             onDisconnectRuntime={disconnectOfficialSimulatorRuntimePreview}
-            onLoadRuntime={loadOfficialSimulatorRuntimePreview}
+            onRun={runDemo}
+            runBusy={
+              isPreparingLaunch || isRunningDemo ||
+              officialSimulatorHostState === 'loading' ||
+              (officialSimulatorHostState === 'running' && !officialSimulatorFrameReady)
+            }
+            runDisabled={
+              !flowSnapshot.can({ type: 'build.compile' }) || !selectedTargetCanRunDemo
+            }
+            runLabel={
+              isCompiling ? copy.compiling
+                : isSimulating ? copy.simulating
+                : officialSimulatorHostState === 'loading' ||
+                    (officialSimulatorHostState === 'running' && !officialSimulatorFrameReady)
+                  ? copy.host.loading
+                  : isPreparingLaunch ? copy.host.preparing : copy.host.run
+            }
+            runFailed={launchSnapshot.matches('failed')}
             onPreviewFailed={() =>
               failOfficialSimulatorRuntimePreview(
                 copy.host.previewLoadErrorMessage
@@ -991,7 +989,11 @@ function MicroDuckSimulatorHost({
   hostState,
   hostMessages,
   onDisconnectRuntime,
-  onLoadRuntime,
+  onRun,
+  runBusy,
+  runDisabled,
+  runLabel,
+  runFailed,
   onPreviewFailed,
   onPreviewLoaded,
   previewUrl,
@@ -1009,7 +1011,11 @@ function MicroDuckSimulatorHost({
   hostState: MicroDuckOfficialSimulatorHostState;
   hostMessages: string[];
   onDisconnectRuntime: () => void;
-  onLoadRuntime: () => void;
+  onRun: () => void;
+  runBusy: boolean;
+  runDisabled: boolean;
+  runLabel: string;
+  runFailed: boolean;
   onPreviewFailed: () => void;
   onPreviewLoaded: () => void;
   previewUrl: string;
@@ -1019,7 +1025,12 @@ function MicroDuckSimulatorHost({
   simulationMessage: string;
   copy: BotLabCopy;
 }) {
-  const hostLoadable = assetPlan.loadable && Boolean(simulatorOutput);
+  useEffect(() => {
+    const frame = previewRef.current;
+    if (hostState !== 'running' || !frame) return;
+    frame.addEventListener('error', onPreviewFailed);
+    return () => frame.removeEventListener('error', onPreviewFailed);
+  }, [hostState, onPreviewFailed, previewRef]);
 
   return (
     <section className="rounded-lg border bg-card p-4">
@@ -1028,30 +1039,42 @@ function MicroDuckSimulatorHost({
           <Radar className="h-4 w-4 text-primary" />
           <h2 className="font-semibold">{copy.host.title}</h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant={hostState === 'running' ? 'secondary' : 'outline'}>
             {getOfficialSimulatorHostStateLabel(hostState, copy)}
           </Badge>
           <Button
             size="sm"
-            variant="secondary"
-            disabled={
-              hostState !== 'running' &&
-              (!hostLoadable || hostState === 'loading')
-            }
-            onClick={
-              hostState === 'running' ? onDisconnectRuntime : onLoadRuntime
-            }
+            className="min-w-[128px]"
+            disabled={runDisabled || runBusy}
+            onClick={onRun}
+            aria-busy={runBusy}
           >
-            <Download className="h-4 w-4" />
-            {hostState === 'running'
-              ? copy.host.disconnectRuntime
-              : hostState === 'loading'
-              ? copy.host.loading
-              : copy.host.loadRuntime}
+            {runBusy ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
+            {runLabel}
           </Button>
+          {hostState === 'running' || hostState === 'loading' ? (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onDisconnectRuntime}
+              title={copy.host.disconnectRuntime}
+              aria-label={copy.host.disconnectRuntime}
+            >
+              <Unplug className="h-4 w-4" />
+            </Button>
+          ) : null}
         </div>
       </div>
+      {runFailed ? (
+        <p role="alert" className="mb-4 text-sm text-destructive">
+          {copy.host.runFailed}
+        </p>
+      ) : null}
 
       <div className="grid gap-4 2xl:grid-cols-[minmax(680px,1.2fr)_0.8fr]">
         <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-md border bg-background">
@@ -1060,7 +1083,6 @@ function MicroDuckSimulatorHost({
               title="MicroDuck official simulator preview"
               ref={previewRef}
               src={previewUrl}
-              onError={onPreviewFailed}
               onLoad={onPreviewLoaded}
               className="h-[560px] w-full border-0"
               allow="accelerometer; autoplay; clipboard-read; clipboard-write; gamepad; fullscreen; xr-spatial-tracking"

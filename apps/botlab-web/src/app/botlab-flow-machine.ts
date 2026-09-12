@@ -159,7 +159,7 @@ export const botLabFlowMachine = setup({
   },
   actors: {
     validateWorkspace: fromPromise(
-      async ({ input }: { input: ValidateWorkspaceInput }) => {
+      async ({ input }: { input: ValidateWorkspaceInput }): Promise<ValidateWorkspaceOutput> => {
         const validation = createBlocksEditorProvider(
           input.artifact.engine
         ).validateWorkspace(input.artifact);

@@ -93,6 +93,9 @@ export const botLabTranslations = {
     host: {
       title: 'MicroDuck Simulator Host',
       loadRuntime: 'Carregar runtime',
+      run: 'Executar',
+      preparing: 'Preparant',
+      runFailed: "No s'ha pogut executar el programa. Revisa els blocs o la connexió i torna-ho a provar.",
       disconnectRuntime: 'Desconnectar runtime',
       loading: 'Carregant',
       remotePreview: 'Host local oficial',
@@ -307,6 +310,9 @@ export const botLabTranslations = {
     host: {
       title: 'MicroDuck Simulator Host',
       loadRuntime: 'Cargar runtime',
+      run: 'Ejecutar',
+      preparing: 'Preparando',
+      runFailed: 'No se ha podido ejecutar el programa. Revisa los bloques o la conexión y vuelve a intentarlo.',
       disconnectRuntime: 'Desconectar runtime',
       loading: 'Cargando',
       remotePreview: 'Host local oficial',
@@ -521,6 +527,9 @@ export const botLabTranslations = {
     host: {
       title: 'MicroDuck Simulator Host',
       loadRuntime: 'Load runtime',
+      run: 'Run',
+      preparing: 'Preparing',
+      runFailed: 'Could not run the program. Check the blocks or connection and try again.',
       disconnectRuntime: 'Disconnect runtime',
       loading: 'Loading',
       remotePreview: 'Official local host',

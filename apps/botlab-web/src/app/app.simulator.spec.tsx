@@ -23,42 +23,38 @@ jest.mock('@botlab/blocks', () => ({
   ),
 }));
 
-describe('Connected simulator execution', () => {
+describe('One-click simulator execution', () => {
   afterEach(() => {
     jest.useRealTimers();
     jest.restoreAllMocks();
   });
 
-  it('runs an edited plan and replays it without remounting the simulator', async () => {
+  it('prepares, loads, edits and replays with one button and one iframe', async () => {
     jest.useFakeTimers();
     const view = render(<App />);
-    const button = (name: string) =>
-      view.getByRole('button', { name, exact: true });
-    const compileAndSimulate = async () => {
-      fireEvent.click(button('Compilar demo'));
-      await waitFor(() =>
-        expect(button('Simular demo')).toHaveProperty('disabled', false)
-      );
-      fireEvent.click(button('Simular demo'));
-      await waitFor(() =>
-        expect(button('Executar demo')).toHaveProperty('disabled', false)
-      );
-    };
-
-    await compileAndSimulate();
-    fireEvent.click(button('Carregar runtime'));
+    const run = () =>
+      view.getByRole('button', { name: 'Executar', exact: true });
+    const ready = () =>
+      waitFor(() => expect(run()).toHaveProperty('disabled', false));
+    const initialButton = run();
+    fireEvent.click(initialButton);
+    expect(initialButton).toHaveProperty('disabled', true);
+    fireEvent.click(initialButton);
     const frame = (await view.findByTitle(
       'MicroDuck official simulator preview'
     )) as HTMLIFrameElement;
     const postMessage = jest.spyOn(frame.contentWindow!, 'postMessage');
     fireEvent.load(frame);
+    await ready();
     act(() => jest.advanceTimersByTime(15000));
-    const initial = postMessage.mock.calls[0][0];
     expect(postMessage).toHaveBeenCalledTimes(5);
+    const initial = postMessage.mock.calls[0][0];
     expect(
       new Set(postMessage.mock.calls.map(([message]) => message.executionId))
         .size
     ).toBe(1);
+    expect(initial.source.frames).toHaveLength(3);
+    expect(view.getByText('Execucio demo completada.')).toBeTruthy();
     postMessage.mockClear();
 
     const editor = view.getByLabelText('Test workspace') as HTMLTextAreaElement;
@@ -67,13 +63,10 @@ describe('Connected simulator execution', () => {
     fireEvent.change(editor, {
       target: { value: new XMLSerializer().serializeToString(xml) },
     });
-    expect(button('Executar demo')).toHaveProperty('disabled', true);
-    fireEvent.click(button('Executar demo'));
+    expect(run()).toHaveProperty('disabled', false);
     expect(postMessage).not.toHaveBeenCalled();
-
-    await compileAndSimulate();
-    expect(postMessage).not.toHaveBeenCalled();
-    fireEvent.click(button('Executar demo'));
+    fireEvent.click(run());
+    await ready();
     const edited = postMessage.mock.calls[0][0];
     expect(edited.source.frames).toEqual(
       expect.arrayContaining([
@@ -86,18 +79,13 @@ describe('Connected simulator execution', () => {
     );
     expect(edited.executionId).not.toBe(initial.executionId);
     expect(view.getByTitle('MicroDuck official simulator preview')).toBe(frame);
-    await waitFor(() =>
-      expect(button('Executar demo')).toHaveProperty('disabled', false)
-    );
 
     postMessage.mockClear();
-    fireEvent.click(button('Executar demo'));
+    fireEvent.click(run());
+    await ready();
     const replay = postMessage.mock.calls[0][0];
     expect(replay.source).toEqual(edited.source);
     expect(replay.executionId).not.toBe(edited.executionId);
-    await waitFor(() =>
-      expect(button('Executar demo')).toHaveProperty('disabled', false)
-    );
     act(() => jest.advanceTimersByTime(15000));
     expect(postMessage).toHaveBeenCalledTimes(5);
     expect(
@@ -107,13 +95,60 @@ describe('Connected simulator execution', () => {
     ).toBe(true);
     expect(view.getByTitle('MicroDuck official simulator preview')).toBe(frame);
 
-    fireEvent.click(button('Executar demo'));
-    await waitFor(() =>
-      expect(button('Executar demo')).toHaveProperty('disabled', false)
-    );
-    fireEvent.click(button('Desconnectar runtime'));
+    fireEvent.click(run());
+    await ready();
+    fireEvent.click(view.getByRole('button', { name: 'Desconnectar runtime' }));
     postMessage.mockClear();
     act(() => jest.advanceTimersByTime(15000));
     expect(postMessage).not.toHaveBeenCalled();
+    expect(
+      view.queryByTitle('MicroDuck official simulator preview')
+    ).toBeNull();
+    fireEvent.click(run());
+    const reconnected = await view.findByTitle(
+      'MicroDuck official simulator preview'
+    );
+    expect(reconnected).not.toBe(frame);
+    fireEvent.load(reconnected);
+    await ready();
+  });
+
+  it('stops on invalid XML and recovers after the user fixes it', async () => {
+    const view = render(<App />);
+    const editor = view.getByLabelText('Test workspace') as HTMLTextAreaElement;
+    const validContent = editor.value;
+    fireEvent.change(editor, { target: { value: '<xml><broken>' } });
+    fireEvent.click(
+      view.getByRole('button', { name: 'Executar', exact: true })
+    );
+    expect(await view.findByRole('alert')).toBeTruthy();
+    expect(
+      view.queryByTitle('MicroDuck official simulator preview')
+    ).toBeNull();
+    fireEvent.change(editor, { target: { value: validContent } });
+    fireEvent.click(
+      view.getByRole('button', { name: 'Executar', exact: true })
+    );
+    fireEvent.load(
+      await view.findByTitle('MicroDuck official simulator preview')
+    );
+    await waitFor(() => expect(view.queryByRole('alert')).toBeNull());
+  });
+
+  it('cancels preparation if the workspace changes before compilation completes', async () => {
+    const view = render(<App />);
+    const editor = view.getByLabelText('Test workspace') as HTMLTextAreaElement;
+    await act(async () => {
+      fireEvent.click(
+        view.getByRole('button', { name: 'Executar', exact: true })
+      );
+      fireEvent.change(editor, { target: { value: '<xml></xml>' } });
+    });
+    expect(
+      view.queryByTitle('MicroDuck official simulator preview')
+    ).toBeNull();
+    expect(
+      view.getByRole('button', { name: 'Executar', exact: true })
+    ).toHaveProperty('disabled', false);
   });
 });

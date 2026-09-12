@@ -148,7 +148,7 @@ describe('App', () => {
     ).toBeTruthy();
     expect(
       getByTitle('MicroDuck official simulator preview').getAttribute('src')
-    ).toBe('http://127.0.0.1:4300/');
+    ).toBe('http://127.0.0.1:4300/?boot=1');
     fireEvent.load(getByTitle('MicroDuck official simulator preview'));
     await waitFor(() => {
       expect(

@@ -61,7 +61,7 @@ const conceptIcons = {
 };
 
 const microDuckOfficialSimulatorPreviewUrl =
-  'http://127.0.0.1:4300/';
+  'http://127.0.0.1:4300/?boot=1';
 
 type BotLabCopy = (typeof botLabTranslations)[BotLabLocale];
 
@@ -181,11 +181,18 @@ export function App() {
       return;
     }
 
-    postMicroDuckSimulatorControlSource(
-      targetWindow,
-      controlSource,
-      new URL(microDuckOfficialSimulatorPreviewUrl).origin
+    const targetOrigin = new URL(microDuckOfficialSimulatorPreviewUrl).origin;
+    const deliveryDelays = [0, 1000, 3000, 8000, 15000];
+    const deliveryTimers = deliveryDelays.map((delay) =>
+      window.setTimeout(() => {
+        postMicroDuckSimulatorControlSource(
+          targetWindow,
+          controlSource,
+          targetOrigin
+        );
+      }, delay)
     );
+
     setPostedSimulatorArtifactId(controlSource.artifactId);
     setOfficialSimulatorHostResult({
       ...officialSimulatorHostResult,
@@ -194,6 +201,10 @@ export function App() {
         `Sent ${controlSource.frames.length} BotLab control frame(s) to the BotLab-enabled simulator host.`,
       ],
     });
+
+    return () => {
+      deliveryTimers.forEach((timer) => window.clearTimeout(timer));
+    };
   }, [
     officialSimulatorFrameReady,
     officialSimulatorHostResult,
@@ -962,7 +973,7 @@ function MicroDuckSimulatorHost({
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-4 2xl:grid-cols-[minmax(680px,1.2fr)_0.8fr]">
         <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-md border bg-background">
           {hostState === 'running' ? (
             <iframe
@@ -970,9 +981,8 @@ function MicroDuckSimulatorHost({
               ref={previewRef}
               src={previewUrl}
               onLoad={onPreviewLoaded}
-              className="h-[520px] w-full border-0"
+              className="h-[560px] w-full border-0"
               allow="accelerometer; autoplay; clipboard-read; clipboard-write; gamepad; fullscreen; xr-spatial-tracking"
-              sandbox="allow-downloads allow-forms allow-modals allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
             />
           ) : (
             <>

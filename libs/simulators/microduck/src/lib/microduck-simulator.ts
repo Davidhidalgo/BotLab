@@ -583,6 +583,22 @@ export function createMicroDuckBotLabPostMessageSourceModule(
     MICRODUCK_SIMULATOR_CONTROL_MESSAGE_TYPE
   )};
 const ALLOWED_ORIGINS = ${allowedOrigins};
+const ACTIVE_SOURCES = new Set();
+let latestControlSource;
+
+window.addEventListener("message", (event) => {
+  const controlSource = parseControlSourceMessage(event);
+
+  if (!controlSource) {
+    return;
+  }
+
+  latestControlSource = controlSource;
+
+  for (const source of ACTIVE_SOURCES) {
+    source.load(controlSource);
+  }
+});
 
 export class ${className} {
   constructor({ getVelocityLimits } = {}) {
@@ -596,42 +612,21 @@ export class ${className} {
     this.frames = [];
     this.cursor = 0;
     this.active = false;
-    this.onMessage = this.onMessage.bind(this);
   }
 
   init() {
     this.connected = true;
-    window.addEventListener("message", this.onMessage);
+    ACTIVE_SOURCES.add(this);
+
+    if (latestControlSource) {
+      this.load(latestControlSource);
+    }
   }
 
   dispose() {
-    window.removeEventListener("message", this.onMessage);
+    ACTIVE_SOURCES.delete(this);
     this.connected = false;
     this.clear();
-  }
-
-  onMessage(event) {
-    if (
-      ALLOWED_ORIGINS.length > 0 &&
-      typeof event.origin === "string" &&
-      !ALLOWED_ORIGINS.includes(event.origin)
-    ) {
-      return;
-    }
-
-    const message = event.data;
-    if (
-      !message ||
-      message.type !== MESSAGE_TYPE ||
-      message.version !== 1 ||
-      message.simulatorId !== "microduck-official-sim" ||
-      !message.source ||
-      !Array.isArray(message.source.frames)
-    ) {
-      return;
-    }
-
-    this.load(message.source);
   }
 
   load(controlSource) {
@@ -719,6 +714,30 @@ export class ${className} {
 
 function clampUnit(value) {
   return Math.max(-1, Math.min(1, value));
+}
+
+function parseControlSourceMessage(event) {
+  if (
+    ALLOWED_ORIGINS.length > 0 &&
+    typeof event.origin === "string" &&
+    !ALLOWED_ORIGINS.includes(event.origin)
+  ) {
+    return undefined;
+  }
+
+  const message = event.data;
+  if (
+    !message ||
+    message.type !== MESSAGE_TYPE ||
+    message.version !== 1 ||
+    message.simulatorId !== "microduck-official-sim" ||
+    !message.source ||
+    !Array.isArray(message.source.frames)
+  ) {
+    return undefined;
+  }
+
+  return message.source;
 }
 `;
 }

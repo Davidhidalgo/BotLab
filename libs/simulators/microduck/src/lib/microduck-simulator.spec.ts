@@ -362,6 +362,8 @@ describe('microDuckSimulatorBridge', () => {
     );
     expect(moduleSource).toContain('export class BotLabSource');
     expect(moduleSource).toContain('window.addEventListener("message"');
+    expect(moduleSource).toContain('let latestControlSource;');
+    expect(moduleSource).toContain('ACTIVE_SOURCES.add(this);');
 
     expect(createMicroDuckOfficialSimulatorPatchInstructions()).toEqual({
       modulePath: 'app/src/game/controls/botlab.js',

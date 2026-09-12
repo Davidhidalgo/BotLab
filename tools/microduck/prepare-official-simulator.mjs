@@ -1,8 +1,18 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import {
+  existsSync,
+  closeSync,
+  mkdirSync,
+  openSync,
+  readdirSync,
+  readSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const MESSAGE_TYPE = 'botlab.microduck.control-source.v1';
@@ -34,6 +44,13 @@ ensureCheckout(checkoutDir, {
   origin: options.origin ?? DEFAULT_ORIGIN,
   revision: options.revision ?? 'main',
 });
+
+if (!options.noLfsHydrate) {
+  await hydrateLfsPointers(checkoutDir, {
+    origin: options.origin ?? DEFAULT_ORIGIN,
+    revision: options.revision ?? 'main',
+  });
+}
 
 writeGeneratedFile(
   resolve(checkoutDir, MODULE_PATH),
@@ -80,6 +97,11 @@ function parseArgs(args) {
 
     if (arg === '--no-install') {
       parsed.noInstall = true;
+      continue;
+    }
+
+    if (arg === '--no-lfs-hydrate') {
+      parsed.noLfsHydrate = true;
       continue;
     }
 
@@ -158,6 +180,90 @@ function ensureCheckout(checkoutDir, { origin, revision }) {
   run('git', [...LFS_DISABLED_GIT_CONFIG, 'checkout', 'FETCH_HEAD'], {
     cwd: checkoutDir,
   });
+}
+
+async function hydrateLfsPointers(checkoutDir, { origin, revision }) {
+  const pointerFiles = findLfsPointerFiles(resolve(checkoutDir, 'app/public'));
+
+  if (pointerFiles.length === 0) {
+    return;
+  }
+
+  console.log(`Hydrating ${pointerFiles.length} Git LFS asset(s) from upstream.`);
+
+  for (const path of pointerFiles) {
+    const relativePath = relative(checkoutDir, path)
+      .split('/')
+      .map(encodeURIComponent)
+      .join('/');
+    const url = createResolveUrl(origin, revision, relativePath);
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Could not download ${relativePath}: ${response.status}`);
+    }
+
+    writeFileSync(path, Buffer.from(await response.arrayBuffer()));
+  }
+}
+
+function findLfsPointerFiles(root) {
+  if (!existsSync(root)) {
+    return [];
+  }
+
+  const pending = [root];
+  const pointers = [];
+
+  while (pending.length > 0) {
+    const current = pending.pop();
+
+    if (!current) {
+      continue;
+    }
+
+    for (const entry of readdirSync(current)) {
+      const path = resolve(current, entry);
+      const stats = statSync(path);
+
+      if (stats.isDirectory()) {
+        pending.push(path);
+        continue;
+      }
+
+      if (isLfsPointerFile(path)) {
+        pointers.push(path);
+      }
+    }
+  }
+
+  return pointers.sort();
+}
+
+function isLfsPointerFile(path) {
+  const file = openSync(path, 'r');
+  const buffer = Buffer.alloc(48);
+
+  try {
+    const bytesRead = readSync(file, buffer, 0, buffer.length, 0);
+    const header = buffer.subarray(0, bytesRead).toString('utf8');
+
+    return header.startsWith('version https://git-lfs.github.com/spec/v1');
+  } finally {
+    closeSync(file);
+  }
+}
+
+function createResolveUrl(origin, revision, relativePath) {
+  const base = origin.replace(/\/+$/, '');
+
+  if (!base.startsWith('https://huggingface.co/')) {
+    throw new Error(
+      'Automatic LFS hydration currently supports Hugging Face Space origins only.'
+    );
+  }
+
+  return `${base}/resolve/${encodeURIComponent(revision)}/${relativePath}`;
 }
 
 function writeGeneratedFile(path, source) {
@@ -293,6 +399,22 @@ function readControllerSourcesArray(source) {
 function createBotLabSourceModule({ allowedOrigins }) {
   return `const MESSAGE_TYPE = ${JSON.stringify(MESSAGE_TYPE)};
 const ALLOWED_ORIGINS = ${JSON.stringify(allowedOrigins)};
+const ACTIVE_SOURCES = new Set();
+let latestControlSource;
+
+window.addEventListener("message", (event) => {
+  const controlSource = parseControlSourceMessage(event);
+
+  if (!controlSource) {
+    return;
+  }
+
+  latestControlSource = controlSource;
+
+  for (const source of ACTIVE_SOURCES) {
+    source.load(controlSource);
+  }
+});
 
 export class BotLabSource {
   constructor({ getVelocityLimits } = {}) {
@@ -306,42 +428,21 @@ export class BotLabSource {
     this.frames = [];
     this.cursor = 0;
     this.active = false;
-    this.onMessage = this.onMessage.bind(this);
   }
 
   init() {
     this.connected = true;
-    window.addEventListener("message", this.onMessage);
+    ACTIVE_SOURCES.add(this);
+
+    if (latestControlSource) {
+      this.load(latestControlSource);
+    }
   }
 
   dispose() {
-    window.removeEventListener("message", this.onMessage);
+    ACTIVE_SOURCES.delete(this);
     this.connected = false;
     this.clear();
-  }
-
-  onMessage(event) {
-    if (
-      ALLOWED_ORIGINS.length > 0 &&
-      typeof event.origin === "string" &&
-      !ALLOWED_ORIGINS.includes(event.origin)
-    ) {
-      return;
-    }
-
-    const message = event.data;
-    if (
-      !message ||
-      message.type !== MESSAGE_TYPE ||
-      message.version !== 1 ||
-      message.simulatorId !== "microduck-official-sim" ||
-      !message.source ||
-      !Array.isArray(message.source.frames)
-    ) {
-      return;
-    }
-
-    this.load(message.source);
   }
 
   load(controlSource) {
@@ -429,6 +530,30 @@ export class BotLabSource {
 
 function clampUnit(value) {
   return Math.max(-1, Math.min(1, value));
+}
+
+function parseControlSourceMessage(event) {
+  if (
+    ALLOWED_ORIGINS.length > 0 &&
+    typeof event.origin === "string" &&
+    !ALLOWED_ORIGINS.includes(event.origin)
+  ) {
+    return undefined;
+  }
+
+  const message = event.data;
+  if (
+    !message ||
+    message.type !== MESSAGE_TYPE ||
+    message.version !== 1 ||
+    message.simulatorId !== "microduck-official-sim" ||
+    !message.source ||
+    !Array.isArray(message.source.frames)
+  ) {
+    return undefined;
+  }
+
+  return message.source;
 }
 `;
 }

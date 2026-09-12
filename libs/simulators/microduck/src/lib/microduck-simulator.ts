@@ -58,6 +58,37 @@ export interface MicroDuckSimulatorControlSource {
   errors: string[];
 }
 
+export interface MicroDuckOfficialSimulatorSourceAxes {
+  jaw?: number;
+  orbitX?: number;
+  orbitY?: number;
+  ride?: number;
+}
+
+export interface MicroDuckOfficialSimulatorSource {
+  id: string;
+  connected: boolean;
+  command: Float32Array;
+  axes: MicroDuckOfficialSimulatorSourceAxes;
+  pressed: Record<string, boolean>;
+  onAction: (name: string, meta?: Record<string, unknown>) => void;
+  isActive(): boolean;
+  init?(): void;
+  dispose?(): void;
+  poll?(dt: number): void;
+}
+
+export interface MicroDuckBotLabOfficialSource
+  extends MicroDuckOfficialSimulatorSource {
+  load(controlSource: MicroDuckSimulatorControlSource): void;
+  clear(): void;
+}
+
+export interface MicroDuckBotLabOfficialSourceOptions {
+  id?: string;
+  getVelocityLimits: () => readonly [number, number, number];
+}
+
 export function createMicroDuckSimulatorBridge(
   options: MicroDuckSimulatorBridgeOptions = {}
 ): SimulatorBridge {
@@ -164,6 +195,102 @@ export function createMicroDuckSimulatorBridge(
   };
 }
 
+export function createMicroDuckBotLabOfficialSource(
+  options: MicroDuckBotLabOfficialSourceOptions
+): MicroDuckBotLabOfficialSource {
+  const command = new Float32Array(3);
+  const axes: MicroDuckOfficialSimulatorSourceAxes = {
+    jaw: 0,
+    orbitX: 0,
+    orbitY: 0,
+    ride: 0,
+  };
+  const pressed: Record<string, boolean> = {};
+  let frames: MicroDuckSimulatorControlFrame[] = [];
+  let cursor = 0;
+  let active = false;
+
+  function applyFrame(frame: MicroDuckSimulatorControlFrame) {
+    resetCommand(command);
+    resetPressed(pressed);
+
+    if (frame.type === 'differential-drive') {
+      const [forwardLimit, backwardLimit, angularLimit] =
+        options.getVelocityLimits();
+      const forwardPower = clampUnit((frame.leftPower + frame.rightPower) / 2);
+      const turnPower = clampUnit((frame.rightPower - frame.leftPower) / 2);
+
+      command[0] =
+        forwardPower >= 0
+          ? forwardPower * forwardLimit
+          : forwardPower * Math.abs(backwardLimit);
+      command[1] = 0;
+      command[2] = turnPower * angularLimit;
+      pressed['forward'] = command[0] > 0;
+      pressed['back'] = command[0] < 0;
+      pressed['turnLeft'] = command[2] > 0;
+      pressed['turnRight'] = command[2] < 0;
+      active = command.some((value) => Math.abs(value) > 0);
+      return;
+    }
+
+    pressed[`led:${frame.pattern}`] = true;
+    axes.jaw = frame.brightness > 0 ? Math.min(frame.brightness / 100, 1) : 0;
+    active = false;
+  }
+
+  function clear() {
+    frames = [];
+    cursor = 0;
+    active = false;
+    resetCommand(command);
+    resetPressed(pressed);
+    axes.jaw = 0;
+    axes.orbitX = 0;
+    axes.orbitY = 0;
+    axes.ride = 0;
+  }
+
+  return {
+    id: options.id ?? 'botlab',
+    connected: true,
+    command,
+    axes,
+    pressed,
+    onAction: () => undefined,
+    load(controlSource) {
+      frames = [...controlSource.frames];
+      cursor = 0;
+      active = false;
+      resetCommand(command);
+      resetPressed(pressed);
+    },
+    clear,
+    isActive() {
+      return active;
+    },
+    init() {
+      this.connected = true;
+    },
+    dispose() {
+      this.connected = false;
+      clear();
+    },
+    poll() {
+      const frame = frames[cursor];
+
+      if (!frame) {
+        active = false;
+        resetCommand(command);
+        return;
+      }
+
+      applyFrame(frame);
+      cursor += 1;
+    },
+  };
+}
+
 export function createMicroDuckSimulatorControlSource(
   artifact: CompiledBehaviorArtifact
 ): MicroDuckSimulatorControlSource {
@@ -257,6 +384,22 @@ function isMicroDuckLedPattern(value: unknown): value is MicroDuckLedPattern {
     value === 'solid' ||
     value === 'off'
   );
+}
+
+function clampUnit(value: number) {
+  return Math.max(-1, Math.min(1, value));
+}
+
+function resetCommand(command: Float32Array) {
+  command[0] = 0;
+  command[1] = 0;
+  command[2] = 0;
+}
+
+function resetPressed(pressed: Record<string, boolean>) {
+  for (const key of Object.keys(pressed)) {
+    delete pressed[key];
+  }
 }
 
 function formatControlFrameMessage(frame: MicroDuckSimulatorControlFrame) {

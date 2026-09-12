@@ -129,6 +129,8 @@ export type MicroDuckSimulatorAssetFetchFunction = (
 
 const MICRODUCK_RL_REVISION = '53b8971b61baf5b7f3c16d135dd7cac37623de4b';
 const MICRODUCK_POLICIES_REVISION = '088524a64e2557dc453256b6071dbb9d23888802';
+const MICRODUCK_BROWSER_SIMULATOR_REVISION =
+  '023172c8a7d629b5258d90364c13bafe013abbfa';
 const MICRODUCK_BROWSER_CACHE_NAME = 'botlab-microduck-official-sim-assets';
 const MICRODUCK_BROWSER_CACHE_BASE_URL = 'https://botlab.local/cache/';
 
@@ -189,8 +191,11 @@ export const microDuckSimulatorAssetManifest: MicroDuckSimulatorAssetManifest =
         kind: 'browser-sandbox-source',
         required: false,
         source: {
-          url: 'https://github.com/pollen-robotics/microduck-simulator',
-          revision: 'public-access-unverified',
+          url: `https://huggingface.co/spaces/pollen-robotics/microduck-simulator/tree/${MICRODUCK_BROWSER_SIMULATOR_REVISION}`,
+          repositoryUrl:
+            'https://huggingface.co/spaces/pollen-robotics/microduck-simulator',
+          revision: MICRODUCK_BROWSER_SIMULATOR_REVISION,
+          path: 'app/src/game',
         },
         cache: {
           path: 'microduck/official-sim/browser-sandbox-source',
@@ -198,7 +203,7 @@ export const microDuckSimulatorAssetManifest: MicroDuckSimulatorAssetManifest =
         license: {
           status: 'pending-review',
           notes:
-            'Community documentation names this as the official browser sandbox, but the repository URL was not publicly readable during the initial BotLab review.',
+            'The official browser sandbox source is readable from Hugging Face Spaces. BotLab still needs exact redistribution and vendoring review before caching or packaging it.',
         },
       },
     ],

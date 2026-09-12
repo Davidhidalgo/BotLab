@@ -13,6 +13,7 @@ import {
   type MicroDuckSimulatorAssetManifestEntry,
 } from './microduck-simulator-assets';
 import {
+  createMicroDuckBotLabOfficialSource,
   createMicroDuckSimulatorBridge,
   createMicroDuckSimulatorControlSource,
 } from './microduck-simulator';
@@ -112,6 +113,91 @@ describe('microDuckSimulatorBridge', () => {
     ).toThrow(
       'Unsupported MicroDuck simulator command unknown-command for capability microduck-leds.'
     );
+  });
+
+  it('adapts BotLab control frames to the official simulator source contract', () => {
+    const source = createMicroDuckBotLabOfficialSource({
+      getVelocityLimits: () => [2, -1, 3],
+    });
+    const commandRef = source.command;
+    const axesRef = source.axes;
+    source.load(
+      createMicroDuckSimulatorControlSource({
+        ...createCompiledBehaviorArtifact(),
+        commands: [
+          {
+            id: 'cmd-microduck-drive',
+            capabilityId: 'microduck-motion',
+            commandId: 'drive-differential',
+            targetId: 'microduck-sim',
+            inputs: {
+              leftPower: 0.5,
+              rightPower: 1,
+            },
+          },
+        ],
+      })
+    );
+
+    source.poll?.(1 / 50);
+
+    expect(source).toMatchObject({
+      id: 'botlab',
+      connected: true,
+      pressed: {
+        forward: true,
+        turnLeft: true,
+      },
+    });
+    expect(source.command).toBe(commandRef);
+    expect(source.axes).toBe(axesRef);
+    expect([...source.command]).toEqual([1.5, 0, 0.75]);
+    expect(source.isActive()).toBe(true);
+
+    source.poll?.(1 / 50);
+
+    expect([...source.command]).toEqual([0, 0, 0]);
+    expect(source.isActive()).toBe(false);
+  });
+
+  it('represents LED control frames without claiming twist authority', () => {
+    const source = createMicroDuckBotLabOfficialSource({
+      getVelocityLimits: () => [2, -1, 3],
+    });
+
+    source.load(
+      createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact())
+    );
+    source.poll?.(1 / 50);
+
+    expect([...source.command]).toEqual([0, 0, 0]);
+    expect(source.axes.jaw).toBe(0.5);
+    expect(source.pressed).toEqual({
+      'led:smile': true,
+    });
+    expect(source.isActive()).toBe(false);
+  });
+
+  it('clears official source state when disposed', () => {
+    const source = createMicroDuckBotLabOfficialSource({
+      getVelocityLimits: () => [2, -1, 3],
+    });
+
+    source.load(
+      createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact())
+    );
+    source.poll?.(1 / 50);
+    source.dispose?.();
+
+    expect(source.connected).toBe(false);
+    expect([...source.command]).toEqual([0, 0, 0]);
+    expect(source.pressed).toEqual({});
+    expect(source.axes).toEqual({
+      jaw: 0,
+      orbitX: 0,
+      orbitY: 0,
+      ride: 0,
+    });
   });
 });
 

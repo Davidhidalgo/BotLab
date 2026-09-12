@@ -295,12 +295,12 @@ Infrastructure decisions:
 
 Tasks:
 
-- Identify official MicroDuck simulator package or process. Done: browser simulator is a full app, daemon simulator is a heavier local process path.
+- Identify official MicroDuck simulator package or process. Done: browser simulator is a Hugging Face Space full app, daemon simulator is a heavier local process path.
 - Add simulator bridge interface. Done: initial `SimulatorBridge` contract lives in `@botlab/simulators-core`.
 - Add simulator target registration. Done: MicroDuck simulator metadata lives in `@botlab/simulators-microduck`.
 - Add upstream manifest types for MicroDuck simulator assets, including URL, revision, hash, and license notes. Done: initial manifest and validation helpers live in `@botlab/simulators-microduck`.
 - Add a cache/setup path for MicroDuck simulator assets without committing those assets to the repo. Started: cache planning and setup interfaces now distinguish pending license review, missing assets, stale hashes, blocked assets, and ready assets, and only write downloaded bytes after SHA-256 verification.
-- Add a BotLab simulator control source that maps compiled BotLab commands to the official simulator controller contract. Started: compiled LED and differential drive commands now map into typed MicroDuck simulator control frames behind the bridge.
+- Add a BotLab simulator control source that maps compiled BotLab commands to the official simulator controller contract. Started: compiled LED and differential drive commands now map into typed MicroDuck simulator control frames, and BotLab exposes a source compatible with the official simulator `Controller` source contract.
 - Spike loading the official simulator game core in the BotLab UI through `@botlab/simulators-microduck`.
 - Map simulator capabilities to the same adapter contract as hardware.
 - Add simulator output artifacts.
@@ -319,8 +319,8 @@ Next handoff:
 1. Verify licenses for the official browser simulator source, MicroDuck model assets, ONNX policies, meshes, and sounds.
 2. Fill reviewed SHA-256 values and license decisions into the MicroDuck upstream manifest once the exact official asset set is approved.
 3. Add a concrete browser or local cache store implementation for the setup/download interfaces.
-4. Adapt the typed BotLab MicroDuck control frames to the exact official simulator controller source contract.
-5. Load the simulator lazily in the UI behind the current `MicroDuckSimulatorBridge`.
+4. Load the official simulator game module lazily and register `createMicroDuckBotLabOfficialSource` with its `Controller`.
+5. Add UI state for simulator asset setup, pending license/hash review, load failure, and ready/running states.
 6. Keep the existing local bridge tests green while adding browser-level smoke coverage for the visible simulator.
 
 ## Milestone 9: Artifacts and Persistence

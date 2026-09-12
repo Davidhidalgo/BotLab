@@ -13,6 +13,7 @@ This is the home for the future MuJoCo/ONNX/browser simulator bridge. The shared
 - `microDuckSimulatorAssetManifest`: pinned upstream asset manifest for simulator setup.
 - `createMicroDuckSimulatorBridge`: creates the current MicroDuck simulator bridge.
 - `createMicroDuckSimulatorControlSource`: maps compiled BotLab commands into MicroDuck simulator control frames.
+- `createMicroDuckBotLabOfficialSource`: adapts BotLab control frames to the official simulator `Controller` source contract.
 - `createMicroDuckSimulatorAssetCachePlan`: plans required cache work from the manifest.
 - `inspectMicroDuckSimulatorAssetCache`: reads a cache store and verifies cached asset hashes.
 - `setupMicroDuckSimulatorAssetCache`: downloads reviewed assets and writes only hash-verified bytes.

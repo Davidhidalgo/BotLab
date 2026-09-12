@@ -1,4 +1,5 @@
 import { Badge } from '@botlab/ui';
+import { Blocks } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   createBlocksEditorProvider,
@@ -25,6 +26,7 @@ export interface BlocksEditorShellProps {
   autoMountNativeEditor?: boolean;
   onArtifactChange?: (artifact: BlocksWorkspaceArtifact) => void;
   activeBlockId?: string;
+  workbench?: boolean;
 }
 
 export interface BlocksEditorShellLabels {
@@ -37,6 +39,7 @@ export interface BlocksEditorShellLabels {
   resetNativeEditor: string;
   open: string;
   markDirty: string;
+  togglePalette: string;
 }
 
 export function BlocksEditorShell({
@@ -52,6 +55,7 @@ export function BlocksEditorShell({
   autoMountNativeEditor = true,
   onArtifactChange,
   activeBlockId,
+  workbench = false,
 }: BlocksEditorShellProps) {
   const copy = useMemo(
     () => ({ ...defaultBlocksEditorShellLabels, ...labels }),
@@ -155,20 +159,25 @@ export function BlocksEditorShell({
   }, []);
 
   return (
-    <section className="min-h-[420px] rounded-lg border bg-card">
-      <header className="flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between">
+    <section className={workbench ? styles.workbench : 'min-h-[420px] rounded-lg border bg-card'}>
+      <header className={workbench ? styles.toolbar : 'flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between'}>
         <div>
-          <p className="text-sm text-muted-foreground">{copy.visualEditor}</p>
-          <h2 className="text-lg font-semibold">{workspaceName}</h2>
+          {!workbench && <p className="text-sm text-muted-foreground">{copy.visualEditor}</p>}
+          <h2 className="text-sm font-semibold">{workbench ? copy.visualEditor : workspaceName}</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge>{resolvedProvider.name}</Badge>
+          {workbench && <button type="button" className={styles.paletteButton}
+            title={copy.togglePalette} aria-label={copy.togglePalette}
+            onClick={() => mountHandleRef.current?.togglePalette?.()}>
+            <Blocks size={18} />
+          </button>}
+          {!workbench && <Badge>{resolvedProvider.name}</Badge>}
           <Badge variant={badgeVariant}>{statusLabel}</Badge>
-          <Badge variant="outline">{artifact.format}</Badge>
+          {!workbench && <Badge variant="outline">{artifact.format}</Badge>}
         </div>
       </header>
 
-      <div className={editorGridClassName}>
+      <div className={workbench ? styles.editorBody : editorGridClassName}>
         {showPreviewSidebar ? (
           <aside className="rounded-md border bg-muted p-3">
             <p className="mb-3 text-sm font-medium">{copy.preview}</p>
@@ -185,19 +194,21 @@ export function BlocksEditorShell({
           </aside>
         ) : null}
 
-        <div className="flex min-h-[380px] flex-col rounded-md border border-dashed bg-background p-4">
+        <div className={workbench ? styles.editorCanvas : 'flex min-h-[380px] flex-col rounded-md border border-dashed bg-background p-4'}>
           <div
             ref={mountElementRef}
-            className={`${styles.workspace} relative h-[420px] min-h-[360px] overflow-hidden rounded-md bg-muted/40`}
+            className={`${styles.workspace} ${workbench ? styles.workbenchWorkspace : 'relative h-[420px] min-h-[360px] overflow-hidden rounded-md bg-muted/40'}`}
           >
             <div className="flex h-full items-center justify-center text-center">
               <p className="text-base font-medium">{copy.workspaceArea}</p>
+              {!workbench && <>
               <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
                 {artifact.label}
               </p>
               <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
                 {mountMessage}
               </p>
+              </>}
               {resolvedProvider.supportsNativeMount ? null : (
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
                   {blocks.map((block) => (
@@ -219,7 +230,7 @@ export function BlocksEditorShell({
             </div>
           ) : null}
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          {(!workbench || !isNativeMounted) && <div className={workbench ? styles.recovery : 'mt-4 flex flex-wrap gap-2'}>
             <button
               type="button"
               className="rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
@@ -230,15 +241,15 @@ export function BlocksEditorShell({
                 ? copy.resetNativeEditor
                 : `${copy.open} ${resolvedProvider.name}`}
             </button>
-            <button
+            {!workbench && <button
               type="button"
               className="rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
               disabled={readOnly}
               onClick={markDirty}
             >
               {copy.markDirty}
-            </button>
-          </div>
+            </button>}
+          </div>}
         </div>
       </div>
     </section>
@@ -265,6 +276,7 @@ const defaultBlocksEditorShellLabels: BlocksEditorShellLabels = {
   resetNativeEditor: 'Reset native editor',
   open: 'Open',
   markDirty: 'Mark edited',
+  togglePalette: 'Block palette',
 };
 
 function isJsdomEnvironment() {

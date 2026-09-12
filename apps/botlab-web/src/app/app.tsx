@@ -1,5 +1,5 @@
 import { BlocksEditorShell } from '@botlab/blocks';
-import { botLabConcepts, type CompiledBehaviorArtifact } from '@botlab/model';
+import { type CompiledBehaviorArtifact } from '@botlab/model';
 import {
   createMicroDuckSimulatorAssetCachePlan,
   createMicroDuckSimulatorControlSource,
@@ -26,11 +26,10 @@ import {
   Play,
   Radar,
   RotateCcw,
-  ShieldCheck,
   Square,
   Download,
   Upload,
-  Workflow,
+  SlidersHorizontal,
 } from 'lucide-react';
 import {
   type ReactNode,
@@ -58,18 +57,8 @@ import {
 } from './i18n';
 import { simulatorLaunchMachine } from './simulator-launch-machine';
 import { simulatorExecutionMachine } from './simulator-execution-machine';
+import { WorkbenchLayout } from './workbench-layout';
 import { decodeWorkspaceDocument, encodeWorkspaceDocument, maxWorkspaceFileBytes, readWorkspaceDocument, saveWorkspaceDocument, type SavedExecution } from './workspace-storage';
-
-const featuredConcepts = botLabConcepts.filter(({ concept }) =>
-  ['policy', 'skill', 'behavior', 'arbitration'].includes(concept)
-);
-
-const conceptIcons = {
-  policy: ShieldCheck,
-  skill: Cpu,
-  behavior: Workflow,
-  arbitration: GitBranch,
-};
 
 const microDuckOfficialSimulatorPreviewUrl =
   process.env.BOTLAB_SIMULATOR_URL ??
@@ -483,23 +472,13 @@ export function App() {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <section className="border-b bg-card">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-8 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <Badge>BotLab alpha</Badge>
-              <Badge variant="secondary">Nx monorepo</Badge>
-              <Badge variant="outline">React + TypeScript</Badge>
-            </div>
-            <h1 className="text-4xl font-semibold tracking-normal text-foreground md:text-5xl">
-              {copy.heroTitle}
-            </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
-              {copy.heroSubtitle}
-            </p>
+      <header className="workbench-header">
+          <div className="flex min-w-0 items-center gap-3">
+            <h1 className="text-xl font-semibold">BotLab</h1>
+            <span className="text-xs text-muted-foreground">alpha</span>
           </div>
           <div className="flex flex-wrap gap-3">
-            <label className="flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm">
+            <label className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">{copy.language}</span>
               <select
                 value={locale}
@@ -517,15 +496,16 @@ export function App() {
               </select>
             </label>
           </div>
-        </div>
-      </section>
+      </header>
 
-      <section className="mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-[1.35fr_0.65fr]">
-        <div className="space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span role="status" aria-label={copy.storage.label} className="text-sm text-muted-foreground">
+      <section className="workbench-content">
+          <div className="workbench-filebar">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="text-sm font-medium">{copy.blocks.workspaceName}</span>
+              <span role="status" aria-label={copy.storage.label} className="text-xs text-muted-foreground">
               {saveFailed ? copy.storage.failed : copy.storage.saved}
-            </span>
+              </span>
+            </div>
             <div className="flex gap-2">
               <Button size="icon" variant="secondary" onClick={() => importInputRef.current?.click()}
                 disabled={isPreparingLaunch || executionBusy} title={copy.storage.import} aria-label={copy.storage.import}>
@@ -539,7 +519,7 @@ export function App() {
             </div>
           </div>
           {fileFailed ? <p role="alert" className="text-sm text-destructive">{copy.storage.fileFailed}</p> : null}
-          <BlocksEditorShell
+          <WorkbenchLayout labels={copy.workbench} editor={<BlocksEditorShell
             key={editorRevision}
             workspaceName={copy.blocks.workspaceName}
             labels={copy.blocks}
@@ -549,13 +529,12 @@ export function App() {
             )}
             artifact={workspaceArtifact}
             activeBlockId={activeBlockId}
+            workbench
             blocks={[...copy.blocks.palette]}
             onArtifactChange={(artifact) =>
               sendFlow({ type: 'workspace.changed', artifact })
             }
-          />
-
-          <MicroDuckSimulatorHost
+          />} simulator={<MicroDuckSimulatorHost
             targetName={selectedTarget?.name ?? copy.empty.noTarget}
             assetReady={simulatorAssetPlan.ready}
             assetPlan={simulatorAssetPlan}
@@ -608,7 +587,7 @@ export function App() {
             )}
             simulationMessage={translateFlowMessage(simulationMessage, copy)}
             copy={copy}
-          />
+          />} />
           {lastExecution ? (
             <details className="border-t pt-3 text-sm">
               <summary className="cursor-pointer font-medium">
@@ -623,9 +602,9 @@ export function App() {
               </ol>
             </details>
           ) : null}
-        </div>
-
-        <aside className="space-y-4">
+        <details className="workbench-diagnostics">
+          <summary><SlidersHorizontal size={16} />{copy.workbench.diagnostics}</summary>
+        <aside className="diagnostics-grid">
           <Panel title={copy.panels.editor}>
             <Metric
               label={copy.labels.state}
@@ -1009,26 +988,7 @@ export function App() {
             </div>
           </Panel>
         </aside>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 pb-10">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {featuredConcepts.map(({ concept, description }) => {
-            const Icon = conceptIcons[concept as keyof typeof conceptIcons];
-
-            return (
-              <article key={concept} className="rounded-lg border bg-card p-4">
-                <Icon className="mb-4 h-5 w-5 text-primary" />
-                <h2 className="text-base font-semibold capitalize">
-                  {concept}
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {description}
-                </p>
-              </article>
-            );
-          })}
-        </div>
+        </details>
       </section>
     </main>
   );
@@ -1038,7 +998,7 @@ export default App;
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-lg border bg-card p-4">
+    <section className="min-w-0 border-t py-4">
       <div className="mb-4 flex items-center gap-2">
         <Activity className="h-4 w-4 text-primary" />
         <h2 className="font-semibold">{title}</h2>
@@ -1193,16 +1153,13 @@ function MicroDuckSimulatorHost({
   }, [hostState, onPreviewFailed, previewRef]);
 
   return (
-    <section className="rounded-lg border bg-card p-4">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <section className="simulator-workbench">
+      <div className="simulator-toolbar">
         <div className="flex items-center gap-2">
           <Radar className="h-4 w-4 text-primary" />
-          <h2 className="font-semibold">{copy.host.title}</h2>
+          <h2 className="text-sm font-semibold">MicroDuck</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={hostState === 'running' ? 'secondary' : 'outline'}>
-            {getOfficialSimulatorHostStateLabel(hostState, copy)}
-          </Badge>
           <Button
             size="sm"
             className="min-w-[128px]"
@@ -1237,26 +1194,16 @@ function MicroDuckSimulatorHost({
           >
             <Square className="h-4 w-4" />
           </Button>
-          {hostState === 'running' || hostState === 'loading' ? (
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={onDisconnectRuntime}
-              title={copy.host.disconnectRuntime}
-              aria-label={copy.host.disconnectRuntime}
-            >
-              <Unplug className="h-4 w-4" />
-            </Button>
-          ) : null}
         </div>
       </div>
-      <p role="status" className="mb-3 text-sm" aria-label={copy.host.executionLabel}>
+      <div className="simulator-status">
+      <p role="status" className="text-sm" aria-label={copy.host.executionLabel}>
         {sceneLoading ? copy.host.loading : copy.host.executionStates[executionState]}
         {executionState === 'running' && frameIndex !== undefined
           ? ` · ${frameIndex + 1}/${frameCount}` : ''}
       </p>
       {executionState === 'running' && executionFrame?.type === 'differential-drive' ? (
-        <div className="mb-3 space-y-1" role="status" aria-label={copy.host.progressLabel}>
+        <div className="space-y-1" role="status" aria-label={copy.host.progressLabel}>
           <p className="text-sm tabular-nums">
             {executionFrame.distanceMeters !== undefined
               ? `${copy.host.walking}: ${(executionUpdate?.distanceMeters ?? 0).toFixed(2)} / ${executionFrame.distanceMeters} m`
@@ -1277,9 +1224,8 @@ function MicroDuckSimulatorHost({
           {copy.host.runFailed}
         </p>
       ) : null}
-
-      <div className="grid gap-4 2xl:grid-cols-[minmax(680px,1.2fr)_0.8fr]">
-        <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-md border bg-background">
+      </div>
+        <div className="simulator-scene">
           {hostState === 'running' ? (
             <iframe
               key={sceneRevision}
@@ -1287,7 +1233,7 @@ function MicroDuckSimulatorHost({
               ref={previewRef}
               src={previewUrl}
               onLoad={onPreviewLoaded}
-              className="h-[560px] w-full border-0"
+              className="absolute inset-0 h-full w-full border-0"
               allow="accelerometer; autoplay; clipboard-read; clipboard-write; gamepad; fullscreen; xr-spatial-tracking"
             />
           ) : (
@@ -1298,29 +1244,23 @@ function MicroDuckSimulatorHost({
                 ))}
               </div>
               <div className="relative z-10 w-full max-w-md px-6 text-center">
-                <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-md border bg-card shadow-sm">
-                  <Radar className="h-10 w-10 text-primary" />
-                </div>
-                <h3 className="text-lg font-semibold">
+                <Radar className="mx-auto mb-4 h-10 w-10 text-primary" />
+                <h3 className="text-sm font-medium text-muted-foreground">
                   {copy.host.titles[hostState]}
                 </h3>
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                  {copy.host.descriptions[hostState]}
-                </p>
               </div>
             </>
           )}
-          {hostState === 'running' ? (
-            <div className="absolute left-3 top-3 rounded-md border bg-card/95 px-3 py-2 text-sm shadow-sm">
-              <div className="font-medium">{copy.host.remotePreview}</div>
-              <div className="text-xs text-muted-foreground">
-                {sceneLoading ? copy.host.loading : copy.host.connected}
-              </div>
-            </div>
-          ) : null}
         </div>
 
-        <div className="grid content-start gap-3">
+        <details className="simulator-details">
+          <summary>{copy.workbench.simulatorDetails}</summary>
+        <div className="grid content-start gap-3 p-4">
+          {hostState === 'running' || hostState === 'loading' ? (
+            <Button size="sm" variant="secondary" onClick={onDisconnectRuntime}>
+              <Unplug className="h-4 w-4" />{copy.host.disconnectRuntime}
+            </Button>
+          ) : null}
           <CommandFact label={copy.labels.target} value={targetName} />
           <CommandFact label={copy.labels.state} value={simulationState} />
           <CommandFact
@@ -1423,7 +1363,7 @@ function MicroDuckSimulatorHost({
             </div>
           ) : null}
         </div>
-      </div>
+      </details>
     </section>
   );
 }

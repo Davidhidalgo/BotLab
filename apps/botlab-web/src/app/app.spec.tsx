@@ -65,7 +65,7 @@ describe('App', () => {
     const view = render(<App />);
     expect(view.getByLabelText('Idioma')).toHaveProperty('value', 'ca');
     const host = view
-      .getByRole('heading', { name: 'MicroDuck Simulator Host' })
+      .getByRole('heading', { name: 'MicroDuck' })
       .closest('section')!;
     expect(
       within(host).getByRole('button', { name: 'Executar' })
@@ -85,6 +85,9 @@ describe('App', () => {
     expect(view.getByText('compiled-plan-pending')).toBeTruthy();
     expect(view.getByText('simulation-output-pending')).toBeTruthy();
     expect(view.getByText(/0 llest · 3 pendent revisio/)).toBeTruthy();
+    expect(view.getByText('Diagnòstic').closest('details')).toHaveProperty('open', false);
+    expect(view.getByText('Detalls del simulador').closest('details')).toHaveProperty('open', false);
+    expect(view.queryByText('React + TypeScript')).toBeNull();
   });
 
   it('translates the main action into all three languages', () => {

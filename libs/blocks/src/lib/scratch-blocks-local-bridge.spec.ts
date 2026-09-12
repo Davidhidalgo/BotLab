@@ -2,6 +2,7 @@ import { sampleScratchBlocksWorkspaceArtifact } from './blocks-contract';
 import { createLocalScratchBlocksEditorBridge } from './scratch-blocks-local-bridge';
 
 describe('createLocalScratchBlocksEditorBridge', () => {
+  afterEach(() => vi.unstubAllGlobals());
   beforeEach(() => {
     HTMLCanvasElement.prototype.getContext = vi.fn(
       () =>
@@ -60,6 +61,53 @@ describe('createLocalScratchBlocksEditorBridge', () => {
       reason:
         'Scratch Blocks no se ha podido montar: el artefacto no contiene XML de Scratch Blocks.',
     });
+  });
+
+  it('observes its container size and disconnects the observer with the workspace', async () => {
+    const observe = vi.fn();
+    const disconnect = vi.fn();
+    vi.stubGlobal('ResizeObserver', class {
+      observe = observe;
+      disconnect = disconnect;
+    });
+    const element = document.createElement('div');
+    const result = await createLocalScratchBlocksEditorBridge().mount({ element, artifact: sampleScratchBlocksWorkspaceArtifact });
+    expect(result.mounted).toBe(true);
+    expect(observe).toHaveBeenCalledWith(element);
+    if (result.mounted) result.handle.dispose();
+    expect(disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses an optional overlay palette in narrow editors and restores the desktop layout', async () => {
+    let width = 390;
+    let resize = () => {};
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(callback: () => void) { resize = callback; }
+      observe() {}
+      disconnect() {}
+    });
+    const element = document.createElement('div');
+    Object.defineProperty(element, 'clientWidth', { get: () => width });
+    const result = await createLocalScratchBlocksEditorBridge().mount({ element, artifact: sampleScratchBlocksWorkspaceArtifact });
+    expect(result.mounted).toBe(true);
+    if (!result.mounted) return;
+    try {
+      const scratch = await import('scratch-blocks');
+      const workspace = scratch.getMainWorkspace() as InstanceType<typeof scratch.WorkspaceSvg>;
+      const flyout = workspace.getFlyout()!;
+      const xml = result.handle.exportWorkspace().content;
+      expect(flyout.autoClose).toBe(true);
+      expect(flyout.isVisible()).toBe(false);
+      result.handle.togglePalette?.();
+      expect(flyout.isVisible()).toBe(true);
+      result.handle.togglePalette?.();
+      expect(flyout.isVisible()).toBe(false);
+      width = 700;
+      resize();
+      expect(flyout.autoClose).toBe(false);
+      expect(flyout.isVisible()).toBe(true);
+      expect(result.handle.exportWorkspace().content).toBe(xml);
+    } finally { result.handle.dispose(); }
   });
 
   it('highlights the active block without changing the workspace', async () => {

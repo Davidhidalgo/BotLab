@@ -59,6 +59,29 @@ function mountLocalScratchBlocksWorkspace(
     });
 
     loadWorkspaceXml(request.artifact.content, workspace, scratchBlocks);
+    const desktopMetrics = workspace.getMetricsManager();
+    const compactMetrics = new scratchBlocks.MetricsManager(workspace);
+    let compact = false;
+    function resizeWorkspace() {
+      const nextCompact = request.element.clientWidth > 0 && request.element.clientWidth <= 600;
+      if (nextCompact !== compact) {
+        compact = nextCompact;
+        workspace.setMetricsManager(compact ? compactMetrics : desktopMetrics);
+        const flyout = workspace.getFlyout();
+        if (flyout) {
+          flyout.autoClose = compact;
+          flyout.setVisible(!compact);
+        }
+        if (compact) workspace.setScale(Math.min(workspace.scale, 0.75));
+        scratchBlocks.svgResize(workspace);
+        workspace.scrollCenter();
+      }
+      scratchBlocks.svgResize(workspace);
+    }
+    const resizeObserver = typeof ResizeObserver === 'undefined' ? undefined
+      : new ResizeObserver(resizeWorkspace);
+    resizeObserver?.observe(request.element);
+    resizeWorkspace();
 
     workspace.addChangeListener((event) => {
       if (event.isUiEvent || request.artifact.status === 'read-only') {
@@ -81,6 +104,13 @@ function mountLocalScratchBlocksWorkspace(
     return {
       mounted: true,
       handle: {
+        togglePalette() {
+          const flyout = workspace.getFlyout();
+          if (compact && flyout) {
+            flyout.setVisible(!flyout.isVisible());
+            scratchBlocks.svgResize(workspace);
+          }
+        },
         highlightBlock(blockId) {
           workspace.highlightBlock(blockId && workspace.getBlockById(blockId) ? blockId : null);
         },
@@ -92,6 +122,7 @@ function mountLocalScratchBlocksWorkspace(
           };
         },
         dispose() {
+          resizeObserver?.disconnect();
           workspace.dispose();
         },
       },

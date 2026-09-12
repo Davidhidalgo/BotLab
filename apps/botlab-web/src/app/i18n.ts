@@ -81,6 +81,7 @@ export const botLabTranslations = {
       bridgePending: 'Bridge Scratch Blocks pendent.',
       mounted: 'muntat',
       resetNativeEditor: 'Reiniciar editor real',
+      togglePalette: 'Paleta de blocs',
       open: 'Obrir',
       markDirty: 'Marcar editat',
       palette: [
@@ -91,6 +92,7 @@ export const botLabTranslations = {
       ],
     },
     storage: {"label":"Desament","saved":"Desat en aquest navegador","failed":"No s’ha pogut desar o recuperar la còpia local. Exporta el programa per conservar-lo.","import":"Importar programa","export":"Exportar programa","fileFailed":"No s’ha pogut importar o exportar el fitxer. Comprova el format i que no superi 2 MB.","lastExecution":"Última execució"},
+    workbench: { program: 'Programa', simulator: 'Simulador', views: 'Espai de treball', diagnostics: 'Diagnòstic', simulatorDetails: 'Detalls del simulador' },
     host: {
       title: 'MicroDuck Simulator Host',
       loadRuntime: 'Carregar runtime',
@@ -321,6 +323,7 @@ export const botLabTranslations = {
       bridgePending: 'Bridge Scratch Blocks pendiente.',
       mounted: 'montado',
       resetNativeEditor: 'Reiniciar editor real',
+      togglePalette: 'Paleta de bloques',
       open: 'Abrir',
       markDirty: 'Marcar editado',
       palette: [
@@ -331,6 +334,7 @@ export const botLabTranslations = {
       ],
     },
     storage: {"label":"Guardado","saved":"Guardado en este navegador","failed":"No se ha podido guardar o recuperar la copia local. Exporta el programa para conservarlo.","import":"Importar programa","export":"Exportar programa","fileFailed":"No se ha podido importar o exportar el archivo. Comprueba el formato y que no supere 2 MB.","lastExecution":"Última ejecución"},
+    workbench: { program: 'Programa', simulator: 'Simulador', views: 'Espacio de trabajo', diagnostics: 'Diagnóstico', simulatorDetails: 'Detalles del simulador' },
     host: {
       title: 'MicroDuck Simulator Host',
       loadRuntime: 'Cargar runtime',
@@ -561,6 +565,7 @@ export const botLabTranslations = {
       bridgePending: 'Scratch Blocks bridge pending.',
       mounted: 'mounted',
       resetNativeEditor: 'Reset native editor',
+      togglePalette: 'Block palette',
       open: 'Open',
       markDirty: 'Mark edited',
       palette: [
@@ -571,6 +576,7 @@ export const botLabTranslations = {
       ],
     },
     storage: {"label":"Storage","saved":"Saved in this browser","failed":"Could not save or restore the local copy. Export the program to keep it.","import":"Import program","export":"Export program","fileFailed":"Could not import or export the file. Check the format and the 2 MB size limit.","lastExecution":"Last execution"},
+    workbench: { program: 'Program', simulator: 'Simulator', views: 'Workspace views', diagnostics: 'Diagnostics', simulatorDetails: 'Simulator details' },
     host: {
       title: 'MicroDuck Simulator Host',
       loadRuntime: 'Load runtime',

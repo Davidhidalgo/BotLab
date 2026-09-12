@@ -78,6 +78,92 @@ Not implemented yet:
 - Persistence.
 - Deployment workflow.
 
+## Immediate Milestone: Reliable MicroDuck End-to-End Flow
+
+Priority: complete this consolidation milestone before expanding robot support, adding timed/event-driven scheduling, or extending arbitration strategies. It pulls forward the essential parts of milestones 3–6, 8–10, and 12 without renumbering the roadmap.
+
+Goal: a user can author two connected actions, save and reload the workspace, compile exactly those actions, execute them on an observable target, stop execution reliably, and inspect an accurate result and trace.
+
+Review baseline (2026-09-12): the architecture has useful editor, model, runtime, adapter, and simulator boundaries, but the reviewed implementation still contains demo execution paths. Findings below were observed while another conversation was making changes. Recheck each item against the latest implementation before changing it; mark it complete only after its acceptance criteria are verified. This planning update does not mean the fixes have been implemented.
+
+### P0: Runtime Lifecycle and Policy Enforcement
+
+Owners: `@botlab/runtime`, `@botlab/model`, adapter contracts, and the app's execution controls.
+
+Observed gaps:
+
+- Pausing, stopping, or disposing a session during dispatch changes its recorded state but does not prevent the next command from being sent.
+- A disposed session left in the queue can become runnable again when dequeued.
+- Compilation automatically confirms policy, and loading a new plan retains the previous plan's confirmation.
+- An offline target can pass compiled-plan validation and receive commands through the runtime.
+
+Tasks:
+
+- [ ] Enforce legal session transitions and check cancellation/pause state between commands. Define pause/resume cursor semantics so resuming does not replay completed commands.
+- [ ] Remove or invalidate stopped/disposed queue entries and prevent late asynchronous results from reviving a terminal session.
+- [ ] Define dispatcher cancellation and in-flight command behavior. Distinguish preventing subsequent dispatches from stopping an already active hardware command; require an explicit transport stop contract before hardware execution is enabled.
+- [ ] Remove automatic policy confirmation from compilation. Require a user action when the evaluated policy requests confirmation, and bind that confirmation to the exact plan revision and target.
+- [ ] Invalidate confirmation when the plan or target changes, and validate current target availability, capability support, and applicable policies before dispatch.
+- [ ] Add regression coverage for interruption during the first of two commands, queued cancellation/disposal, late results, replacement plans, and unavailable targets.
+
+Acceptance criteria:
+
+- Pausing during the first command prevents the second from starting until resume; resume sends each remaining command once.
+- Stopping or disposing during the first command prevents the second from starting, and late completion preserves the terminal state.
+- A stopped/disposed queued session sends no commands when the queue is processed.
+- A replacement plan requiring confirmation cannot execute using an earlier plan's approval.
+- Denied plans, unsupported capabilities, and unavailable/planned targets send no commands; UI and traces explain why.
+
+### P1: Faithful Compilation and Observable Execution
+
+Owners: `@botlab/blocks`, `@botlab/model`, `@botlab/runtime`, `@botlab/simulators-microduck`, and `apps/botlab-web`.
+
+Observed gaps:
+
+- The demo compiler selects the first LED block anywhere in the XML, including disconnected blocks, and ignores subsequent actions.
+- The demo simulation validates command-to-control-frame mapping and returns `passed` without executing a simulator engine. The app's preview runtime only registers control sources locally.
+- The execution statechart can enter `completed` when the runtime produces no run result or returns a failure as a resolved value.
+
+Tasks:
+
+- [ ] Traverse the supported Scratch block connections from the entry event and compile actions in order. Explicitly reject unsupported control flow and diagnose disconnected blocks instead of silently executing or discarding them.
+- [ ] Move Scratch XML parsing and compilation out of the app flow machine behind the editor/compiler boundary; keep robot command mapping behind the appropriate package contract.
+- [ ] Distinguish command validation, remote visual preview, and actual simulator execution in contracts, artifacts, and UI wording. Only report simulator execution success when the connected runtime provides completion evidence.
+- [ ] Connect the compiled plan to one observable execution target. A deterministic fake target is acceptable for this milestone if clearly labeled; official simulator execution remains incomplete until its engine consumes commands and reports results.
+- [ ] Branch the XState flow on runtime outcomes: success, failure, cancellation, confirmation required, and no queued work. Do not equate promise resolution with successful execution.
+- [ ] Invalidate compiled/simulation results when their source workspace or target changes and prevent stale asynchronous results from being shown as current.
+- [ ] Persist and restore the workspace locally with a versioned artifact format. Retain the last execution trace and its source-plan identity; restored work must not resume execution or restore policy approval automatically.
+
+Acceptance criteria:
+
+- Two connected actions compile into two commands in the authored order; a disconnected LED block is never executed as part of the entry script.
+- Unsupported blocks or malformed input produce actionable diagnostics rather than a misleading successful compilation.
+- The user can save, refresh, restore the two-action workspace, execute it on the selected observable target, and see both effects and their trace.
+- Failed, cancelled, empty, and confirmation-blocked runs are not displayed as successful completion.
+- A visual preview or command-validation result is never presented as evidence that a physical simulation ran.
+- Changing the workspace or target requires a fresh compile and the relevant validation/confirmation before execution.
+
+### P2: Verification and Enforced Architecture Boundaries
+
+Owners: workspace tooling and the affected packages.
+
+Review baseline: the full test run reported 69 passing tests and one failure caused by error-message wording. Builds passed, but an explicit app typecheck failed because the validation actor inferred `artifact.status` as `string`. The root `npm test` command covered only the app. These are observations from the review, not current completion claims.
+
+Tasks:
+
+- [ ] Correct the validation actor output typing and include an explicit app typecheck in the standard validation workflow; a successful Vite build alone is insufficient.
+- [ ] Resolve the Scratch Blocks error-message test failure and keep localized UI messages separate from stable diagnostic identifiers where appropriate.
+- [ ] Provide a documented full-workspace test command covering app and library suites, and wire tests, typechecks, lint, and builds into CI.
+- [ ] Replace unrestricted Nx tag dependencies with rules reflecting ADR 0001. Keep transport and simulator internals out of the app, and UI/editor-engine dependencies out of the runtime/model.
+- [ ] Add browser-level coverage for the real editor's two-action save/reload/execute/stop flow, alongside runtime regression tests using controlled asynchronous dispatchers.
+
+Acceptance criteria:
+
+- App and library typechecks, tests, lint, and builds pass through the documented validation workflow.
+- The full-workspace test command includes the runtime, model, blocks, and simulator suites.
+- Lint rejects imports that violate the documented architectural boundaries.
+- The milestone's end-to-end scenario is verified against an observable target, with its fake/simulated/hardware nature recorded explicitly.
+
 ## Milestone 1: Project Foundation
 
 Goal: keep the monorepo stable, understandable, and easy to extend.
@@ -425,15 +511,15 @@ Acceptance criteria:
 
 ## Near-Term Backlog
 
-Recommended next tasks:
+Execution order follows the [immediate consolidation milestone](#immediate-milestone-reliable-microduck-end-to-end-flow):
 
-1. Add project tags and enforce module boundaries with Nx.
-2. Create `docs/glossary.md`.
-3. Create first ADR: `docs/adr/0001-monorepo-and-boundaries.md`.
-4. Add `@botlab/model` tests for MicroDuck and StackChan sample behaviors.
-5. Add a mock `BlocksEditorProvider`.
-6. Add a fake runtime adapter for tests.
-7. Add capability browser UI to the first screen.
+1. Recheck the review findings against concurrent work and establish passing regression checks for each fix.
+2. Fix runtime interruption, queue lifecycle, policy confirmation, and target eligibility before enabling hardware execution.
+3. Implement ordered compilation of two connected actions and accurate execution outcomes in the statechart.
+4. Connect one observable target and clearly distinguish command validation, preview, and actual simulator execution.
+5. Add workspace save/reload and retained execution traces, then verify the complete two-action flow including stop.
+6. Complete typecheck/test/CI coverage and enforce the documented Nx boundaries. Run relevant checks throughout implementation rather than deferring verification to the end.
+7. Resume broader robot, scheduler, and arbitration work after the consolidation acceptance criteria pass.
 
 ## Technical Risks
 

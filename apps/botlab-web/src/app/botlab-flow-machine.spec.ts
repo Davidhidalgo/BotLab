@@ -2,6 +2,43 @@ import { createActor } from 'xstate';
 import { botLabFlowMachine } from './botlab-flow-machine';
 
 describe('botLabFlowMachine', () => {
+  it('exposes MicroDuck hardware and simulator through shared adapter capabilities', () => {
+    const actor = createActor(botLabFlowMachine);
+
+    actor.start();
+
+    const runtime = actor.getSnapshot().context.runtime;
+    const targets = runtime.listTargets();
+    const capabilities = runtime.listCapabilities();
+
+    expect(targets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'microduck-usb',
+          kind: 'robot',
+          adapterId: 'microduck',
+        }),
+        expect.objectContaining({
+          id: 'microduck-sim',
+          kind: 'simulator',
+          adapterId: 'microduck',
+        }),
+      ])
+    );
+    expect(capabilities).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'microduck-leds',
+          targetIds: expect.arrayContaining(['microduck-usb', 'microduck-sim']),
+        }),
+        expect.objectContaining({
+          id: 'microduck-motion',
+          targetIds: expect.arrayContaining(['microduck-usb', 'microduck-sim']),
+        }),
+      ])
+    );
+  });
+
   it('models workspace and execution regions independently', async () => {
     const actor = createActor(botLabFlowMachine);
 

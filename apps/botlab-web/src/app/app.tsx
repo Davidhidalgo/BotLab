@@ -64,6 +64,7 @@ const conceptIcons = {
 };
 
 const microDuckOfficialSimulatorPreviewUrl =
+  process.env.BOTLAB_SIMULATOR_URL ??
   'http://127.0.0.1:4300/?boot=1';
 export const microDuckSimulatorDeliveryDelays = [
   0, 1000, 3000, 8000, 15000,
@@ -222,7 +223,10 @@ export function App() {
       return;
     }
 
-    const targetOrigin = new URL(microDuckOfficialSimulatorPreviewUrl).origin;
+    const targetOrigin = new URL(
+      microDuckOfficialSimulatorPreviewUrl,
+      window.location.href
+    ).origin;
     const deliveryTimers = scheduleMicroDuckSimulatorControlSourceDelivery(
       targetWindow,
       controlSource,

@@ -18,6 +18,11 @@ const scratchBlocksMediaSourceDirs = [
 
 export default defineConfig({
   root: __dirname,
+  define: {
+    'process.env.BOTLAB_SIMULATOR_URL': JSON.stringify(
+      process.env.BOTLAB_SIMULATOR_URL ?? 'http://127.0.0.1:4300/?boot=1'
+    ),
+  },
   cacheDir: '../../node_modules/.vite/apps/botlab-web',
   resolve: {
     alias: {

@@ -320,7 +320,7 @@ Next handoff:
 2. Fill reviewed SHA-256 values and license decisions into the MicroDuck upstream manifest once the exact official asset set is approved.
 3. Add a concrete browser or local cache store implementation for the setup/download interfaces.
 4. Add the web UI host that lazy-loads the official simulator runtime, calls `connectMicroDuckBotLabSourceToOfficialSimulator`, and renders the simulator scene. Started: the workbench now reserves a MicroDuck simulator host surface with asset-gated runtime state.
-5. Continue UI state for simulator asset setup, load failure, and ready/running states. Started: the app now surfaces official simulator asset readiness from the MicroDuck manifest.
+5. Continue UI state for simulator load failure and ready/running states. Started: the app now surfaces official simulator asset readiness and per-asset setup status from the MicroDuck manifest.
 6. Keep the existing local bridge tests green while adding browser-level smoke coverage for the visible simulator.
 
 ## Milestone 9: Artifacts and Persistence

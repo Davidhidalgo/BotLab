@@ -34,11 +34,17 @@ describe('App', () => {
   });
 
   it('should show the MicroDuck simulator host', () => {
-    const { getByText } = render(<App />);
+    const { getAllByText, getByRole, getByText } = render(<App />);
 
     expect(getByText('MicroDuck Simulator Host')).toBeTruthy();
     expect(getByText('Assets pendientes')).toBeTruthy();
     expect(getByText('Runtime oficial bloqueado por revision')).toBeTruthy();
+    expect(getByText('Setup assets')).toBeTruthy();
+    expect(getAllByText('Revision').length).toBeGreaterThan(0);
+    expect(getByRole('button', { name: 'Preparar assets' })).toHaveProperty(
+      'disabled',
+      true
+    );
   });
 
   it('should receive workspace updates from the blocks boundary', () => {

@@ -10,6 +10,7 @@ import {
   Activity,
   Blocks,
   Cpu,
+  Download,
   FileCode,
   GitBranch,
   Lock,
@@ -235,6 +236,7 @@ export function App() {
           <MicroDuckSimulatorHost
             targetName={selectedTarget?.name ?? 'Sin target'}
             assetReady={simulatorAssetPlan.ready}
+            assetPlan={simulatorAssetPlan}
             assetSummary={simulatorAssetSummary}
             compiledCommandId={compiledCommand?.commandId}
             simulationState={botLabSimulationStateLabels[flowState.simulation]}
@@ -714,6 +716,7 @@ function CommandFact({ label, value }: { label: string; value: string }) {
 function MicroDuckSimulatorHost({
   targetName,
   assetReady,
+  assetPlan,
   assetSummary,
   compiledCommandId,
   simulationState,
@@ -721,6 +724,7 @@ function MicroDuckSimulatorHost({
 }: {
   targetName: string;
   assetReady: boolean;
+  assetPlan: ReturnType<typeof createMicroDuckSimulatorAssetCachePlan>;
   assetSummary: ReturnType<typeof summarizeMicroDuckSimulatorAssetPlan>;
   compiledCommandId?: string;
   simulationState: string;
@@ -733,9 +737,15 @@ function MicroDuckSimulatorHost({
           <Radar className="h-4 w-4 text-primary" />
           <h2 className="font-semibold">MicroDuck Simulator Host</h2>
         </div>
-        <Badge variant={assetReady ? 'secondary' : 'outline'}>
-          {assetReady ? 'Runtime listo' : 'Assets pendientes'}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant={assetReady ? 'secondary' : 'outline'}>
+            {assetReady ? 'Runtime listo' : 'Assets pendientes'}
+          </Badge>
+          <Button size="sm" variant="secondary" disabled={!assetReady}>
+            <Download className="h-4 w-4" />
+            Preparar assets
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
@@ -773,6 +783,36 @@ function MicroDuckSimulatorHost({
             label="Assets"
             value={`${assetSummary.ready} listos · ${assetSummary.pendingReview} pendientes`}
           />
+          <div className="rounded-md border bg-background p-3">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <span className="text-sm font-medium">Setup assets</span>
+              <Badge variant={assetReady ? 'secondary' : 'outline'}>
+                {assetReady ? 'Listo' : 'Bloqueado'}
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              {assetPlan.entries.map((entry) => (
+                <div
+                  key={entry.asset.id}
+                  className="flex items-start justify-between gap-3 rounded-md bg-muted px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium">
+                      {entry.asset.label}
+                    </div>
+                    <div className="mt-1 truncate text-xs text-muted-foreground">
+                      {entry.asset.source.revision.slice(0, 12)}
+                    </div>
+                  </div>
+                  <Badge
+                    variant={entry.status === 'ready' ? 'secondary' : 'outline'}
+                  >
+                    {assetCacheStatusLabels[entry.status]}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
           <p className="rounded-md border bg-background p-3 text-sm leading-6 text-muted-foreground">
             {simulationMessage}
           </p>
@@ -835,6 +875,14 @@ const policyDecisionLabels = {
   deny: 'Denegada',
   warn: 'Aviso',
   'require-confirmation': 'Requiere confirmacion',
+};
+
+const assetCacheStatusLabels = {
+  ready: 'Listo',
+  missing: 'Falta',
+  stale: 'Desactualizado',
+  'pending-review': 'Revision',
+  blocked: 'Bloqueado',
 };
 
 const ledPatternLabels: Record<string, string> = {

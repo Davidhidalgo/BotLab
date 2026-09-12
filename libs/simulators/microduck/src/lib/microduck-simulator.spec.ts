@@ -381,7 +381,7 @@ describe('microDuckSimulatorBridge', () => {
       gamePath: 'app/src/game/game.js',
       importLine: 'import { BotLabSource } from "./controls/botlab.js";',
       sourceFactoryLine:
-        'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims() });',
+        'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked });',
       controllerSourceName: 'botLabSource',
     });
   });
@@ -407,7 +407,7 @@ describe('microDuckSimulatorBridge', () => {
       'import { BotLabSource } from "./controls/botlab.js";'
     );
     expect(result.source).toContain(
-      'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims() });'
+      'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked });'
     );
     expect(result.source).toContain(
       'controller = new Controller({ sources: [botLabSource, kbSource] });'
@@ -417,6 +417,72 @@ describe('microDuckSimulatorBridge', () => {
 
     expect(second.changed).toBe(false);
     expect(second.source).toBe(result.source);
+  });
+
+  it('upgrades an existing simulator patch without declaring the source twice', () => {
+    const previous = [
+      'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims() });',
+      'const controller = new Controller({ sources: [botLabSource, kbSource] });',
+    ].join('\n');
+    const result = patchMicroDuckOfficialSimulatorGameSource(previous);
+    expect(result.source.match(/const botLabSource =/g)).toHaveLength(1);
+    expect(result.source).toContain('isInputLocked: () => inputLocked');
+    expect(patchMicroDuckOfficialSimulatorGameSource(result.source).changed).toBe(false);
+  });
+
+  it('executes the generated receiver once after startup unlock, despite delivery retries', () => {
+    const receiverWindow = new EventTarget();
+    const moduleSource = createMicroDuckBotLabPostMessageSourceModule({
+      allowedOrigins: ['http://127.0.0.1:4200'],
+    });
+    const BotLabSource = new Function(
+      'window',
+      moduleSource.replace('export class BotLabSource', 'class BotLabSource') +
+        '\nreturn BotLabSource;'
+    )(receiverWindow);
+    const sourceData = {
+      artifactId: 'walk-test',
+      targetId: 'microduck-sim',
+      frames: [{
+        id: 'walk', type: 'differential-drive' as const,
+        targetId: 'microduck-sim', leftPower: 1, rightPower: 1, durationMs: 100,
+      }],
+      messages: [], errors: [],
+    };
+    const deliver = (origin = 'http://127.0.0.1:4200') => {
+      receiverWindow.dispatchEvent(new MessageEvent('message', {
+        origin, data: createMicroDuckSimulatorControlMessage(sourceData),
+      }));
+    };
+
+    // Buffer before the controller exists, then preserve frames during its entrance.
+    deliver();
+    let locked = true;
+    const source = new BotLabSource({ isInputLocked: () => locked });
+    source.init();
+    source.poll(10);
+    expect(source.cursor).toBe(0);
+    expect(Array.from(source.command)).toEqual([0, 0, 0]);
+
+    locked = false;
+    source.poll(0.04);
+    expect(Array.from(source.command)).toEqual([2, 0, 0]);
+    deliver();
+    source.poll(0.06);
+    source.poll(0.02);
+    expect(source.cursor).toBe(1);
+    expect(Array.from(source.command)).toEqual([0, 0, 0]);
+
+    deliver();
+    source.poll(0.02);
+    expect(source.cursor).toBe(1);
+    expect(source.isActive()).toBe(false);
+
+    sourceData.artifactId = 'untrusted-program';
+    deliver('https://untrusted.example');
+    source.poll(0.02);
+    expect(source.cursor).toBe(1);
+    source.dispose();
   });
 
   it('allows educational preview host loading while assets still need review', async () => {

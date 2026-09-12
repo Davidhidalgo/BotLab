@@ -215,7 +215,22 @@ describe('App', () => {
     expect(simulatorFrame.getAttribute('src')).toBe(
       'http://127.0.0.1:4300/?boot=1'
     );
+    jest.useFakeTimers();
+    const postMessage = jest.spyOn(simulatorFrame.contentWindow!, 'postMessage');
     fireEvent.load(simulatorFrame);
+    act(() => {
+      jest.advanceTimersByTime(15000);
+    });
+
+    expect(postMessage).toHaveBeenCalledTimes(5);
+    expect(postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'botlab.microduck.control-source.v1',
+        source: expect.objectContaining({ frames: expect.any(Array) }),
+      }),
+      'http://127.0.0.1:4300'
+    );
+    jest.useRealTimers();
 
     expect(
       getByText(

@@ -603,6 +603,7 @@ export function createMicroDuckBotLabPostMessageSourceModule(
 const ALLOWED_ORIGINS = ${allowedOrigins};
 const ACTIVE_SOURCES = new Set();
 let latestControlSource;
+let latestControlSourceKey;
 
 window.addEventListener("message", (event) => {
   const controlSource = parseControlSourceMessage(event);
@@ -611,6 +612,11 @@ window.addEventListener("message", (event) => {
     return;
   }
 
+  const key = JSON.stringify(controlSource);
+  if (key === latestControlSourceKey) {
+    return;
+  }
+  latestControlSourceKey = key;
   latestControlSource = controlSource;
 
   for (const source of ACTIVE_SOURCES) {
@@ -619,7 +625,7 @@ window.addEventListener("message", (event) => {
 });
 
 export class ${className} {
-  constructor({ getVelocityLimits } = {}) {
+  constructor({ getVelocityLimits, isInputLocked } = {}) {
     this.id = "botlab";
     this.connected = true;
     this.command = new Float32Array(3);
@@ -627,6 +633,7 @@ export class ${className} {
     this.pressed = {};
     this.onAction = () => {};
     this.getVelocityLimits = getVelocityLimits ?? (() => [2, -1, 3]);
+    this.isInputLocked = isInputLocked ?? (() => false);
     this.frames = [];
     this.cursor = 0;
     this.frameElapsedMs = 0;
@@ -675,6 +682,11 @@ export class ${className} {
   }
 
   poll(dt = 1 / 50) {
+    if (this.isInputLocked()) {
+      this.active = false;
+      this.resetCommand();
+      return;
+    }
     const frame = this.frames[this.cursor];
 
     if (!frame) {
@@ -794,7 +806,7 @@ export function createMicroDuckOfficialSimulatorPatchInstructions(
     modulePath: MICRODUCK_BOTLAB_SOURCE_MODULE_PATH,
     gamePath: MICRODUCK_SIMULATOR_GAME_SOURCE_PATH,
     importLine: `import { ${className} } from "./controls/botlab.js";`,
-    sourceFactoryLine: `const botLabSource = new ${className}({ getVelocityLimits: () => ${velocityLimitsExpression} });`,
+    sourceFactoryLine: `const botLabSource = new ${className}({ getVelocityLimits: () => ${velocityLimitsExpression}, isInputLocked: () => inputLocked });`,
     controllerSourceName: 'botLabSource',
   };
 }
@@ -806,7 +818,11 @@ export function patchMicroDuckOfficialSimulatorGameSource(
   const instructions =
     createMicroDuckOfficialSimulatorPatchInstructions(options);
   const warnings: string[] = [];
-  let patched = source;
+  const previousFactoryLine = instructions.sourceFactoryLine.replace(
+    ', isInputLocked: () => inputLocked',
+    ''
+  );
+  let patched = source.replace(previousFactoryLine, instructions.sourceFactoryLine);
 
   if (!patched.includes(instructions.importLine)) {
     patched = insertAfterLastImport(patched, instructions.importLine);

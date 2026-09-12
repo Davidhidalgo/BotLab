@@ -75,7 +75,8 @@ export function scheduleMicroDuckSimulatorControlSourceDelivery(
   controlSource: MicroDuckSimulatorControlSource,
   targetOrigin: string
 ) {
-  return microDuckSimulatorDeliveryDelays.map((delay) =>
+  postMicroDuckSimulatorControlSource(targetWindow, controlSource, targetOrigin);
+  return microDuckSimulatorDeliveryDelays.slice(1).map((delay) =>
     window.setTimeout(() => {
       postMicroDuckSimulatorControlSource(
         targetWindow,
@@ -93,8 +94,6 @@ export function App() {
     useState<MicroDuckOfficialSimulatorHostResult>();
   const [officialSimulatorFrameReady, setOfficialSimulatorFrameReady] =
     useState(false);
-  const [postedSimulatorArtifactId, setPostedSimulatorArtifactId] =
-    useState<string>();
   const officialSimulatorFrameRef = useRef<HTMLIFrameElement>(null);
   const copy = botLabTranslations[locale];
   const {
@@ -188,16 +187,18 @@ export function App() {
     state,
     label: getExecutionStateLabel(state, copy),
   }));
+  const deliverySource =
+    officialSimulatorHostResult?.state === 'running'
+      ? officialSimulatorHostResult.controlSource
+      : undefined;
   useEffect(() => {
-    const controlSource = officialSimulatorHostResult?.controlSource;
+    const controlSource = deliverySource;
     const targetWindow = officialSimulatorFrameRef.current?.contentWindow;
 
     if (
-      officialSimulatorHostResult?.state !== 'running' ||
       !officialSimulatorFrameReady ||
       !controlSource ||
-      !targetWindow ||
-      postedSimulatorArtifactId === controlSource.artifactId
+      !targetWindow
     ) {
       return;
     }
@@ -209,23 +210,20 @@ export function App() {
       targetOrigin
     );
 
-    setPostedSimulatorArtifactId(controlSource.artifactId);
-    setOfficialSimulatorHostResult({
-      ...officialSimulatorHostResult,
-      messages: [
-        ...officialSimulatorHostResult.messages,
-        `Sent ${controlSource.frames.length} BotLab control frame(s) to the BotLab-enabled simulator host.`,
-      ],
-    });
+    setOfficialSimulatorHostResult((current) =>
+      current && {
+        ...current,
+        messages: [
+          ...current.messages,
+          `Sent ${controlSource.frames.length} BotLab control frame(s) to the BotLab-enabled simulator host.`,
+        ],
+      }
+    );
 
     return () => {
       deliveryTimers.forEach((timer) => window.clearTimeout(timer));
     };
-  }, [
-    officialSimulatorFrameReady,
-    officialSimulatorHostResult,
-    postedSimulatorArtifactId,
-  ]);
+  }, [officialSimulatorFrameReady, deliverySource]);
   useEffect(() => {
     if (
       officialSimulatorHostResult?.state !== 'running' ||
@@ -252,7 +250,6 @@ export function App() {
       messages: ['Preparing official runtime in educational preview mode.'],
     });
     setOfficialSimulatorFrameReady(false);
-    setPostedSimulatorArtifactId(undefined);
 
     try {
       const result = await loadMicroDuckOfficialSimulatorHost({
@@ -285,7 +282,6 @@ export function App() {
   function disconnectOfficialSimulatorRuntimePreview() {
     officialSimulatorHostResult?.connection?.disconnect();
     setOfficialSimulatorFrameReady(false);
-    setPostedSimulatorArtifactId(undefined);
     setOfficialSimulatorHostResult({
       state: 'disconnected',
       messages: [copy.host.disconnectedMessage],

@@ -292,9 +292,12 @@ function patchOfficialGame(path) {
 function patchGameSource(source) {
   const importLine = 'import { BotLabSource } from "./controls/botlab.js";';
   const factoryLine =
-    'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims() });';
+    'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked });';
   const warnings = [];
-  let patched = source;
+  let patched = source.replace(
+    'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims() });',
+    factoryLine
+  );
 
   if (!patched.includes(importLine)) {
     patched = insertAfterLastImport(patched, importLine);
@@ -401,6 +404,7 @@ function createBotLabSourceModule({ allowedOrigins }) {
 const ALLOWED_ORIGINS = ${JSON.stringify(allowedOrigins)};
 const ACTIVE_SOURCES = new Set();
 let latestControlSource;
+let latestControlSourceKey;
 
 window.addEventListener("message", (event) => {
   const controlSource = parseControlSourceMessage(event);
@@ -409,6 +413,11 @@ window.addEventListener("message", (event) => {
     return;
   }
 
+  const key = JSON.stringify(controlSource);
+  if (key === latestControlSourceKey) {
+    return;
+  }
+  latestControlSourceKey = key;
   latestControlSource = controlSource;
 
   for (const source of ACTIVE_SOURCES) {
@@ -417,7 +426,7 @@ window.addEventListener("message", (event) => {
 });
 
 export class BotLabSource {
-  constructor({ getVelocityLimits } = {}) {
+  constructor({ getVelocityLimits, isInputLocked } = {}) {
     this.id = "botlab";
     this.connected = true;
     this.command = new Float32Array(3);
@@ -425,6 +434,7 @@ export class BotLabSource {
     this.pressed = {};
     this.onAction = () => {};
     this.getVelocityLimits = getVelocityLimits ?? (() => [2, -1, 3]);
+    this.isInputLocked = isInputLocked ?? (() => false);
     this.frames = [];
     this.cursor = 0;
     this.frameElapsedMs = 0;
@@ -473,6 +483,11 @@ export class BotLabSource {
   }
 
   poll(dt = 1 / 50) {
+    if (this.isInputLocked()) {
+      this.active = false;
+      this.resetCommand();
+      return;
+    }
     const frame = this.frames[this.cursor];
 
     if (!frame) {

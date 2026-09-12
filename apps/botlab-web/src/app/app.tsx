@@ -181,6 +181,13 @@ export function App() {
       });
     }
   }
+  function disconnectOfficialSimulatorRuntimePreview() {
+    officialSimulatorHostResult?.connection?.disconnect();
+    setOfficialSimulatorHostResult({
+      state: 'disconnected',
+      messages: [copy.host.disconnectedMessage],
+    });
+  }
   const artifactCards = [
     {
       id: workspaceArtifact.id,
@@ -328,6 +335,7 @@ export function App() {
             compiledCommandId={compiledCommand?.commandId}
             hostState={officialSimulatorHostState}
             hostMessages={officialSimulatorHostMessages}
+            onDisconnectRuntime={disconnectOfficialSimulatorRuntimePreview}
             onLoadRuntime={loadOfficialSimulatorRuntimePreview}
             previewUrl={microDuckOfficialSimulatorPreviewUrl}
             simulatorOutput={simulationResult?.outputArtifact}
@@ -843,6 +851,7 @@ function MicroDuckSimulatorHost({
   compiledCommandId,
   hostState,
   hostMessages,
+  onDisconnectRuntime,
   onLoadRuntime,
   previewUrl,
   simulatorOutput,
@@ -857,6 +866,7 @@ function MicroDuckSimulatorHost({
   compiledCommandId?: string;
   hostState: MicroDuckOfficialSimulatorHostState;
   hostMessages: string[];
+  onDisconnectRuntime: () => void;
   onLoadRuntime: () => void;
   previewUrl: string;
   simulatorOutput?: NonNullable<BotLabSimulationResult['outputArtifact']>;
@@ -880,11 +890,20 @@ function MicroDuckSimulatorHost({
           <Button
             size="sm"
             variant="secondary"
-            disabled={!hostLoadable || hostState === 'loading'}
-            onClick={onLoadRuntime}
+            disabled={
+              hostState !== 'running' &&
+              (!hostLoadable || hostState === 'loading')
+            }
+            onClick={
+              hostState === 'running' ? onDisconnectRuntime : onLoadRuntime
+            }
           >
             <Download className="h-4 w-4" />
-            {hostState === 'loading' ? copy.host.loading : copy.host.loadRuntime}
+            {hostState === 'running'
+              ? copy.host.disconnectRuntime
+              : hostState === 'loading'
+              ? copy.host.loading
+              : copy.host.loadRuntime}
           </Button>
         </div>
       </div>
@@ -1501,7 +1520,7 @@ function resolveMicroDuckOfficialSimulatorHostState({
   }
 
   if (simulatorOutputReady) {
-    return 'running';
+    return 'ready';
   }
 
   return 'ready';

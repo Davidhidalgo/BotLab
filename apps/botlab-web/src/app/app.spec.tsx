@@ -149,6 +149,20 @@ describe('App', () => {
     expect(
       getByTitle('MicroDuck official simulator preview').getAttribute('src')
     ).toBe('https://pollen-robotics-microduck-simulator.hf.space');
+    expect(getByRole('button', { name: 'Desconnectar runtime' })).toBeTruthy();
+
+    fireEvent.click(getByRole('button', { name: 'Desconnectar runtime' }));
+
+    expect(getByText('Runtime oficial desconnectat')).toBeTruthy();
+    expect(
+      getByText(
+        'Runtime oficial desconnectat. Pots tornar a carregar-lo quan vulguis.'
+      )
+    ).toBeTruthy();
+    expect(getByRole('button', { name: 'Carregar runtime' })).toHaveProperty(
+      'disabled',
+      false
+    );
 
     fireEvent.click(getByRole('button', { name: 'Executar demo' }));
 

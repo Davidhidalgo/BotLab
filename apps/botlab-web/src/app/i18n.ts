@@ -93,6 +93,7 @@ export const botLabTranslations = {
     host: {
       title: 'MicroDuck Simulator Host',
       loadRuntime: 'Carregar runtime',
+      disconnectRuntime: 'Desconnectar runtime',
       loading: 'Carregant',
       remotePreview: 'Preview remot oficial',
       sourceLoaded: 'BotLab source carregada en paral.lel',
@@ -118,6 +119,8 @@ export const botLabTranslations = {
         disconnected:
           'La connexio oficial s ha tancat i es pot tornar a preparar quan calgui.',
       },
+      disconnectedMessage:
+        'Runtime oficial desconnectat. Pots tornar a carregar-lo quan vulguis.',
     },
     empty: {
       noEvents: 'Sense events recents',
@@ -297,6 +300,7 @@ export const botLabTranslations = {
     host: {
       title: 'MicroDuck Simulator Host',
       loadRuntime: 'Cargar runtime',
+      disconnectRuntime: 'Desconectar runtime',
       loading: 'Cargando',
       remotePreview: 'Preview remoto oficial',
       sourceLoaded: 'BotLab source cargada en paralelo',
@@ -322,6 +326,8 @@ export const botLabTranslations = {
         disconnected:
           'La conexion oficial se cerro y puede volver a prepararse cuando haga falta.',
       },
+      disconnectedMessage:
+        'Runtime oficial desconectado. Puedes volver a cargarlo cuando quieras.',
     },
     empty: {
       noEvents: 'Sin eventos recientes',
@@ -501,6 +507,7 @@ export const botLabTranslations = {
     host: {
       title: 'MicroDuck Simulator Host',
       loadRuntime: 'Load runtime',
+      disconnectRuntime: 'Disconnect runtime',
       loading: 'Loading',
       remotePreview: 'Official remote preview',
       sourceLoaded: 'BotLab source loaded in parallel',
@@ -526,6 +533,8 @@ export const botLabTranslations = {
         disconnected:
           'The official connection closed and can be prepared again when needed.',
       },
+      disconnectedMessage:
+        'Official runtime disconnected. You can load it again when ready.',
     },
     empty: {
       noEvents: 'No recent events',

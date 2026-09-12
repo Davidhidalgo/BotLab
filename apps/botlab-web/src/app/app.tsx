@@ -2,8 +2,11 @@ import { BlocksEditorShell } from '@botlab/blocks';
 import { botLabConcepts } from '@botlab/model';
 import {
   createMicroDuckSimulatorAssetCachePlan,
+  loadMicroDuckOfficialSimulatorHost,
   microDuckSimulatorAssetManifest,
+  type MicroDuckOfficialSimulatorHostResult,
   type MicroDuckOfficialSimulatorHostState,
+  type MicroDuckOfficialSimulatorSource,
 } from '@botlab/simulators-microduck';
 import { Badge, Button } from '@botlab/ui';
 import { useMachine } from '@xstate/react';
@@ -20,7 +23,7 @@ import {
   ShieldCheck,
   Workflow,
 } from 'lucide-react';
-import { type ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import {
   botLabBuildStateLabels,
   botLabBuildSteps,
@@ -51,6 +54,8 @@ const conceptIcons = {
 
 export function App() {
   const [flowSnapshot, sendFlow] = useMachine(botLabFlowMachine);
+  const [officialSimulatorHostResult, setOfficialSimulatorHostResult] =
+    useState<MicroDuckOfficialSimulatorHostResult>();
   const {
     compiledArtifact,
     runtime,
@@ -117,13 +122,41 @@ export function App() {
   );
   const simulatorAssetSummary =
     summarizeMicroDuckSimulatorAssetPlan(simulatorAssetPlan);
-  const officialSimulatorHostState = resolveMicroDuckOfficialSimulatorHostState(
-    {
-      assetReady: simulatorAssetPlan.ready,
+  const officialSimulatorHostState =
+    officialSimulatorHostResult?.state ??
+    resolveMicroDuckOfficialSimulatorHostState({
+      assetLoadable: simulatorAssetPlan.loadable,
       simulationState: flowState.simulation,
       simulatorOutputReady: Boolean(simulationResult?.outputArtifact),
+    });
+  const officialSimulatorHostMessages =
+    officialSimulatorHostResult?.messages ?? [];
+  async function loadOfficialSimulatorRuntimePreview() {
+    setOfficialSimulatorHostResult({
+      state: 'loading',
+      messages: ['Preparando runtime oficial en modo preview educativo.'],
+    });
+
+    try {
+      const result = await loadMicroDuckOfficialSimulatorHost({
+        assetPlan: simulatorAssetPlan,
+        artifact: compiledArtifact,
+        loadRuntime: createMicroDuckOfficialSimulatorPreviewRuntime,
+        getVelocityLimits: () => [2, -1, 3],
+      });
+
+      setOfficialSimulatorHostResult(result);
+    } catch (error) {
+      setOfficialSimulatorHostResult({
+        state: 'failed',
+        messages: [
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el runtime oficial.',
+        ],
+      });
     }
-  );
+  }
   const artifactCards = [
     {
       id: workspaceArtifact.id,
@@ -249,6 +282,8 @@ export function App() {
             assetSummary={simulatorAssetSummary}
             compiledCommandId={compiledCommand?.commandId}
             hostState={officialSimulatorHostState}
+            hostMessages={officialSimulatorHostMessages}
+            onLoadRuntime={loadOfficialSimulatorRuntimePreview}
             simulatorOutput={simulationResult?.outputArtifact}
             simulationState={botLabSimulationStateLabels[flowState.simulation]}
             simulationMessage={simulationMessage}
@@ -731,6 +766,8 @@ function MicroDuckSimulatorHost({
   assetSummary,
   compiledCommandId,
   hostState,
+  hostMessages,
+  onLoadRuntime,
   simulatorOutput,
   simulationState,
   simulationMessage,
@@ -741,11 +778,13 @@ function MicroDuckSimulatorHost({
   assetSummary: ReturnType<typeof summarizeMicroDuckSimulatorAssetPlan>;
   compiledCommandId?: string;
   hostState: MicroDuckOfficialSimulatorHostState;
+  hostMessages: string[];
+  onLoadRuntime: () => void;
   simulatorOutput?: NonNullable<BotLabSimulationResult['outputArtifact']>;
   simulationState: string;
   simulationMessage: string;
 }) {
-  const hostReadyToLoad = assetReady && Boolean(simulatorOutput);
+  const hostLoadable = assetPlan.loadable && Boolean(simulatorOutput);
 
   return (
     <section className="rounded-lg border bg-card p-4">
@@ -758,9 +797,14 @@ function MicroDuckSimulatorHost({
           <Badge variant={hostState === 'running' ? 'secondary' : 'outline'}>
             {officialSimulatorHostStateLabels[hostState]}
           </Badge>
-          <Button size="sm" variant="secondary" disabled={!hostReadyToLoad}>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={!hostLoadable || hostState === 'loading'}
+            onClick={onLoadRuntime}
+          >
             <Download className="h-4 w-4" />
-            Cargar runtime
+            {hostState === 'loading' ? 'Cargando' : 'Cargar runtime'}
           </Button>
         </div>
       </div>
@@ -802,7 +846,11 @@ function MicroDuckSimulatorHost({
           />
           <CommandFact
             label="Assets"
-            value={`${assetSummary.ready} listos · ${assetSummary.pendingReview} pendientes`}
+            value={
+              assetReady
+                ? `${assetSummary.ready} listos`
+                : `${assetSummary.ready} listos · ${assetSummary.pendingReview} no verificados`
+            }
           />
           <div className="rounded-md border bg-background p-3">
             <div className="mb-3 flex items-center justify-between gap-3">
@@ -837,6 +885,26 @@ function MicroDuckSimulatorHost({
           <p className="rounded-md border bg-background p-3 text-sm leading-6 text-muted-foreground">
             {simulationMessage}
           </p>
+          {hostMessages.length > 0 ? (
+            <div className="rounded-md border bg-background p-3">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">Runtime loader</span>
+                <Badge variant={hostState === 'failed' ? 'outline' : 'secondary'}>
+                  {officialSimulatorHostStateLabels[hostState]}
+                </Badge>
+              </div>
+              <div className="space-y-2">
+                {hostMessages.map((message) => (
+                  <p
+                    key={message}
+                    className="rounded-md bg-muted px-3 py-2 text-sm leading-6 text-muted-foreground"
+                  >
+                    {message}
+                  </p>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {simulatorOutput ? (
             <div className="rounded-md border bg-background p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
@@ -942,9 +1010,9 @@ const officialSimulatorHostTitles: Record<
   MicroDuckOfficialSimulatorHostState,
   string
 > = {
-  blocked: 'Runtime oficial bloqueado por assets',
+  blocked: 'Runtime oficial bloqueado por assets restringidos',
   loading: 'Runtime oficial cargando',
-  ready: 'Runtime oficial listo para source BotLab',
+  ready: 'Runtime oficial listo en modo educativo',
   running: 'Runtime oficial conectado a BotLab',
   failed: 'Runtime oficial con error de carga',
   disconnected: 'Runtime oficial desconectado',
@@ -955,11 +1023,11 @@ const officialSimulatorHostDescriptions: Record<
   string
 > = {
   blocked:
-    'El host esta reservado; faltan licencias y hashes verificados antes de descargar assets oficiales.',
+    'El host solo se detiene si un asset esta marcado como restringido o bloqueado.',
   loading:
     'BotLab esta preparando la conexion con el controller/source boundary oficial.',
   ready:
-    'Los assets estan listos. Ejecuta la simulacion para cargar frames BotLab en el runtime oficial.',
+    'Los assets no se vendorean en el repo. Para el preview educativo, BotLab puede intentar cargar recursos remotos y avisar de lo que sigue sin verificar.',
   running:
     'El artifact de salida ya puede alimentar la source BotLab del simulador oficial.',
   failed:
@@ -1171,16 +1239,29 @@ function summarizeMicroDuckSimulatorAssetPlan(
   );
 }
 
+function createMicroDuckOfficialSimulatorPreviewRuntime() {
+  const sources: MicroDuckOfficialSimulatorSource[] = [];
+
+  return {
+    controller: {
+      sources,
+      addSource(source: MicroDuckOfficialSimulatorSource) {
+        sources.push(source);
+      },
+    },
+  };
+}
+
 function resolveMicroDuckOfficialSimulatorHostState({
-  assetReady,
+  assetLoadable,
   simulationState,
   simulatorOutputReady,
 }: {
-  assetReady: boolean;
+  assetLoadable: boolean;
   simulationState: BotLabSimulationState;
   simulatorOutputReady: boolean;
 }): MicroDuckOfficialSimulatorHostState {
-  if (!assetReady) {
+  if (!assetLoadable) {
     return 'blocked';
   }
 

@@ -246,25 +246,35 @@ export function createMicroDuckSimulatorBridge(
 export async function loadMicroDuckOfficialSimulatorHost(
   options: LoadMicroDuckOfficialSimulatorHostOptions
 ): Promise<MicroDuckOfficialSimulatorHostResult> {
-  if (!options.assetPlan.ready) {
+  if (!options.assetPlan.loadable) {
     const blockedAssets = options.assetPlan.entries
-      .filter((entry) => entry.status !== 'ready')
+      .filter((entry) => entry.status === 'blocked')
       .map((entry) => `${entry.asset.label}: ${entry.status}`);
 
     return {
       state: 'blocked',
       messages: [
-        'MicroDuck official simulator runtime is blocked until required assets are reviewed and cached.',
+        'MicroDuck official simulator runtime is blocked because at least one required asset is restricted.',
         ...blockedAssets,
       ],
     };
   }
+
+  const advisoryMessages = options.assetPlan.ready
+    ? []
+    : options.assetPlan.entries
+        .filter((entry) => entry.status !== 'ready')
+        .map(
+          (entry) =>
+            `${entry.asset.label}: ${entry.status}. BotLab will not vendor this asset; educational preview loading remains opt-in.`
+        );
 
   if (!options.artifact) {
     return {
       state: 'ready',
       messages: [
         'MicroDuck official simulator assets are ready. Compile and simulate a plan to load BotLab control frames.',
+        ...advisoryMessages,
       ],
     };
   }
@@ -290,6 +300,7 @@ export async function loadMicroDuckOfficialSimulatorHost(
     controlSource,
     messages: [
       `Loaded ${controlSource.frames.length} BotLab control frame(s) into the official simulator source.`,
+      ...advisoryMessages,
       ...controlSource.messages,
     ],
   };

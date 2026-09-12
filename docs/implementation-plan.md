@@ -301,7 +301,7 @@ Tasks:
 - Add upstream manifest types for MicroDuck simulator assets, including URL, revision, hash, and license notes. Done: initial manifest and validation helpers live in `@botlab/simulators-microduck`.
 - Add a cache/setup path for MicroDuck simulator assets without committing those assets to the repo. Started: cache planning and setup interfaces now distinguish pending license review, missing assets, stale hashes, blocked assets, and ready assets, and only write downloaded bytes after SHA-256 verification.
 - Add a BotLab simulator control source that maps compiled BotLab commands to the official simulator controller contract. Started: compiled LED and differential drive commands now map into typed MicroDuck simulator control frames, and BotLab exposes a source compatible with the official simulator `Controller` source contract.
-- Spike loading the official simulator game core in the BotLab UI through `@botlab/simulators-microduck`. Started: a lazy runtime connector can register the BotLab source with the official simulator controller once the game runtime is loaded, and the MicroDuck package now exposes a host loader that blocks on asset review before loading BotLab control frames.
+- Spike loading the official simulator game core in the BotLab UI through `@botlab/simulators-microduck`. Started: a lazy runtime connector can register the BotLab source with the official simulator controller once the game runtime is loaded, and the MicroDuck package now exposes a host loader that warns on unverified assets without vendoring them.
 - Map simulator capabilities to the same adapter contract as hardware.
 - Add simulator output artifacts. Started: the simulation flow now creates a typed `simulator-output` artifact with command count, command echoes, simulator messages, and the bridge snapshot, and the web app surfaces it in the artifact inventory and simulator host.
 - Add app UI for selecting hardware versus simulator target.
@@ -319,7 +319,7 @@ Next handoff:
 1. Verify licenses for the official browser simulator source, MicroDuck model assets, ONNX policies, meshes, and sounds.
 2. Fill reviewed SHA-256 values and license decisions into the MicroDuck upstream manifest once the exact official asset set is approved.
 3. Add a concrete browser or local cache store implementation for the setup/download interfaces.
-4. Add the web UI host that lazy-loads the official simulator runtime, calls `connectMicroDuckBotLabSourceToOfficialSimulator`, and renders the simulator scene. Started: the workbench now reserves a MicroDuck simulator host surface with asset-gated runtime state and a host loader is ready for the official controller/source boundary.
+4. Add the web UI host that lazy-loads the official simulator runtime, calls `connectMicroDuckBotLabSourceToOfficialSimulator`, and renders the simulator scene. Started: the workbench now reserves a MicroDuck simulator host surface with asset-gated runtime state, an educational preview loader is wired to the official controller/source boundary, and unverified assets are warning-only unless explicitly restricted.
 5. Continue UI state for simulator load failure and ready/running states. Started: the app now surfaces blocked, loading, ready, running, failed, and disconnected host states alongside per-asset setup status from the MicroDuck manifest.
 6. Keep the existing local bridge tests green while adding browser-level smoke coverage for the visible simulator.
 

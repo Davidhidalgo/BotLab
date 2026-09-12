@@ -248,12 +248,47 @@ describe('microDuckSimulatorBridge', () => {
     expect(second.source).toBe(first.source);
   });
 
-  it('blocks official simulator host loading while assets need review', async () => {
+  it('allows educational preview host loading while assets still need review', async () => {
+    const runtime = createFakeOfficialRuntime();
+
     await expect(
       loadMicroDuckOfficialSimulatorHost({
         assetPlan: createMicroDuckSimulatorAssetCachePlan(
           microDuckSimulatorAssetManifest
         ),
+        artifact: createCompiledBehaviorArtifact(),
+        loadRuntime: () => runtime,
+        getVelocityLimits: () => [2, -1, 3],
+      })
+    ).resolves.toMatchObject({
+      state: 'running',
+      messages: [
+        'Loaded 1 BotLab control frame(s) into the official simulator source.',
+        'MicroDuck MuJoCo robot models: pending-review. BotLab will not vendor this asset; educational preview loading remains opt-in.',
+        'MicroDuck official policy manifest: pending-review. BotLab will not vendor this asset; educational preview loading remains opt-in.',
+        'MicroDuck browser sandbox source: pending-review. BotLab will not vendor this asset; educational preview loading remains opt-in.',
+        'led-pattern -> {"pattern":"smile","brightness":50}',
+      ],
+    });
+    expect(runtime.controller.sources).toHaveLength(1);
+  });
+
+  it('blocks official simulator host loading for restricted assets', async () => {
+    const manifest = createReviewedAssetManifest({
+      assets: [
+        {
+          ...createReviewedAssetManifest().assets[0],
+          license: {
+            status: 'restricted',
+            notes: 'Restricted test asset.',
+          },
+        },
+      ],
+    });
+
+    await expect(
+      loadMicroDuckOfficialSimulatorHost({
+        assetPlan: createMicroDuckSimulatorAssetCachePlan(manifest),
         artifact: createCompiledBehaviorArtifact(),
         loadRuntime: createFakeOfficialRuntime,
         getVelocityLimits: () => [2, -1, 3],
@@ -261,10 +296,8 @@ describe('microDuckSimulatorBridge', () => {
     ).resolves.toMatchObject({
       state: 'blocked',
       messages: [
-        'MicroDuck official simulator runtime is blocked until required assets are reviewed and cached.',
-        'MicroDuck MuJoCo robot models: pending-review',
-        'MicroDuck official policy manifest: pending-review',
-        'MicroDuck browser sandbox source: pending-review',
+        'MicroDuck official simulator runtime is blocked because at least one required asset is restricted.',
+        'Reviewed policy: blocked',
       ],
     });
   });
@@ -317,6 +350,7 @@ describe('microDuckSimulatorAssetManifest', () => {
     );
 
     expect(plan.ready).toBe(false);
+    expect(plan.loadable).toBe(true);
     expect(plan.entries.map((entry) => entry.status)).toEqual([
       'pending-review',
       'pending-review',

@@ -37,7 +37,7 @@ describe('App', () => {
     const { getAllByText, getByRole, getByText } = render(<App />);
 
     expect(getByText('MicroDuck Simulator Host')).toBeTruthy();
-    expect(getByText('Runtime oficial bloqueado por assets')).toBeTruthy();
+    expect(getByText('Runtime oficial listo en modo educativo')).toBeTruthy();
     expect(getByText('Estado host')).toBeTruthy();
     expect(getByText('Setup assets')).toBeTruthy();
     expect(getAllByText('Revision').length).toBeGreaterThan(0);
@@ -108,6 +108,31 @@ describe('App', () => {
     ).toBeGreaterThan(0);
     expect(getByText('Output artifact')).toBeTruthy();
     expect(getByText(/led-pattern ->/i)).toBeTruthy();
+    expect(getByRole('button', { name: 'Cargar runtime' })).toHaveProperty(
+      'disabled',
+      false
+    );
+
+    fireEvent.click(getByRole('button', { name: 'Cargar runtime' }));
+
+    await waitFor(() => {
+      expect(getByText('Runtime loader')).toBeTruthy();
+    });
+    await waitFor(() => {
+      expect(
+        getByText(
+          'Loaded 1 BotLab control frame(s) into the official simulator source.'
+        )
+      ).toBeTruthy();
+    });
+    expect(
+      getAllByText(
+        'Loaded 1 BotLab control frame(s) into the official simulator source.'
+      ).length
+    ).toBeGreaterThan(0);
+    expect(
+      getAllByText(/educational preview loading remains opt-in/i).length
+    ).toBeGreaterThan(0);
 
     fireEvent.click(getByRole('button', { name: 'Ejecutar demo' }));
 

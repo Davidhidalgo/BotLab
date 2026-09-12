@@ -94,6 +94,7 @@ export interface MicroDuckSimulatorAssetCachePlanEntry {
 export interface MicroDuckSimulatorAssetCachePlan {
   manifestId: string;
   ready: boolean;
+  loadable: boolean;
   entries: MicroDuckSimulatorAssetCachePlanEntry[];
 }
 
@@ -271,6 +272,7 @@ export function createMicroDuckSimulatorAssetCachePlan(
   return {
     manifestId: manifest.id,
     ready: entries.every((entry) => entry.status === 'ready'),
+    loadable: entries.every((entry) => entry.status !== 'blocked'),
     entries,
   };
 }

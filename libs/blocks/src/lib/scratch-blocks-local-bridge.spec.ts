@@ -7,10 +7,10 @@ describe('createLocalScratchBlocksEditorBridge', () => {
       () =>
         ({
           measureText: () => ({ width: 0 }),
-        }) as unknown as CanvasRenderingContext2D,
+        } as unknown as CanvasRenderingContext2D)
     );
     globalThis.fetch = vi.fn(() =>
-      Promise.resolve(new Response(new ArrayBuffer(0))),
+      Promise.resolve(new Response(new ArrayBuffer(0)))
     ) as unknown as typeof fetch;
   });
 
@@ -32,7 +32,7 @@ describe('createLocalScratchBlocksEditorBridge', () => {
         engine: 'scratch-blocks',
         format: 'scratch-xml',
         status: 'loaded',
-      }),
+      })
     );
 
     if (result.mounted) {
@@ -61,4 +61,97 @@ describe('createLocalScratchBlocksEditorBridge', () => {
         'Scratch Blocks no se ha podido montar: el artefacto no contiene XML de Scratch Blocks.',
     });
   });
+
+  it('provides an editable default number in the wait toolbox entry', async () => {
+    const result = await createLocalScratchBlocksEditorBridge().mount({
+      element: document.createElement('div'),
+      artifact: sampleScratchBlocksWorkspaceArtifact,
+    });
+    expect(result.mounted).toBe(true);
+    if (!result.mounted) return;
+    try {
+      const scratch = await import('scratch-blocks');
+      const workspace = scratch.getMainWorkspace() as InstanceType<
+        typeof scratch.WorkspaceSvg
+      >;
+      const wait = workspace
+        .getFlyout()!
+        .getWorkspace()
+        .getBlocksByType('control_wait', false)[0];
+      const number = wait.getInputTargetBlock('DURATION')!;
+      expect(number.isShadow()).toBe(true);
+      expect(number.getFieldValue('NUM')).toBe('1');
+      expect(number.getField('NUM')!.EDITABLE).toBe(true);
+    } finally {
+      result.handle.dispose();
+    }
+  });
+
+  it.each(['', '<value name="DURATION"></value>'])(
+    'repairs a missing wait number, persists decimals, and reloads them: %s',
+    async (duration) => {
+      const bridge = createLocalScratchBlocksEditorBridge();
+      const result = await bridge.mount({
+        element: document.createElement('div'),
+        artifact: {
+          ...sampleScratchBlocksWorkspaceArtifact,
+          content: `<xml xmlns="https://developers.google.com/blockly/xml"><block type="control_wait" id="wait">${duration}</block></xml>`,
+        },
+      });
+      expect(result.mounted).toBe(true);
+      if (!result.mounted) return;
+      let artifact;
+      try {
+        const scratch = await import('scratch-blocks');
+        const number = scratch
+          .getMainWorkspace()
+          .getBlockById('wait')!
+          .getInputTargetBlock('DURATION')!;
+        expect(number.getFieldValue('NUM')).toBe('1');
+        number.setFieldValue('2.5', 'NUM');
+        artifact = result.handle.exportWorkspace();
+        expect(artifact.content).toContain('>2.5</field>');
+      } finally {
+        result.handle.dispose();
+      }
+      const reloaded = await bridge.mount({
+        element: document.createElement('div'),
+        artifact,
+      });
+      expect(reloaded.mounted).toBe(true);
+      if (reloaded.mounted) {
+        expect(reloaded.handle.exportWorkspace().content).toContain(
+          '>2.5</field>'
+        );
+        reloaded.handle.dispose();
+      }
+    }
+  );
+
+  it.each(['shadow', 'block'])(
+    'preserves an existing duration %s, including zero',
+    async (tag) => {
+      const result = await createLocalScratchBlocksEditorBridge().mount({
+        element: document.createElement('div'),
+        artifact: {
+          ...sampleScratchBlocksWorkspaceArtifact,
+          content: `<xml xmlns="https://developers.google.com/blockly/xml"><block type="control_wait" id="wait"><value name="DURATION"><${tag} type="math_positive_number" id="duration"><field name="NUM">0</field></${tag}></value></block></xml>`,
+        },
+      });
+      expect(result.mounted).toBe(true);
+      if (!result.mounted) return;
+      try {
+        const xml = new DOMParser().parseFromString(
+          result.handle.exportWorkspace().content,
+          'text/xml'
+        );
+        const duration = xml.querySelector('value[name="DURATION"]')!;
+        expect(duration.children).toHaveLength(1);
+        expect(duration.firstElementChild!.localName).toBe(tag);
+        expect(duration.querySelector('field[name="NUM"]')!.textContent).toBe('0');
+      } finally {
+        result.handle.dispose();
+      }
+    }
+  );
 });

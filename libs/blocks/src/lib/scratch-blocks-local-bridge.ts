@@ -150,7 +150,8 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
       ],
       style: 'motion',
       extensions: ['shape_statement'],
-      tooltip: 'Moves the MicroDuck simulator forward for the requested distance.',
+      tooltip:
+        'Moves the MicroDuck simulator forward for the requested distance.',
     },
   ]);
 
@@ -263,7 +264,17 @@ function createBotLabToolbox() {
         kind: 'category',
         name: 'Control',
         categorystyle: 'control_category',
-        contents: [{ kind: 'block', type: 'control_wait' }],
+        contents: [
+          {
+            kind: 'block',
+            type: 'control_wait',
+            inputs: {
+              DURATION: {
+                shadow: { type: 'math_positive_number', fields: { NUM: 1 } },
+              },
+            },
+          },
+        ],
       },
     ],
   };
@@ -279,6 +290,36 @@ function loadWorkspaceXml(
 
   if (xml.nodeName.toLowerCase() !== 'xml') {
     throw new Error('el artefacto no contiene XML de Scratch Blocks.');
+  }
+
+  // Older toolbox entries created wait blocks without an editable number shadow.
+  for (const block of Array.from(
+    xml.querySelectorAll('block[type="control_wait"]')
+  )) {
+    let duration = Array.from(block.children).find(
+      (child) =>
+        child.localName === 'value' && child.getAttribute('name') === 'DURATION'
+    );
+    if (
+      duration &&
+      Array.from(duration.children).some(
+        (child) => child.localName === 'shadow' || child.localName === 'block'
+      )
+    )
+      continue;
+
+    if (!duration) {
+      duration = document.createElementNS(xml.namespaceURI, 'value');
+      duration.setAttribute('name', 'DURATION');
+      block.appendChild(duration);
+    }
+    const shadow = document.createElementNS(xml.namespaceURI, 'shadow');
+    shadow.setAttribute('type', 'math_positive_number');
+    const field = document.createElementNS(xml.namespaceURI, 'field');
+    field.setAttribute('name', 'NUM');
+    field.textContent = '1';
+    shadow.appendChild(field);
+    duration.appendChild(shadow);
   }
 
   scratchBlocks.clearWorkspaceAndLoadFromXml(xml, workspace);

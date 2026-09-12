@@ -15,6 +15,8 @@ import {
 import {
   connectMicroDuckBotLabSourceToOfficialSimulator,
   createMicroDuckBotLabPostMessageSource,
+  createMicroDuckBotLabPostMessageSourceModule,
+  createMicroDuckOfficialSimulatorPatchInstructions,
   createMicroDuckBotLabOfficialSource,
   createMicroDuckSimulatorControlMessage,
   createMicroDuckSimulatorBridge,
@@ -344,6 +346,29 @@ describe('microDuckSimulatorBridge', () => {
     source.poll?.(1 / 50);
 
     expect(source.pressed).toEqual({});
+  });
+
+  it('generates a simulator-side BotLab source module and patch hints', () => {
+    const moduleSource = createMicroDuckBotLabPostMessageSourceModule({
+      allowedOrigins: ['http://127.0.0.1:4200'],
+    });
+
+    expect(moduleSource).toContain(
+      'const MESSAGE_TYPE = "botlab.microduck.control-source.v1";'
+    );
+    expect(moduleSource).toContain(
+      'const ALLOWED_ORIGINS = ["http://127.0.0.1:4200"];'
+    );
+    expect(moduleSource).toContain('export class BotLabSource');
+    expect(moduleSource).toContain('window.addEventListener("message"');
+
+    expect(createMicroDuckOfficialSimulatorPatchInstructions()).toEqual({
+      modulePath: 'app/src/game/controls/botlab.js',
+      importLine: 'import { BotLabSource } from "./controls/botlab.js";',
+      sourceFactoryLine:
+        'const botLabSource = new BotLabSource({ getVelocityLimits: () => model.getVelocityLimits() });',
+      controllerSourceName: 'botLabSource',
+    });
   });
 
   it('allows educational preview host loading while assets still need review', async () => {

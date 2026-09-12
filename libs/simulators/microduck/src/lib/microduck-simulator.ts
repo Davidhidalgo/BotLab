@@ -106,8 +106,22 @@ export interface MicroDuckSimulatorControlMessage {
   source: MicroDuckSimulatorControlSource;
 }
 
+export interface MicroDuckBotLabPostMessageSourceModuleOptions {
+  allowedOrigins?: string[];
+  className?: string;
+}
+
+export interface MicroDuckOfficialSimulatorPatchInstructions {
+  modulePath: string;
+  importLine: string;
+  sourceFactoryLine: string;
+  controllerSourceName: string;
+}
+
 export const MICRODUCK_SIMULATOR_CONTROL_MESSAGE_TYPE =
   'botlab.microduck.control-source.v1';
+export const MICRODUCK_BOTLAB_SOURCE_MODULE_PATH =
+  'app/src/game/controls/botlab.js';
 
 export interface MicroDuckOfficialSimulatorController {
   readonly sources?: MicroDuckOfficialSimulatorSource[];
@@ -543,6 +557,169 @@ export function parseMicroDuckSimulatorControlMessage(
     version: 1,
     simulatorId: 'microduck-official-sim',
     source,
+  };
+}
+
+export function createMicroDuckBotLabPostMessageSourceModule(
+  options: MicroDuckBotLabPostMessageSourceModuleOptions = {}
+) {
+  const className = options.className ?? 'BotLabSource';
+  const allowedOrigins = JSON.stringify(options.allowedOrigins ?? []);
+
+  return `const MESSAGE_TYPE = ${JSON.stringify(
+    MICRODUCK_SIMULATOR_CONTROL_MESSAGE_TYPE
+  )};
+const ALLOWED_ORIGINS = ${allowedOrigins};
+
+export class ${className} {
+  constructor({ getVelocityLimits } = {}) {
+    this.id = "botlab";
+    this.connected = true;
+    this.command = new Float32Array(3);
+    this.axes = { jaw: 0, orbitX: 0, orbitY: 0, ride: 0 };
+    this.pressed = {};
+    this.onAction = () => {};
+    this.getVelocityLimits = getVelocityLimits ?? (() => [2, -1, 3]);
+    this.frames = [];
+    this.cursor = 0;
+    this.active = false;
+    this.onMessage = this.onMessage.bind(this);
+  }
+
+  init() {
+    this.connected = true;
+    window.addEventListener("message", this.onMessage);
+  }
+
+  dispose() {
+    window.removeEventListener("message", this.onMessage);
+    this.connected = false;
+    this.clear();
+  }
+
+  onMessage(event) {
+    if (
+      ALLOWED_ORIGINS.length > 0 &&
+      typeof event.origin === "string" &&
+      !ALLOWED_ORIGINS.includes(event.origin)
+    ) {
+      return;
+    }
+
+    const message = event.data;
+    if (
+      !message ||
+      message.type !== MESSAGE_TYPE ||
+      message.version !== 1 ||
+      message.simulatorId !== "microduck-official-sim" ||
+      !message.source ||
+      !Array.isArray(message.source.frames)
+    ) {
+      return;
+    }
+
+    this.load(message.source);
+  }
+
+  load(controlSource) {
+    this.frames = [...controlSource.frames];
+    this.cursor = 0;
+    this.active = false;
+    this.resetCommand();
+    this.resetPressed();
+  }
+
+  clear() {
+    this.frames = [];
+    this.cursor = 0;
+    this.active = false;
+    this.resetCommand();
+    this.resetPressed();
+    this.axes.jaw = 0;
+    this.axes.orbitX = 0;
+    this.axes.orbitY = 0;
+    this.axes.ride = 0;
+  }
+
+  isActive() {
+    return this.active;
+  }
+
+  poll() {
+    const frame = this.frames[this.cursor];
+
+    if (!frame) {
+      this.active = false;
+      this.resetCommand();
+      return;
+    }
+
+    this.applyFrame(frame);
+    this.cursor += 1;
+  }
+
+  applyFrame(frame) {
+    this.resetCommand();
+    this.resetPressed();
+
+    if (frame.type === "differential-drive") {
+      const [forwardLimit, backwardLimit, angularLimit] =
+        this.getVelocityLimits();
+      const forwardPower = clampUnit((frame.leftPower + frame.rightPower) / 2);
+      const turnPower = clampUnit((frame.rightPower - frame.leftPower) / 2);
+
+      this.command[0] =
+        forwardPower >= 0
+          ? forwardPower * forwardLimit
+          : forwardPower * Math.abs(backwardLimit);
+      this.command[1] = 0;
+      this.command[2] = turnPower * angularLimit;
+      this.pressed.forward = this.command[0] > 0;
+      this.pressed.back = this.command[0] < 0;
+      this.pressed.turnLeft = this.command[2] > 0;
+      this.pressed.turnRight = this.command[2] < 0;
+      this.active = this.command.some((value) => Math.abs(value) > 0);
+      return;
+    }
+
+    if (frame.type === "led-pattern") {
+      this.pressed[\`led:\${frame.pattern}\`] = true;
+      this.axes.jaw =
+        typeof frame.brightness === "number" && frame.brightness > 0
+          ? Math.min(frame.brightness / 100, 1)
+          : 0;
+    }
+  }
+
+  resetCommand() {
+    this.command[0] = 0;
+    this.command[1] = 0;
+    this.command[2] = 0;
+  }
+
+  resetPressed() {
+    for (const key of Object.keys(this.pressed)) {
+      delete this.pressed[key];
+    }
+  }
+}
+
+function clampUnit(value) {
+  return Math.max(-1, Math.min(1, value));
+}
+`;
+}
+
+export function createMicroDuckOfficialSimulatorPatchInstructions(
+  options: MicroDuckBotLabPostMessageSourceModuleOptions = {}
+): MicroDuckOfficialSimulatorPatchInstructions {
+  const className = options.className ?? 'BotLabSource';
+
+  return {
+    modulePath: MICRODUCK_BOTLAB_SOURCE_MODULE_PATH,
+    importLine: `import { ${className} } from "./controls/botlab.js";`,
+    sourceFactoryLine: `const botLabSource = new ${className}({ getVelocityLimits: () => model.getVelocityLimits() });`,
+    controllerSourceName: 'botLabSource',
   };
 }
 

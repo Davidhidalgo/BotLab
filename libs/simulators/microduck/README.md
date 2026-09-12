@@ -17,6 +17,8 @@ This is the home for the future MuJoCo/ONNX/browser simulator bridge. The shared
 - `createMicroDuckSimulatorControlSource`: maps compiled BotLab commands into MicroDuck simulator control frames.
 - `createMicroDuckBotLabOfficialSource`: adapts BotLab control frames to the official simulator `Controller` source contract.
 - `createMicroDuckBotLabPostMessageSource`: creates a simulator-side `Controller` source that listens for BotLab control frames sent with `window.postMessage`.
+- `createMicroDuckBotLabPostMessageSourceModule`: generates the standalone `controls/botlab.js` module for a patched official simulator host.
+- `createMicroDuckOfficialSimulatorPatchInstructions`: returns the import/source registration hints for the official simulator `Controller`.
 - `createMicroDuckSimulatorControlMessage`: wraps BotLab control frames in the stable postMessage envelope.
 - `parseMicroDuckSimulatorControlMessage`: validates a candidate postMessage payload before loading frames.
 - `postMicroDuckSimulatorControlSource`: sends BotLab control frames to a BotLab-enabled simulator window.

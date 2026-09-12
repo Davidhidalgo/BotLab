@@ -9,10 +9,20 @@ describe('App', () => {
   });
 
   it('should show the BotLab project screen', () => {
-    const { getByText } = render(<App />);
+    const { getByLabelText, getByText } = render(<App />);
     expect(
-      getByText(/Laboratorio visual para robots programables/i)
+      getByText(/Laboratori visual per a robots programables/i)
     ).toBeTruthy();
+    expect(getByLabelText('Idioma')).toHaveProperty('value', 'ca');
+  });
+
+  it('should switch the shell language', () => {
+    const { getByLabelText, getByText } = render(<App />);
+
+    fireEvent.change(getByLabelText('Idioma'), { target: { value: 'en' } });
+
+    expect(getByText(/Visual lab for programmable robots/i)).toBeTruthy();
+    expect(getByText('Language')).toBeTruthy();
   });
 
   it('should show the artifact inventory', () => {
@@ -29,19 +39,19 @@ describe('App', () => {
   it('should show official simulator asset readiness', () => {
     const { getByText } = render(<App />);
 
-    expect(getByText('Assets oficiales')).toBeTruthy();
-    expect(getByText(/0 listos · 3 pendientes de revision/i)).toBeTruthy();
+    expect(getByText('Assets oficials')).toBeTruthy();
+    expect(getByText(/0 llest · 3 pendent revisio/i)).toBeTruthy();
   });
 
   it('should show the MicroDuck simulator host', () => {
     const { getAllByText, getByRole, getByText, getByTitle } = render(<App />);
 
     expect(getByText('MicroDuck Simulator Host')).toBeTruthy();
-    expect(getByText('Runtime oficial listo en modo educativo')).toBeTruthy();
-    expect(getByText('Estado host')).toBeTruthy();
+    expect(getByText('Runtime oficial llest en mode educatiu')).toBeTruthy();
+    expect(getByText('Estat host')).toBeTruthy();
     expect(getByText('Setup assets')).toBeTruthy();
     expect(getAllByText('Revision').length).toBeGreaterThan(0);
-    expect(getByRole('button', { name: 'Cargar runtime' })).toHaveProperty(
+    expect(getByRole('button', { name: 'Carregar runtime' })).toHaveProperty(
       'disabled',
       true
     );
@@ -61,7 +71,7 @@ describe('App', () => {
     const { getAllByText, getByRole } = render(<App />);
 
     expect(getAllByText('MicroDuck Simulator').length).toBeGreaterThan(0);
-    expect(getAllByText('Seleccionado').length).toBeGreaterThan(0);
+    expect(getAllByText('Seleccionat').length).toBeGreaterThan(0);
 
     fireEvent.click(getByRole('button', { name: /StackChan/i }));
 
@@ -88,9 +98,9 @@ describe('App', () => {
       ).toBeGreaterThan(0);
     });
     expect(getByText('Requiere confirmacion')).toBeTruthy();
-    expect(getByText('Confirmacion aplicada')).toBeTruthy();
+    expect(getByText('Confirmacio aplicada')).toBeTruthy();
     expect(getByText('confirm-led-output')).toBeTruthy();
-    expect(getAllByText('Comando generado').length).toBeGreaterThan(0);
+    expect(getAllByText('Comanda generada').length).toBeGreaterThan(0);
     expect(getAllByText('set-led-pattern').length).toBeGreaterThan(0);
     expect(getAllByText('sonrisa').length).toBeGreaterThan(0);
     expect(getAllByText('50').length).toBeGreaterThan(0);
@@ -108,12 +118,12 @@ describe('App', () => {
     ).toBeGreaterThan(0);
     expect(getByText('Output artifact')).toBeTruthy();
     expect(getByText(/led-pattern ->/i)).toBeTruthy();
-    expect(getByRole('button', { name: 'Cargar runtime' })).toHaveProperty(
+    expect(getByRole('button', { name: 'Carregar runtime' })).toHaveProperty(
       'disabled',
       false
     );
 
-    fireEvent.click(getByRole('button', { name: 'Cargar runtime' }));
+    fireEvent.click(getByRole('button', { name: 'Carregar runtime' }));
 
     await waitFor(() => {
       expect(getByText('Runtime loader')).toBeTruthy();
@@ -134,15 +144,15 @@ describe('App', () => {
       getAllByText(/educational preview loading remains opt-in/i).length
     ).toBeGreaterThan(0);
     expect(
-      getByText('Preview remoto oficial')
+      getByText('Preview remot oficial')
     ).toBeTruthy();
     expect(
       getByTitle('MicroDuck official simulator preview').getAttribute('src')
     ).toBe('https://pollen-robotics-microduck-simulator.hf.space');
 
-    fireEvent.click(getByRole('button', { name: 'Ejecutar demo' }));
+    fireEvent.click(getByRole('button', { name: 'Executar demo' }));
 
-    expect(getAllByText(/Ejecutando/i).length).toBeGreaterThan(0);
+    expect(getAllByText(/Executant/i).length).toBeGreaterThan(0);
 
     await waitFor(() => {
       expect(getByText(/1 comando\(s\) enviados/i)).toBeTruthy();

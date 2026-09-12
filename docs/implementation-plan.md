@@ -62,6 +62,7 @@ Implemented:
 - The UI now exposes a target selector that defaults to the MicroDuck simulator demo target and blocks planned or incompatible targets from compilation.
 - The UI now exposes a runtime log panel with recent events, session trace entries, and diagnostics.
 - The UI now exposes an artifact inventory for the current workspace, compiled plan, simulation output, and runtime trace.
+- The web app now has a lightweight i18n layer with Catalan as the default official language and English/Spanish selectable from the shell.
 - The UI now exposes policy status for the compiled demo plan, including decision, confirmation state, and rule ids.
 
 Not implemented yet:

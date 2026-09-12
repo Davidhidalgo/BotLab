@@ -40,6 +40,11 @@ import {
   type BotLabSimulationState,
   type BotLabWorkspaceState,
 } from './botlab-flow-machine';
+import {
+  botLabLocales,
+  botLabTranslations,
+  type BotLabLocale,
+} from './i18n';
 
 const featuredConcepts = botLabConcepts.filter(({ concept }) =>
   ['policy', 'skill', 'behavior', 'arbitration'].includes(concept)
@@ -55,10 +60,14 @@ const conceptIcons = {
 const microDuckOfficialSimulatorPreviewUrl =
   'https://pollen-robotics-microduck-simulator.hf.space';
 
+type BotLabCopy = (typeof botLabTranslations)[BotLabLocale];
+
 export function App() {
   const [flowSnapshot, sendFlow] = useMachine(botLabFlowMachine);
+  const [locale, setLocale] = useState<BotLabLocale>('ca');
   const [officialSimulatorHostResult, setOfficialSimulatorHostResult] =
     useState<MicroDuckOfficialSimulatorHostResult>();
+  const copy = botLabTranslations[locale];
   const {
     compiledArtifact,
     runtime,
@@ -137,7 +146,7 @@ export function App() {
   async function loadOfficialSimulatorRuntimePreview() {
     setOfficialSimulatorHostResult({
       state: 'loading',
-      messages: ['Preparando runtime oficial en modo preview educativo.'],
+      messages: ['Preparing official runtime in educational preview mode.'],
     });
 
     try {
@@ -155,7 +164,7 @@ export function App() {
         messages: [
           error instanceof Error
             ? error.message
-            : 'No se pudo cargar el runtime oficial.',
+            : 'Could not load the official runtime.',
         ],
       });
     }
@@ -211,25 +220,40 @@ export function App() {
               <Badge variant="outline">React + TypeScript</Badge>
             </div>
             <h1 className="text-4xl font-semibold tracking-normal text-foreground md:text-5xl">
-              Laboratorio visual para robots programables
+              {copy.heroTitle}
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
-              Una base local para diseñar comportamientos por bloques,
-              ejecutarlos sobre un runtime comun y conectar robots reales o
-              simulados mediante adapters.
+              {copy.heroSubtitle}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <label className="flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm">
+              <span className="text-muted-foreground">{copy.language}</span>
+              <select
+                value={locale}
+                onChange={(event) =>
+                  setLocale(event.target.value as BotLabLocale)
+                }
+                className="bg-transparent font-medium outline-none"
+                aria-label={copy.language}
+              >
+                {botLabLocales.map((language) => (
+                  <option key={language.id} value={language.id}>
+                    {language.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <Button
               onClick={() => sendFlow({ type: 'demo.run' })}
               disabled={!flowSnapshot.can({ type: 'demo.run' })}
             >
               <Play className="h-4 w-4" />
-              {isRunningDemo ? 'Ejecutando' : 'Ejecutar demo'}
+              {isRunningDemo ? copy.running : copy.runDemo}
             </Button>
             <Button variant="secondary">
               <Blocks className="h-4 w-4" />
-              Abrir editor
+              {copy.openEditor}
             </Button>
             <Button
               variant="secondary"
@@ -237,7 +261,7 @@ export function App() {
               disabled={!flowSnapshot.can({ type: 'workspace.validate' })}
             >
               <ShieldCheck className="h-4 w-4" />
-              Validar workspace
+              {copy.validateWorkspace}
             </Button>
             <Button
               variant="secondary"
@@ -248,7 +272,7 @@ export function App() {
               }
             >
               <Cpu className="h-4 w-4" />
-              {isCompiling ? 'Compilando' : 'Compilar demo'}
+              {isCompiling ? copy.compiling : copy.compileDemo}
             </Button>
             <Button
               variant="secondary"
@@ -256,7 +280,7 @@ export function App() {
               disabled={!flowSnapshot.can({ type: 'simulation.run' })}
             >
               <Radar className="h-4 w-4" />
-              {isSimulating ? 'Simulando' : 'Simular demo'}
+              {isSimulating ? copy.simulating : copy.simulateDemo}
             </Button>
           </div>
         </div>
@@ -291,33 +315,35 @@ export function App() {
             simulatorOutput={simulationResult?.outputArtifact}
             simulationState={botLabSimulationStateLabels[flowState.simulation]}
             simulationMessage={simulationMessage}
+            copy={copy}
           />
         </div>
 
         <aside className="space-y-4">
-          <Panel title="Editor">
+          <Panel title={copy.panels.editor}>
             <Metric
-              label="Estado"
+              label={copy.labels.state}
               value={workspaceStatusLabels[workspaceArtifact.status]}
             />
-            <Metric label="Artifact" value={workspaceArtifact.id} />
-            <Metric label="Formato" value={workspaceArtifact.format} />
+            <Metric label={copy.labels.artifact} value={workspaceArtifact.id} />
+            <Metric label={copy.labels.format} value={workspaceArtifact.format} />
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
               {workspaceMessage}
             </p>
           </Panel>
 
-          <Panel title="Build">
+          <Panel title={copy.panels.build}>
             <Metric
-              label="Estado"
+              label={copy.labels.state}
               value={botLabBuildStateLabels[flowState.build]}
             />
             <Metric
-              label="Plan"
-              value={compiledArtifact?.id ?? 'Sin compilar'}
+              label={copy.labels.plan}
+              value={compiledArtifact?.id ?? copy.empty.noCompiledPlan}
             />
             <CompiledCommandCard
               commandId={compiledCommand?.commandId}
+              copy={copy}
               targetName={compiledTargetName}
               pattern={compiledPattern}
               brightness={compiledBrightness}
@@ -327,40 +353,41 @@ export function App() {
             </p>
           </Panel>
 
-          <Panel title="Simulador">
+          <Panel title={copy.panels.simulator}>
             <Metric
-              label="Estado"
+              label={copy.labels.state}
               value={botLabSimulationStateLabels[flowState.simulation]}
             />
             <Metric
-              label="Destino"
-              value={selectedTarget?.name ?? 'Sin seleccionar'}
+              label={copy.labels.destination}
+              value={selectedTarget?.name ?? copy.empty.noSelection}
             />
             <Metric
-              label="Simulador"
-              value={simulationResult?.simulatorId ?? 'Sin ejecutar'}
+              label={copy.labels.simulator}
+              value={simulationResult?.simulatorId ?? copy.empty.noSimulatorRun}
             />
             <Metric
-              label="Comandos"
+              label={copy.labels.commands}
               value={simulationResult?.commandCount.toString() ?? '0'}
             />
             <RuntimeList
               icon={<Cpu className="h-4 w-4 text-primary" />}
-              label="Verificacion"
+              label={copy.labels.verification}
               value={
                 compiledCommand
                   ? `${compiledCommand.commandId} · ${formatLedPattern(
-                      compiledPattern
+                      compiledPattern,
+                      copy
                     )} · brillo ${compiledBrightness ?? 0}`
-                  : 'Compila el workspace para preparar la simulacion.'
+                  : 'Compile the workspace to prepare the simulation.'
               }
             />
             <RuntimeList
               icon={<Radar className="h-4 w-4 text-primary" />}
-              label="Assets oficiales"
-              value={`${simulatorAssetSummary.ready} listos · ${
+              label={copy.labels.officialAssets}
+              value={`${simulatorAssetSummary.ready} ${copy.status.ready.toLowerCase()} · ${
                 simulatorAssetSummary.pendingReview
-              } pendientes de revision · ${microDuckSimulatorAssetManifest.upstreamRevision.slice(
+              } ${copy.status.pending.toLowerCase()} ${copy.status.review.toLowerCase()} · ${microDuckSimulatorAssetManifest.upstreamRevision.slice(
                 0,
                 8
               )}`}
@@ -370,7 +397,7 @@ export function App() {
             </p>
           </Panel>
 
-          <Panel title="Artifacts">
+          <Panel title={copy.panels.artifacts}>
             <div className="grid gap-3">
               {artifactCards.map((artifact) => (
                 <ArtifactCard key={artifact.title} artifact={artifact} />
@@ -378,37 +405,37 @@ export function App() {
             </div>
           </Panel>
 
-          <Panel title="Policy">
+          <Panel title={copy.panels.policy}>
             <Metric
-              label="Decision"
+              label={copy.labels.decision}
               value={
                 policyEvaluation
                   ? policyDecisionLabels[policyEvaluation.decision]
-                  : 'Sin evaluar'
+                  : copy.empty.noData
               }
             />
             <Metric
-              label="Estado"
+              label={copy.labels.state}
               value={
                 policyEvaluation
                   ? policyConfirmed
-                    ? 'Confirmacion aplicada'
-                    : 'Pendiente de confirmacion'
-                  : 'Esperando compilacion'
+                    ? copy.status.confirmationApplied
+                    : copy.status.awaiting
+                  : copy.status.waitingCompile
               }
             />
             <Metric
-              label="Reglas"
+              label={copy.labels.rules}
               value={
                 policyEvaluation?.ruleIds.length
                   ? policyEvaluation.ruleIds.join(', ')
-                  : 'Sin reglas'
+                  : copy.empty.noRules
               }
             />
             <div className="mt-3 space-y-2">
               {(policyEvaluation?.messages.length
                 ? policyEvaluation.messages
-                : ['Compila la demo para evaluar las politicas.']
+                : ['Compile the demo to evaluate policies.']
               ).map((message) => (
                 <p
                   key={message}
@@ -420,14 +447,14 @@ export function App() {
             </div>
           </Panel>
 
-          <Panel title="Runtime">
+          <Panel title={copy.panels.runtime}>
             <Metric
-              label="Target activo"
-              value={selectedTarget?.name ?? 'Sin seleccionar'}
+              label={copy.labels.activeTarget}
+              value={selectedTarget?.name ?? copy.empty.noSelection}
             />
             <Metric label="Targets" value={targets.length.toString()} />
             <Metric
-              label="Capabilities"
+              label={copy.labels.capabilities}
               value={capabilities.length.toString()}
             />
             <Metric
@@ -435,12 +462,14 @@ export function App() {
               value={runtime.listSimulatorIntegrations().length.toString()}
             />
             <Metric
-              label="Sesiones activas"
+              label={copy.labels.activeSessions}
               value={runtimeSnapshot.activeSessionCount.toString()}
             />
             <div className="mt-4 rounded-md border bg-background p-3">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-medium">Sesion demo</span>
+                <span className="text-sm font-medium">
+                  {copy.labels.demoSession}
+                </span>
                 <Badge variant="secondary">
                   {
                     runtimeStateLabels[
@@ -456,7 +485,7 @@ export function App() {
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
               <RuntimeList
                 icon={<GitBranch className="h-4 w-4 text-primary" />}
-                label="Cola"
+                label={copy.labels.queue}
                 value={
                   queue.entries.length > 0
                     ? queue.entries
@@ -465,12 +494,12 @@ export function App() {
                             `${entry.sessionId} · prioridad ${entry.priority}`
                         )
                         .join(', ')
-                    : 'Sin sesiones en cola'
+                    : copy.empty.noQueue
                 }
               />
               <RuntimeList
                 icon={<Lock className="h-4 w-4 text-primary" />}
-                label="Locks"
+                label={copy.labels.locks}
                 value={
                   queue.capabilityLocks.length > 0
                     ? queue.capabilityLocks
@@ -478,13 +507,15 @@ export function App() {
                           (lock) => `${lock.capabilityId} por ${lock.sessionId}`
                         )
                         .join(', ')
-                    : 'Sin capacidades bloqueadas'
+                    : copy.empty.noLocks
                 }
               />
             </div>
             <div className="mt-3 rounded-md border bg-background p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="text-sm font-medium">Flujo workspace</span>
+                <span className="text-sm font-medium">
+                  {copy.labels.workspaceFlow}
+                </span>
                 <Badge variant="outline">
                   {botLabWorkspaceStateLabels[flowState.workspace]}
                 </Badge>
@@ -496,7 +527,9 @@ export function App() {
             </div>
             <div className="mt-3 rounded-md border bg-background p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="text-sm font-medium">Flujo compilación</span>
+                <span className="text-sm font-medium">
+                  {copy.labels.buildFlow}
+                </span>
                 <Badge variant="outline">
                   {botLabBuildStateLabels[flowState.build]}
                 </Badge>
@@ -508,7 +541,9 @@ export function App() {
             </div>
             <div className="mt-3 rounded-md border bg-background p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="text-sm font-medium">Flujo simulación</span>
+                <span className="text-sm font-medium">
+                  {copy.labels.simulationFlow}
+                </span>
                 <Badge variant="outline">
                   {botLabSimulationStateLabels[flowState.simulation]}
                 </Badge>
@@ -520,7 +555,9 @@ export function App() {
             </div>
             <div className="mt-3 rounded-md border bg-background p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="text-sm font-medium">Flujo ejecución</span>
+                <span className="text-sm font-medium">
+                  {copy.labels.executionFlow}
+                </span>
                 <Badge variant="outline">
                   {botLabExecutionStateLabels[flowState.execution]}
                 </Badge>
@@ -532,17 +569,19 @@ export function App() {
             </div>
           </Panel>
 
-          <Panel title="Targets">
+          <Panel title={copy.panels.targets}>
             <div className="mb-3 rounded-md border bg-background p-3">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-medium">Destino activo</span>
+                <span className="text-sm font-medium">
+                  {copy.labels.activeDestination}
+                </span>
                 <Badge>
                   {targetKindLabels[selectedTarget?.kind ?? 'simulator']}
                 </Badge>
               </div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {selectedTarget?.name ?? 'Selecciona un target'} ·{' '}
-                {selectedCapabilities.length} capacidad(es) compatibles
+                {selectedTarget?.name ?? copy.empty.noSelection} ·{' '}
+                {selectedCapabilities.length} {copy.labels.capabilities}
               </p>
             </div>
             <div className="space-y-3">
@@ -581,7 +620,7 @@ export function App() {
                         }
                       >
                         {isSelected
-                          ? 'Seleccionado'
+                          ? copy.status.selected
                           : targetStatusLabels[target.status]}
                       </Badge>
                     </div>
@@ -600,10 +639,10 @@ export function App() {
             </div>
           </Panel>
 
-          <Panel title="Runtime log">
+          <Panel title={copy.panels.runtimeLog}>
             <RuntimeLogSection
-              title="Eventos"
-              emptyMessage="Sin eventos recientes"
+              title="Events"
+              emptyMessage={copy.empty.noEvents}
               items={recentEvents.map((event) => ({
                 id: event.id,
                 label: runtimeEventLabels[event.type],
@@ -612,7 +651,7 @@ export function App() {
             />
             <RuntimeLogSection
               title="Trace"
-              emptyMessage="Sin trace de sesion"
+              emptyMessage={copy.empty.noTrace}
               items={recentTrace.map((entry) => ({
                 id: entry.id,
                 label: runtimeTraceLabels[entry.category],
@@ -620,8 +659,8 @@ export function App() {
               }))}
             />
             <RuntimeLogSection
-              title="Diagnosticos"
-              emptyMessage="Sin diagnosticos"
+              title="Diagnostics"
+              emptyMessage={copy.empty.noDiagnostics}
               items={diagnostics.map((diagnostic) => ({
                 id: diagnostic.id,
                 label: runtimeDiagnosticLabels[diagnostic.category],
@@ -630,7 +669,7 @@ export function App() {
             />
           </Panel>
 
-          <Panel title="Historial">
+          <Panel title={copy.panels.history}>
             <div className="space-y-2">
               {flowLog.map((entry) => (
                 <div
@@ -707,11 +746,13 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function CompiledCommandCard({
   commandId,
+  copy,
   targetName,
   pattern,
   brightness,
 }: {
   commandId?: string;
+  copy: BotLabCopy;
   targetName?: string;
   pattern?: string;
   brightness?: number;
@@ -721,11 +762,12 @@ function CompiledCommandCard({
       <div className="rounded-md border bg-background p-3">
         <div className="mb-2 flex items-center gap-2">
           <Cpu className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">Comando generado</span>
+          <span className="text-sm font-medium">
+            {copy.labels.generatedCommand}
+          </span>
         </div>
         <p className="text-sm leading-6 text-muted-foreground">
-          Todavia no hay comando. Compila el workspace para ver que produce el
-          bloque.
+          {copy.empty.noGeneratedCommand}
         </p>
       </div>
     );
@@ -736,16 +778,18 @@ function CompiledCommandCard({
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <Cpu className="h-4 w-4 shrink-0 text-primary" />
-          <span className="truncate text-sm font-medium">Comando generado</span>
+          <span className="truncate text-sm font-medium">
+            {copy.labels.generatedCommand}
+          </span>
         </div>
         <Badge variant="secondary">{commandId}</Badge>
       </div>
       <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-        <CommandFact label="Destino" value={targetName ?? 'Sin target'} />
-        <CommandFact label="Patron" value={formatLedPattern(pattern)} />
+        <CommandFact label={copy.labels.destination} value={targetName ?? copy.empty.noTarget} />
+        <CommandFact label={copy.labels.pattern} value={formatLedPattern(pattern, copy)} />
         <CommandFact
-          label="Brillo"
-          value={brightness === undefined ? 'Sin dato' : brightness.toString()}
+          label={copy.labels.brightness}
+          value={brightness === undefined ? copy.empty.noData : brightness.toString()}
         />
       </div>
     </div>
@@ -776,6 +820,7 @@ function MicroDuckSimulatorHost({
   simulatorOutput,
   simulationState,
   simulationMessage,
+  copy,
 }: {
   targetName: string;
   assetReady: boolean;
@@ -789,6 +834,7 @@ function MicroDuckSimulatorHost({
   simulatorOutput?: NonNullable<BotLabSimulationResult['outputArtifact']>;
   simulationState: string;
   simulationMessage: string;
+  copy: BotLabCopy;
 }) {
   const hostLoadable = assetPlan.loadable && Boolean(simulatorOutput);
 
@@ -797,7 +843,7 @@ function MicroDuckSimulatorHost({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Radar className="h-4 w-4 text-primary" />
-          <h2 className="font-semibold">MicroDuck Simulator Host</h2>
+          <h2 className="font-semibold">{copy.host.title}</h2>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant={hostState === 'running' ? 'secondary' : 'outline'}>
@@ -810,7 +856,7 @@ function MicroDuckSimulatorHost({
             onClick={onLoadRuntime}
           >
             <Download className="h-4 w-4" />
-            {hostState === 'loading' ? 'Cargando' : 'Cargar runtime'}
+            {hostState === 'loading' ? copy.host.loading : copy.host.loadRuntime}
           </Button>
         </div>
       </div>
@@ -837,52 +883,54 @@ function MicroDuckSimulatorHost({
                   <Radar className="h-10 w-10 text-primary" />
                 </div>
                 <h3 className="text-lg font-semibold">
-                  {officialSimulatorHostTitles[hostState]}
+                  {copy.host.titles[hostState]}
                 </h3>
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                  {officialSimulatorHostDescriptions[hostState]}
+                  {copy.host.descriptions[hostState]}
                 </p>
               </div>
             </>
           )}
           {hostState === 'running' ? (
             <div className="absolute left-3 top-3 rounded-md border bg-card/95 px-3 py-2 text-sm shadow-sm">
-              <div className="font-medium">Preview remoto oficial</div>
+              <div className="font-medium">{copy.host.remotePreview}</div>
               <div className="text-xs text-muted-foreground">
-                BotLab source cargada en paralelo
+                {copy.host.sourceLoaded}
               </div>
             </div>
           ) : null}
         </div>
 
         <div className="grid content-start gap-3">
-          <CommandFact label="Target" value={targetName} />
-          <CommandFact label="Estado sim" value={simulationState} />
+          <CommandFact label={copy.labels.target} value={targetName} />
+          <CommandFact label={copy.labels.state} value={simulationState} />
           <CommandFact
-            label="Estado host"
+            label={copy.labels.hostState}
             value={officialSimulatorHostStateLabels[hostState]}
           />
           <CommandFact
-            label="Plan"
-            value={compiledCommandId ?? 'Sin plan compilado'}
+            label={copy.labels.plan}
+            value={compiledCommandId ?? copy.empty.noCompiledPlan}
           />
           <CommandFact
-            label="Output"
-            value={simulatorOutput?.id ?? 'Sin artifact de salida'}
+            label={copy.labels.output}
+            value={simulatorOutput?.id ?? copy.empty.noOutputArtifact}
           />
           <CommandFact
-            label="Assets"
+            label={copy.labels.assets}
             value={
               assetReady
-                ? `${assetSummary.ready} listos`
-                : `${assetSummary.ready} listos · ${assetSummary.pendingReview} no verificados`
+                ? `${assetSummary.ready} ${copy.status.ready.toLowerCase()}`
+                : `${assetSummary.ready} ${copy.status.ready.toLowerCase()} · ${assetSummary.pendingReview} ${copy.status.review.toLowerCase()}`
             }
           />
           <div className="rounded-md border bg-background p-3">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <span className="text-sm font-medium">Setup assets</span>
+              <span className="text-sm font-medium">
+                {copy.labels.assetSetup}
+              </span>
               <Badge variant={assetReady ? 'secondary' : 'outline'}>
-                {assetReady ? 'Listo' : 'Bloqueado'}
+                {assetReady ? copy.status.ready : copy.status.blocked}
               </Badge>
             </div>
             <div className="space-y-2">
@@ -914,7 +962,9 @@ function MicroDuckSimulatorHost({
           {hostMessages.length > 0 ? (
             <div className="rounded-md border bg-background p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="text-sm font-medium">Runtime loader</span>
+                <span className="text-sm font-medium">
+                  {copy.labels.runtimeLoader}
+                </span>
                 <Badge variant={hostState === 'failed' ? 'outline' : 'secondary'}>
                   {officialSimulatorHostStateLabels[hostState]}
                 </Badge>
@@ -934,7 +984,9 @@ function MicroDuckSimulatorHost({
           {simulatorOutput ? (
             <div className="rounded-md border bg-background p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="text-sm font-medium">Output artifact</span>
+                <span className="text-sm font-medium">
+                  {copy.labels.outputArtifact}
+                </span>
                 <Badge variant="secondary">
                   {simulatorOutput.commandCount} cmd
                 </Badge>
@@ -1230,9 +1282,9 @@ function FlowRail<TState extends string>({
   );
 }
 
-function formatLedPattern(pattern: string | undefined) {
+function formatLedPattern(pattern: string | undefined, copy: BotLabCopy) {
   if (!pattern) {
-    return 'Sin patron';
+    return copy.empty.noPattern;
   }
 
   return ledPatternLabels[pattern] ?? pattern;

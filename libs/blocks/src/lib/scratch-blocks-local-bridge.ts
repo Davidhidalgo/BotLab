@@ -205,8 +205,8 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
   }
 
   const icon = (component: typeof ArrowUp) => `data:image/svg+xml,${encodeURIComponent(renderToStaticMarkup(
-    createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', width: 31, height: 28, viewBox: '0 0 31 28' },
-      createElement(component, { x: 7.5, y: 4.5, color: 'white', size: 25, strokeWidth: 2.5 }))
+    createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', width: 34, height: 28, viewBox: '0 0 34 28' },
+      createElement(component, { x: 10.5, y: 4.5, color: 'white', size: 25, strokeWidth: 2.5 }))
   ))}`;
   const icons = { forward: icon(ArrowUp), backward: icon(ArrowDown), left: icon(CornerUpLeft), right: icon(CornerUpRight), around: icon(Undo2) };
   const message = (key: string) => `%{BKY_BOTLAB_MICRODUCK_${key.toUpperCase()}}`;
@@ -226,7 +226,7 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
       message0: `%${block.field ? 2 : 1} ${message(block.key)}`,
       args0: [
         ...(block.field ? [{ type: 'field_number', name: block.field, value: block.value, text: String(block.value), min: block.min, max: block.max, precision: block.precision }] : []),
-        { type: 'field_image', name: 'DIRECTION', src: block.icon, width: 31, height: 28, alt: message(block.tooltip) },
+        { type: 'field_image', name: 'DIRECTION', src: block.icon, width: 34, height: 28, alt: message(block.tooltip) },
       ],
       style: 'motion', extensions: ['shape_statement'], tooltip: message(block.tooltip),
     })),

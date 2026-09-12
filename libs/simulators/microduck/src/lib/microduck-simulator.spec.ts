@@ -14,10 +14,14 @@ import {
 } from './microduck-simulator-assets';
 import {
   connectMicroDuckBotLabSourceToOfficialSimulator,
+  createMicroDuckBotLabPostMessageSource,
   createMicroDuckBotLabOfficialSource,
+  createMicroDuckSimulatorControlMessage,
   createMicroDuckSimulatorBridge,
   createMicroDuckSimulatorControlSource,
   loadMicroDuckOfficialSimulatorHost,
+  parseMicroDuckSimulatorControlMessage,
+  postMicroDuckSimulatorControlSource,
   type MicroDuckOfficialSimulatorSource,
 } from './microduck-simulator';
 
@@ -246,6 +250,100 @@ describe('microDuckSimulatorBridge', () => {
 
     expect(runtime.controller.sources).toEqual([first.source]);
     expect(second.source).toBe(first.source);
+  });
+
+  it('serializes BotLab control frames for a simulator postMessage host', () => {
+    const controlSource = createMicroDuckSimulatorControlSource(
+      createCompiledBehaviorArtifact()
+    );
+    const postedMessages: unknown[] = [];
+
+    postMicroDuckSimulatorControlSource(
+      {
+        postMessage(message) {
+          postedMessages.push(message);
+        },
+      },
+      controlSource,
+      'https://simulator.test'
+    );
+
+    expect(postedMessages).toEqual([
+      createMicroDuckSimulatorControlMessage(controlSource),
+    ]);
+    expect(
+      parseMicroDuckSimulatorControlMessage(postedMessages[0])
+    ).toMatchObject({
+      simulatorId: 'microduck-official-sim',
+      source: {
+        artifactId: 'artifact-microduck-led-demo-microduck-sim-smile-plan',
+        frames: [{ type: 'led-pattern', pattern: 'smile' }],
+      },
+    });
+  });
+
+  it('loads postMessage control frames into a BotLab simulator source', () => {
+    const fakeWindow = createFakeMessageWindow();
+    const source = createMicroDuckBotLabPostMessageSource({
+      window: fakeWindow,
+      allowedOrigins: ['https://botlab.test'],
+      getVelocityLimits: () => [2, -1, 3],
+    });
+
+    source.init?.();
+    fakeWindow.dispatch({
+      origin: 'https://botlab.test',
+      data: createMicroDuckSimulatorControlMessage(
+        createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact())
+      ),
+    });
+    source.poll?.(1 / 50);
+
+    expect(source.pressed).toEqual({
+      'led:smile': true,
+    });
+
+    source.dispose?.();
+    fakeWindow.dispatch({
+      origin: 'https://botlab.test',
+      data: createMicroDuckSimulatorControlMessage(
+        createMicroDuckSimulatorControlSource({
+          ...createCompiledBehaviorArtifact(),
+          commands: [
+            {
+              ...createCompiledBehaviorArtifact().commands[0],
+              inputs: {
+                pattern: 'blink',
+                brightness: 80,
+              },
+            },
+          ],
+        })
+      ),
+    });
+    source.poll?.(1 / 50);
+
+    expect(source.pressed).toEqual({});
+  });
+
+  it('ignores postMessage control frames from untrusted origins', () => {
+    const fakeWindow = createFakeMessageWindow();
+    const source = createMicroDuckBotLabPostMessageSource({
+      window: fakeWindow,
+      allowedOrigins: ['https://botlab.test'],
+      getVelocityLimits: () => [2, -1, 3],
+    });
+
+    source.init?.();
+    fakeWindow.dispatch({
+      origin: 'https://other.test',
+      data: createMicroDuckSimulatorControlMessage(
+        createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact())
+      ),
+    });
+    source.poll?.(1 / 50);
+
+    expect(source.pressed).toEqual({});
   });
 
   it('allows educational preview host loading while assets still need review', async () => {
@@ -682,6 +780,35 @@ function createFakeOfficialRuntime() {
       addSource: (source: MicroDuckOfficialSimulatorSource) => {
         sources.push(source);
       },
+    },
+  };
+}
+
+function createFakeMessageWindow() {
+  const listeners = new Set<(event: MessageEvent) => void>();
+
+  return {
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject) {
+      if (type !== 'message' || typeof listener !== 'function') {
+        return;
+      }
+
+      listeners.add(listener as (event: MessageEvent) => void);
+    },
+    removeEventListener(
+      type: string,
+      listener: EventListenerOrEventListenerObject
+    ) {
+      if (type !== 'message' || typeof listener !== 'function') {
+        return;
+      }
+
+      listeners.delete(listener as (event: MessageEvent) => void);
+    },
+    dispatch(event: Pick<MessageEvent, 'origin' | 'data'>) {
+      for (const listener of listeners) {
+        listener(event as MessageEvent);
+      }
     },
   };
 }

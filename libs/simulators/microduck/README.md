@@ -16,6 +16,10 @@ This is the home for the future MuJoCo/ONNX/browser simulator bridge. The shared
 - `createMicroDuckSimulatorBridge`: creates the current MicroDuck simulator bridge.
 - `createMicroDuckSimulatorControlSource`: maps compiled BotLab commands into MicroDuck simulator control frames.
 - `createMicroDuckBotLabOfficialSource`: adapts BotLab control frames to the official simulator `Controller` source contract.
+- `createMicroDuckBotLabPostMessageSource`: creates a simulator-side `Controller` source that listens for BotLab control frames sent with `window.postMessage`.
+- `createMicroDuckSimulatorControlMessage`: wraps BotLab control frames in the stable postMessage envelope.
+- `parseMicroDuckSimulatorControlMessage`: validates a candidate postMessage payload before loading frames.
+- `postMicroDuckSimulatorControlSource`: sends BotLab control frames to a BotLab-enabled simulator window.
 - `createMicroDuckSimulatorAssetCachePlan`: plans required cache work from the manifest.
 - `inspectMicroDuckSimulatorAssetCache`: reads a cache store and verifies cached asset hashes.
 - `setupMicroDuckSimulatorAssetCache`: downloads reviewed assets and writes only hash-verified bytes.

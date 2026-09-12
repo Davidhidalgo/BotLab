@@ -90,6 +90,25 @@ export interface MicroDuckBotLabOfficialSourceOptions {
   getVelocityLimits: () => readonly [number, number, number];
 }
 
+export interface MicroDuckBotLabPostMessageSourceOptions
+  extends MicroDuckBotLabOfficialSourceOptions {
+  allowedOrigins?: string[];
+  window?: Pick<
+    Window,
+    'addEventListener' | 'removeEventListener'
+  >;
+}
+
+export interface MicroDuckSimulatorControlMessage {
+  type: typeof MICRODUCK_SIMULATOR_CONTROL_MESSAGE_TYPE;
+  version: 1;
+  simulatorId: 'microduck-official-sim';
+  source: MicroDuckSimulatorControlSource;
+}
+
+export const MICRODUCK_SIMULATOR_CONTROL_MESSAGE_TYPE =
+  'botlab.microduck.control-source.v1';
+
 export interface MicroDuckOfficialSimulatorController {
   readonly sources?: MicroDuckOfficialSimulatorSource[];
   addSource(source: MicroDuckOfficialSimulatorSource): void;
@@ -435,6 +454,98 @@ export function createMicroDuckBotLabOfficialSource(
   };
 }
 
+export function createMicroDuckBotLabPostMessageSource(
+  options: MicroDuckBotLabPostMessageSourceOptions
+): MicroDuckBotLabOfficialSource {
+  const source = createMicroDuckBotLabOfficialSource(options);
+  const targetWindow = options.window ?? globalThis.window;
+  const allowedOrigins = new Set(options.allowedOrigins ?? []);
+
+  function onMessage(event: MessageEvent) {
+    if (
+      allowedOrigins.size > 0 &&
+      typeof event.origin === 'string' &&
+      !allowedOrigins.has(event.origin)
+    ) {
+      return;
+    }
+
+    const message = parseMicroDuckSimulatorControlMessage(event.data);
+
+    if (!message) {
+      return;
+    }
+
+    source.load(message.source);
+  }
+
+  const originalInit = source.init?.bind(source);
+  const originalDispose = source.dispose?.bind(source);
+
+  return {
+    ...source,
+    init() {
+      originalInit?.();
+      targetWindow?.addEventListener?.('message', onMessage);
+    },
+    dispose() {
+      targetWindow?.removeEventListener?.('message', onMessage);
+      originalDispose?.();
+    },
+  };
+}
+
+export function createMicroDuckSimulatorControlMessage(
+  source: MicroDuckSimulatorControlSource
+): MicroDuckSimulatorControlMessage {
+  return {
+    type: MICRODUCK_SIMULATOR_CONTROL_MESSAGE_TYPE,
+    version: 1,
+    simulatorId: 'microduck-official-sim',
+    source,
+  };
+}
+
+export function postMicroDuckSimulatorControlSource(
+  targetWindow: Pick<Window, 'postMessage'>,
+  source: MicroDuckSimulatorControlSource,
+  targetOrigin: string
+) {
+  targetWindow.postMessage(
+    createMicroDuckSimulatorControlMessage(source),
+    targetOrigin
+  );
+}
+
+export function parseMicroDuckSimulatorControlMessage(
+  value: unknown
+): MicroDuckSimulatorControlMessage | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  if (
+    value['type'] !== MICRODUCK_SIMULATOR_CONTROL_MESSAGE_TYPE ||
+    value['version'] !== 1 ||
+    value['simulatorId'] !== 'microduck-official-sim'
+  ) {
+    return undefined;
+  }
+
+  const source = value['source'];
+
+  if (!isMicroDuckSimulatorControlSource(source)) {
+    return undefined;
+  }
+
+  return {
+    type: MICRODUCK_SIMULATOR_CONTROL_MESSAGE_TYPE,
+    version: 1,
+    simulatorId: 'microduck-official-sim',
+    source,
+  };
+}
+
 export function createMicroDuckSimulatorControlSource(
   artifact: CompiledBehaviorArtifact
 ): MicroDuckSimulatorControlSource {
@@ -538,6 +649,55 @@ function isMicroDuckBotLabOfficialSource(
     typeof (source as MicroDuckBotLabOfficialSource).load === 'function' &&
     typeof (source as MicroDuckBotLabOfficialSource).clear === 'function'
   );
+}
+
+function isMicroDuckSimulatorControlSource(
+  value: unknown
+): value is MicroDuckSimulatorControlSource {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value['artifactId'] === 'string' &&
+    typeof value['targetId'] === 'string' &&
+    Array.isArray(value['frames']) &&
+    Array.isArray(value['messages']) &&
+    Array.isArray(value['errors']) &&
+    value['frames'].every(isMicroDuckSimulatorControlFrame) &&
+    value['messages'].every((message) => typeof message === 'string') &&
+    value['errors'].every((error) => typeof error === 'string')
+  );
+}
+
+function isMicroDuckSimulatorControlFrame(
+  value: unknown
+): value is MicroDuckSimulatorControlFrame {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (
+    value['type'] === 'led-pattern' &&
+    typeof value['id'] === 'string' &&
+    typeof value['targetId'] === 'string' &&
+    isMicroDuckLedPattern(value['pattern']) &&
+    typeof value['brightness'] === 'number'
+  ) {
+    return true;
+  }
+
+  return (
+    value['type'] === 'differential-drive' &&
+    typeof value['id'] === 'string' &&
+    typeof value['targetId'] === 'string' &&
+    typeof value['leftPower'] === 'number' &&
+    typeof value['rightPower'] === 'number'
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 function clampUnit(value: number) {

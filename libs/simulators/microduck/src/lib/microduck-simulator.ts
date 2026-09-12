@@ -89,6 +89,32 @@ export interface MicroDuckBotLabOfficialSourceOptions {
   getVelocityLimits: () => readonly [number, number, number];
 }
 
+export interface MicroDuckOfficialSimulatorController {
+  readonly sources?: MicroDuckOfficialSimulatorSource[];
+  addSource(source: MicroDuckOfficialSimulatorSource): void;
+}
+
+export interface MicroDuckOfficialSimulatorRuntime {
+  controller: MicroDuckOfficialSimulatorController;
+}
+
+export type MicroDuckOfficialSimulatorRuntimeLoader = () =>
+  | MicroDuckOfficialSimulatorRuntime
+  | Promise<MicroDuckOfficialSimulatorRuntime>;
+
+export interface MicroDuckOfficialSimulatorConnection {
+  runtime: MicroDuckOfficialSimulatorRuntime;
+  source: MicroDuckBotLabOfficialSource;
+  load(controlSource: MicroDuckSimulatorControlSource): void;
+  disconnect(): void;
+}
+
+export interface MicroDuckOfficialSimulatorConnectionOptions {
+  loadRuntime: MicroDuckOfficialSimulatorRuntimeLoader;
+  getVelocityLimits: () => readonly [number, number, number];
+  sourceId?: string;
+}
+
 export function createMicroDuckSimulatorBridge(
   options: MicroDuckSimulatorBridgeOptions = {}
 ): SimulatorBridge {
@@ -191,6 +217,39 @@ export function createMicroDuckSimulatorBridge(
     },
     snapshot() {
       return createSimulatorSnapshot(snapshot);
+    },
+  };
+}
+
+export async function connectMicroDuckBotLabSourceToOfficialSimulator(
+  options: MicroDuckOfficialSimulatorConnectionOptions
+): Promise<MicroDuckOfficialSimulatorConnection> {
+  const runtime = await options.loadRuntime();
+  const sourceId = options.sourceId ?? 'botlab';
+  const existingSource = runtime.controller.sources?.find(
+    (candidate) => candidate.id === sourceId
+  );
+  const source = isMicroDuckBotLabOfficialSource(existingSource)
+    ? existingSource
+    : createMicroDuckBotLabOfficialSource({
+        id: sourceId,
+        getVelocityLimits: options.getVelocityLimits,
+      });
+
+  if (!existingSource) {
+    runtime.controller.addSource(source);
+  }
+
+  source.init?.();
+
+  return {
+    runtime,
+    source,
+    load(controlSource) {
+      source.load(controlSource);
+    },
+    disconnect() {
+      source.dispose?.();
     },
   };
 }
@@ -383,6 +442,16 @@ function isMicroDuckLedPattern(value: unknown): value is MicroDuckLedPattern {
     value === 'blink' ||
     value === 'solid' ||
     value === 'off'
+  );
+}
+
+function isMicroDuckBotLabOfficialSource(
+  source: MicroDuckOfficialSimulatorSource | undefined
+): source is MicroDuckBotLabOfficialSource {
+  return (
+    Boolean(source) &&
+    typeof (source as MicroDuckBotLabOfficialSource).load === 'function' &&
+    typeof (source as MicroDuckBotLabOfficialSource).clear === 'function'
   );
 }
 

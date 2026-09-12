@@ -13,9 +13,11 @@ import {
   type MicroDuckSimulatorAssetManifestEntry,
 } from './microduck-simulator-assets';
 import {
+  connectMicroDuckBotLabSourceToOfficialSimulator,
   createMicroDuckBotLabOfficialSource,
   createMicroDuckSimulatorBridge,
   createMicroDuckSimulatorControlSource,
+  type MicroDuckOfficialSimulatorSource,
 } from './microduck-simulator';
 
 describe('microDuckSimulatorBridge', () => {
@@ -198,6 +200,51 @@ describe('microDuckSimulatorBridge', () => {
       orbitY: 0,
       ride: 0,
     });
+  });
+
+  it('connects a BotLab source to a lazily loaded official simulator runtime', async () => {
+    const sources: MicroDuckOfficialSimulatorSource[] = [];
+    const connection = await connectMicroDuckBotLabSourceToOfficialSimulator({
+      loadRuntime: async () => ({
+        controller: {
+          sources,
+          addSource: (source) => sources.push(source),
+        },
+      }),
+      getVelocityLimits: () => [2, -1, 3],
+    });
+
+    expect(sources).toEqual([connection.source]);
+
+    connection.load(
+      createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact())
+    );
+    connection.source.poll?.(1 / 50);
+
+    expect(connection.source.pressed).toEqual({
+      'led:smile': true,
+    });
+
+    connection.disconnect();
+
+    expect(connection.source.connected).toBe(false);
+  });
+
+  it('reuses an existing BotLab source when reconnecting to the same runtime', async () => {
+    const runtime = createFakeOfficialRuntime();
+    const first = await connectMicroDuckBotLabSourceToOfficialSimulator({
+      loadRuntime: () => runtime,
+      getVelocityLimits: () => [2, -1, 3],
+      sourceId: 'botlab-test',
+    });
+    const second = await connectMicroDuckBotLabSourceToOfficialSimulator({
+      loadRuntime: () => runtime,
+      getVelocityLimits: () => [2, -1, 3],
+      sourceId: 'botlab-test',
+    });
+
+    expect(runtime.controller.sources).toEqual([first.source]);
+    expect(second.source).toBe(first.source);
   });
 });
 
@@ -535,4 +582,17 @@ function createFakeCacheStorage() {
       return cache;
     },
   } as unknown as CacheStorage & { writtenUrls: string[] };
+}
+
+function createFakeOfficialRuntime() {
+  const sources: MicroDuckOfficialSimulatorSource[] = [];
+
+  return {
+    controller: {
+      sources,
+      addSource: (source: MicroDuckOfficialSimulatorSource) => {
+        sources.push(source);
+      },
+    },
+  };
 }

@@ -11,6 +11,7 @@ This is the home for the future MuJoCo/ONNX/browser simulator bridge. The shared
 - `microDuckOfficialSimulatorIntegration`: the MicroDuck simulator integration metadata.
 - `microDuckSimulatorIntegrations`: list used by the runtime/app composition layer.
 - `microDuckSimulatorAssetManifest`: pinned upstream asset manifest for simulator setup.
+- `connectMicroDuckBotLabSourceToOfficialSimulator`: loads an official simulator runtime and registers the BotLab source.
 - `createMicroDuckSimulatorBridge`: creates the current MicroDuck simulator bridge.
 - `createMicroDuckSimulatorControlSource`: maps compiled BotLab commands into MicroDuck simulator control frames.
 - `createMicroDuckBotLabOfficialSource`: adapts BotLab control frames to the official simulator `Controller` source contract.

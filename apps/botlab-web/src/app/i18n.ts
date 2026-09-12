@@ -121,6 +121,10 @@ export const botLabTranslations = {
       },
       disconnectedMessage:
         'Runtime oficial desconnectat. Pots tornar a carregar-lo quan vulguis.',
+      previewLoadErrorMessage:
+        'El preview local del simulador oficial no s ha pogut carregar.',
+      previewLoadTimeoutMessage:
+        'El preview local del simulador oficial no ha acabat de carregar dins del temps esperat.',
     },
     empty: {
       noEvents: 'Sense events recents',
@@ -331,6 +335,10 @@ export const botLabTranslations = {
       },
       disconnectedMessage:
         'Runtime oficial desconectado. Puedes volver a cargarlo cuando quieras.',
+      previewLoadErrorMessage:
+        'El preview local del simulador oficial no se pudo cargar.',
+      previewLoadTimeoutMessage:
+        'El preview local del simulador oficial no termino de cargar dentro del tiempo esperado.',
     },
     empty: {
       noEvents: 'Sin eventos recientes',
@@ -541,6 +549,10 @@ export const botLabTranslations = {
       },
       disconnectedMessage:
         'Official runtime disconnected. You can load it again when ready.',
+      previewLoadErrorMessage:
+        'The local official simulator preview could not load.',
+      previewLoadTimeoutMessage:
+        'The local official simulator preview did not finish loading in time.',
     },
     empty: {
       noEvents: 'No recent events',

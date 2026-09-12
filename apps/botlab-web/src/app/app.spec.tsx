@@ -1,10 +1,16 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
 
 import App, {
+  microDuckSimulatorPreviewLoadTimeoutMs,
   scheduleMicroDuckSimulatorControlSourceDelivery,
 } from './app';
 
 describe('App', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
   it('should schedule repeated MicroDuck simulator control source delivery', () => {
     jest.useFakeTimers();
 
@@ -243,5 +249,57 @@ describe('App', () => {
       getAllByText('Simulated dispatch set-led-pattern.').length
     ).toBeGreaterThan(0);
     expect(getByText('demo-microduck-leds-trace-artifact')).toBeTruthy();
+  });
+
+  it('should show a failed host state when the simulator preview times out', async () => {
+    const { getAllByText, getByRole, getByText, getByTitle } = render(<App />);
+
+    fireEvent.click(getByRole('button', { name: 'Compilar demo' }));
+
+    await waitFor(() => {
+      expect(
+        getAllByText(/artifact-microduck-led-demo-microduck-sim-smile-plan/i)
+          .length
+      ).toBeGreaterThan(0);
+    });
+
+    fireEvent.click(getByRole('button', { name: 'Simular demo' }));
+
+    await waitFor(() => {
+      expect(
+        getAllByText(/Simulacio completa: 1 comanda/i).length
+      ).toBeGreaterThan(0);
+    });
+
+    jest.useFakeTimers();
+    fireEvent.click(getByRole('button', { name: 'Carregar runtime' }));
+
+    await waitFor(() => {
+      expect(
+        getByText(
+          'BotLab ha carregat 1 frame(s) de control a la source del simulador oficial.'
+        )
+      ).toBeTruthy();
+    });
+
+    expect(getByTitle('MicroDuck official simulator preview')).toBeTruthy();
+
+    act(() => {
+      jest.advanceTimersByTime(microDuckSimulatorPreviewLoadTimeoutMs);
+    });
+
+    await waitFor(() => {
+      expect(getByText('Runtime oficial amb error de carrega')).toBeTruthy();
+    });
+    expect(
+      getByText(
+        'El preview local del simulador oficial no ha acabat de carregar dins del temps esperat.'
+      )
+    ).toBeTruthy();
+    expect(getByRole('button', { name: 'Carregar runtime' })).toHaveProperty(
+      'disabled',
+      false
+    );
+    jest.useRealTimers();
   });
 });

@@ -66,6 +66,7 @@ const microDuckOfficialSimulatorPreviewUrl =
 export const microDuckSimulatorDeliveryDelays = [
   0, 1000, 3000, 8000, 15000,
 ] as const;
+export const microDuckSimulatorPreviewLoadTimeoutMs = 30000;
 
 type BotLabCopy = (typeof botLabTranslations)[BotLabLocale];
 
@@ -225,6 +226,26 @@ export function App() {
     officialSimulatorHostResult,
     postedSimulatorArtifactId,
   ]);
+  useEffect(() => {
+    if (
+      officialSimulatorHostResult?.state !== 'running' ||
+      officialSimulatorFrameReady
+    ) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      failOfficialSimulatorRuntimePreview(copy.host.previewLoadTimeoutMessage);
+    }, microDuckSimulatorPreviewLoadTimeoutMs);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [
+    copy.host.previewLoadTimeoutMessage,
+    officialSimulatorFrameReady,
+    officialSimulatorHostResult?.state,
+  ]);
   async function loadOfficialSimulatorRuntimePreview() {
     setOfficialSimulatorHostResult({
       state: 'loading',
@@ -253,6 +274,14 @@ export function App() {
       });
     }
   }
+  function failOfficialSimulatorRuntimePreview(message: string) {
+    setOfficialSimulatorFrameReady(false);
+    setOfficialSimulatorHostResult((current) => ({
+      state: 'failed',
+      messages: current ? [...current.messages, message] : [message],
+    }));
+  }
+
   function disconnectOfficialSimulatorRuntimePreview() {
     officialSimulatorHostResult?.connection?.disconnect();
     setOfficialSimulatorFrameReady(false);
@@ -411,6 +440,11 @@ export function App() {
             hostMessages={officialSimulatorHostMessages}
             onDisconnectRuntime={disconnectOfficialSimulatorRuntimePreview}
             onLoadRuntime={loadOfficialSimulatorRuntimePreview}
+            onPreviewFailed={() =>
+              failOfficialSimulatorRuntimePreview(
+                copy.host.previewLoadErrorMessage
+              )
+            }
             onPreviewLoaded={() => setOfficialSimulatorFrameReady(true)}
             previewUrl={microDuckOfficialSimulatorPreviewUrl}
             previewRef={officialSimulatorFrameRef}
@@ -929,6 +963,7 @@ function MicroDuckSimulatorHost({
   hostMessages,
   onDisconnectRuntime,
   onLoadRuntime,
+  onPreviewFailed,
   onPreviewLoaded,
   previewUrl,
   previewRef,
@@ -946,6 +981,7 @@ function MicroDuckSimulatorHost({
   hostMessages: string[];
   onDisconnectRuntime: () => void;
   onLoadRuntime: () => void;
+  onPreviewFailed: () => void;
   onPreviewLoaded: () => void;
   previewUrl: string;
   previewRef: RefObject<HTMLIFrameElement>;
@@ -995,6 +1031,7 @@ function MicroDuckSimulatorHost({
               title="MicroDuck official simulator preview"
               ref={previewRef}
               src={previewUrl}
+              onError={onPreviewFailed}
               onLoad={onPreviewLoaded}
               className="h-[560px] w-full border-0"
               allow="accelerometer; autoplay; clipboard-read; clipboard-write; gamepad; fullscreen; xr-spatial-tracking"

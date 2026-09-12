@@ -95,8 +95,8 @@ export const botLabTranslations = {
       loadRuntime: 'Carregar runtime',
       disconnectRuntime: 'Desconnectar runtime',
       loading: 'Carregant',
-      remotePreview: 'Preview remot oficial',
-      sourceLoaded: 'BotLab source carregada en paral.lel',
+      remotePreview: 'Host local oficial',
+      sourceLoaded: 'Control BotLab enviat per postMessage',
       titles: {
         blocked: 'Runtime oficial bloquejat per assets restringits',
         loading: 'Runtime oficial carregant',
@@ -212,6 +212,9 @@ export const botLabTranslations = {
       loadedFramesPrefix: 'BotLab ha carregat',
       loadedFramesSuffix:
         'frame(s) de control a la source del simulador oficial.',
+      sentFramesPrefix: 'BotLab ha enviat',
+      sentFramesSuffix:
+        'frame(s) de control al host del simulador BotLab-enabled.',
     },
   },
   es: {
@@ -302,8 +305,8 @@ export const botLabTranslations = {
       loadRuntime: 'Cargar runtime',
       disconnectRuntime: 'Desconectar runtime',
       loading: 'Cargando',
-      remotePreview: 'Preview remoto oficial',
-      sourceLoaded: 'BotLab source cargada en paralelo',
+      remotePreview: 'Host local oficial',
+      sourceLoaded: 'Control BotLab enviado por postMessage',
       titles: {
         blocked: 'Runtime oficial bloqueado por assets restringidos',
         loading: 'Runtime oficial cargando',
@@ -419,6 +422,9 @@ export const botLabTranslations = {
       loadedFramesPrefix: 'BotLab ha cargado',
       loadedFramesSuffix:
         'frame(s) de control en la source del simulador oficial.',
+      sentFramesPrefix: 'BotLab ha enviado',
+      sentFramesSuffix:
+        'frame(s) de control al host del simulador BotLab-enabled.',
     },
   },
   en: {
@@ -509,8 +515,8 @@ export const botLabTranslations = {
       loadRuntime: 'Load runtime',
       disconnectRuntime: 'Disconnect runtime',
       loading: 'Loading',
-      remotePreview: 'Official remote preview',
-      sourceLoaded: 'BotLab source loaded in parallel',
+      remotePreview: 'Official local host',
+      sourceLoaded: 'BotLab control sent by postMessage',
       titles: {
         blocked: 'Official runtime blocked by restricted assets',
         loading: 'Official runtime loading',
@@ -626,6 +632,9 @@ export const botLabTranslations = {
       loadedFramesPrefix: 'BotLab loaded',
       loadedFramesSuffix:
         'control frame(s) into the official simulator source.',
+      sentFramesPrefix: 'BotLab sent',
+      sentFramesSuffix:
+        'control frame(s) to the BotLab-enabled simulator host.',
     },
   },
 } as const;

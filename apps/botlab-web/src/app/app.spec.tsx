@@ -144,11 +144,19 @@ describe('App', () => {
       getAllByText(/educational preview loading remains opt-in/i).length
     ).toBeGreaterThan(0);
     expect(
-      getByText('Preview remot oficial')
+      getByText('Host local oficial')
     ).toBeTruthy();
     expect(
       getByTitle('MicroDuck official simulator preview').getAttribute('src')
-    ).toBe('https://pollen-robotics-microduck-simulator.hf.space');
+    ).toBe('http://127.0.0.1:4300/');
+    fireEvent.load(getByTitle('MicroDuck official simulator preview'));
+    await waitFor(() => {
+      expect(
+        getByText(
+          'BotLab ha enviat 1 frame(s) de control al host del simulador BotLab-enabled.'
+        )
+      ).toBeTruthy();
+    });
     expect(getByRole('button', { name: 'Desconnectar runtime' })).toBeTruthy();
 
     fireEvent.click(getByRole('button', { name: 'Desconnectar runtime' }));

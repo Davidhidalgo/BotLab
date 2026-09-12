@@ -4,6 +4,7 @@ import {
   createMicroDuckSimulatorAssetCachePlan,
   loadMicroDuckOfficialSimulatorHost,
   microDuckSimulatorAssetManifest,
+  postMicroDuckSimulatorControlSource,
   type MicroDuckOfficialSimulatorHostResult,
   type MicroDuckOfficialSimulatorHostState,
   type MicroDuckOfficialSimulatorSource,
@@ -23,7 +24,13 @@ import {
   ShieldCheck,
   Workflow,
 } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import {
+  type ReactNode,
+  type RefObject,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   botLabBuildSteps,
   botLabExecutionSteps,
@@ -54,7 +61,7 @@ const conceptIcons = {
 };
 
 const microDuckOfficialSimulatorPreviewUrl =
-  'https://pollen-robotics-microduck-simulator.hf.space';
+  'http://127.0.0.1:4300/';
 
 type BotLabCopy = (typeof botLabTranslations)[BotLabLocale];
 
@@ -63,6 +70,11 @@ export function App() {
   const [locale, setLocale] = useState<BotLabLocale>('ca');
   const [officialSimulatorHostResult, setOfficialSimulatorHostResult] =
     useState<MicroDuckOfficialSimulatorHostResult>();
+  const [officialSimulatorFrameReady, setOfficialSimulatorFrameReady] =
+    useState(false);
+  const [postedSimulatorArtifactId, setPostedSimulatorArtifactId] =
+    useState<string>();
+  const officialSimulatorFrameRef = useRef<HTMLIFrameElement>(null);
   const copy = botLabTranslations[locale];
   const {
     compiledArtifact,
@@ -155,11 +167,45 @@ export function App() {
     state,
     label: getExecutionStateLabel(state, copy),
   }));
+  useEffect(() => {
+    const controlSource = officialSimulatorHostResult?.controlSource;
+    const targetWindow = officialSimulatorFrameRef.current?.contentWindow;
+
+    if (
+      officialSimulatorHostResult?.state !== 'running' ||
+      !officialSimulatorFrameReady ||
+      !controlSource ||
+      !targetWindow ||
+      postedSimulatorArtifactId === controlSource.artifactId
+    ) {
+      return;
+    }
+
+    postMicroDuckSimulatorControlSource(
+      targetWindow,
+      controlSource,
+      new URL(microDuckOfficialSimulatorPreviewUrl).origin
+    );
+    setPostedSimulatorArtifactId(controlSource.artifactId);
+    setOfficialSimulatorHostResult({
+      ...officialSimulatorHostResult,
+      messages: [
+        ...officialSimulatorHostResult.messages,
+        `Sent ${controlSource.frames.length} BotLab control frame(s) to the BotLab-enabled simulator host.`,
+      ],
+    });
+  }, [
+    officialSimulatorFrameReady,
+    officialSimulatorHostResult,
+    postedSimulatorArtifactId,
+  ]);
   async function loadOfficialSimulatorRuntimePreview() {
     setOfficialSimulatorHostResult({
       state: 'loading',
       messages: ['Preparing official runtime in educational preview mode.'],
     });
+    setOfficialSimulatorFrameReady(false);
+    setPostedSimulatorArtifactId(undefined);
 
     try {
       const result = await loadMicroDuckOfficialSimulatorHost({
@@ -183,6 +229,8 @@ export function App() {
   }
   function disconnectOfficialSimulatorRuntimePreview() {
     officialSimulatorHostResult?.connection?.disconnect();
+    setOfficialSimulatorFrameReady(false);
+    setPostedSimulatorArtifactId(undefined);
     setOfficialSimulatorHostResult({
       state: 'disconnected',
       messages: [copy.host.disconnectedMessage],
@@ -337,7 +385,9 @@ export function App() {
             hostMessages={officialSimulatorHostMessages}
             onDisconnectRuntime={disconnectOfficialSimulatorRuntimePreview}
             onLoadRuntime={loadOfficialSimulatorRuntimePreview}
+            onPreviewLoaded={() => setOfficialSimulatorFrameReady(true)}
             previewUrl={microDuckOfficialSimulatorPreviewUrl}
+            previewRef={officialSimulatorFrameRef}
             simulatorOutput={simulationResult?.outputArtifact}
             simulationState={getSimulationStateLabel(
               flowState.simulation,
@@ -853,7 +903,9 @@ function MicroDuckSimulatorHost({
   hostMessages,
   onDisconnectRuntime,
   onLoadRuntime,
+  onPreviewLoaded,
   previewUrl,
+  previewRef,
   simulatorOutput,
   simulationState,
   simulationMessage,
@@ -868,7 +920,9 @@ function MicroDuckSimulatorHost({
   hostMessages: string[];
   onDisconnectRuntime: () => void;
   onLoadRuntime: () => void;
+  onPreviewLoaded: () => void;
   previewUrl: string;
+  previewRef: RefObject<HTMLIFrameElement>;
   simulatorOutput?: NonNullable<BotLabSimulationResult['outputArtifact']>;
   simulationState: string;
   simulationMessage: string;
@@ -913,7 +967,9 @@ function MicroDuckSimulatorHost({
           {hostState === 'running' ? (
             <iframe
               title="MicroDuck official simulator preview"
+              ref={previewRef}
               src={previewUrl}
+              onLoad={onPreviewLoaded}
               className="h-[520px] w-full border-0"
               allow="accelerometer; autoplay; clipboard-read; clipboard-write; gamepad; fullscreen; xr-spatial-tracking"
               sandbox="allow-downloads allow-forms allow-modals allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
@@ -1292,6 +1348,13 @@ function translateFlowMessage(message: string, copy: BotLabCopy) {
   );
   if (loadedFrames) {
     return `${copy.messages.loadedFramesPrefix} ${loadedFrames[1]} ${copy.messages.loadedFramesSuffix}`;
+  }
+
+  const sentFrames = message.match(
+    /^Sent (\d+) BotLab control frame\(s\) to the BotLab-enabled simulator host\.$/
+  );
+  if (sentFrames) {
+    return `${copy.messages.sentFramesPrefix} ${sentFrames[1]} ${copy.messages.sentFramesSuffix}`;
   }
 
   return message;

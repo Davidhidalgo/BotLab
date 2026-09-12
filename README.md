@@ -91,10 +91,13 @@ npm run test
 npm run affected:build
 npm run affected:test
 npm run affected:lint
+npm run microduck:sim -- --start
 npm run nx -- show projects
 ```
 
 Use the affected scripts for everyday validation when only part of the workspace changed. Use `build:libs` when you want a full library contract check.
+
+`npm run microduck:sim -- --start` prepares a local checkout of the official MicroDuck browser simulator under `tmp/microduck-simulator`, injects the BotLab postMessage control source, and starts the patched simulator host. Keep `npm run dev` running separately for the BotLab app.
 
 When generating code, prefer Nx generators:
 

@@ -1,0 +1,427 @@
+#!/usr/bin/env node
+
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const MESSAGE_TYPE = 'botlab.microduck.control-source.v1';
+const DEFAULT_ORIGIN =
+  'https://huggingface.co/spaces/pollen-robotics/microduck-simulator';
+const DEFAULT_CHECKOUT = 'tmp/microduck-simulator';
+const MODULE_PATH = 'app/src/game/controls/botlab.js';
+const GAME_PATH = 'app/src/game/game.js';
+
+const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const options = parseArgs(process.argv.slice(2));
+const checkoutDir = resolve(rootDir, options.checkout ?? DEFAULT_CHECKOUT);
+const appDir = resolve(checkoutDir, 'app');
+const allowedOrigin = options.botlabOrigin ?? 'http://127.0.0.1:4200';
+const host = options.host ?? '127.0.0.1';
+const port = options.port ?? '4300';
+
+ensureCheckout(checkoutDir, {
+  origin: options.origin ?? DEFAULT_ORIGIN,
+  revision: options.revision ?? 'main',
+});
+
+writeGeneratedFile(
+  resolve(checkoutDir, MODULE_PATH),
+  createBotLabSourceModule({ allowedOrigins: [allowedOrigin] })
+);
+
+patchOfficialGame(resolve(checkoutDir, GAME_PATH));
+
+if (!options.noInstall && !existsSync(resolve(appDir, 'node_modules'))) {
+  run('npm', ['install'], { cwd: appDir });
+}
+
+console.log('');
+console.log('BotLab-enabled MicroDuck simulator host is ready.');
+console.log(`Checkout: ${checkoutDir}`);
+console.log(`BotLab origin allowed by simulator source: ${allowedOrigin}`);
+console.log(`Simulator URL after start: http://${host}:${port}/`);
+
+if (options.start) {
+  run('npm', ['run', 'dev', '--', '--host', host, '--port', String(port)], {
+    cwd: appDir,
+    stdio: 'inherit',
+  });
+} else {
+  console.log('');
+  console.log('Start it with:');
+  console.log(
+    `  npm run microduck:sim -- --checkout ${relativeFromRoot(
+      checkoutDir
+    )} --start --port ${port}`
+  );
+}
+
+function parseArgs(args) {
+  const parsed = {};
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+
+    if (arg === '--start') {
+      parsed.start = true;
+      continue;
+    }
+
+    if (arg === '--no-install') {
+      parsed.noInstall = true;
+      continue;
+    }
+
+    if (!arg.startsWith('--')) {
+      throw new Error(`Unknown argument: ${arg}`);
+    }
+
+    const key = arg.slice(2).replace(/-([a-z])/g, (_, char) =>
+      char.toUpperCase()
+    );
+    const value = args[index + 1];
+
+    if (!value || value.startsWith('--')) {
+      throw new Error(`Missing value for ${arg}`);
+    }
+
+    parsed[key] = value;
+    index += 1;
+  }
+
+  return parsed;
+}
+
+function ensureCheckout(checkoutDir, { origin, revision }) {
+  if (!existsSync(checkoutDir)) {
+    mkdirSync(dirname(checkoutDir), { recursive: true });
+    run('git', ['clone', '--depth', '1', '--branch', revision, origin, checkoutDir]);
+    return;
+  }
+
+  if (!existsSync(resolve(checkoutDir, '.git'))) {
+    throw new Error(`${checkoutDir} exists but is not a git checkout.`);
+  }
+
+  const status = run('git', ['status', '--short'], {
+    cwd: checkoutDir,
+    stdio: 'pipe',
+  }).stdout.trim();
+
+  if (status.length > 0) {
+    console.warn(
+      'Existing simulator checkout has local changes; keeping current revision.'
+    );
+    return;
+  }
+
+  const remote = run('git', ['remote', 'get-url', 'origin'], {
+    cwd: checkoutDir,
+    stdio: 'pipe',
+    allowFailure: true,
+  });
+
+  if (remote.status !== 0) {
+    console.warn(
+      'Existing simulator checkout has no origin remote; keeping current revision.'
+    );
+    return;
+  }
+
+  run('git', ['fetch', '--depth', '1', 'origin', revision], {
+    cwd: checkoutDir,
+  });
+  run('git', ['checkout', 'FETCH_HEAD'], { cwd: checkoutDir });
+}
+
+function writeGeneratedFile(path, source) {
+  mkdirSync(dirname(path), { recursive: true });
+
+  if (existsSync(path) && readFileSync(path, 'utf8') === source) {
+    return;
+  }
+
+  writeFileSync(path, source);
+}
+
+function patchOfficialGame(path) {
+  const original = readFileSync(path, 'utf8');
+  const result = patchGameSource(original);
+
+  for (const warning of result.warnings) {
+    console.warn(warning);
+  }
+
+  if (result.changed) {
+    writeFileSync(path, result.source);
+  }
+}
+
+function patchGameSource(source) {
+  const importLine = 'import { BotLabSource } from "./controls/botlab.js";';
+  const factoryLine =
+    'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims() });';
+  const warnings = [];
+  let patched = source;
+
+  if (!patched.includes(importLine)) {
+    patched = insertAfterLastImport(patched, importLine);
+  }
+
+  if (!patched.includes(factoryLine)) {
+    const next = insertBeforeControllerConstruction(patched, factoryLine);
+
+    if (next === patched) {
+      warnings.push(
+        'Could not find the official simulator Controller construction. Add the BotLabSource factory manually near the controller setup.'
+      );
+    }
+
+    patched = next;
+  }
+
+  if (!controllerSourcesInclude(patched, 'botLabSource')) {
+    const next = insertControllerSource(patched, 'botLabSource');
+
+    if (next === patched) {
+      warnings.push(
+        'Could not find a Controller sources array. Add botLabSource to the sources list manually.'
+      );
+    }
+
+    patched = next;
+  }
+
+  return {
+    source: patched,
+    changed: patched !== source,
+    warnings,
+  };
+}
+
+function insertAfterLastImport(source, importLine) {
+  const importMatches = [...source.matchAll(/^import\s.+;$/gm)];
+  const lastImport = importMatches[importMatches.length - 1];
+
+  if (!lastImport || lastImport.index === undefined) {
+    return `${importLine}\n${source}`;
+  }
+
+  const insertAt = lastImport.index + lastImport[0].length;
+
+  return `${source.slice(0, insertAt)}\n${importLine}${source.slice(insertAt)}`;
+}
+
+function insertBeforeControllerConstruction(source, sourceFactoryLine) {
+  const controllerMatch = source.match(
+    /^(\s*)(?:controller|const\s+controller|let\s+controller)\s*=\s*new Controller\(\{\s*sources:\s*\[/m
+  );
+
+  if (!controllerMatch || controllerMatch.index === undefined) {
+    return source;
+  }
+
+  const indent = controllerMatch[1] ?? '';
+
+  return `${source.slice(
+    0,
+    controllerMatch.index
+  )}${indent}${sourceFactoryLine}\n${source.slice(controllerMatch.index)}`;
+}
+
+function controllerSourcesInclude(source, sourceName) {
+  const sourcesArray = readControllerSourcesArray(source);
+
+  return sourcesArray?.includes(sourceName) ?? false;
+}
+
+function insertControllerSource(source, sourceName) {
+  const sourcesMatch = source.match(/sources:\s*\[/m);
+
+  if (!sourcesMatch || sourcesMatch.index === undefined) {
+    return source;
+  }
+
+  const insertAt = sourcesMatch.index + sourcesMatch[0].length;
+
+  return `${source.slice(0, insertAt)}${sourceName}, ${source.slice(insertAt)}`;
+}
+
+function readControllerSourcesArray(source) {
+  const sourcesMatch = source.match(/sources:\s*\[/m);
+
+  if (!sourcesMatch || sourcesMatch.index === undefined) {
+    return undefined;
+  }
+
+  const start = sourcesMatch.index + sourcesMatch[0].length;
+  const end = source.indexOf(']', start);
+
+  if (end === -1) {
+    return undefined;
+  }
+
+  return source.slice(start, end);
+}
+
+function createBotLabSourceModule({ allowedOrigins }) {
+  return `const MESSAGE_TYPE = ${JSON.stringify(MESSAGE_TYPE)};
+const ALLOWED_ORIGINS = ${JSON.stringify(allowedOrigins)};
+
+export class BotLabSource {
+  constructor({ getVelocityLimits } = {}) {
+    this.id = "botlab";
+    this.connected = true;
+    this.command = new Float32Array(3);
+    this.axes = { jaw: 0, orbitX: 0, orbitY: 0, ride: 0 };
+    this.pressed = {};
+    this.onAction = () => {};
+    this.getVelocityLimits = getVelocityLimits ?? (() => [2, -1, 3]);
+    this.frames = [];
+    this.cursor = 0;
+    this.active = false;
+    this.onMessage = this.onMessage.bind(this);
+  }
+
+  init() {
+    this.connected = true;
+    window.addEventListener("message", this.onMessage);
+  }
+
+  dispose() {
+    window.removeEventListener("message", this.onMessage);
+    this.connected = false;
+    this.clear();
+  }
+
+  onMessage(event) {
+    if (
+      ALLOWED_ORIGINS.length > 0 &&
+      typeof event.origin === "string" &&
+      !ALLOWED_ORIGINS.includes(event.origin)
+    ) {
+      return;
+    }
+
+    const message = event.data;
+    if (
+      !message ||
+      message.type !== MESSAGE_TYPE ||
+      message.version !== 1 ||
+      message.simulatorId !== "microduck-official-sim" ||
+      !message.source ||
+      !Array.isArray(message.source.frames)
+    ) {
+      return;
+    }
+
+    this.load(message.source);
+  }
+
+  load(controlSource) {
+    this.frames = [...controlSource.frames];
+    this.cursor = 0;
+    this.active = false;
+    this.resetCommand();
+    this.resetPressed();
+  }
+
+  clear() {
+    this.frames = [];
+    this.cursor = 0;
+    this.active = false;
+    this.resetCommand();
+    this.resetPressed();
+    this.axes.jaw = 0;
+    this.axes.orbitX = 0;
+    this.axes.orbitY = 0;
+    this.axes.ride = 0;
+  }
+
+  isActive() {
+    return this.active;
+  }
+
+  poll() {
+    const frame = this.frames[this.cursor];
+
+    if (!frame) {
+      this.active = false;
+      this.resetCommand();
+      return;
+    }
+
+    this.applyFrame(frame);
+    this.cursor += 1;
+  }
+
+  applyFrame(frame) {
+    this.resetCommand();
+    this.resetPressed();
+
+    if (frame.type === "differential-drive") {
+      const [forwardLimit, backwardLimit, angularLimit] =
+        this.getVelocityLimits();
+      const forwardPower = clampUnit((frame.leftPower + frame.rightPower) / 2);
+      const turnPower = clampUnit((frame.rightPower - frame.leftPower) / 2);
+
+      this.command[0] =
+        forwardPower >= 0
+          ? forwardPower * forwardLimit
+          : forwardPower * Math.abs(backwardLimit);
+      this.command[1] = 0;
+      this.command[2] = turnPower * angularLimit;
+      this.pressed.forward = this.command[0] > 0;
+      this.pressed.back = this.command[0] < 0;
+      this.pressed.turnLeft = this.command[2] > 0;
+      this.pressed.turnRight = this.command[2] < 0;
+      this.active = this.command.some((value) => Math.abs(value) > 0);
+      return;
+    }
+
+    if (frame.type === "led-pattern") {
+      this.pressed[\`led:\${frame.pattern}\`] = true;
+      this.axes.jaw =
+        typeof frame.brightness === "number" && frame.brightness > 0
+          ? Math.min(frame.brightness / 100, 1)
+          : 0;
+    }
+  }
+
+  resetCommand() {
+    this.command[0] = 0;
+    this.command[1] = 0;
+    this.command[2] = 0;
+  }
+
+  resetPressed() {
+    for (const key of Object.keys(this.pressed)) {
+      delete this.pressed[key];
+    }
+  }
+}
+
+function clampUnit(value) {
+  return Math.max(-1, Math.min(1, value));
+}
+`;
+}
+
+function run(command, args, options = {}) {
+  const result = spawnSync(command, args, {
+    cwd: options.cwd ?? rootDir,
+    encoding: 'utf8',
+    stdio: options.stdio ?? 'inherit',
+  });
+
+  if (result.status !== 0 && !options.allowFailure) {
+    throw new Error(`${command} ${args.join(' ')} failed.`);
+  }
+
+  return result;
+}
+
+function relativeFromRoot(path) {
+  return path.startsWith(rootDir) ? path.slice(rootDir.length + 1) : path;
+}

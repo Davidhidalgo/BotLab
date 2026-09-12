@@ -10,6 +10,7 @@
     "affected:test": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx affected --target=test",
     "affected:lint": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx affected --target=lint",
     "test": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx test botlab-web",
+    "microduck:sim": "node tools/microduck/prepare-official-simulator.mjs",
     "nx": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx"
   },
   "private": true,

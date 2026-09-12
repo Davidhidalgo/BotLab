@@ -109,6 +109,8 @@ Use the affected scripts for everyday validation when only part of the workspace
 
 MicroDuck walk blocks now finish on measured horizontal displacement from each block's start position, not a speed-to-duration estimate. Wait blocks hold zero motion for their duration. The editor highlights the active block, and the simulator panel displays distance progress, a wait countdown, or localized execution errors. Lost position telemetry, scene interruptions, implausible position jumps, and stalled movement fail the run instead of claiming arrival. This is straight-line displacement, not the HUD's accumulated odometer, and physics can drift slightly after the stop command.
 
+A failure reported by the simulator stops the program but keeps the scene open, including its current robot configuration. The failing block stays highlighted; editing and running again reuses the loaded runtime. Missing communication or unconfirmed execution still closes the iframe as a stop fallback.
+
 <!-- visual movement palette from libs/blocks/src/lib/scratch-blocks-local-bridge.ts and measured turns from libs/simulators/microduck/src/lib/microduck-turn.ts -->
 
 The Movement category offers forward/backward BotLab steps (0.5 m each), left/right quarter turns, and a half turn. Precise movement offers forward/backward meters and signed degrees. Negative angles turn left; positive angles turn right. Each block has a bundled SVG icon and Catalan, Spanish and English labels. Turns finish on measured yaw and report progress in degrees; regenerate the simulator receiver with `npm run microduck:sim -- --no-install --no-lfs-hydrate` when updating an existing local checkout. Old meter-based programs remain compatible.

@@ -234,10 +234,56 @@ describe('One-click simulator execution', () => {
     status({ status: 'failed', frameIndex: 0, errorCode: 'motion-stalled' });
     expect(view.getByText('El robot no es mou com s’esperava. Comprova si hi ha un obstacle.')).toBeTruthy();
     expect(editor.dataset.activeBlock).toBe('walk');
-    expect(view.queryByTitle('MicroDuck official simulator preview')).toBeNull();
+    expect(view.getByTitle('MicroDuck official simulator preview')).toBe(frame);
+    expect(view.getByLabelText('Execució del simulador').textContent).toBe('Execució aturada per un error');
+    expect(editor.value).toBe(original);
+    for (const [locale, label, text] of [
+      ['es', 'Ejecución del simulador', 'Ejecución detenida por un error'],
+      ['en', 'Simulator execution', 'Execution stopped by an error'],
+      ['ca', 'Execució del simulador', 'Execució aturada per un error'],
+    ]) {
+      fireEvent.change(view.getByRole('combobox'), { target: { value: locale } });
+      expect(view.getByLabelText(label).textContent).toBe(text);
+      expect(view.getByTitle('MicroDuck official simulator preview')).toBe(frame);
+    }
+    post.mockClear();
     fireEvent.change(editor, { target: { value: original.replace('>5<', '>2<') } });
     expect(editor.dataset.activeBlock).toBeUndefined();
+    fireEvent.click(view.getByRole('button', { name: 'Executar' }));
+    await waitFor(() => expect(post).toHaveBeenCalled());
+    const retry = post.mock.calls[0][0];
+    expect(retry.executionId).not.toBe(message.executionId);
+    expect(retry.source.frames[0].distanceMeters).toBe(2);
+    expect(view.getByTitle('MicroDuck official simulator preview')).toBe(frame);
+    status({ status: 'failed', frameIndex: 0, errorCode: 'motion-stalled' });
+    expect(view.queryByRole('alert')).toBeNull();
   });
+
+  it.each(['telemetry-unavailable', 'invalid-frame', 'position-reset', 'motion-timeout', 'scene-interrupted'])(
+    'keeps the scene available after a confirmed %s failure', async (errorCode) => {
+      const view = render(<App />);
+      fireEvent.click(view.getByRole('button', { name: 'Executar' }));
+      const frame = await view.findByTitle('MicroDuck official simulator preview') as HTMLIFrameElement;
+      const post = jest.spyOn(frame.contentWindow!, 'postMessage');
+      fireEvent.load(frame);
+      await waitFor(() => expect(post).toHaveBeenCalled());
+      const message = post.mock.calls[0][0];
+      act(() => window.dispatchEvent(new MessageEvent('message', {
+        origin: 'http://127.0.0.1:4300', source: frame.contentWindow, data: {
+          type: 'botlab.microduck.execution.v1', version: 1, simulatorId: 'microduck-official-sim',
+          executionId: message.executionId, artifactId: message.source.artifactId,
+          status: 'failed', frameIndex: 1, errorCode,
+        },
+      })));
+      expect(view.getByTitle('MicroDuck official simulator preview')).toBe(frame);
+      expect(view.getByRole('alert')).toBeTruthy();
+      expect(view.getByRole('button', { name: 'Executar' })).toHaveProperty('disabled', false);
+      fireEvent.click(view.getByRole('button', { name: 'Reiniciar escena' }));
+      expect(view.getByTitle('MicroDuck official simulator preview')).not.toBe(frame);
+      expect(view.queryByRole('alert')).toBeNull();
+      expect(view.getByRole('button', { name: 'Carregant' })).toHaveProperty('disabled', true);
+    }
+  );
 
   it('stops on invalid XML and recovers after the user fixes it', async () => {
     const view = render(<App />);

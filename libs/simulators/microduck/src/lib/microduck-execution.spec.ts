@@ -143,6 +143,25 @@ describe.each([
     f.source.dispose();
   });
 
+  it('stops a stalled turn and accepts another run without recreating the source', () => {
+    const f = fixture();
+    Reflect.deleteProperty(f.control.source.frames[0], 'durationMs');
+    Object.assign(f.control.source.frames[0], { angleDegrees: 90, leftPower: 1, rightPower: -1 });
+    f.send(); f.source.init(); f.unlock();
+    for (let i = 0; i < 110; i++) f.source.poll(0.1);
+    expect(f.parent.postMessage.mock.calls.at(-1)![0]).toMatchObject({
+      status: 'failed', frameIndex: 0, errorCode: 'motion-stalled',
+    });
+    expect(Array.from(f.source.command)).toEqual([0, 0, 0]);
+    expect(f.source.frames).toHaveLength(0);
+    f.send({ ...f.control, executionId: 'run-2' });
+    f.source.poll(0.02);
+    expect(f.source.command[2]).toBeLessThan(0);
+    f.turnTo(91); f.source.poll(1);
+    expect(f.source.cursor).toBe(1);
+    f.source.dispose();
+  });
+
   it('cancels a measured turn without dispatching the next frame', () => {
     const f = fixture();
     Reflect.deleteProperty(f.control.source.frames[0], 'durationMs');

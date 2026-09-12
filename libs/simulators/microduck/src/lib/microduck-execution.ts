@@ -18,6 +18,7 @@ export interface MicroDuckExecutionUpdate {
   distanceMeters?: number;
   turnedDegrees?: number;
   errorCode?: string;
+  failureOrigin?: 'simulator' | 'transport';
 }
 export interface MicroDuckExecutionRequest {
   targetWindow: Window;
@@ -69,7 +70,7 @@ export function observeMicroDuckExecution(
     } catch {
       terminal = true;
       clearTimers();
-      onUpdate({ ...base, status: 'failed' });
+      onUpdate({ ...base, status: 'failed', failureOrigin: 'transport' });
     }
   }
   function receive(event: MessageEvent) {
@@ -148,6 +149,7 @@ export function observeMicroDuckExecution(
         status: 'failed',
         frameIndex: missingArrival,
         errorCode: 'telemetry-unavailable',
+        failureOrigin: 'transport',
       });
       return;
     }
@@ -159,6 +161,7 @@ export function observeMicroDuckExecution(
       distanceMeters: data.distanceMeters,
       turnedDegrees: data.turnedDegrees,
       errorCode: data.errorCode,
+      failureOrigin: data.status === 'failed' ? 'simulator' : undefined,
     });
   }
   hostWindow.addEventListener('message', receive);

@@ -270,10 +270,10 @@ export function App() {
     };
   }, [officialSimulatorFrameReady, deliverySource, sendExecution]);
   useEffect(() => {
-    if (executionSnapshot.matches('failed')) {
+    if (executionSnapshot.matches('failed') && executionUpdate?.failureOrigin !== 'simulator') {
       failOfficialSimulatorRuntimePreview(copy.host.executionLost);
     }
-  }, [executionSnapshot.value, copy.host.executionLost]);
+  }, [executionSnapshot.value, executionUpdate?.failureOrigin, copy.host.executionLost]);
   useEffect(() => {
     if (
       officialSimulatorHostResult?.state !== 'running' ||
@@ -1199,7 +1199,9 @@ function MicroDuckSimulatorHost({
       </div>
       <div className="simulator-status">
       <p role="status" className="text-sm" aria-label={copy.host.executionLabel}>
-        {sceneLoading ? copy.host.loading : copy.host.executionStates[executionState]}
+        {sceneLoading ? copy.host.loading
+          : executionState === 'failed' && executionUpdate?.failureOrigin !== 'simulator'
+            ? copy.host.executionUnconfirmed : copy.host.executionStates[executionState]}
         {executionState === 'running' && frameIndex !== undefined
           ? ` · ${frameIndex + 1}/${frameCount}` : ''}
       </p>

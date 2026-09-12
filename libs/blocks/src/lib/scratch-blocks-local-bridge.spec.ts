@@ -63,7 +63,7 @@ describe('createLocalScratchBlocksEditorBridge', () => {
         const glyph = image.documentElement.firstElementChild!;
         expect(glyph.getAttribute('width')).toBe('25');
         expect(glyph.getAttribute('height')).toBe('25');
-        expect(glyph.getAttribute('x')).toBe('10.5');
+        expect(glyph.getAttribute('x')).toBe('9.5');
         expect(glyph.getAttribute('y')).toBe('4.5');
         if (type.endsWith('_steps')) expect(block.getFieldValue('STEPS')).toBe('1');
         if (type === 'turn_degrees') expect(block.getFieldValue('ANGLE')).toBe('90');

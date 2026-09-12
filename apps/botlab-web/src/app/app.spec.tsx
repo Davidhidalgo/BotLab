@@ -26,6 +26,13 @@ describe('App', () => {
     expect(getByText('simulation-output-pending')).toBeTruthy();
   });
 
+  it('should show official simulator asset readiness', () => {
+    const { getByText } = render(<App />);
+
+    expect(getByText('Assets oficiales')).toBeTruthy();
+    expect(getByText(/0 listos · 3 pendientes de revision/i)).toBeTruthy();
+  });
+
   it('should receive workspace updates from the blocks boundary', () => {
     const { getAllByText, getByRole } = render(<App />);
 

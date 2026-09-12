@@ -1,5 +1,9 @@
 import { BlocksEditorShell } from '@botlab/blocks';
 import { botLabConcepts } from '@botlab/model';
+import {
+  createMicroDuckSimulatorAssetCachePlan,
+  microDuckSimulatorAssetManifest,
+} from '@botlab/simulators-microduck';
 import { Badge, Button } from '@botlab/ui';
 import { useMachine } from '@xstate/react';
 import {
@@ -105,6 +109,11 @@ export function App() {
     (event) =>
       event.type === 'policy-confirmed' && event.sessionId === activeSession?.id
   );
+  const simulatorAssetPlan = createMicroDuckSimulatorAssetCachePlan(
+    microDuckSimulatorAssetManifest
+  );
+  const simulatorAssetSummary =
+    summarizeMicroDuckSimulatorAssetPlan(simulatorAssetPlan);
   const artifactCards = [
     {
       id: workspaceArtifact.id,
@@ -282,6 +291,16 @@ export function App() {
                     )} · brillo ${compiledBrightness ?? 0}`
                   : 'Compila el workspace para preparar la simulacion.'
               }
+            />
+            <RuntimeList
+              icon={<Radar className="h-4 w-4 text-primary" />}
+              label="Assets oficiales"
+              value={`${simulatorAssetSummary.ready} listos · ${
+                simulatorAssetSummary.pendingReview
+              } pendientes de revision · ${microDuckSimulatorAssetManifest.upstreamRevision.slice(
+                0,
+                8
+              )}`}
             />
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
               {simulationMessage}
@@ -910,4 +929,31 @@ function formatLedPattern(pattern: string | undefined) {
   }
 
   return ledPatternLabels[pattern] ?? pattern;
+}
+
+function summarizeMicroDuckSimulatorAssetPlan(
+  plan: ReturnType<typeof createMicroDuckSimulatorAssetCachePlan>
+) {
+  return plan.entries.reduce(
+    (summary, entry) => {
+      if (entry.status === 'ready') {
+        summary.ready += 1;
+      }
+
+      if (entry.status === 'pending-review') {
+        summary.pendingReview += 1;
+      }
+
+      if (entry.status === 'blocked') {
+        summary.blocked += 1;
+      }
+
+      return summary;
+    },
+    {
+      ready: 0,
+      pendingReview: 0,
+      blocked: 0,
+    }
+  );
 }

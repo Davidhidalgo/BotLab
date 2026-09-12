@@ -97,7 +97,7 @@ describe('botLabFlowMachine', () => {
       actor.getSnapshot().context.flowLog.map((entry) => entry.category)
     ).toEqual(expect.arrayContaining(['build', 'simulation', 'execution']));
     expect(actor.getSnapshot().context.runMessage).toContain(
-      '1 comando(s) enviados'
+      '1 command(s) sent'
     );
   });
 

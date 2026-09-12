@@ -13,6 +13,7 @@ import { createLocalScratchBlocksEditorBridge } from './scratch-blocks-local-bri
 
 export interface BlocksEditorShellProps {
   workspaceName: string;
+  labels?: Partial<BlocksEditorShellLabels>;
   status?: string;
   blocks: string[];
   artifact?: BlocksWorkspaceArtifact;
@@ -24,8 +25,21 @@ export interface BlocksEditorShellProps {
   onArtifactChange?: (artifact: BlocksWorkspaceArtifact) => void;
 }
 
+export interface BlocksEditorShellLabels {
+  visualEditor: string;
+  preview: string;
+  workspaceArea: string;
+  readyToMount: string;
+  bridgePending: string;
+  mounted: string;
+  resetNativeEditor: string;
+  open: string;
+  markDirty: string;
+}
+
 export function BlocksEditorShell({
   workspaceName,
+  labels,
   status,
   blocks,
   artifact = sampleBlocksWorkspaceArtifact,
@@ -36,6 +50,10 @@ export function BlocksEditorShell({
   autoMountNativeEditor = true,
   onArtifactChange,
 }: BlocksEditorShellProps) {
+  const copy = useMemo(
+    () => ({ ...defaultBlocksEditorShellLabels, ...labels }),
+    [labels]
+  );
   const resolvedProvider = useMemo(
     () =>
       provider ??
@@ -55,8 +73,8 @@ export function BlocksEditorShell({
   const [isMounting, setIsMounting] = useState(false);
   const [mountMessage, setMountMessage] = useState(
     resolvedProvider.supportsNativeMount
-      ? 'Scratch Blocks listo para montar.'
-      : 'Bridge Scratch Blocks pendiente.'
+      ? copy.readyToMount
+      : copy.bridgePending
   );
   const showPreviewSidebar = !resolvedProvider.supportsNativeMount;
   const editorGridClassName = showPreviewSidebar
@@ -100,11 +118,11 @@ export function BlocksEditorShell({
       mountHandleRef.current = result.handle;
       mountedArtifactIdRef.current = artifact.id;
       setIsNativeMounted(true);
-      setMountMessage(`${resolvedProvider.name} montado.`);
+      setMountMessage(`${resolvedProvider.name} ${copy.mounted}.`);
     } finally {
       setIsMounting(false);
     }
-  }, [artifact, onArtifactChange, resolvedProvider]);
+  }, [artifact, copy.mounted, onArtifactChange, resolvedProvider]);
 
   useEffect(() => {
     if (
@@ -133,7 +151,7 @@ export function BlocksEditorShell({
     <section className="min-h-[420px] rounded-lg border bg-card">
       <header className="flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">Editor visual</p>
+          <p className="text-sm text-muted-foreground">{copy.visualEditor}</p>
           <h2 className="text-lg font-semibold">{workspaceName}</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -146,7 +164,7 @@ export function BlocksEditorShell({
       <div className={editorGridClassName}>
         {showPreviewSidebar ? (
           <aside className="rounded-md border bg-muted p-3">
-            <p className="mb-3 text-sm font-medium">Previsualizacion</p>
+            <p className="mb-3 text-sm font-medium">{copy.preview}</p>
             <div className="space-y-2">
               {blocks.map((block) => (
                 <div
@@ -166,7 +184,7 @@ export function BlocksEditorShell({
             className="relative h-[420px] min-h-[360px] overflow-hidden rounded-md bg-muted/40"
           >
             <div className="flex h-full items-center justify-center text-center">
-              <p className="text-base font-medium">Área de trabajo</p>
+              <p className="text-base font-medium">{copy.workspaceArea}</p>
               <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
                 {artifact.label}
               </p>
@@ -202,8 +220,8 @@ export function BlocksEditorShell({
               onClick={openNativeEditor}
             >
               {isNativeMounted
-                ? 'Reiniciar editor real'
-                : `Abrir ${resolvedProvider.name}`}
+                ? copy.resetNativeEditor
+                : `${copy.open} ${resolvedProvider.name}`}
             </button>
             <button
               type="button"
@@ -211,7 +229,7 @@ export function BlocksEditorShell({
               disabled={readOnly}
               onClick={markDirty}
             >
-              Marcar editado
+              {copy.markDirty}
             </button>
           </div>
         </div>
@@ -223,11 +241,23 @@ export function BlocksEditorShell({
 export default BlocksEditorShell;
 
 const workspaceStatusLabels: Record<BlocksWorkspaceStatus, string> = {
-  empty: 'Vacio',
-  loaded: 'Cargado',
-  dirty: 'Editado',
-  invalid: 'Invalido',
-  'read-only': 'Solo lectura',
+  empty: 'Empty',
+  loaded: 'Loaded',
+  dirty: 'Edited',
+  invalid: 'Invalid',
+  'read-only': 'Read only',
+};
+
+const defaultBlocksEditorShellLabels: BlocksEditorShellLabels = {
+  visualEditor: 'Visual editor',
+  preview: 'Preview',
+  workspaceArea: 'Workspace area',
+  readyToMount: 'Scratch Blocks ready to mount.',
+  bridgePending: 'Scratch Blocks bridge pending.',
+  mounted: 'mounted',
+  resetNativeEditor: 'Reset native editor',
+  open: 'Open',
+  markDirty: 'Mark edited',
 };
 
 function isJsdomEnvironment() {

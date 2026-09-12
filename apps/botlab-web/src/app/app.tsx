@@ -25,14 +25,10 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import {
-  botLabBuildStateLabels,
   botLabBuildSteps,
-  botLabExecutionStateLabels,
   botLabExecutionSteps,
   botLabFlowMachine,
-  botLabSimulationStateLabels,
   botLabSimulationSteps,
-  botLabWorkspaceStateLabels,
   botLabWorkspaceSteps,
   type BotLabBuildState,
   type BotLabExecutionState,
@@ -143,6 +139,22 @@ export function App() {
     });
   const officialSimulatorHostMessages =
     officialSimulatorHostResult?.messages ?? [];
+  const localizedWorkspaceSteps = botLabWorkspaceSteps.map(({ state }) => ({
+    state,
+    label: getWorkspaceFlowStateLabel(state, copy),
+  }));
+  const localizedBuildSteps = botLabBuildSteps.map(({ state }) => ({
+    state,
+    label: getBuildStateLabel(state, copy),
+  }));
+  const localizedSimulationSteps = botLabSimulationSteps.map(({ state }) => ({
+    state,
+    label: getSimulationStateLabel(state, copy),
+  }));
+  const localizedExecutionSteps = botLabExecutionSteps.map(({ state }) => ({
+    state,
+    label: getExecutionStateLabel(state, copy),
+  }));
   async function loadOfficialSimulatorRuntimePreview() {
     setOfficialSimulatorHostResult({
       state: 'loading',
@@ -173,39 +185,45 @@ export function App() {
     {
       id: workspaceArtifact.id,
       title: 'Workspace',
-      kind: artifactKindLabels[workspaceArtifact.kind],
-      status: workspaceStatusLabels[workspaceArtifact.status],
+      kind: getArtifactKindLabel(workspaceArtifact.kind, copy),
+      status: getWorkspaceArtifactStatusLabel(workspaceArtifact.status, copy),
+      pending: false,
       detail: `${workspaceArtifact.engine} · ${workspaceArtifact.format}`,
     },
     {
       id: compiledArtifact?.id ?? 'compiled-plan-pending',
-      title: 'Plan compilado',
-      kind: 'Compiled plan',
-      status: compiledArtifact ? 'Listo' : 'Pendiente',
+      title: copy.messages.planCompiled,
+      kind: getArtifactKindLabel('compiled-plan', copy),
+      status: compiledArtifact ? copy.status.ready : copy.status.pending,
+      pending: !compiledArtifact,
       detail: compiledArtifact
-        ? `${compiledArtifact.commands.length} comando(s) · ${
+        ? `${compiledArtifact.commands.length} ${copy.labels.commands.toLowerCase()} · ${
             selectedTarget?.name ?? compiledArtifact.targetId
           }`
-        : 'Compila la demo para generar este artifact.',
+        : copy.messages.compileArtifact,
     },
     {
       id: simulationResult?.artifactId ?? 'simulation-output-pending',
-      title: 'Salida simulacion',
-      kind: 'Simulator output',
-      status: simulationResult ? 'Listo' : 'Pendiente',
+      title: copy.messages.outputSimulation,
+      kind: getArtifactKindLabel('simulator-output', copy),
+      status: simulationResult ? copy.status.ready : copy.status.pending,
+      pending: !simulationResult,
       detail: simulationResult
-        ? `${simulationResult.commandCount} comando(s) · ${simulationResult.outputArtifact.snapshot.state}`
-        : 'Simula el plan compilado para generar este artifact.',
+        ? `${simulationResult.commandCount} ${copy.labels.commands.toLowerCase()} · ${simulationResult.outputArtifact.snapshot.state}`
+        : copy.messages.simulateArtifact,
     },
     {
       id: traceArtifact?.id ?? 'runtime-trace-pending',
       title: 'Trace runtime',
-      kind: 'Trace',
+      kind: getArtifactKindLabel('trace', copy),
       status:
-        activeSession && activeSession.trace.length > 0 ? 'Listo' : 'Pendiente',
-      detail: `${activeSession?.trace.length ?? 0} entrada(s) · ${
+        activeSession && activeSession.trace.length > 0
+          ? copy.status.ready
+          : copy.status.pending,
+      pending: !activeSession || activeSession.trace.length === 0,
+      detail: `${activeSession?.trace.length ?? 0} entrada(es) · ${
         activeSession?.diagnostics.length ?? 0
-      } diagnostico(s)`,
+      } diagnostic(s)`,
     },
   ];
 
@@ -289,21 +307,21 @@ export function App() {
       <section className="mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-[1.35fr_0.65fr]">
         <div className="space-y-6">
           <BlocksEditorShell
-            workspaceName="Editor de bloques BotLab"
+            workspaceName={copy.blocks.workspaceName}
+            labels={copy.blocks}
+            status={getWorkspaceArtifactStatusLabel(
+              workspaceArtifact.status,
+              copy
+            )}
             artifact={workspaceArtifact}
-            blocks={[
-              'al iniciar robot',
-              'fijar LEDs MicroDuck',
-              'esperar capacidad',
-              'publicar artefacto',
-            ]}
+            blocks={[...copy.blocks.palette]}
             onArtifactChange={(artifact) =>
               sendFlow({ type: 'workspace.changed', artifact })
             }
           />
 
           <MicroDuckSimulatorHost
-            targetName={selectedTarget?.name ?? 'Sin target'}
+            targetName={selectedTarget?.name ?? copy.empty.noTarget}
             assetReady={simulatorAssetPlan.ready}
             assetPlan={simulatorAssetPlan}
             assetSummary={simulatorAssetSummary}
@@ -313,8 +331,11 @@ export function App() {
             onLoadRuntime={loadOfficialSimulatorRuntimePreview}
             previewUrl={microDuckOfficialSimulatorPreviewUrl}
             simulatorOutput={simulationResult?.outputArtifact}
-            simulationState={botLabSimulationStateLabels[flowState.simulation]}
-            simulationMessage={simulationMessage}
+            simulationState={getSimulationStateLabel(
+              flowState.simulation,
+              copy
+            )}
+            simulationMessage={translateFlowMessage(simulationMessage, copy)}
             copy={copy}
           />
         </div>
@@ -323,19 +344,22 @@ export function App() {
           <Panel title={copy.panels.editor}>
             <Metric
               label={copy.labels.state}
-              value={workspaceStatusLabels[workspaceArtifact.status]}
+              value={getWorkspaceArtifactStatusLabel(
+                workspaceArtifact.status,
+                copy
+              )}
             />
             <Metric label={copy.labels.artifact} value={workspaceArtifact.id} />
             <Metric label={copy.labels.format} value={workspaceArtifact.format} />
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              {workspaceMessage}
+              {translateFlowMessage(workspaceMessage, copy)}
             </p>
           </Panel>
 
           <Panel title={copy.panels.build}>
             <Metric
               label={copy.labels.state}
-              value={botLabBuildStateLabels[flowState.build]}
+              value={getBuildStateLabel(flowState.build, copy)}
             />
             <Metric
               label={copy.labels.plan}
@@ -349,14 +373,14 @@ export function App() {
               brightness={compiledBrightness}
             />
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              {buildMessage}
+              {translateFlowMessage(buildMessage, copy)}
             </p>
           </Panel>
 
           <Panel title={copy.panels.simulator}>
             <Metric
               label={copy.labels.state}
-              value={botLabSimulationStateLabels[flowState.simulation]}
+              value={getSimulationStateLabel(flowState.simulation, copy)}
             />
             <Metric
               label={copy.labels.destination}
@@ -378,8 +402,10 @@ export function App() {
                   ? `${compiledCommand.commandId} · ${formatLedPattern(
                       compiledPattern,
                       copy
-                    )} · brillo ${compiledBrightness ?? 0}`
-                  : 'Compile the workspace to prepare the simulation.'
+                    )} · ${copy.labels.brightness.toLowerCase()} ${
+                      compiledBrightness ?? 0
+                    }`
+                  : copy.empty.noGeneratedCommand
               }
             />
             <RuntimeList
@@ -393,7 +419,7 @@ export function App() {
               )}`}
             />
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              {simulationMessage}
+              {translateFlowMessage(simulationMessage, copy)}
             </p>
           </Panel>
 
@@ -410,7 +436,7 @@ export function App() {
               label={copy.labels.decision}
               value={
                 policyEvaluation
-                  ? policyDecisionLabels[policyEvaluation.decision]
+                  ? getPolicyDecisionLabel(policyEvaluation.decision, copy)
                   : copy.empty.noData
               }
             />
@@ -435,13 +461,13 @@ export function App() {
             <div className="mt-3 space-y-2">
               {(policyEvaluation?.messages.length
                 ? policyEvaluation.messages
-                : ['Compile the demo to evaluate policies.']
+                : [copy.messages.compilePolicies]
               ).map((message) => (
                 <p
                   key={message}
                   className="rounded-md border bg-background p-3 text-sm leading-6 text-muted-foreground"
                 >
-                  {message}
+                  {translateFlowMessage(message, copy)}
                 </p>
               ))}
             </div>
@@ -452,13 +478,13 @@ export function App() {
               label={copy.labels.activeTarget}
               value={selectedTarget?.name ?? copy.empty.noSelection}
             />
-            <Metric label="Targets" value={targets.length.toString()} />
+            <Metric label={copy.labels.targets} value={targets.length.toString()} />
             <Metric
               label={copy.labels.capabilities}
               value={capabilities.length.toString()}
             />
             <Metric
-              label="Simulators"
+              label={copy.labels.simulators}
               value={runtime.listSimulatorIntegrations().length.toString()}
             />
             <Metric
@@ -472,14 +498,15 @@ export function App() {
                 </span>
                 <Badge variant="secondary">
                   {
-                    runtimeStateLabels[
-                      runtimeSnapshot.sessions[0]?.state ?? 'created'
-                    ]
+                    getRuntimeStateLabel(
+                      runtimeSnapshot.sessions[0]?.state ?? 'created',
+                      copy
+                    )
                   }
                 </Badge>
               </div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {runMessage}
+                {translateFlowMessage(runMessage, copy)}
               </p>
             </div>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
@@ -491,7 +518,7 @@ export function App() {
                     ? queue.entries
                         .map(
                           (entry) =>
-                            `${entry.sessionId} · prioridad ${entry.priority}`
+                            `${entry.sessionId} · ${copy.labels.priority} ${entry.priority}`
                         )
                         .join(', ')
                     : copy.empty.noQueue
@@ -504,7 +531,8 @@ export function App() {
                   queue.capabilityLocks.length > 0
                     ? queue.capabilityLocks
                         .map(
-                          (lock) => `${lock.capabilityId} por ${lock.sessionId}`
+                          (lock) =>
+                            `${lock.capabilityId} ${copy.labels.by} ${lock.sessionId}`
                         )
                         .join(', ')
                     : copy.empty.noLocks
@@ -517,11 +545,11 @@ export function App() {
                   {copy.labels.workspaceFlow}
                 </span>
                 <Badge variant="outline">
-                  {botLabWorkspaceStateLabels[flowState.workspace]}
+                  {getWorkspaceFlowStateLabel(flowState.workspace, copy)}
                 </Badge>
               </div>
               <FlowRail
-                steps={botLabWorkspaceSteps}
+                steps={localizedWorkspaceSteps}
                 activeState={flowState.workspace}
               />
             </div>
@@ -531,11 +559,11 @@ export function App() {
                   {copy.labels.buildFlow}
                 </span>
                 <Badge variant="outline">
-                  {botLabBuildStateLabels[flowState.build]}
+                  {getBuildStateLabel(flowState.build, copy)}
                 </Badge>
               </div>
               <FlowRail
-                steps={botLabBuildSteps}
+                steps={localizedBuildSteps}
                 activeState={flowState.build}
               />
             </div>
@@ -545,11 +573,11 @@ export function App() {
                   {copy.labels.simulationFlow}
                 </span>
                 <Badge variant="outline">
-                  {botLabSimulationStateLabels[flowState.simulation]}
+                  {getSimulationStateLabel(flowState.simulation, copy)}
                 </Badge>
               </div>
               <FlowRail
-                steps={botLabSimulationSteps}
+                steps={localizedSimulationSteps}
                 activeState={flowState.simulation}
               />
             </div>
@@ -559,11 +587,11 @@ export function App() {
                   {copy.labels.executionFlow}
                 </span>
                 <Badge variant="outline">
-                  {botLabExecutionStateLabels[flowState.execution]}
+                  {getExecutionStateLabel(flowState.execution, copy)}
                 </Badge>
               </div>
               <FlowRail
-                steps={botLabExecutionSteps}
+                steps={localizedExecutionSteps}
                 activeState={flowState.execution}
               />
             </div>
@@ -576,7 +604,7 @@ export function App() {
                   {copy.labels.activeDestination}
                 </span>
                 <Badge>
-                  {targetKindLabels[selectedTarget?.kind ?? 'simulator']}
+                  {getTargetKindLabel(selectedTarget?.kind ?? 'simulator', copy)}
                 </Badge>
               </div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -621,17 +649,17 @@ export function App() {
                       >
                         {isSelected
                           ? copy.status.selected
-                          : targetStatusLabels[target.status]}
+                          : getTargetStatusLabel(target.status, copy)}
                       </Badge>
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {targetKindLabels[target.kind]} ·{' '}
+                      {getTargetKindLabel(target.kind, copy)} ·{' '}
                       {target.profile?.connection.defaultMode ?? 'manual'}
                     </p>
                     <p className="mt-2 text-sm leading-6 text-muted-foreground">
                       {canRunDemo
-                        ? `${compatibleCapabilities.length} capacidad(es) listas para la demo.`
-                        : 'Planificado o no compatible con la demo MicroDuck actual.'}
+                        ? `${compatibleCapabilities.length} ${copy.messages.targetCanRunDemo}`
+                        : copy.messages.targetNotCompatible}
                     </p>
                   </button>
                 );
@@ -641,30 +669,30 @@ export function App() {
 
           <Panel title={copy.panels.runtimeLog}>
             <RuntimeLogSection
-              title="Events"
+              title={copy.labels.events}
               emptyMessage={copy.empty.noEvents}
               items={recentEvents.map((event) => ({
                 id: event.id,
-                label: runtimeEventLabels[event.type],
-                detail: event.message,
+                label: getRuntimeEventLabel(event.type, copy),
+                detail: translateFlowMessage(event.message, copy),
               }))}
             />
             <RuntimeLogSection
-              title="Trace"
+              title={copy.labels.trace}
               emptyMessage={copy.empty.noTrace}
               items={recentTrace.map((entry) => ({
                 id: entry.id,
                 label: runtimeTraceLabels[entry.category],
-                detail: entry.message,
+                detail: translateFlowMessage(entry.message, copy),
               }))}
             />
             <RuntimeLogSection
-              title="Diagnostics"
+              title={copy.labels.diagnostics}
               emptyMessage={copy.empty.noDiagnostics}
               items={diagnostics.map((diagnostic) => ({
                 id: diagnostic.id,
                 label: runtimeDiagnosticLabels[diagnostic.category],
-                detail: diagnostic.message,
+                detail: translateFlowMessage(diagnostic.message, copy),
               }))}
             />
           </Panel>
@@ -678,7 +706,7 @@ export function App() {
                 >
                   <div className="mb-1 flex items-center justify-between gap-3">
                     <span className="text-sm font-medium">
-                      {flowLogLabels[entry.category]}
+                      {getFlowLogLabel(entry.category, copy)}
                     </span>
                     <Badge
                       variant={
@@ -689,7 +717,7 @@ export function App() {
                     </Badge>
                   </div>
                   <p className="text-sm leading-6 text-muted-foreground">
-                    {entry.message}
+                    {translateFlowMessage(entry.message, copy)}
                   </p>
                 </div>
               ))}
@@ -847,7 +875,7 @@ function MicroDuckSimulatorHost({
         </div>
         <div className="flex items-center gap-2">
           <Badge variant={hostState === 'running' ? 'secondary' : 'outline'}>
-            {officialSimulatorHostStateLabels[hostState]}
+            {getOfficialSimulatorHostStateLabel(hostState, copy)}
           </Badge>
           <Button
             size="sm"
@@ -906,7 +934,7 @@ function MicroDuckSimulatorHost({
           <CommandFact label={copy.labels.state} value={simulationState} />
           <CommandFact
             label={copy.labels.hostState}
-            value={officialSimulatorHostStateLabels[hostState]}
+            value={getOfficialSimulatorHostStateLabel(hostState, copy)}
           />
           <CommandFact
             label={copy.labels.plan}
@@ -950,7 +978,7 @@ function MicroDuckSimulatorHost({
                   <Badge
                     variant={entry.status === 'ready' ? 'secondary' : 'outline'}
                   >
-                    {assetCacheStatusLabels[entry.status]}
+                    {getAssetCacheStatusLabel(entry.status, copy)}
                   </Badge>
                 </div>
               ))}
@@ -966,7 +994,7 @@ function MicroDuckSimulatorHost({
                   {copy.labels.runtimeLoader}
                 </span>
                 <Badge variant={hostState === 'failed' ? 'outline' : 'secondary'}>
-                  {officialSimulatorHostStateLabels[hostState]}
+                  {getOfficialSimulatorHostStateLabel(hostState, copy)}
                 </Badge>
               </div>
               <div className="space-y-2">
@@ -975,7 +1003,7 @@ function MicroDuckSimulatorHost({
                     key={message}
                     className="rounded-md bg-muted px-3 py-2 text-sm leading-6 text-muted-foreground"
                   >
-                    {message}
+                    {translateFlowMessage(message, copy)}
                   </p>
                 ))}
               </div>
@@ -1009,133 +1037,246 @@ function MicroDuckSimulatorHost({
   );
 }
 
-const workspaceStatusLabels = {
-  empty: 'Vacio',
-  loaded: 'Cargado',
-  dirty: 'Editado',
-  invalid: 'Invalido',
-  'read-only': 'Solo lectura',
-};
+function getWorkspaceArtifactStatusLabel(status: string, copy: BotLabCopy) {
+  const labels: Record<string, string> = {
+    empty: copy.status.empty,
+    loaded: copy.status.loaded,
+    dirty: copy.status.dirty,
+    invalid: copy.status.invalid,
+    'read-only': copy.status.readOnly,
+  };
 
-const runtimeStateLabels = {
-  created: 'Creada',
-  queued: 'En cola',
-  ready: 'Lista',
-  'awaiting-confirmation': 'Pendiente',
-  running: 'Ejecutando',
-  paused: 'Pausada',
-  stopped: 'Completada',
-  error: 'Error',
-  disposed: 'Cerrada',
-};
+  return labels[status] ?? status;
+}
 
-const flowLogLabels = {
-  target: 'Target',
-  workspace: 'Workspace',
-  build: 'Build',
-  simulation: 'Simulacion',
-  execution: 'Ejecucion',
-  error: 'Error',
-};
+function getWorkspaceFlowStateLabel(
+  state: BotLabWorkspaceState,
+  copy: BotLabCopy
+) {
+  const labels: Record<BotLabWorkspaceState, string> = {
+    loaded: copy.status.loaded,
+    dirty: copy.status.dirty,
+    validating: copy.status.loading,
+    valid: copy.status.ready,
+    invalid: copy.status.invalid,
+  };
 
-const targetKindLabels = {
-  robot: 'Hardware',
-  simulator: 'Simulador',
-};
+  return labels[state];
+}
 
-const targetStatusLabels = {
-  available: 'Disponible',
-  planned: 'Planificado',
-  offline: 'Offline',
-};
+function getBuildStateLabel(state: BotLabBuildState, copy: BotLabCopy) {
+  const labels: Record<BotLabBuildState, string> = {
+    draft: copy.status.pending,
+    stale: copy.status.stale,
+    compiling: copy.compiling,
+    compiled: copy.messages.planCompiled,
+    failed: copy.status.error,
+  };
 
-const artifactKindLabels = {
-  blocks: 'Blocks workspace',
-  'compiled-plan': 'Compiled plan',
-  log: 'Log',
-  trace: 'Trace',
-  'simulator-output': 'Simulator output',
-};
+  return labels[state];
+}
 
-const policyDecisionLabels = {
-  allow: 'Permitida',
-  deny: 'Denegada',
-  warn: 'Aviso',
-  'require-confirmation': 'Requiere confirmacion',
-};
+function getSimulationStateLabel(
+  state: BotLabSimulationState,
+  copy: BotLabCopy
+) {
+  const labels: Record<BotLabSimulationState, string> = {
+    idle: copy.status.pending,
+    stale: copy.status.stale,
+    simulating: copy.simulating,
+    passed: 'OK',
+    failed: copy.status.error,
+  };
 
-const assetCacheStatusLabels = {
-  ready: 'Listo',
-  missing: 'Falta',
-  stale: 'Desactualizado',
-  'pending-review': 'Revision',
-  blocked: 'Bloqueado',
-};
+  return labels[state];
+}
 
-const officialSimulatorHostStateLabels: Record<
-  MicroDuckOfficialSimulatorHostState,
-  string
-> = {
-  blocked: 'Bloqueado',
-  loading: 'Cargando',
-  ready: 'Listo',
-  running: 'Ejecutando',
-  failed: 'Error',
-  disconnected: 'Desconectado',
-};
+function getExecutionStateLabel(state: BotLabExecutionState, copy: BotLabCopy) {
+  const labels: Record<BotLabExecutionState, string> = {
+    ready: copy.status.ready,
+    queueing: copy.status.queued,
+    running: copy.running,
+    completed: copy.status.completed,
+    failed: copy.status.error,
+  };
 
-const officialSimulatorHostTitles: Record<
-  MicroDuckOfficialSimulatorHostState,
-  string
-> = {
-  blocked: 'Runtime oficial bloqueado por assets restringidos',
-  loading: 'Runtime oficial cargando',
-  ready: 'Runtime oficial listo en modo educativo',
-  running: 'Runtime oficial conectado a BotLab',
-  failed: 'Runtime oficial con error de carga',
-  disconnected: 'Runtime oficial desconectado',
-};
+  return labels[state];
+}
 
-const officialSimulatorHostDescriptions: Record<
-  MicroDuckOfficialSimulatorHostState,
-  string
-> = {
-  blocked:
-    'El host solo se detiene si un asset esta marcado como restringido o bloqueado.',
-  loading:
-    'BotLab esta preparando la conexion con el controller/source boundary oficial.',
-  ready:
-    'Los assets no se vendorean en el repo. Para el preview educativo, BotLab puede intentar cargar recursos remotos y avisar de lo que sigue sin verificar.',
-  running:
-    'El artifact de salida ya puede alimentar la source BotLab del simulador oficial.',
-  failed:
-    'La carga del runtime oficial fallo. El bridge mantiene el error visible para diagnostico.',
-  disconnected:
-    'La conexion oficial se cerro y puede volver a prepararse cuando haga falta.',
-};
+function getRuntimeStateLabel(state: string, copy: BotLabCopy) {
+  const labels: Record<string, string> = {
+    created: copy.status.ready,
+    queued: copy.status.queued,
+    ready: copy.status.ready,
+    'awaiting-confirmation': copy.status.awaiting,
+    running: copy.running,
+    paused: copy.status.paused,
+    stopped: copy.status.stopped,
+    error: copy.status.error,
+    disposed: copy.status.disposed,
+  };
 
-const ledPatternLabels: Record<string, string> = {
-  blink: 'parpadeo',
-  off: 'apagado',
-  smile: 'sonrisa',
-  solid: 'solido',
-};
+  return labels[state] ?? state;
+}
 
-const runtimeEventLabels = {
-  'session-created': 'Sesion creada',
-  'artifact-loaded': 'Artifact cargado',
-  'policy-evaluated': 'Politica evaluada',
-  'policy-confirmed': 'Politica confirmada',
-  'session-queued': 'Sesion en cola',
-  'session-dequeued': 'Sesion iniciada',
-  'session-started': 'Runtime iniciado',
-  'command-dispatched': 'Comando enviado',
-  'session-paused': 'Sesion pausada',
-  'session-resumed': 'Sesion reanudada',
-  'session-stopped': 'Sesion completada',
-  'session-disposed': 'Sesion cerrada',
-  'runtime-error': 'Error runtime',
-};
+function getFlowLogLabel(category: string, copy: BotLabCopy) {
+  const labels: Record<string, string> = {
+    target: copy.labels.target,
+    workspace: 'Workspace',
+    build: copy.panels.build,
+    simulation: copy.panels.simulator,
+    execution: copy.panels.runtime,
+    error: copy.status.error,
+  };
+
+  return labels[category] ?? category;
+}
+
+function getTargetKindLabel(kind: string, copy: BotLabCopy) {
+  const labels: Record<string, string> = {
+    robot: copy.targetKind.robot,
+    simulator: copy.targetKind.simulator,
+  };
+
+  return labels[kind] ?? kind;
+}
+
+function getTargetStatusLabel(status: string, copy: BotLabCopy) {
+  const labels: Record<string, string> = {
+    available: copy.status.available,
+    planned: copy.status.planned,
+    offline: copy.status.offline,
+  };
+
+  return labels[status] ?? status;
+}
+
+function getArtifactKindLabel(kind: string, copy: BotLabCopy) {
+  const labels: Record<string, string> = {
+    blocks: copy.artifactKind.blocks,
+    'compiled-plan': copy.artifactKind.compiledPlan,
+    log: copy.artifactKind.log,
+    trace: copy.artifactKind.trace,
+    'simulator-output': copy.artifactKind.simulatorOutput,
+  };
+
+  return labels[kind] ?? kind;
+}
+
+function getPolicyDecisionLabel(decision: string, copy: BotLabCopy) {
+  const labels: Record<string, string> = {
+    allow: copy.status.allowed,
+    deny: copy.status.denied,
+    warn: copy.status.warning,
+    'require-confirmation': copy.status.requiresConfirmation,
+  };
+
+  return labels[decision] ?? decision;
+}
+
+function getAssetCacheStatusLabel(status: string, copy: BotLabCopy) {
+  const labels: Record<string, string> = {
+    ready: copy.status.ready,
+    missing: copy.status.missing,
+    stale: copy.status.stale,
+    'pending-review': copy.status.review,
+    blocked: copy.status.blocked,
+  };
+
+  return labels[status] ?? status;
+}
+
+function getOfficialSimulatorHostStateLabel(
+  state: MicroDuckOfficialSimulatorHostState,
+  copy: BotLabCopy
+) {
+  const labels: Record<MicroDuckOfficialSimulatorHostState, string> = {
+    blocked: copy.status.blocked,
+    loading: copy.status.loading,
+    ready: copy.status.ready,
+    running: copy.running,
+    failed: copy.status.error,
+    disconnected: copy.status.disconnected,
+  };
+
+  return labels[state];
+}
+
+function getRuntimeEventLabel(type: string, copy: BotLabCopy) {
+  const labels: Record<string, string> = {
+    'session-created': copy.labels.demoSession,
+    'artifact-loaded': copy.labels.artifact,
+    'policy-evaluated': copy.panels.policy,
+    'policy-confirmed': copy.status.confirmationApplied,
+    'session-queued': copy.status.queued,
+    'session-dequeued': copy.running,
+    'session-started': copy.running,
+    'command-dispatched': copy.labels.generatedCommand,
+    'session-paused': copy.status.paused,
+    'session-resumed': copy.running,
+    'session-stopped': copy.status.completed,
+    'session-disposed': copy.status.disposed,
+    'runtime-error': copy.status.error,
+  };
+
+  return labels[type] ?? type;
+}
+
+function translateFlowMessage(message: string, copy: BotLabCopy) {
+  const exactMessages: Record<string, string> = {
+    'Compile the demo to evaluate policies.': copy.messages.compilePolicies,
+    'Workspace loaded from sample.': copy.messages.workspaceLoaded,
+    'Sample workspace loaded.': copy.messages.sampleWorkspaceLoaded,
+    'Simulate the compiled plan before running.':
+      copy.messages.simulationBeforeRun,
+    'Demo ready for MicroDuck Simulator': copy.messages.demoReady,
+    'Demo queued for MicroDuck.': copy.messages.demoQueued,
+    'Demo execution completed.': copy.messages.demoExecutionCompleted,
+    'Workspace edited.': copy.status.dirty,
+    'Workspace validated successfully.': copy.status.ready,
+    'Plan compiled for MicroDuck.': copy.messages.planCompiled,
+    'Simulation completed successfully.': copy.status.completed,
+  };
+
+  if (exactMessages[message]) {
+    return exactMessages[message];
+  }
+
+  const targetSelected = message.match(
+    /^Target (.+) selected\. Compile the workspace to generate an executable plan\.$/
+  );
+  if (targetSelected) {
+    return `${copy.messages.targetSelectedPrefix} ${targetSelected[1]}. ${copy.messages.targetSelectedSuffix}`;
+  }
+
+  const compiledPlan = message.match(
+    /^Plan (.+) compiled from Scratch Blocks for (.+)\.$/
+  );
+  if (compiledPlan) {
+    return `${copy.messages.planCompiled} ${compiledPlan[1]} · ${compiledPlan[2]}.`;
+  }
+
+  const simulationComplete = message.match(
+    /^Simulation complete: (\d+) command\(s\) verified for (.+)\.$/
+  );
+  if (simulationComplete) {
+    return `${copy.messages.simulationCompletePrefix} ${simulationComplete[1]} ${copy.messages.simulationCompleteSuffix} ${simulationComplete[2]}.`;
+  }
+
+  const commandsSent = message.match(/^(\d+) command\(s\) sent\. State: (.+)\.$/);
+  if (commandsSent) {
+    return `${commandsSent[1]} ${copy.messages.commandSentSuffix} ${commandsSent[2]}.`;
+  }
+
+  const loadedFrames = message.match(
+    /^Loaded (\d+) BotLab control frame\(s\) into the official simulator source\.$/
+  );
+  if (loadedFrames) {
+    return `${copy.messages.loadedFramesPrefix} ${loadedFrames[1]} ${copy.messages.loadedFramesSuffix}`;
+  }
+
+  return message;
+}
 
 const runtimeTraceLabels = {
   lifecycle: 'Lifecycle',
@@ -1187,6 +1328,7 @@ function ArtifactCard({
     title: string;
     kind: string;
     status: string;
+    pending: boolean;
     detail: string;
   };
 }) {
@@ -1198,7 +1340,7 @@ function ArtifactCard({
           <span className="truncate text-sm font-medium">{artifact.title}</span>
         </div>
         <Badge
-          variant={artifact.status === 'Pendiente' ? 'outline' : 'secondary'}
+          variant={artifact.pending ? 'outline' : 'secondary'}
         >
           {artifact.status}
         </Badge>
@@ -1287,7 +1429,14 @@ function formatLedPattern(pattern: string | undefined, copy: BotLabCopy) {
     return copy.empty.noPattern;
   }
 
-  return ledPatternLabels[pattern] ?? pattern;
+  const labels: Record<string, string> = {
+    blink: copy.ledPattern.blink,
+    off: copy.ledPattern.off,
+    smile: copy.ledPattern.smile,
+    solid: copy.ledPattern.solid,
+  };
+
+  return labels[pattern] ?? pattern;
 }
 
 function summarizeMicroDuckSimulatorAssetPlan(

@@ -98,7 +98,7 @@ function mountLocalScratchBlocksWorkspace(
 
     return {
       mounted: false,
-      reason: `Scratch Blocks no se ha podido montar: ${
+      reason: `Scratch Blocks could not be mounted: ${
         error instanceof Error ? error.message : String(error)
       }`,
     };
@@ -119,22 +119,22 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
   scratchBlocks.defineBlocksWithJsonArray([
     {
       type: 'botlab_microduck_set_leds',
-      message0: 'fijar LEDs MicroDuck %1',
+      message0: 'set MicroDuck LEDs %1',
       args0: [
         {
           type: 'field_dropdown',
           name: 'PATTERN',
           options: [
-            ['sonrisa', 'smile'],
-            ['parpadeo', 'blink'],
-            ['solido', 'solid'],
-            ['apagar', 'off'],
+            ['smile', 'smile'],
+            ['blink', 'blink'],
+            ['solid', 'solid'],
+            ['off', 'off'],
           ],
         },
       ],
       style: 'more',
       extensions: ['shape_statement'],
-      tooltip: 'Controla los LEDs del robot MicroDuck.',
+      tooltip: 'Controls the MicroDuck robot LEDs.',
     },
   ]);
 
@@ -230,7 +230,7 @@ function createBotLabToolbox() {
     contents: [
       {
         kind: 'category',
-        name: 'Eventos',
+        name: 'Events',
         categorystyle: 'event_category',
         contents: [{ kind: 'block', type: 'event_whenflagclicked' }],
       },

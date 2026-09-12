@@ -50,7 +50,7 @@ describe('App', () => {
     expect(getByText('Runtime oficial llest en mode educatiu')).toBeTruthy();
     expect(getByText('Estat host')).toBeTruthy();
     expect(getByText('Setup assets')).toBeTruthy();
-    expect(getAllByText('Revision').length).toBeGreaterThan(0);
+    expect(getAllByText('Revisio').length).toBeGreaterThan(0);
     expect(getByRole('button', { name: 'Carregar runtime' })).toHaveProperty(
       'disabled',
       true
@@ -60,11 +60,11 @@ describe('App', () => {
   it('should receive workspace updates from the blocks boundary', () => {
     const { getAllByText, getByRole } = render(<App />);
 
-    expect(getAllByText('Cargado').length).toBeGreaterThan(0);
+    expect(getAllByText('Carregat').length).toBeGreaterThan(0);
 
-    fireEvent.click(getByRole('button', { name: 'Marcar editado' }));
+    fireEvent.click(getByRole('button', { name: 'Marcar editat' }));
 
-    expect(getAllByText('Editado').length).toBeGreaterThan(0);
+    expect(getAllByText('Editat').length).toBeGreaterThan(0);
   });
 
   it('should show and enforce target selection', async () => {
@@ -75,7 +75,7 @@ describe('App', () => {
 
     fireEvent.click(getByRole('button', { name: /StackChan/i }));
 
-    expect(getAllByText(/Planificado o no compatible/i).length).toBeGreaterThan(
+    expect(getAllByText(/Planificat o no compatible/i).length).toBeGreaterThan(
       0
     );
     await waitFor(() => {
@@ -97,19 +97,19 @@ describe('App', () => {
           .length
       ).toBeGreaterThan(0);
     });
-    expect(getByText('Requiere confirmacion')).toBeTruthy();
-    expect(getByText('Confirmacio aplicada')).toBeTruthy();
+    expect(getByText('Requereix confirmacio')).toBeTruthy();
+    expect(getAllByText('Confirmacio aplicada').length).toBeGreaterThan(0);
     expect(getByText('confirm-led-output')).toBeTruthy();
     expect(getAllByText('Comanda generada').length).toBeGreaterThan(0);
     expect(getAllByText('set-led-pattern').length).toBeGreaterThan(0);
-    expect(getAllByText('sonrisa').length).toBeGreaterThan(0);
+    expect(getAllByText('somriure').length).toBeGreaterThan(0);
     expect(getAllByText('50').length).toBeGreaterThan(0);
 
     fireEvent.click(getByRole('button', { name: 'Simular demo' }));
 
     await waitFor(() => {
       expect(
-        getAllByText(/Simulacion completa: 1 comando/i).length
+        getAllByText(/Simulacio completa: 1 comanda/i).length
       ).toBeGreaterThan(0);
     });
     expect(
@@ -131,13 +131,13 @@ describe('App', () => {
     await waitFor(() => {
       expect(
         getByText(
-          'Loaded 1 BotLab control frame(s) into the official simulator source.'
+          'BotLab ha carregat 1 frame(s) de control a la source del simulador oficial.'
         )
       ).toBeTruthy();
     });
     expect(
       getAllByText(
-        'Loaded 1 BotLab control frame(s) into the official simulator source.'
+        'BotLab ha carregat 1 frame(s) de control a la source del simulador oficial.'
       ).length
     ).toBeGreaterThan(0);
     expect(
@@ -155,11 +155,11 @@ describe('App', () => {
     expect(getAllByText(/Executant/i).length).toBeGreaterThan(0);
 
     await waitFor(() => {
-      expect(getByText(/1 comando\(s\) enviados/i)).toBeTruthy();
+      expect(getByText(/1 comanda\(es\) enviades/i)).toBeTruthy();
     });
     expect(getAllByText('Completada').length).toBeGreaterThan(0);
-    expect(getByText('Ejecucion demo completada.')).toBeTruthy();
-    expect(getByText('Comando enviado')).toBeTruthy();
+    expect(getByText('Execucio demo completada.')).toBeTruthy();
+    expect(getAllByText('Comanda generada').length).toBeGreaterThan(0);
     expect(
       getAllByText('Simulated dispatch set-led-pattern.').length
     ).toBeGreaterThan(0);

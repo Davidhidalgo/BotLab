@@ -177,9 +177,7 @@ export const botLabFlowMachine = setup({
     compileWorkspace: fromPromise(
       async ({ input }: { input: CompileWorkspaceInput }) => {
         if (input.artifact.status === 'invalid') {
-          throw new Error(
-            'Workspace invalido. Valida o corrige antes de compilar.'
-          );
+          throw new Error('Workspace is invalid. Validate or fix it before compiling.');
         }
 
         const target = input.runtime
@@ -187,7 +185,7 @@ export const botLabFlowMachine = setup({
           .find((candidate) => candidate.id === input.targetId);
 
         if (!target || target.status !== 'available') {
-          throw new Error('Selecciona un target disponible antes de compilar.');
+          throw new Error('Select an available target before compiling.');
         }
 
         const compiledArtifact = compileMicroDuckWorkspaceArtifact(
@@ -204,18 +202,18 @@ export const botLabFlowMachine = setup({
         return {
           compiledArtifact,
           runtimeSnapshot: input.runtime.inspectRuntime(),
-          buildMessage: `Plan ${compiledArtifact.id} compilado desde Scratch Blocks para ${target.name}.`,
+          buildMessage: `Plan ${compiledArtifact.id} compiled from Scratch Blocks for ${target.name}.`,
         };
       }
     ),
     simulatePlan: fromPromise(
       async ({ input }: { input: SimulatePlanInput }) => {
         if (!input.artifact) {
-          throw new Error('Compila un plan antes de simular.');
+          throw new Error('Compile a plan before simulating.');
         }
 
         if (!input.target) {
-          throw new Error('Selecciona un target disponible antes de simular.');
+          throw new Error('Select an available target before simulating.');
         }
 
         const simulator = createMicroDuckSimulatorBridge();
@@ -244,7 +242,7 @@ export const botLabFlowMachine = setup({
             commandCount: simulation.commandCount,
             outputArtifact,
           },
-          simulationMessage: `Simulacion completa: ${simulation.commandCount} comando(s) verificados para ${input.target.name}.`,
+          simulationMessage: `Simulation complete: ${simulation.commandCount} command(s) verified for ${input.target.name}.`,
         };
       }
     ),
@@ -274,9 +272,9 @@ export const botLabFlowMachine = setup({
       buildMessage: ({ context }, params: { targetId: string }) =>
         createTargetMessage(context.runtime, params.targetId),
       simulationMessage: () =>
-        'Simulacion pendiente para el target seleccionado.',
+        'Simulation pending for the selected target.',
       runMessage: () =>
-        'Compila y simula antes de ejecutar el target seleccionado.',
+        'Compile and simulate before running the selected target.',
       errorMessage: () => undefined,
     }),
     appendFlowLog: assign({
@@ -304,18 +302,18 @@ export const botLabFlowMachine = setup({
     clearCompiledArtifact: assign({
       compiledArtifact: () => undefined,
       buildMessage: () =>
-        'Workspace editado. Compila de nuevo antes de ejecutar.',
+        'Workspace edited. Compile again before running.',
     }),
     clearSimulationResult: assign({
       simulationResult: () => undefined,
-      simulationMessage: () => 'Simulacion pendiente para el plan actual.',
+      simulationMessage: () => 'Simulation pending for the current plan.',
     }),
     setWorkspaceValidation: assign({
       workspaceArtifact: (_, params: ValidateWorkspaceOutput) =>
         params.artifact,
       workspaceMessage: (_, params: ValidateWorkspaceOutput) =>
         params.validation.valid
-          ? 'Workspace validado y listo para compilar.'
+          ? 'Workspace validated and ready to compile.'
           : params.validation.errors.join(' '),
       errorMessage: (_, params: ValidateWorkspaceOutput) =>
         params.validation.valid
@@ -347,7 +345,7 @@ export const botLabFlowMachine = setup({
     }),
     setQueuedSnapshot: assign({
       runtimeSnapshot: (_, params: QueueDemoOutput) => params.runtimeSnapshot,
-      runMessage: () => 'Demo en cola para MicroDuck.',
+      runMessage: () => 'Demo queued for MicroDuck.',
       errorMessage: () => undefined,
     }),
     setRunResult: assign({
@@ -395,7 +393,7 @@ export const botLabFlowMachine = setup({
                   type: 'appendFlowLog',
                   params: {
                     category: 'workspace',
-                    message: 'Workspace editado. El plan debe recompilarse.',
+                    message: 'Workspace edited. The plan must be recompiled.',
                   },
                 },
               ],
@@ -418,7 +416,7 @@ export const botLabFlowMachine = setup({
                   type: 'appendFlowLog',
                   params: {
                     category: 'workspace',
-                    message: 'Workspace editado.',
+                    message: 'Workspace edited.',
                   },
                 },
               ],
@@ -451,7 +449,7 @@ export const botLabFlowMachine = setup({
                     type: 'appendFlowLog',
                     params: {
                       category: 'workspace',
-                      message: 'Workspace validado correctamente.',
+                      message: 'Workspace validated successfully.',
                     },
                   },
                 ],
@@ -467,7 +465,7 @@ export const botLabFlowMachine = setup({
                     type: 'appendFlowLog',
                     params: {
                       category: 'error',
-                      message: 'Workspace invalido.',
+                      message: 'Workspace invalid.',
                     },
                   },
                 ],
@@ -500,7 +498,7 @@ export const botLabFlowMachine = setup({
                   type: 'appendFlowLog',
                   params: {
                     category: 'workspace',
-                    message: 'Workspace editado tras validacion.',
+                    message: 'Workspace edited after validation.',
                   },
                 },
               ],
@@ -524,7 +522,7 @@ export const botLabFlowMachine = setup({
                   type: 'appendFlowLog',
                   params: {
                     category: 'workspace',
-                    message: 'Workspace corregido; vuelve a validar.',
+                    message: 'Workspace fixed; validate again.',
                   },
                 },
               ],
@@ -550,7 +548,7 @@ export const botLabFlowMachine = setup({
               type: 'appendFlowLog',
               params: ({ event }) => ({
                 category: 'target',
-                message: `Target seleccionado: ${event.targetId}.`,
+                message: `Target selected: ${event.targetId}.`,
               }),
             },
           ],
@@ -602,7 +600,7 @@ export const botLabFlowMachine = setup({
                   type: 'appendFlowLog',
                   params: {
                     category: 'build',
-                    message: 'Plan compilado para MicroDuck.',
+                    message: 'Plan compiled for MicroDuck.',
                   },
                 },
               ],
@@ -620,7 +618,7 @@ export const botLabFlowMachine = setup({
                   type: 'appendFlowLog',
                   params: {
                     category: 'error',
-                    message: 'La compilacion fallo.',
+                    message: 'Compilation failed.',
                   },
                 },
               ],
@@ -701,7 +699,7 @@ export const botLabFlowMachine = setup({
                   type: 'appendFlowLog',
                   params: {
                     category: 'simulation',
-                    message: 'Simulacion completada correctamente.',
+                    message: 'Simulation completed successfully.',
                   },
                 },
               ],
@@ -719,7 +717,7 @@ export const botLabFlowMachine = setup({
                   type: 'appendFlowLog',
                   params: {
                     category: 'error',
-                    message: 'La simulacion fallo.',
+                    message: 'Simulation failed.',
                   },
                 },
               ],
@@ -782,7 +780,7 @@ export const botLabFlowMachine = setup({
                   type: 'appendFlowLog',
                   params: {
                     category: 'execution',
-                    message: 'Sesion encolada; iniciando runtime.',
+                    message: 'Session queued; starting runtime.',
                   },
                 },
               ],
@@ -800,7 +798,7 @@ export const botLabFlowMachine = setup({
                   type: 'appendFlowLog',
                   params: {
                     category: 'error',
-                    message: 'No se pudo encolar la ejecucion.',
+                    message: 'Could not queue the execution.',
                   },
                 },
               ],
@@ -825,7 +823,7 @@ export const botLabFlowMachine = setup({
                   type: 'appendFlowLog',
                   params: {
                     category: 'execution',
-                    message: 'Ejecucion demo completada.',
+                    message: 'Demo execution completed.',
                   },
                 },
               ],
@@ -843,7 +841,7 @@ export const botLabFlowMachine = setup({
                   type: 'appendFlowLog',
                   params: {
                     category: 'error',
-                    message: 'La ejecucion fallo.',
+                    message: 'Execution failed.',
                   },
                 },
               ],
@@ -877,21 +875,21 @@ export const botLabWorkspaceSteps: Array<{
   state: BotLabWorkspaceState;
   label: string;
 }> = [
-  { state: 'loaded', label: 'Cargado' },
-  { state: 'dirty', label: 'Editado' },
-  { state: 'validating', label: 'Validando' },
-  { state: 'valid', label: 'Listo' },
-  { state: 'invalid', label: 'Invalido' },
+  { state: 'loaded', label: 'Loaded' },
+  { state: 'dirty', label: 'Edited' },
+  { state: 'validating', label: 'Validating' },
+  { state: 'valid', label: 'Ready' },
+  { state: 'invalid', label: 'Invalid' },
 ];
 
 export const botLabExecutionSteps: Array<{
   state: BotLabExecutionState;
   label: string;
 }> = [
-  { state: 'ready', label: 'Preparada' },
-  { state: 'queueing', label: 'En cola' },
-  { state: 'running', label: 'Ejecutando' },
-  { state: 'completed', label: 'Completada' },
+  { state: 'ready', label: 'Ready' },
+  { state: 'queueing', label: 'Queueing' },
+  { state: 'running', label: 'Running' },
+  { state: 'completed', label: 'Completed' },
   { state: 'failed', label: 'Error' },
 ];
 
@@ -899,10 +897,10 @@ export const botLabBuildSteps: Array<{
   state: BotLabBuildState;
   label: string;
 }> = [
-  { state: 'draft', label: 'Pendiente' },
-  { state: 'stale', label: 'Desactualizado' },
-  { state: 'compiling', label: 'Compilando' },
-  { state: 'compiled', label: 'Compilado' },
+  { state: 'draft', label: 'Pending' },
+  { state: 'stale', label: 'Stale' },
+  { state: 'compiling', label: 'Compiling' },
+  { state: 'compiled', label: 'Compiled' },
   { state: 'failed', label: 'Error' },
 ];
 
@@ -910,27 +908,27 @@ export const botLabSimulationSteps: Array<{
   state: BotLabSimulationState;
   label: string;
 }> = [
-  { state: 'idle', label: 'Pendiente' },
-  { state: 'stale', label: 'Desactualizada' },
-  { state: 'simulating', label: 'Simulando' },
+  { state: 'idle', label: 'Pending' },
+  { state: 'stale', label: 'Stale' },
+  { state: 'simulating', label: 'Simulating' },
   { state: 'passed', label: 'OK' },
   { state: 'failed', label: 'Error' },
 ];
 
 export const botLabWorkspaceStateLabels: Record<BotLabWorkspaceState, string> =
   {
-    loaded: 'Cargado',
-    dirty: 'Editado',
-    validating: 'Validando',
-    valid: 'Listo',
-    invalid: 'Invalido',
+    loaded: 'Loaded',
+    dirty: 'Edited',
+    validating: 'Validating',
+    valid: 'Ready',
+    invalid: 'Invalid',
   };
 
 export const botLabBuildStateLabels: Record<BotLabBuildState, string> = {
-  draft: 'Pendiente',
-  stale: 'Desactualizado',
-  compiling: 'Compilando',
-  compiled: 'Compilado',
+  draft: 'Pending',
+  stale: 'Stale',
+  compiling: 'Compiling',
+  compiled: 'Compiled',
   failed: 'Error',
 };
 
@@ -938,19 +936,19 @@ export const botLabSimulationStateLabels: Record<
   BotLabSimulationState,
   string
 > = {
-  idle: 'Pendiente',
-  stale: 'Desactualizada',
-  simulating: 'Simulando',
+  idle: 'Pending',
+  stale: 'Stale',
+  simulating: 'Simulating',
   passed: 'OK',
   failed: 'Error',
 };
 
 export const botLabExecutionStateLabels: Record<BotLabExecutionState, string> =
   {
-    ready: 'Preparada',
-    queueing: 'En cola',
-    running: 'Ejecutando',
-    completed: 'Completada',
+    ready: 'Ready',
+    queueing: 'Queueing',
+    running: 'Running',
+    completed: 'Completed',
     failed: 'Error',
   };
 
@@ -1003,15 +1001,15 @@ function createBotLabFlowContext(): BotLabFlowContext {
     selectedTargetId,
     workspaceArtifact: sampleScratchBlocksWorkspaceArtifact,
     runtimeSnapshot: runtime.inspectRuntime(),
-    workspaceMessage: 'Workspace cargado desde la muestra.',
+    workspaceMessage: 'Workspace loaded from sample.',
     buildMessage: createTargetMessage(runtime, selectedTargetId),
-    simulationMessage: 'Simula el plan compilado antes de ejecutar.',
-    runMessage: 'Demo preparada para MicroDuck Simulator',
+    simulationMessage: 'Simulate the compiled plan before running.',
+    runMessage: 'Demo ready for MicroDuck Simulator',
     flowLog: [
       {
         id: 'flow-log-0',
         category: 'workspace',
-        message: 'Workspace de muestra cargado.',
+        message: 'Sample workspace loaded.',
       },
     ],
     flowLogCounter: 0,
@@ -1049,7 +1047,7 @@ function readMicroDuckLedPatternFromWorkspace(
   artifact: BlocksWorkspaceArtifact
 ) {
   if (artifact.format !== 'scratch-xml') {
-    throw new Error('Solo se puede compilar Scratch XML en esta demo.');
+    throw new Error('Only Scratch XML can be compiled in this demo.');
   }
 
   const xmlDocument = new DOMParser().parseFromString(
@@ -1059,20 +1057,20 @@ function readMicroDuckLedPatternFromWorkspace(
   const parserError = xmlDocument.querySelector('parsererror');
 
   if (parserError) {
-    throw new Error('El workspace Scratch XML no se puede leer.');
+    throw new Error('The Scratch XML workspace cannot be read.');
   }
 
   const root = xmlDocument.documentElement;
 
   if (root.nodeName.toLowerCase() !== 'xml') {
-    throw new Error('El workspace no contiene un XML de Scratch valido.');
+    throw new Error('The workspace does not contain valid Scratch XML.');
   }
 
   const startBlock = root.querySelector('block[type="event_whenflagclicked"]');
 
   if (!startBlock) {
     throw new Error(
-      'Anade un bloque de inicio con bandera verde antes de compilar.'
+      'Add a green flag start block before compiling.'
     );
   }
 
@@ -1082,7 +1080,7 @@ function readMicroDuckLedPatternFromWorkspace(
 
   if (!ledBlock) {
     throw new Error(
-      'Anade el bloque BotLab de LEDs MicroDuck antes de compilar.'
+      'Add the BotLab MicroDuck LEDs block before compiling.'
     );
   }
 
@@ -1106,7 +1104,7 @@ function normalizeMicroDuckLedPattern(value: string | null | undefined) {
     return pattern;
   }
 
-  throw new Error(`Patron LED no soportado: ${pattern}.`);
+  throw new Error(`Unsupported LED pattern: ${pattern}.`);
 }
 
 function targetCanRunMicroDuckDemo(runtime: BotLabRuntime, targetId: string) {
@@ -1128,48 +1126,48 @@ function createTargetMessage(runtime: BotLabRuntime, targetId: string) {
     .find((candidate) => candidate.id === targetId);
 
   if (!target) {
-    return 'Target desconocido. Selecciona un destino valido.';
+    return 'Unknown target. Select a valid destination.';
   }
 
   if (!targetCanRunMicroDuckDemo(runtime, targetId)) {
-    return `${target.name} aun no puede ejecutar la demo MicroDuck.`;
+    return `${target.name} cannot run the MicroDuck demo yet.`;
   }
 
-  return `Target ${target.name} seleccionado. Compila el workspace para generar un plan ejecutable.`;
+  return `Target ${target.name} selected. Compile the workspace to generate an executable plan.`;
 }
 
 function formatRunMessage(result: RuntimeRunResult | undefined) {
   if (!result) {
-    return 'No habia sesiones pendientes en cola.';
+    return 'There were no pending sessions in the queue.';
   }
 
   return `${
     result.snapshot.dispatchedCommandCount
-  } comando(s) enviados. Estado: ${runtimeStateLabels[result.snapshot.state]}.`;
+  } command(s) sent. State: ${runtimeStateLabels[result.snapshot.state]}.`;
 }
 
 function formatErrorMessage(error: unknown) {
   return error instanceof Error
     ? error.message
-    : 'Error desconocido en el flujo demo.';
+    : 'Unknown error in the demo flow.';
 }
 
 const runtimeStateLabels = {
-  created: 'Creada',
-  queued: 'En cola',
-  ready: 'Lista',
-  'awaiting-confirmation': 'Pendiente',
-  running: 'Ejecutando',
-  paused: 'Pausada',
-  stopped: 'Completada',
+  created: 'Created',
+  queued: 'Queued',
+  ready: 'Ready',
+  'awaiting-confirmation': 'Pending',
+  running: 'Running',
+  paused: 'Paused',
+  stopped: 'Completed',
   error: 'Error',
-  disposed: 'Cerrada',
+  disposed: 'Closed',
 };
 
 const workspaceStatusLabels = {
-  empty: 'vacio',
-  loaded: 'cargado',
-  dirty: 'editado',
-  invalid: 'invalido',
-  'read-only': 'solo lectura',
+  empty: 'empty',
+  loaded: 'loaded',
+  dirty: 'edited',
+  invalid: 'invalid',
+  'read-only': 'read only',
 };

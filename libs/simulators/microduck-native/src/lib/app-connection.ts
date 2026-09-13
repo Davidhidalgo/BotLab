@@ -1,6 +1,7 @@
+import type { ProgramIteration } from '@botlab/model';
 import { createNativeMicroDuckClient } from './native-client';
 
-export type NativeProgramStep = { sourceBlockId?: string } & (
+export type NativeProgramStep = { sourceBlockId?: string; iterations?: ProgramIteration[] } & (
   | { kind: 'walk' | 'turn' | 'wait'; value: number }
   | { kind: 'posture'; value: 'sit' | 'stand' }
   | {
@@ -52,6 +53,7 @@ export interface NativeAppSnapshot {
 }
 
 interface NativeCompiledCommand {
+  iterations?: ProgramIteration[];
   commandId: string;
   inputs: Record<string, unknown>;
   sourceBlockId?: string;
@@ -96,7 +98,7 @@ export function createNativeProgram(
         }
         return {
           kind: 'if',
-          sourceBlockId: command.sourceBlockId,
+          iterations: command.iterations, sourceBlockId: command.sourceBlockId,
           condition: {
             posture: condition.posture as 'sit' | 'stand' | 'transitioning',
             sourceBlockId: condition.sourceBlockId,
@@ -115,7 +117,7 @@ export function createNativeProgram(
           throw new Error(
             'Native posture capability is unavailable. Connect a compatible simulator.'
           );
-        return { kind: 'posture', value, sourceBlockId: command.sourceBlockId };
+        return { kind: 'posture', value, iterations: command.iterations, sourceBlockId: command.sourceBlockId };
       }
       if (command.commandId !== 'drive-differential') {
         throw new Error(
@@ -155,7 +157,7 @@ export function createNativeProgram(
           'Native limits: 5 m per walk, 360° per turn and 60 s per wait.'
         );
       }
-      return { ...step, sourceBlockId: command.sourceBlockId };
+      return { ...step, iterations: command.iterations, sourceBlockId: command.sourceBlockId };
     });
   }
   return lower(artifact.commands);

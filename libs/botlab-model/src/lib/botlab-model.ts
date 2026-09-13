@@ -1,3 +1,4 @@
+import type { ProgramIteration } from './program';
 export type BotLabConcept =
   | 'policy'
   | 'skill'
@@ -219,6 +220,7 @@ export interface BehaviorArtifact extends Artifact {
 }
 
 export interface CompiledCommand {
+  iterations?: ProgramIteration[];
   id: string;
   sourceBlockId?: string;
   capabilityId: string;

@@ -73,3 +73,12 @@ it('the direct source also settles motion before evaluating the next condition',
   expect(() => tick(45)).not.toThrow();
   expect(source.isActive()).toBe(false);
 });
+
+it('derives iteration progress from the compiled frame instead of trusting the receiver', () => {
+  const f = fixture();
+  try {
+    f.source.frames[0].iterations = [{ sourceBlockId: 'loop', iteration: 2, count: 3 }];
+    f.reply({ status: 'running', frameIndex: 0, iterations: [{ iteration: 99, count: 100 }] });
+    expect(f.updates.at(-1)?.iterations).toEqual([{ sourceBlockId: 'loop', iteration: 2, count: 3 }]);
+  } finally { f.connection.dispose(); }
+});

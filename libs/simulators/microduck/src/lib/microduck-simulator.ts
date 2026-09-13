@@ -1,6 +1,7 @@
 import type {
   CompiledBehaviorArtifact,
   CompiledCommand,
+  ProgramIteration,
   Target,
 } from '@botlab/model';
 import {
@@ -36,7 +37,7 @@ export type MicroDuckLedPattern = 'smile' | 'blink' | 'solid' | 'off';
 
 export interface MicroDuckSimulatorLedFrame {
   id: string;
-  sourceBlockId?: string;
+  sourceBlockId?: string; iterations?: ProgramIteration[];
   type: 'led-pattern';
   targetId: string;
   pattern: MicroDuckLedPattern;
@@ -45,7 +46,7 @@ export interface MicroDuckSimulatorLedFrame {
 
 export interface MicroDuckSimulatorDifferentialDriveFrame {
   id: string;
-  sourceBlockId?: string;
+  sourceBlockId?: string; iterations?: ProgramIteration[];
   type: 'differential-drive';
   targetId: string;
   leftPower: number;
@@ -56,16 +57,16 @@ export interface MicroDuckSimulatorDifferentialDriveFrame {
 }
 
 export interface MicroDuckSimulatorPostureFrame {
-  id: string; sourceBlockId?: string; targetId: string;
+  id: string; sourceBlockId?: string; iterations?: ProgramIteration[]; targetId: string;
   type: 'posture'; posture: 'sit' | 'stand';
 }
 export interface MicroDuckSimulatorConditionFrame {
-  id: string; sourceBlockId?: string; targetId: string;
+  id: string; sourceBlockId?: string; iterations?: ProgramIteration[]; targetId: string;
   type: 'posture-condition'; posture: 'sit' | 'stand' | 'transitioning';
   thenIndex: number; elseIndex: number; endIndex: number;
 }
 export interface MicroDuckSimulatorJumpFrame {
-  id: string; sourceBlockId?: string; targetId: string;
+  id: string; sourceBlockId?: string; iterations?: ProgramIteration[]; targetId: string;
   type: 'jump'; nextIndex: number;
 }
 export type MicroDuckSimulatorControlFrame =
@@ -1232,7 +1233,7 @@ export function createMicroDuckSimulatorControlSource(
         }
         const index = frames.length;
         const frame: MicroDuckSimulatorConditionFrame = {
-          id: String(command['id']), targetId: String(command['targetId']), sourceBlockId: command['sourceBlockId'] as string | undefined,
+          id: String(command['id']), targetId: String(command['targetId']), sourceBlockId: command['sourceBlockId'] as string | undefined, iterations: command['iterations'] as ProgramIteration[] | undefined,
           type: 'posture-condition', posture: condition['posture'] as 'sit' | 'stand' | 'transitioning', thenIndex: index + 1, elseIndex: 0, endIndex: 0,
         };
         frames.push(frame);
@@ -1247,7 +1248,7 @@ export function createMicroDuckSimulatorControlSource(
       }
       const frame = createMicroDuckSimulatorControlFrame(command as unknown as CompiledCommand);
       if (typeof frame === 'string') errors.push(frame);
-      else frames.push(frame);
+      else frames.push({ ...frame, iterations: command['iterations'] as ProgramIteration[] | undefined });
     }
   }
   lower(artifact.commands);

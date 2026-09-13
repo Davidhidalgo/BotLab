@@ -76,3 +76,6 @@ Run `npm run nx -- test blocks --run` to execute the unit tests via Vitest.
 <!-- posture predicates and control palette from src/lib/scratch-blocks-local-bridge.ts; validation from src/lib/microduck-program.ts -->
 
 Sensing offers Boolean `botlab_microduck_is_sit`, `botlab_microduck_is_stand` and `botlab_microduck_is_transitioning`. Control offers `control_if` and `control_if_else`; their `CONDITION` must contain one of these predicates, and their `SUBSTACK` / `SUBSTACK2` statement inputs may contain nested sequences or be empty. Both branches are validated before execution. The parser preserves predicate and statement IDs, limits nesting to 16 levels and action/control nodes to 256, and rejects missing or unsupported conditions. General Boolean expressions and loops are not implemented yet.
+
+<!-- repeat parsing and palette from src/lib/microduck-program.ts and scratch-blocks-local-bridge.ts -->
+`control_repeat` is available in Control with the standard localized Scratch labels (Catalan, Spanish and English). Its TIMES input accepts a literal integer from 0 to 100. The parser emits a typed `repeat` node, preserves SUBSTACK order and source IDs, validates zero-count bodies, and rejects expressions and invalid counts. Control nesting is limited to 16 levels.

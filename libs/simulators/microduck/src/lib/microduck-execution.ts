@@ -1,3 +1,4 @@
+import type { ProgramIteration } from '@botlab/model';
 import {
   postMicroDuckSimulatorControlSource,
   type MicroDuckSimulatorControlSource,
@@ -14,6 +15,7 @@ export interface MicroDuckExecutionUpdate {
   artifactId: string;
   status: MicroDuckExecutionStatus;
   frameIndex?: number;
+  iterations?: ProgramIteration[];
   elapsedMs?: number;
   distanceMeters?: number;
   turnedDegrees?: number;
@@ -182,6 +184,7 @@ export function observeMicroDuckExecution(
       distanceMeters: data.distanceMeters,
       turnedDegrees: data.turnedDegrees,
       errorCode: data.errorCode,
+      iterations: data.frameIndex === undefined ? undefined : source.frames[data.frameIndex]?.iterations,
       observedPosture: data.observedPosture, conditionResult: data.conditionResult, postureCompleted: data.postureCompleted,
       failureOrigin: data.status === 'failed' ? 'simulator' : undefined,
     });

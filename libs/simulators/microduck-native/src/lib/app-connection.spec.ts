@@ -111,3 +111,8 @@ it('requires advertised conditions and validates even the unselected branch', ()
   expect(createNativeProgram(artifact, capabilities)).toMatchObject([{ kind: 'if', sourceBlockId: 'if', condition: { posture: 'sit', sourceBlockId: 'predicate' }, then: [{ kind: 'posture', value: 'stand' }], else: [] }]);
   expect(() => createNativeProgram(artifact, { ...capabilities, postures: [] })).toThrow('capability');
 });
+
+it('preserves repeated command source and iteration metadata through native lowering', () => {
+  const iterations = [{ sourceBlockId: 'loop', iteration: 2, count: 3 }];
+  expect(createNativeProgram({ commands: [{ commandId: 'drive-differential', sourceBlockId: 'wait', iterations, inputs: { leftPower: 0, rightPower: 0, durationMs: 100 } }] })).toEqual([{ kind: 'wait', value: .1, sourceBlockId: 'wait', iterations }]);
+});

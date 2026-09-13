@@ -395,6 +395,7 @@ function createBotLabToolbox(scratchBlocks: ScratchBlocksApi) {
         name: scratchBlocks.Msg['CATEGORY_CONTROL'],
         categorystyle: 'control_category',
         contents: [
+          { kind: 'block', type: 'control_repeat', inputs: { TIMES: { shadow: { type: 'math_whole_number', fields: { NUM: 10 } } } } },
           { kind: 'block', type: 'control_if' },
           { kind: 'block', type: 'control_if_else' },
           {

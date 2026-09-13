@@ -104,6 +104,7 @@ export const botLabTranslations = {
       walking: 'Caminant',
       turning: 'Girant',
       waiting: 'Esperant',
+      iteration: 'Repetició',
       executionErrors: {
         'posture-unavailable': "Les postures no estan disponibles en aquest mode del simulador.",
         'posture-unknown': "La postura és desconeguda. Espera una observació estable abans de comprovar-la.",
@@ -359,6 +360,7 @@ export const botLabTranslations = {
       walking: 'Caminando',
       turning: 'Girando',
       waiting: 'Esperando',
+      iteration: 'Repetición',
       executionErrors: {
         'posture-unavailable': "Las posturas no están disponibles en este modo del simulador.",
         'posture-unknown': "La postura es desconocida. Espera una observación estable antes de comprobarla.",
@@ -614,6 +616,7 @@ export const botLabTranslations = {
       walking: 'Walking',
       turning: 'Turning',
       waiting: 'Waiting',
+      iteration: 'Iteration',
       executionErrors: {
         'posture-unavailable': "Postures are unavailable in this simulator mode.",
         'posture-unknown': "Posture is unknown. Wait for a stable observation before checking it.",

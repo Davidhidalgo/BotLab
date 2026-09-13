@@ -1,4 +1,10 @@
 /** Typed robot actions and branches, independent of editor XML and native transport. */
+export interface ProgramIteration {
+  sourceBlockId?: string;
+  iteration: number;
+  count: number;
+}
+
 export type RobotPosture = 'sit' | 'stand';
 export type PostureCondition = {
   type: 'posture';
@@ -11,6 +17,7 @@ export type MicroDuckProgramStep = { sourceBlockId?: string } & (
   | { type: 'turn'; angleDegrees: number }
   | { type: 'wait'; seconds: number }
   | { type: 'posture'; posture: RobotPosture }
+  | { type: 'repeat'; count: number; body: MicroDuckProgramStep[] }
   | {
       type: 'if';
       condition: PostureCondition;

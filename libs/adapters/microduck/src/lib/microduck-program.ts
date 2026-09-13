@@ -2,6 +2,7 @@ import {
   sampleMicroDuckCompiledBehaviorArtifact,
   type CompiledBehaviorArtifact,
   type MicroDuckProgramStep,
+  type ProgramIteration,
 } from '@botlab/model';
 
 export function compileMicroDuckProgram(
@@ -9,26 +10,55 @@ export function compileMicroDuckProgram(
   program: readonly MicroDuckProgramStep[],
   targetId: string
 ): CompiledBehaviorArtifact {
+  // Validate even unreachable/zero-repeat bodies before constructing any commands.
+  let nodes = 0;
+  function validate(steps: readonly MicroDuckProgramStep[], depth = 0) {
+    if (!Array.isArray(steps) || depth > 16) throw new Error('Programs support at most 16 nested control blocks.');
+    for (const step of steps) {
+      if (!step || ++nodes > 256) throw new Error('Programs support at most 256 blocks.');
+      if (step.type === 'repeat') {
+        if (!Number.isInteger(step.count) || step.count < 0 || step.count > 100) throw new Error('Repeat requires a whole number from 0 to 100.');
+        validate(step.body, depth + 1);
+      } else if (step.type === 'if') {
+        validate(step.then, depth + 1); validate(step.else, depth + 1);
+      }
+    }
+  }
+  validate(program);
+  let expanded = 1; // Reserve the final stop within the transport's 256-step budget.
   const planParts: string[] = [];
   function lower(
     steps: readonly MicroDuckProgramStep[],
-    path = ''
+    path = '',
+    iterations: ProgramIteration[] = []
   ): CompiledBehaviorArtifact['commands'] {
     const commands: CompiledBehaviorArtifact['commands'] = [];
     for (const [ordinal, step] of steps.entries()) {
       const index = `${path}${ordinal}`;
+      if (step.type === 'repeat') {
+        planParts.push(`repeat-${step.count}`);
+        for (let iteration = 1; iteration <= step.count; iteration++) {
+          const context = [...iterations, { sourceBlockId: step.sourceBlockId, iteration, count: step.count }];
+          // A zero-duration checkpoint preserves progress/cancellation even for empty bodies.
+          commands.push(...lower([{ type: 'wait', seconds: 0, sourceBlockId: step.sourceBlockId }], `${index}-repeat-${iteration}-start-`, context));
+          commands.push(...lower(step.body, `${index}-repeat-${iteration}-`, context));
+        }
+        continue;
+      }
+      if (++expanded > 256) throw new Error('Program exceeds 256 expanded steps. Reduce repeat counts or body size.');
       if (step.type === 'if') {
         planParts.push(`if-${step.condition.posture}`);
         commands.push({
           id: `command-microduck-if-${index}`,
           sourceBlockId: step.sourceBlockId,
+          ...(iterations.length ? { iterations } : {}),
           capabilityId: 'microduck-control',
           commandId: 'if-posture',
           targetId,
           inputs: {
             condition: step.condition,
-            then: lower(step.then, `${index}-then-`),
-            else: lower(step.else, `${index}-else-`),
+            then: lower(step.then, `${index}-then-`, iterations),
+            else: lower(step.else, `${index}-else-`, iterations),
           },
         });
         continue;
@@ -38,6 +68,7 @@ export function compileMicroDuckProgram(
         commands.push({
           id: `command-microduck-leds-${index}`,
           sourceBlockId: step.sourceBlockId,
+          ...(iterations.length ? { iterations } : {}),
           capabilityId: 'microduck-leds',
           commandId: 'set-led-pattern',
           targetId,
@@ -50,6 +81,7 @@ export function compileMicroDuckProgram(
         commands.push({
           id: `command-microduck-posture-${index}`,
           sourceBlockId: step.sourceBlockId,
+          ...(iterations.length ? { iterations } : {}),
           capabilityId: 'microduck-posture',
           commandId: 'set-posture',
           targetId,
@@ -71,6 +103,7 @@ export function compileMicroDuckProgram(
       commands.push({
         id: `command-microduck-${step.type}-${index}`,
         sourceBlockId: step.sourceBlockId,
+          ...(iterations.length ? { iterations } : {}),
         capabilityId: 'microduck-motion',
         commandId: 'drive-differential',
         targetId,

@@ -1,3 +1,4 @@
+import { createNativeProgram } from '@botlab/simulators-microduck-native';
 import { sampleScratchBlocksWorkspaceArtifact } from '@botlab/blocks';
 import {
   createMicroDuckBotLabOfficialSource,
@@ -133,7 +134,7 @@ describe('sequential MicroDuck compilation', () => {
   );
 
   it('does not silently skip unsupported connected blocks or expressions', () => {
-    expect(() => compile(['<block type="control_repeat"/>', walk(2)])).toThrow(
+    expect(() => compile(['<block type="control_forever"/>', walk(2)])).toThrow(
       'Unsupported connected block'
     );
     expect(() =>
@@ -191,4 +192,13 @@ describe('sequential MicroDuck compilation', () => {
       source.dispose();
     }
   );
+});
+
+it('compiles a repeated workspace into both transports with the same iteration sources', () => {
+  const plan = compile(['<block type="control_repeat" id="loop"><value name="TIMES"><shadow type="math_whole_number"><field name="NUM">2</field></shadow></value><statement name="SUBSTACK"><block type="control_wait" id="body"><value name="DURATION"><shadow type="math_positive_number"><field name="NUM">0.2</field></shadow></value></block></statement></block>']);
+  const iframe = createMicroDuckSimulatorControlSource(plan);
+  const native = createNativeProgram(plan);
+  expect(iframe.errors).toEqual([]);
+  expect(iframe.frames.filter(f => f.sourceBlockId === 'body').map(f => f.iterations)).toEqual(native.filter(s => s.sourceBlockId === 'body').map(s => s.iterations));
+  expect(native.filter(s => s.sourceBlockId === 'body').map(s => s.iterations?.[0].iteration)).toEqual([1, 2]);
 });

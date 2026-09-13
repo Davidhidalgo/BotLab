@@ -48,6 +48,22 @@ class NativeProgramTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 validate_program(steps)
 
+    def test_expanded_repeat_retains_iteration_and_stops_before_next_action(self):
+        steps = [{'kind': 'wait', 'value': 0, 'sourceBlockId': 'body',
+                  'iterations': [{'sourceBlockId': 'repeat', 'iteration': i, 'count': 3}]} for i in range(1, 4)]
+        program = Program('run', steps, 0)
+        self.assertEqual(program.snapshot()['step']['iterations'][0]['iteration'], 1)
+        program.tick(state(), 0)
+        self.assertEqual(program.snapshot()['step']['iterations'][0]['iteration'], 2)
+        program.stop()
+        self.assertEqual(program.tick(state(), 1), {})
+        self.assertEqual(program.index, 1)
+
+    def test_invalid_iteration_context_rejected(self):
+        for context in (None, [{}], [{'iteration': True, 'count': 1}], [{'iteration': 2, 'count': 1}]):
+            with self.assertRaises(ValueError):
+                validate_program([{'kind': 'wait', 'value': 0, 'iterations': context}])
+
 
 class LeaseTests(unittest.TestCase):
     def setUp(self):

@@ -55,7 +55,7 @@ export function readMicroDuckProgramFromWorkspace(
     depth = 0
   ): MicroDuckProgramStep[] {
     if (depth > 16)
-      throw new Error('Programs support at most 16 nested conditions.');
+      throw new Error('Programs support at most 16 nested control blocks.');
     const steps: MicroDuckProgramStep[] = [];
     let next = container;
     while (next) {
@@ -67,6 +67,20 @@ export function readMicroDuckProgramFromWorkspace(
         throw new Error('Programs support at most 256 blocks.');
       const type = block.getAttribute('type');
       switch (type) {
+        case 'control_repeat': {
+          const input = directXmlChild(block, 'value', 'TIMES');
+          const value = input && (directXmlChild(input, 'block') ?? directXmlChild(input, 'shadow'));
+          const text = value && directXmlChild(value, 'field', 'NUM')?.textContent?.trim();
+          const repeats = text ? Number(text) : NaN;
+          if (!value || value.getAttribute('disabled') === 'true' ||
+              !['math_number', 'math_positive_number', 'math_whole_number', 'math_integer'].includes(value.getAttribute('type') ?? '') ||
+              !Number.isInteger(repeats) || repeats < 0 || repeats > 100) {
+            throw new Error('Repeat requires a whole number from 0 to 100. Expressions are not supported yet.');
+          }
+          steps.push({ type: 'repeat', count: repeats, sourceBlockId: block.getAttribute('id') ?? undefined,
+            body: readSequence(directXmlChild(block, 'statement', 'SUBSTACK'), depth + 1) });
+          break;
+        }
         case 'control_if':
         case 'control_if_else': {
           const input = directXmlChild(block, 'value', 'CONDITION');

@@ -2,7 +2,8 @@
   "name": "@botlab/simulators-microduck-native",
   "version": "0.0.1",
   "dependencies": {
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "@botlab/model": "0.0.1"
   },
   "type": "commonjs",
   "main": "./src/index.js",

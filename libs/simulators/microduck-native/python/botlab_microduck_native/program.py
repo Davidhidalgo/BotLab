@@ -23,6 +23,14 @@ def validate_program(steps):
                 raise ValueError('Program requires at most 256 valid steps.')
             if step.get('sourceBlockId') is not None and not isinstance(step['sourceBlockId'], str):
                 raise ValueError('Invalid source block.')
+            iterations = step.get('iterations', [])
+            if not isinstance(iterations, list) or len(iterations) > 16:
+                raise ValueError('Invalid iteration context.')
+            for item in iterations:
+                if (not isinstance(item, dict) or type(item.get('iteration')) is not int or
+                    type(item.get('count')) is not int or not 1 <= item['iteration'] <= item['count'] <= 100 or
+                    (item.get('sourceBlockId') is not None and not isinstance(item['sourceBlockId'], str))):
+                    raise ValueError('Invalid iteration context.')
             kind, value = step.get('kind'), step.get('value')
             if kind == 'if':
                 condition = step.get('condition')
@@ -92,7 +100,8 @@ class Program:
             result = observed == step['condition']['posture']
             self.decisions.append({'sourceBlockId': step.get('sourceBlockId'),
                                    'conditionBlockId': step['condition'].get('sourceBlockId'),
-                                   'posture': step['condition']['posture'], 'observed': observed, 'result': result})
+                                   'posture': step['condition']['posture'], 'observed': observed, 'result': result,
+                                   'iterations': step.get('iterations', [])})
             # Expand only the selected branch. The whole tree was validated before execution.
             self.steps[self.index + 1:self.index + 1] = step['then'] if result else step['else']
             self.advance()

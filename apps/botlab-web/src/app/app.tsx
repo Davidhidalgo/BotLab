@@ -1224,6 +1224,11 @@ function MicroDuckSimulatorHost({
         {executionState === 'running' && frameIndex !== undefined
           ? ` · ${frameIndex + 1}/${frameCount}` : ''}
       </p>
+      {executionState === 'running' && executionFrame?.iterations?.length ? (
+        <p role="status" className="text-sm tabular-nums">
+          {copy.host.iteration} {executionFrame.iterations.map(item => `${item.iteration}/${item.count}`).join(' · ')}
+        </p>
+      ) : null}
       {executionState === 'running' && executionFrame?.type === 'differential-drive' ? (
         <div className="space-y-1" role="status" aria-label={copy.host.progressLabel}>
           <p className="text-sm tabular-nums">

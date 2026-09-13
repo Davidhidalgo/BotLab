@@ -28,7 +28,7 @@ The current baseline below supersedes older status descriptions in the numbered 
 | Area | Implemented and inspected | Still open |
 | --- | --- | --- |
 | Foundation | Nx, React/TypeScript, tagged libraries, shared model and package contracts | Enforced dependency rules and full-workspace CI |
-| Blocks | Official Scratch Blocks; one green-flag sequence; movement, turns, waits, simulator postures, nested posture conditions and LED compilation; XML parsing in blocks, command lowering in the adapter; localized blocks | Disconnected-block diagnostics; loops, general expressions and generic-runtime control flow |
+| Blocks | Official Scratch Blocks; one green-flag sequence; movement, turns, waits, simulator postures, nested posture conditions, finite repeats and LED compilation; XML parsing in blocks, command lowering in the adapter; localized blocks | Disconnected-block diagnostics; general expressions and generic-runtime control flow |
 | Simulator | Official local host with postMessage commands and identified execution status; measured displacement/yaw, progress, stop acknowledgement and reset | Further locomotion-mode/scene coverage; upstream pin/hash/setup consolidation |
 | Persistence and UX | Versioned local workspace and last trace, import/export, responsive workbench and block highlighting | Full end-to-end acceptance recheck; multiple-program storage is deferred |
 | Runtime | Session lifecycle, cooperative cancellation, queue, locks, traces and initial policies | Explicit run outcomes, current target eligibility and revision/target-bound user approval; hardware stop contract |
@@ -38,15 +38,15 @@ Verification performed on 2026-09-13:
 
 | Project | Test files | Passing tests | Runner |
 | --- | ---: | ---: | --- |
-| botlab-web | 9 | 88 | Jest |
+| botlab-web | 9 | 89 | Jest |
 | botlab-model | 1 | 8 | Vitest |
 | runtime | 1 | 32 | Vitest |
-| blocks | 4 | 42 | Vitest |
+| blocks | 4 | 53 | Vitest |
 | simulators-core | 1 | 2 | Vitest |
-| simulators-microduck | 5 | 118 | Vitest |
-| microduck adapter | 2 | 12 | Vitest |
-| simulators-microduck-native | 6 | 53 | Vitest + Python unittest |
-| **Total** | **29** | **355** | |
+| simulators-microduck | 5 | 119 | Vitest |
+| microduck adapter | 2 | 22 | Vitest |
+| simulators-microduck-native | 6 | 56 | Vitest + Python unittest |
+| **Total** | **29** | **381** | |
 
 All eight configured test targets passed across the `npm run test:all` run and the isolated blocks rerun (the root alias for `nx run-many --target=test --all --parallel=2`). The app also passed `node_modules/.bin/tsc -p apps/botlab-web/tsconfig.app.json --noEmit` in the earlier review. App/adapter builds and MicroDuck adapter lint passed after the native experiment; the earlier simulator-library build/lint retained six pre-existing non-null assertion warnings. Browser/physics turn verification is recorded below. Full-workspace build/lint coverage remains a separate milestone. `npm test` currently runs only the app. The MicroDuck adapter now owns eight proximity-subscription tests; its broader target/capability contract tests remain open. `stackchan` and `ui` have no dedicated suites yet. The simulator library includes unit tests and generated-receiver integration tests, not just app mocks.
 
@@ -171,13 +171,19 @@ A1 progress: XML traversal is now in `@botlab/blocks`, typed sequential actions 
 
 A1–A3 and A4 establish the boundaries used by block expansion. A5 and A6 can be delivered independently; A7 gates hardware enablement. New packages should only be introduced when existing ownership boundaries cannot express the responsibility clearly.
 
+### Finite repetition follow-up
+
+Implemented `repeat N times` in the palette, typed program, shared adapter lowering, iframe and native transport, with Catalan/Spanish/English iteration progress and source-block highlighting. Counts are literal integers from 0 to 100; zero skips the body. Control nesting is limited to 16 levels and the compiled tree to 256 steps including checkpoints, both conditional branches and the final stop. Conditions are evaluated again on each iteration. Empty bodies have cancellable checkpoints; no posture is corrected implicitly.
+
+Verification: 381 tests in 29 files, full app/dependency build and TypeScript check, plus real browser/physics acceptance in both simulators for nested progress, true/false conditions on different iterations, zero count, repeated posture failure and stop. See [repeat evidence](evidence/microduck-repeat-2026-09-13.json). The maintained command is `npm run test:simulator-repeats`, with `BOTLAB_QA_BACKEND=native` for the native route. The first iframe UI check missed a short 0.4-second interval; the maintained fixture uses a 2-second wait to inspect visible iteration progress reliably.
+
 ### 4. Expand executable blocks
 
 Agreed product scope: add blocks. Do not build a program library or example gallery in this increment. Existing example files remain useful as fixtures; local save/import/export remains supported.
 
 Proposed implementation sequence:
 
-1. **Repeat N times**: finite repetition with nested sequences, source-block tracking per iteration and cancellation between actions. Define valid counts, nesting and execution budgets, including zero/invalid counts, before implementation.
+1. **Repeat N times — implemented above**: finite repetition with nested sequences, source-block tracking per iteration and cancellation between actions. Define valid counts, nesting and execution budgets, including zero/invalid counts, before implementation.
 2. **Expressions and comparisons**: numeric inputs, arithmetic and boolean comparisons with explicit types and diagnostics, usable in movement, waits and control blocks.
 3. **If / if-else**: conditional execution using those expressions, with trace evidence showing the selected branch and source block.
 4. **Variables and condition-driven control**: introduce variables and then `repeat until`/`wait until` once expression evaluation and cancellation are established. Only expose sensor conditions actually available through target capabilities.

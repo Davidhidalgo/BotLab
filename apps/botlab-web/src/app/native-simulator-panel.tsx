@@ -17,6 +17,7 @@ const labels = {
     transitioning: 'cambiando de postura',
     unknown: 'desconocida',
     decision: 'Condición',
+    iteration: 'Repetición',
     yes: 'verdadero',
     no: 'falso',
     already: 'El robot ya está',
@@ -58,6 +59,7 @@ const labels = {
     transitioning: 'canviant de postura',
     unknown: 'desconeguda',
     decision: 'Condició',
+    iteration: 'Repetició',
     yes: 'cert',
     no: 'fals',
     already: 'El robot ja està',
@@ -99,6 +101,7 @@ const labels = {
     transitioning: 'changing posture',
     unknown: 'unknown',
     decision: 'Condition',
+    iteration: 'Iteration',
     yes: 'true',
     no: 'false',
     already: 'The robot is already',
@@ -283,6 +286,11 @@ export function NativeSimulatorPanel({
         {online && data ? (
           <span className="text-xs">
             {supportsPosture ? copy.available : copy.unavailable}
+          </span>
+        ) : null}
+        {running && program?.step.iterations?.length ? (
+          <span role="status" className="text-xs">
+            {copy.iteration} {program.step.iterations.map(item => `${item.iteration}/${item.count}`).join(' · ')}
           </span>
         ) : null}
         {running && program ? (

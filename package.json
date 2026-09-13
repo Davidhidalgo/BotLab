@@ -20,7 +20,8 @@
     "test:simulator-native-video": "node tools/microduck/native/verify-video.mjs",
     "build:simulator-macos": "npm run nx -- build simulator-macos",
     "test:simulator-native-posture": "node tools/microduck/native/verify-posture.mjs",
-    "test:simulator-postures": "node tools/microduck/verify-postures.mjs"
+    "test:simulator-postures": "node tools/microduck/verify-postures.mjs",
+    "test:simulator-repeats": "node tools/microduck/verify-repeats.mjs"
   },
   "private": true,
   "dependencies": {

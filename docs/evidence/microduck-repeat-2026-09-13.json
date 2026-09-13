@@ -1,0 +1,39 @@
+{
+  "date": "2026-09-13",
+  "unitTests": 381,
+  "testFiles": 29,
+  "backends": {
+    "iframe": {
+      "checks": {
+        "decisions": [
+          true,
+          false
+        ],
+        "nestedProgress": true,
+        "finalPosture": {
+          "mode": "walk",
+          "height": 0.11650305744572356
+        },
+        "repeatedPostureError": true,
+        "cancellation": true
+      },
+      "pageErrors": []
+    },
+    "native": {
+      "checks": {
+        "decisions": [
+          true,
+          false
+        ],
+        "nestedProgress": true,
+        "finalPosture": {
+          "mode": "stand",
+          "height": 0.11623222652695858
+        },
+        "repeatedPostureError": true,
+        "cancellation": true
+      },
+      "pageErrors": []
+    }
+  }
+}

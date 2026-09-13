@@ -1,0 +1,219 @@
+{
+  "date": "2026-09-13",
+  "setup": {
+    "daemon_revision": "e9cca6272f633dd9054dd0e021f356fe086e5be1",
+    "body_revision": "363b7effd4eae9f24dd1bb8bf647aef4d74edca9",
+    "policy_revision": "916c1e1ee11f8460506532e037a4cf1aa110aca6",
+    "rust": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "python": "Python 3.12.12",
+    "platform": "macOS-26.3-arm64-arm-64bit",
+    "setup_seconds": 1.0915809171274304,
+    "policy_sha256": {
+      "alpha_ground_pick.onnx": "ffbf5109982ff999b0ba53afe86b9ae731bbec679d67fb7f8ab4c52152c88872",
+      "alpha_sitstand.onnx": "c6c40e35e726eabd803d633e090d112994f469921152448367953fbaf9799bc8",
+      "alpha_stand.onnx": "1569268713e40deea795dd2922dba50d3621e15a872855408b6b1b125b1c094b",
+      "alpha_walking.onnx": "e36332d383997d51401897734cd3e79cf5038406feddb18b4d57ecfb141daa6c",
+      "ball_kick_left.onnx": "d6928284dccd3dd61e08bf2f760effa74309fbefd97b2b31afb2a60f526d196a",
+      "ball_kick_right.onnx": "147a32c388c6b19111b3ac3b550a9a6dc8b8bf267118af4d8c3712522eedb5af",
+      "roller.onnx": "cf05651d2708a2f9364212e86b866c97a70ace8131c492500105e8f28bf99afd",
+      "roller_crouch.onnx": "a1a084be240469c76ac9d3fa44d4792f16d4b1da60398b3ecd3cfc5e2244d990",
+      "roulade.onnx": "3d60da08fc13f29c1b57f41977aa898132c0d60042100149d8e775affcbca32b"
+    }
+  },
+  "scope": "local native simulation; no physical robot or app-native transport",
+  "angles": [
+    {
+      "kind": "walk",
+      "requested_m": 0.25,
+      "odom_m": 0.26622864865943063,
+      "truth_m": 0.25920683476170475,
+      "duration_s": 6.586178459227085
+    },
+    {
+      "kind": "turn",
+      "requested_deg": 90,
+      "odom_deg": 87.96406538603271,
+      "truth_deg": 87.96406538603294,
+      "error_deg": 2.0359346139670578,
+      "completed": true,
+      "corrections": 1,
+      "fallen": false,
+      "duration_s": 6.586137958802283
+    },
+    {
+      "kind": "turn",
+      "requested_deg": -90,
+      "odom_deg": -95.44106676742078,
+      "truth_deg": -95.44123871634862,
+      "error_deg": 5.4412387163486216,
+      "completed": true,
+      "corrections": 7,
+      "fallen": false,
+      "duration_s": 14.847627041861415
+    },
+    {
+      "kind": "turn",
+      "requested_deg": 180,
+      "odom_deg": 174.3345615548251,
+      "truth_deg": 174.33344258095528,
+      "error_deg": 5.666557419044722,
+      "completed": true,
+      "corrections": 4,
+      "fallen": false,
+      "duration_s": 11.522164749912918
+    },
+    {
+      "kind": "turn",
+      "requested_deg": 15,
+      "odom_deg": 18.497785066478443,
+      "truth_deg": 18.49963268833655,
+      "error_deg": 3.4996326883365505,
+      "completed": true,
+      "corrections": 0,
+      "fallen": false,
+      "duration_s": 4.4233029168099165
+    },
+    {
+      "kind": "turn",
+      "requested_deg": -15,
+      "odom_deg": -10.083458943033438,
+      "truth_deg": -10.084015642093897,
+      "error_deg": 4.915984357906103,
+      "completed": true,
+      "corrections": 4,
+      "fallen": false,
+      "duration_s": 9.609824917279184
+    },
+    {
+      "kind": "turn",
+      "requested_deg": -180,
+      "odom_deg": -185.45506845545438,
+      "truth_deg": -185.45524793850566,
+      "error_deg": 5.455247938505664,
+      "completed": true,
+      "corrections": 13,
+      "fallen": false,
+      "duration_s": 24.341759582981467
+    },
+    {
+      "kind": "turn",
+      "requested_deg": 360,
+      "odom_deg": 359.35006826030013,
+      "truth_deg": 359.3505255621846,
+      "error_deg": 0.6494744378153996,
+      "completed": true,
+      "corrections": 1,
+      "fallen": false,
+      "duration_s": 9.96843900019303
+    }
+  ],
+  "lifecycle": {
+    "explicit_stop": {
+      "reply": {
+        "jsonrpc": "2.0",
+        "id": 18,
+        "result": {
+          "accepted": true
+        }
+      },
+      "deadman_s": 0.5370010840706527,
+      "applied_below_0_001_s": 0.57007204182446,
+      "final_move": {
+        "applied": [
+          8.148143680392252e-11,
+          0.0,
+          0.0
+        ],
+        "limited_by": [
+          "deadman"
+        ],
+        "requested": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "fallen": false
+    },
+    "connection_loss": {
+      "reply": null,
+      "deadman_s": 0.5289119589142501,
+      "applied_below_0_001_s": 0.9474686668254435,
+      "final_move": {
+        "applied": [
+          8.834235321080106e-09,
+          0.0,
+          0.0
+        ],
+        "limited_by": [
+          "deadman"
+        ],
+        "requested": [
+          0.4,
+          0.0,
+          0.0
+        ]
+      },
+      "fallen": false
+    },
+    "sit": {
+      "policy": "sit",
+      "z": 0.05943383259624396
+    },
+    "stand": {
+      "policy": "stand",
+      "z": 0.11591579411706544
+    }
+  },
+  "proximity_events": [
+    {
+      "attempt": 0,
+      "distance_mm": 435,
+      "reply": {
+        "jsonrpc": "2.0",
+        "id": 45,
+        "result": {
+          "accepted": true
+        }
+      },
+      "at": 3278740.340499791
+    },
+    {
+      "attempt": 1,
+      "distance_mm": 387,
+      "reply": {
+        "jsonrpc": "2.0",
+        "id": 108,
+        "result": {
+          "accepted": true
+        }
+      },
+      "at": 3278746.456391833
+    }
+  ],
+  "cancelled_proximity": {
+    "crossed": true,
+    "events": 0
+  },
+  "viewer": {
+    "mean_hz": 49.95864947574251,
+    "min_hz": 48.894146226972744,
+    "missed_ticks": 1,
+    "real_time_ratio": 0.9996204388197774,
+    "visual_inspection": "not completed: CUA timed out",
+    "duration_seconds": 30
+  },
+  "raw_runs": {
+    "reactive": "tmp/microduck-native/runs/reactive-1789314251315927000",
+    "lifecycle": "tmp/microduck-native/runs/lifecycle-1789314269044895000",
+    "cancelled-proximity": "tmp/microduck-native/runs/cancelled-proximity-1789314286752541000",
+    "viewer": "tmp/microduck-native/runs/viewer-1789314399525227000"
+  },
+  "checks": {
+    "test_projects": 7,
+    "tests_passed": 270,
+    "adapter_tests": 8,
+    "build": "app and adapter passed",
+    "adapter_lint": "passed"
+  }
+}

@@ -54,7 +54,7 @@ if (!options.noLfsHydrate) {
 
 writeGeneratedFile(
   resolve(checkoutDir, MODULE_PATH),
-  createBotLabSourceModule({ allowedOrigins: [allowedOrigin] })
+  createBotLabSourceModule({ allowedOrigins: allowedOrigin.split(',').map(origin => origin.trim()) })
 );
 
 patchOfficialGame(resolve(checkoutDir, GAME_PATH));
@@ -299,11 +299,12 @@ function patchBotLabArena(source) {
 
 function patchGameSource(source) {
   const importLine = 'import { BotLabSource } from "./controls/botlab.js";';
-  // The bundled walking policy stalls at the upstream -0.2 reverse command.
+  // The bundled Feet policy stalls at the upstream reverse/angular inputs.
+  // Measured simulator calibration: reverse -0.4, angular 2 (minimum 1.5 while turning).
   const factoryLine =
-    'const botLabSource = new BotLabSource({ getVelocityLimits: () => (loco === "legs" ? [VEL_FWD, -0.4, VEL_ANG] : velLims()), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos) });';
+    'const botLabSource = new BotLabSource({ getVelocityLimits: () => (loco === "legs" ? [VEL_FWD, -0.4, 2] : velLims()), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos), getPostureState: () => ({ supported: loco === "legs" && !customPolicy && !!sessions.sitstand, posture: sitTimer || standTimer ? "transitioning" : mode === "sitstand" && sitFlag === 1 ? "sit" : mode === "walk" ? "stand" : "unknown", height: data.qpos[2], gyro: [data.sensordata[gyroAdr], data.sensordata[gyroAdr + 1], data.sensordata[gyroAdr + 2]], time: data.time, fallen: !!recovery || fallenSince !== null }), requestPosture: (posture) => { if (inputLocked || loco !== "legs" || customPolicy || recovery || (mode !== "walk" && mode !== "sitstand")) return false; setMode(posture === "sit" ? "sit" : "walk"); return posture === "sit" ? mode === "sitstand" : !!standTimer || mode === "walk"; } });';
   const warnings = [];
-  let patched = source.replace(
+  let patched = source.replace(/^([ \t]*)const botLabSource = new [\w$]+\(.*\);$/m, (_line, indent) => indent + factoryLine).replace(
     'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims() });',
     factoryLine
   ).replace(
@@ -314,6 +315,9 @@ function patchGameSource(source) {
     factoryLine
   ).replace(
     'const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos) });',
+    factoryLine
+  ).replace(
+    'const botLabSource = new BotLabSource({ getVelocityLimits: () => (loco === "legs" ? [VEL_FWD, -0.4, VEL_ANG] : velLims()), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos) });',
     factoryLine
   );
 
@@ -425,74 +429,195 @@ let latestControlSource;
 let latestExecution;
 const receivedExecutions = new Set();
 const executions = new Map();
-const createDistanceTracker = function(target, readPosition) {
-  let origin;
-  let previous;
-  let elapsed = 0;
-  let lastProgressAt = 0;
-  let best = 0;
-  return (dt) => {
-    if (!Number.isFinite(target) || target < 0 || !Number.isFinite(dt) || dt < 0)
-      return { distanceMeters: 0, done: false, error: "invalid-frame" };
-    if (target === 0) return { distanceMeters: 0, done: true };
-    let position;
-    try { position = readPosition?.(); }
-    catch { return { distanceMeters: best, done: false, error: "telemetry-unavailable" }; }
-    if (!position || !Number.isFinite(position[0]) || !Number.isFinite(position[1]))
-      return { distanceMeters: 0, done: false, error: "telemetry-unavailable" };
-    const point = [position[0], position[1]];
-    origin ??= point;
-    if (previous && Math.hypot(point[0] - previous[0], point[1] - previous[1]) > Math.max(0.5, dt * 5))
-      return { distanceMeters: best, done: false, error: "position-reset" };
-    previous = point;
-    elapsed += dt;
-    const distanceMeters = Math.hypot(point[0] - origin[0], point[1] - origin[1]);
-    if (distanceMeters >= target) return { distanceMeters, done: true };
-    if (distanceMeters > best + 0.01) {
-      best = distanceMeters;
-      lastProgressAt = elapsed;
-    }
-    const error = elapsed - lastProgressAt >= 10 ? "motion-stalled"
-      : elapsed > Math.max(30, target / 0.05) ? "motion-timeout" : undefined;
-    return { distanceMeters, done: false, error };
-  };
-};
-
-const createTurnTracker = function(target, readHeading) {
-  let previous;
-  let rotation = 0;
-  let elapsed = 0;
-  let lastProgressAt = 0;
-  let best = 0;
-  return (dt) => {
-    if (!Number.isFinite(target) || Math.abs(target) > 360 || !Number.isFinite(dt) || dt < 0) {
-      return { turnedDegrees: 0, done: false, powerScale: 0, error: 'invalid-frame' };
-    }
-    if (target === 0) return { turnedDegrees: 0, done: true, powerScale: 0 };
-    let heading;
-    try { heading = readHeading?.(); } catch { heading = undefined; }
-    if (heading === undefined || !Number.isFinite(heading)) {
-      return { turnedDegrees: best, done: false, powerScale: 0, error: 'telemetry-unavailable' };
-    }
-    const delta = previous === undefined ? 0 : Math.atan2(Math.sin(heading - previous), Math.cos(heading - previous));
-    if (Math.abs(delta) > Math.max(0.7, dt * 8)) {
-      return { turnedDegrees: best, done: false, powerScale: 0, error: 'position-reset' };
-    }
-    previous = heading;
-    rotation -= delta * 180 / Math.PI;
-    const turnedDegrees = Math.max(0, rotation * Math.sign(target));
-    const remaining = Math.abs(target) - turnedDegrees;
-    elapsed += dt;
-    if (remaining <= 0) return { turnedDegrees, done: true, powerScale: 0 };
-    if (turnedDegrees > best + 1) {
-      best = turnedDegrees;
-      lastProgressAt = elapsed;
-    }
-    const error = elapsed - lastProgressAt >= 10 ? 'motion-stalled'
-      : elapsed > Math.max(30, Math.abs(target) / 3) ? 'motion-timeout' : undefined;
-    return { turnedDegrees, done: false, powerScale: Math.max(0.5, Math.min(1, remaining / 45)), error };
-  };
-};
+const createDistanceTracker = (function createMicroDuckDistanceTracker(target, readPosition) {
+    let origin;
+    let previous;
+    let elapsed = 0;
+    let lastProgressAt = 0;
+    let best = 0;
+    return (dt) => {
+        if (!Number.isFinite(target) ||
+            target < 0 ||
+            !Number.isFinite(dt) ||
+            dt < 0)
+            return { distanceMeters: 0, done: false, error: 'invalid-frame' };
+        if (target === 0)
+            return { distanceMeters: 0, done: true };
+        let position;
+        try {
+            position = readPosition?.();
+        }
+        catch {
+            return {
+                distanceMeters: best,
+                done: false,
+                error: 'telemetry-unavailable',
+            };
+        }
+        if (!position ||
+            !Number.isFinite(position[0]) ||
+            !Number.isFinite(position[1]))
+            return { distanceMeters: 0, done: false, error: 'telemetry-unavailable' };
+        const point = [position[0], position[1]];
+        origin ??= point;
+        if (previous &&
+            Math.hypot(point[0] - previous[0], point[1] - previous[1]) >
+                Math.max(0.5, dt * 5))
+            return { distanceMeters: best, done: false, error: 'position-reset' };
+        previous = point;
+        elapsed += dt;
+        const distanceMeters = Math.hypot(point[0] - origin[0], point[1] - origin[1]);
+        if (distanceMeters >= target)
+            return { distanceMeters, done: true };
+        if (distanceMeters > best + 0.01) {
+            best = distanceMeters;
+            lastProgressAt = elapsed;
+        }
+        const error = elapsed - lastProgressAt >= 10
+            ? 'motion-stalled'
+            : elapsed > Math.max(30, target / 0.05)
+                ? 'motion-timeout'
+                : undefined;
+        return { distanceMeters, done: false, error };
+    };
+});
+const createTurnTracker = (function createMicroDuckTurnTracker(target, readHeading) {
+    let previous;
+    let rotation = 0;
+    let elapsed = 0;
+    let lastProgressAt = 0;
+    let bestError = Math.abs(target);
+    let reached = false;
+    let settling = false;
+    let settleElapsed = 0;
+    let quietElapsed = 0;
+    let direction = 1;
+    return (dt) => {
+        if (!Number.isFinite(target) || Math.abs(target) > 360 || !Number.isFinite(dt) || dt < 0) {
+            return { turnedDegrees: 0, done: false, powerScale: 0, error: 'invalid-frame' };
+        }
+        if (target === 0)
+            return { turnedDegrees: 0, done: true, powerScale: 0 };
+        let heading;
+        try {
+            heading = readHeading?.();
+        }
+        catch {
+            heading = undefined;
+        }
+        if (heading === undefined || !Number.isFinite(heading)) {
+            return { turnedDegrees: Math.max(0, rotation * Math.sign(target)), done: false, powerScale: 0, error: 'telemetry-unavailable' };
+        }
+        const delta = previous === undefined ? 0 : Math.atan2(Math.sin(heading - previous), Math.cos(heading - previous));
+        if (Math.abs(delta) > Math.max(0.7, dt * 8)) {
+            return { turnedDegrees: Math.max(0, rotation * Math.sign(target)), done: false, powerScale: 0, error: 'position-reset' };
+        }
+        previous = heading;
+        // MuJoCo yaw is positive left; BotLab angles are positive right.
+        rotation -= delta * 180 / Math.PI;
+        const turnedDegrees = Math.max(0, rotation * Math.sign(target));
+        const remaining = Math.abs(target) - rotation * Math.sign(target);
+        const rate = dt > 0 ? Math.abs(delta * 180 / Math.PI / dt) : Infinity;
+        elapsed += dt;
+        const crossed = !reached && remaining <= 0;
+        reached ||= crossed;
+        if (Math.abs(remaining) < bestError - 1) {
+            bestError = Math.abs(remaining);
+            lastProgressAt = elapsed;
+        }
+        const error = elapsed - lastProgressAt >= 10 ? 'motion-stalled'
+            : elapsed > Math.max(30, Math.abs(target) / 3) ? 'motion-timeout' : undefined;
+        if (error)
+            return { turnedDegrees, crossed, done: false, powerScale: 0, error };
+        if (!settling && remaining * direction <= 0) {
+            settling = true;
+            settleElapsed = 0;
+            quietElapsed = 0;
+        }
+        if (settling) {
+            settleElapsed += dt;
+            quietElapsed = rate < 5 ? quietElapsed + dt : 0;
+            // Crossing can be torso twist rather than a completed footstep. Hold zero
+            // motion until the pose settles, then correct any remaining angular error.
+            if (settleElapsed >= 0.75 && quietElapsed >= 0.25) {
+                if (reached && Math.abs(remaining) <= 5)
+                    return { turnedDegrees, crossed, done: true, powerScale: 0 };
+                direction = Math.sign(remaining);
+                settling = false;
+            }
+            else {
+                return { turnedDegrees, crossed, done: false, powerScale: 0 };
+            }
+        }
+        // The calibrated Feet limit is 2: 75% keeps stepping near the target.
+        // Negative scale corrects overshoot by turning against the authored direction.
+        return { turnedDegrees, crossed, done: false, powerScale: direction * Math.max(0.75, Math.min(1, Math.abs(remaining) / 45)) };
+    };
+});
+const createPostureObserver = (function createMicroDuckPostureObserver(read) {
+    let samples = [];
+    let previousTime;
+    let stale = 0;
+    let observed = 'unknown';
+    let transitioning = false;
+    return {
+        begin() { samples = []; transitioning = true; observed = 'transitioning'; },
+        observe(dt) {
+            let state;
+            try {
+                state = read?.();
+            }
+            catch {
+                state = undefined;
+            }
+            if (!state?.supported)
+                return { observed: 'unknown', error: 'posture-unavailable' };
+            if (!Number.isFinite(state.time) || !Number.isFinite(state.height) || state.gyro.length !== 3 || state.gyro.some(v => !Number.isFinite(v))) {
+                samples = [];
+                observed = 'unknown';
+                return { observed, error: 'telemetry-unavailable' };
+            }
+            if (previousTime !== undefined && state.time < previousTime) {
+                samples = [];
+                transitioning = false;
+                previousTime = state.time;
+                observed = 'unknown';
+                return { observed, error: 'scene-interrupted' };
+            }
+            stale = state.time === previousTime ? stale + dt : 0;
+            previousTime = state.time;
+            if (stale > .5 || state.fallen) {
+                samples = [];
+                observed = 'unknown';
+                return { observed, error: state.fallen ? 'scene-interrupted' : 'telemetry-unavailable' };
+            }
+            const moving = state.gyro.some(v => Math.abs(v) > .15);
+            if (state.posture === 'transitioning')
+                transitioning = true;
+            const posture = state.posture;
+            if (posture !== 'sit' && posture !== 'stand') {
+                samples = [];
+                observed = posture === 'transitioning' ? 'transitioning' : 'unknown';
+                return { observed };
+            }
+            if (moving || samples.at(-1)?.posture !== posture)
+                samples = [];
+            if (!moving && samples.at(-1)?.time !== state.time)
+                samples.push({ time: state.time, height: state.height, posture });
+            while (samples.length > 1 && state.time - samples[1].time >= .6)
+                samples.shift();
+            const heights = samples.map(s => s.height);
+            if (samples.length && state.time - samples[0].time >= .6 && Math.max(...heights) - Math.min(...heights) < .004 &&
+                (posture === 'sit' ? state.height <= .085 : state.height >= .095)) {
+                observed = posture;
+                transitioning = false;
+            }
+            else
+                observed = transitioning ? 'transitioning' : 'unknown';
+            return { observed };
+        },
+    };
+});
 
 function reportExecution(execution, status, frameIndex, progress = {}) {
   if (!execution) return;
@@ -569,7 +694,7 @@ window.addEventListener("message", (event) => {
 });
 
 export class BotLabSource {
-  constructor({ getVelocityLimits, isInputLocked, getPosition, getHeading } = {}) {
+  constructor({ getVelocityLimits, isInputLocked, getPosition, getHeading, getPostureState, requestPosture } = {}) {
     this.id = "botlab";
     this.connected = true;
     this.command = new Float32Array(3);
@@ -580,6 +705,10 @@ export class BotLabSource {
     this.isInputLocked = isInputLocked ?? (() => false);
     this.getPosition = getPosition;
     this.getHeading = getHeading;
+    this.getPostureState = getPostureState;
+    this.requestPosture = requestPosture;
+    this.postureObserver = createPostureObserver(getPostureState);
+    this.postureRequested = false;
     this.frames = [];
     this.cursor = 0;
     this.frameElapsedMs = 0;
@@ -615,6 +744,8 @@ export class BotLabSource {
     this.frames = [...controlSource.frames];
     this.cursor = 0;
     this.frameElapsedMs = 0;
+    this.postureRequested = false;
+    this.motionSettleElapsed = 0;
     this.active = false;
     this.resetCommand();
     this.resetPressed();
@@ -628,6 +759,8 @@ export class BotLabSource {
     this.frames = [];
     this.cursor = 0;
     this.frameElapsedMs = 0;
+    this.postureRequested = false;
+    this.motionSettleElapsed = 0;
     this.active = false;
     this.resetCommand();
     this.resetPressed();
@@ -650,6 +783,7 @@ export class BotLabSource {
   }
 
   pollFrame(dt) {
+    const observation = this.postureObserver.observe(dt);
     if (this.isInputLocked()) {
       if (this.reportedCursor >= 0 && this.execution) this.clear("failed", "scene-interrupted");
       this.active = false;
@@ -666,6 +800,41 @@ export class BotLabSource {
       return;
     }
 
+    if (frame.type === "jump") { this.cursor = frame.nextIndex; this.frameElapsedMs = 0; return; }
+    if (frame.type === "posture" || frame.type === "posture-condition") {
+      this.resetCommand(); this.resetPressed(); this.active = true;
+      this.frameElapsedMs += dt * 1000;
+      this.heartbeatElapsed += dt;
+      if (observation.error) { this.clear("failed", observation.error); return; }
+      if (frame.type === "posture-condition") {
+        if (observation.observed === "unknown") { this.clear("failed", "posture-unknown"); return; }
+        const conditionResult = observation.observed === frame.posture;
+        reportExecution(this.execution, "running", this.cursor, { observedPosture: observation.observed, conditionResult });
+        this.cursor = conditionResult ? frame.thenIndex : frame.elseIndex;
+        this.frameElapsedMs = 0;
+        return;
+      }
+      if (this.reportedCursor !== this.cursor || this.heartbeatElapsed >= .1) {
+        reportExecution(this.execution, "running", this.cursor, { elapsedMs: this.frameElapsedMs, observedPosture: observation.observed });
+        this.reportedCursor = this.cursor; this.heartbeatElapsed = 0;
+      }
+      if (this.frameElapsedMs > 12000) { this.clear("failed", "posture-timeout"); return; }
+      if (observation.observed === frame.posture) {
+        if (!this.postureRequested) { this.clear("failed", "posture-already-" + frame.posture); return; }
+        reportExecution(this.execution, "running", this.cursor, { observedPosture: observation.observed, postureCompleted: true });
+        this.cursor++; this.frameElapsedMs = 0; this.postureRequested = false;
+        return;
+      }
+      if (!this.postureRequested && (observation.observed === "sit" || observation.observed === "stand")) {
+        if (!this.requestPosture?.(frame.posture)) { this.clear("failed", "posture-refused"); return; }
+        this.postureRequested = true; this.postureObserver.begin();
+      }
+      return;
+    }
+    if (this.getPostureState && this.frameElapsedMs === 0 && frame.type === "differential-drive" &&
+        (frame.leftPower !== 0 || frame.rightPower !== 0) && observation.observed !== "stand") {
+      this.clear("failed", observation.error ?? "posture-required"); return;
+    }
     const distanceFrame = frame.type === "differential-drive" && frame.distanceMeters !== undefined;
     const turnFrame = frame.type === "differential-drive" && frame.angleDegrees !== undefined;
     let progress;
@@ -684,7 +853,7 @@ export class BotLabSource {
     }
     this.frameElapsedMs += dt * 1000;
     this.heartbeatElapsed += dt;
-    if (this.reportedCursor !== this.cursor || this.heartbeatElapsed >= 0.1 || progress?.done) {
+    if (this.reportedCursor !== this.cursor || this.heartbeatElapsed >= 0.1 || progress?.done || progress?.crossed) {
       reportExecution(this.execution, "running", this.cursor, {
         elapsedMs: this.frameElapsedMs,
         distanceMeters: progress?.distanceMeters,
@@ -694,6 +863,13 @@ export class BotLabSource {
       this.heartbeatElapsed = 0;
     }
     if ((distanceFrame || turnFrame) && progress.done) {
+      if (this.getPostureState && observation.observed !== "stand") {
+        this.resetCommand(); this.resetPressed(); this.active = true;
+        this.motionSettleElapsed = (this.motionSettleElapsed ?? 0) + dt;
+        if (this.motionSettleElapsed > 12) this.clear("failed", "posture-timeout");
+        return;
+      }
+      this.motionSettleElapsed = 0;
       this.cursor += 1;
       this.frameElapsedMs = 0;
       this.distanceTracker = undefined;
@@ -704,7 +880,11 @@ export class BotLabSource {
       return;
     }
     this.applyFrame(frame);
-    if (turnFrame) this.command[2] *= progress.powerScale;
+    if (turnFrame) {
+      this.command[2] *= progress.powerScale;
+      this.pressed.turnLeft = this.command[2] > 0;
+      this.pressed.turnRight = this.command[2] < 0;
+    }
     this.active = true;
     if (distanceFrame || turnFrame) return;
     const durationMs = getFrameDurationMs(frame);
@@ -796,7 +976,16 @@ function parseControlSourceMessage(event) {
       (typeof message.executionId !== "string" || message.executionId.length === 0)) ||
     message.simulatorId !== "microduck-official-sim" ||
     !message.source ||
-    !Array.isArray(message.source.frames)
+    !Array.isArray(message.source.frames) || message.source.frames.length > 512 ||
+    !message.source.frames.every((frame, index, frames) => {
+      if (!frame || typeof frame !== "object") return false;
+      if (frame.type === "posture") return frame.posture === "sit" || frame.posture === "stand";
+      if (frame.type === "posture-condition") return ["sit", "stand", "transitioning"].includes(frame.posture) &&
+        frame.thenIndex === index + 1 && Number.isInteger(frame.elseIndex) && Number.isInteger(frame.endIndex) &&
+        frame.elseIndex > index && frame.elseIndex <= frame.endIndex && frame.endIndex <= frames.length;
+      if (frame.type === "jump") return Number.isInteger(frame.nextIndex) && frame.nextIndex > index && frame.nextIndex <= frames.length;
+      return frame.type === "differential-drive" || frame.type === "led-pattern";
+    })
   ) {
     return undefined;
   }

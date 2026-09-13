@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "simulators": [
+    {
+      "id": "microduck",
+      "name": "MicroDuck",
+      "executable": "native/venv/bin/python3.12",
+      "arguments": ["-m", "botlab_microduck_native.gateway", "--presentation", "external", "--parent-pid", "${parentPid}"],
+      "environment": {
+        "PYTHONHOME": "${resources}/native/venv",
+        "PYTHONPATH": "${resources}/python",
+        "PYTHONNOUSERSITE": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "BOTLAB_NATIVE_BUNDLE": "${resources}/native",
+        "BOTLAB_NATIVE_RUNS": "${logs}/microduck/runs"
+      },
+      "healthURL": "http://127.0.0.1:4401/health",
+      "editorURL": "http://localhost:4200"
+    }
+  ]
+}

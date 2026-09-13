@@ -19,6 +19,7 @@ const scratchBlocksMediaSourceDirs = [
 export default defineConfig({
   root: __dirname,
   define: {
+    'process.env.BOTLAB_NATIVE_SIMULATOR_URL': JSON.stringify(process.env.BOTLAB_NATIVE_SIMULATOR_URL ?? 'http://127.0.0.1:4401'),
     'process.env.BOTLAB_SIMULATOR_URL': JSON.stringify(
       process.env.BOTLAB_SIMULATOR_URL ?? 'http://127.0.0.1:4300/?boot=1'
     ),
@@ -44,6 +45,7 @@ export default defineConfig({
         __dirname,
         '../../libs/simulators/core/src/index.ts'
       ),
+      '@botlab/simulators-microduck-native': resolve(__dirname, '../../libs/simulators/microduck-native/src/index.ts'),
       '@botlab/simulators-microduck': resolve(
         __dirname,
         '../../libs/simulators/microduck/src/index.ts'

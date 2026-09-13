@@ -24,7 +24,10 @@
       "@botlab/simulators-microduck": [
         "libs/simulators/microduck/src/index.ts"
       ],
-      "@botlab/ui": ["libs/ui/src/index.ts"]
+      "@botlab/ui": ["libs/ui/src/index.ts"],
+      "@botlab/simulators-microduck-native": [
+        "libs/simulators/microduck-native/src/index.ts"
+      ]
     }
   },
   "exclude": ["node_modules", "tmp"]

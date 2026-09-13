@@ -413,12 +413,12 @@ describe('microDuckSimulatorBridge', () => {
       gamePath: 'app/src/game/game.js',
       importLine: 'import { BotLabSource } from "./controls/botlab.js";',
       sourceFactoryLine:
-        'const botLabSource = new BotLabSource({ getVelocityLimits: () => (loco === "legs" ? [VEL_FWD, -0.4, VEL_ANG] : velLims()), isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos) });',
+        expect.stringContaining('getPostureState: () => ({ supported: loco === "legs"'),
       controllerSourceName: 'botLabSource',
     });
   });
 
-  it('calibrates only the default Feet reverse input and preserves custom limits', () => {
+  it('calibrates the default Feet reverse and angular inputs and preserves custom limits', () => {
     const limits = (loco: string, velocityLimitsExpression?: string) => {
       const { sourceFactoryLine } = createMicroDuckOfficialSimulatorPatchInstructions({ velocityLimitsExpression });
       const source = new Function('BotLabSource', 'loco', 'VEL_FWD', 'VEL_ANG', 'velLims',
@@ -428,7 +428,7 @@ describe('microDuckSimulatorBridge', () => {
       );
       return source.getVelocityLimits();
     };
-    expect(limits('legs')).toEqual([0.25, -0.4, 1]);
+    expect(limits('legs')).toEqual([0.25, -0.4, 2]);
     expect(limits('rollers')).toEqual([0.6, -0.5, 0.3]);
     expect(limits('legs', 'velLims()')).toEqual([0.25, -0.2, 1]);
   });
@@ -479,7 +479,16 @@ describe('microDuckSimulatorBridge', () => {
     const result = patchMicroDuckOfficialSimulatorGameSource(previous);
     expect(result.source.match(/const botLabSource =/g)).toHaveLength(1);
     expect(result.source).toContain('isInputLocked: () => inputLocked');
-    expect(result.source).toContain('[VEL_FWD, -0.4, VEL_ANG]');
+    expect(result.source).toContain('[VEL_FWD, -0.4, 2]');
+    expect(patchMicroDuckOfficialSimulatorGameSource(result.source).changed).toBe(false);
+  });
+
+  it('upgrades a reverse-calibrated host to the measured turn calibration exactly once', () => {
+    const previous = createMicroDuckOfficialSimulatorPatchInstructions().sourceFactoryLine
+      .replace('[VEL_FWD, -0.4, 2]', '[VEL_FWD, -0.4, VEL_ANG]');
+    const result = patchMicroDuckOfficialSimulatorGameSource(previous);
+    expect(result.source.match(/const botLabSource =/g)).toHaveLength(1);
+    expect(result.source).toContain(createMicroDuckOfficialSimulatorPatchInstructions().sourceFactoryLine);
     expect(patchMicroDuckOfficialSimulatorGameSource(result.source).changed).toBe(false);
   });
 

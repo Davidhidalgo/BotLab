@@ -16,9 +16,12 @@ BotLab is a local-first monorepo for building, simulating, and running robot beh
 
 ## Project Shape
 
+<!-- workspace libraries and applications under apps/ and libs/ -->
+
 ```txt
 apps/
   botlab-web/                  React app and first BotLab screen
+  simulator-macos/             Simulator catalog host and Mac bundle
 libs/
   botlab-model/                Core concepts and shared contracts
   runtime/                     Runtime session, adapter registry, introspection
@@ -28,7 +31,8 @@ libs/
     stackchan/                 Future StackChan adapter placeholder
   simulators/
     core/                      Shared simulator contracts
-    microduck/                 MicroDuck simulator integration boundary
+    microduck/                 MicroDuck browser simulator / iframe bridge
+    microduck-native/          Native MuJoCo services and JSON-RPC client
   ui/                          shadcn/ui-style primitives
 ```
 
@@ -87,11 +91,14 @@ The package scripts already include those environment variables.
 
 ## Commands
 
+<!-- runnable workspace commands and test scope from package.json and project test targets -->
+
 ```sh
 npm run dev
 npm run build
 npm run build:libs
 npm run test
+npm run test:all
 npm run affected:build
 npm run affected:test
 npm run affected:lint
@@ -101,7 +108,31 @@ npm run nx -- show projects
 
 Use the affected scripts for everyday validation when only part of the workspace changed. Use `build:libs` when you want a full library contract check.
 
+`npm test` runs only the web app's Jest suite. `npm run test:all` runs every configured test target: the app plus the model, runtime, blocks, simulator core, MicroDuck browser simulator, MicroDuck native simulator and MicroDuck adapter libraries. The libraries use Vitest, including controlled bridge/receiver integration tests and native proximity-trigger tests. The StackChan adapter and UI libraries do not yet have dedicated test suites. These tests do not run the official physics engine. `npm run test:simulator-turns` and `npm run test:simulator-postures` provide separate browser-engine regressions; see the MicroDuck simulator README for its setup. The [native MicroDuck experiment](tools/microduck/native/README.md) separately exercises the real robot services against MuJoCo.
+
+`npm run test:simulator-native` builds the [native simulator library](libs/simulators/microduck-native/README.md) and checks its client against real local services; first run the native preparer documented in the experiment README. It is separate from the unit suites and stops its owned processes afterwards. The app now offers both the iframe and an experimental native MuJoCo view.
+
 `npm run microduck:sim -- --start` prepares a local checkout of the official MicroDuck browser simulator under `tmp/microduck-simulator`, hydrates Git LFS assets into that ignored checkout, injects the BotLab postMessage control source, and starts the patched simulator host. Keep `npm run dev` running separately for the BotLab app.
+
+## Native simulator in the app
+
+<!-- native app controls and startup from apps/botlab-web/src/app/native-simulator-panel.tsx, apps/botlab-web/vite.config.ts, package.json and libs/simulators/microduck-native/python/botlab_microduck_native/gateway.py -->
+
+For a separate Mac window, build and open [BotLab Simulator.app](apps/simulator-macos/README.md) with `npm run build:simulator-macos`. The Apple Silicon bundle includes its runtime, services and assets; the installed app starts with a double click. Keep the web editor running separately, select **Native MuJoCo**, then **Connect**. External mode exchanges commands and telemetry without streaming video. Closing the scene or quitting the companion stops its services. The current bundle has a local development signature; distribution signing/notarization is pending.
+
+For the embedded development alternative, after the one-time native preparation, run `npm run microduck:native` alongside `npm run dev`. In the **Simulator** selector choose **Native MuJoCo (experimental)** and **Connect**. The panel renders the real body state with MuJoCo, shows policy/ToF telemetry, and provides run, stop, sit/stand, scene reset and disconnect. The browser iframe remains the default and can be selected again after stopping.
+
+The native path executes movement, explicit sit/stand posture, and wait blocks. LED blocks are rejected before execution; remove them from the program to try native motion. Per-block limits are 5 m, 360° and 60 s. Native policy commands still require measured displacement/yaw and settling; this does not imply better turn accuracy than the browser simulator. The view uses an independent MuJoCo render process and a bounded MJPEG stream targeting 30 fps, while the upstream policy loop targets 50 Hz. The measured Chrome check received about 29 fps and painted about 28.7 distinct images/s; the telemetry no longer carries image payloads. Floor reflections are disabled while shadows remain enabled. Native traces are currently live only; saved execution traces belong to the iframe path.
+
+The gateway binds to `127.0.0.1:4401`. `BOTLAB_NATIVE_SIMULATOR_URL` configures the app endpoint at Vite startup; `npm run microduck:native -- --port PORT --origin http://your-local-app-origin` configures the local gateway. Default permitted origins are `http://127.0.0.1:4200` and `http://localhost:4200`. One browser session controls the simulator at a time. Losing its heartbeat for two seconds stops the program and releases control; switching backend/disconnecting explicitly releases it. Stop the gateway before running standalone native probes, which share body port 17831.
+
+Native posture blocks appear in **Precise movement** and require a connected target advertising `sit_toggle` plus the requested posture. Capability discovery reconciles the daemon's configured skills with loaded policies; missing capabilities fail before execution. Repeating an already achieved Stand or Sit stops at that block with a teaching error; use an explicit posture condition to decide whether to act. Completion uses observed policy, trunk height stability and gyro motion in the native simulator, with a 12-second timeout. **Stop cancels the sequence, but an already latched native posture transition finishes settling**; the UI permits posture conditions during a known transition, while movement still requires standing stability. No following block executes after cancellation. **Sensing** contains sitting, standing and changing-posture predicates; **Control** contains if / if-else with nested branches. The native panel shows observed posture and each branch decision. Unknown posture fails the condition rather than choosing its false branch. The updated iframe also executes these posture blocks and conditions using its own physical observer. Native execution requires the updated companion.
+
+`npm run test:simulator-native-posture` checks repeated postures, a posture/movement sequence and cancellation in Chrome against the real simulator. `BOTLAB_QA_URL` selects an isolated compiled preview; allow that exact origin on the gateway. Rebuild the Mac application after Python library changes.
+
+`npm run test:simulator-native-video` measures received and painted frame rates, payload size and control rate in Chrome. It requires the prepared native environment (including pinned Pillow), app and gateway.
+
+`npm run test:simulator-native-app` is the separate Chrome/Playwright acceptance check with both app and gateway running. Set `BOTLAB_PLAYWRIGHT_MODULE` to an installed Playwright package path if it is not available by name. Set `BOTLAB_NATIVE_PRESENTATION=external` when checking the Mac companion; this also asserts that the editor requests no video.
 
 ## Simulator Progress
 
@@ -115,7 +146,7 @@ A failure reported by the simulator stops the program but keeps the scene open, 
 
 The Movement category offers forward/backward BotLab steps (0.5 m each), left/right quarter turns, and a half turn. Precise movement offers forward/backward meters and signed degrees. Negative angles turn left; positive angles turn right. Each block has a bundled SVG icon and Catalan, Spanish and English labels. Turns finish on measured yaw and report progress in degrees; regenerate the simulator receiver with `npm run microduck:sim -- --no-install --no-lfs-hydrate` when updating an existing local checkout. Old meter-based programs remain compatible.
 
-BotLab's official-simulator connection uses a calibrated reverse command of -0.4 in Feet mode: the bundled walking policy can stall at the upstream -0.2 command. This is a policy input, not a guaranteed physical speed. Measured distance and stall detection still govern execution; manual controls and roller limits are unchanged.
+BotLab's official-simulator connection uses calibrated Feet commands: -0.4 for reverse and 2 for angular motion, with a minimum angular input of 1.5 near turn completion. The bundled walking policy can stall at the upstream reverse/angular inputs; in the reproduced right-turn case it stopped making progress at about 15° of a requested 90°. These are policy inputs, not guaranteed physical speeds. Turns hold zero motion after reaching the requested angle, wait for the body to settle, and correct residual error before proceeding. Measured arrival and stall detection still govern execution. Regenerate an existing host with `npm run microduck:sim -- --no-install --no-lfs-hydrate` to apply the correction; a separately built remote preview also needs rebuilding.
 
 <!-- importable movement example from examples/microduck-movement.botlab.json -->
 
@@ -147,7 +178,7 @@ The editor toolbar imports and exports `botlab-workspace.json` documents. Import
 
 <!-- simulator URL configuration from apps/botlab-web/vite.config.ts and apps/botlab-web/src/app/app.tsx -->
 
-`BOTLAB_SIMULATOR_URL` overrides the simulator iframe URL at build or dev-server startup. It defaults to `http://127.0.0.1:4300/?boot=1`. For a combined static preview, set it to `/simulator/?boot=1`, build BotLab, and serve the simulator build under `/simulator/` (build upstream with `VITE_BASE=/simulator/`). The simulator's generated message receiver must allow the exact public BotLab origin via `microduck:sim -- --botlab-origin https://your-preview-host` before building it.
+`BOTLAB_SIMULATOR_URL` overrides the simulator iframe URL at build or dev-server startup. It defaults to `http://127.0.0.1:4300/?boot=1`. For a combined static preview, set it to `/simulator/?boot=1`, build BotLab, and serve the simulator build under `/simulator/` (build upstream with `VITE_BASE=/simulator/`). The simulator's generated message receiver must allow the exact public BotLab origin via `microduck:sim -- --botlab-origin https://your-preview-host` before building it. A comma-separated list allows multiple exact app origins during local/public verification.
 
 Expose only the combined static build through a temporary tunnel, not the Vite development server. A Quick Tunnel URL is public and temporary; it requires the local preview process, tunnel, and host computer to remain running. The simulator and its assets stay in the ignored local checkout, not in Git. Rebuild the preview to include later code changes. Restore the local simulator's allowed origin after building the remote copy if also using the local development preview.
 
@@ -157,3 +188,7 @@ When generating code, prefer Nx generators:
 npm run nx -- g @nx/js:lib my-lib --directory=libs/my-lib
 npm run nx -- g @nx/react:lib my-ui-lib --directory=libs/my-ui-lib
 ```
+
+<!-- iframe posture behavior from libs/simulators/microduck/src/lib/microduck-posture.ts, microduck-simulator.ts and microduck-execution.ts -->
+
+The iframe executes explicit Sit/Stand and posture conditions in Feet mode with the official posture policy. It observes trunk height and gyro stability, sends each action once, and waits for physical completion. Unsupported locomotion/custom-policy modes, repeated postures, missing observations, refusals and timeouts produce errors at the current block. Stop cancels later blocks while an already started posture finishes. Regenerate and rebuild the patched simulator when upgrading the bridge; updating the web editor alone does not update an existing static `/simulator/` bundle.

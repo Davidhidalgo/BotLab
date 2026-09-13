@@ -221,6 +221,14 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
     { type: 'turn_degrees', key: 'turnDegrees', tooltip: 'turnTooltip', icon: icons.right, field: 'ANGLE', value: 90, min: -360, max: 360, precision: 1 },
   ];
   scratchBlocks.defineBlocksWithJsonArray([
+    ...['sit', 'stand', 'transitioning'].map((posture) => ({
+      type: `botlab_microduck_is_${posture}`, message0: message(`is_${posture}`),
+      style: 'sensing', extensions: ['output_boolean'], tooltip: message('conditionTooltip'),
+    })),
+    ...['sit', 'stand'].map((posture) => ({
+      type: `botlab_microduck_${posture}`, message0: message(posture),
+      style: 'motion', extensions: ['shape_statement'], tooltip: message('postureTooltip'),
+    })),
     ...movementBlocks.map((block) => ({
       type: `botlab_microduck_${block.type}`,
       message0: `%${block.field ? 2 : 1} ${message(block.key)}`,
@@ -271,6 +279,7 @@ function getBotLabScratchBlocksTheme(scratchBlocks: ScratchBlocksApi) {
       blockStyles: createScratchBlockStyles(scratchBlocks),
       categoryStyles: {
         motion_category: { colour: '#4C97FF' },
+        sensing_category: { colour: '#5CB1D6' },
         control_category: {
           colour: '#FFAB19',
         },
@@ -367,7 +376,11 @@ function createBotLabToolbox(scratchBlocks: ScratchBlocksApi) {
         kind: 'category',
         name: scratchBlocks.Msg['BOTLAB_MICRODUCK_PRECISEMOVEMENT'],
         categorystyle: 'motion_category',
-        contents: ['walk_distance', 'back_distance', 'turn_degrees'].map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` })),
+        contents: ['walk_distance', 'back_distance', 'turn_degrees', 'sit', 'stand'].map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` })),
+      },
+      {
+        kind: 'category', name: scratchBlocks.Msg['CATEGORY_SENSING'], categorystyle: 'sensing_category',
+        contents: ['sit', 'stand', 'transitioning'].map((posture) => ({ kind: 'block', type: `botlab_microduck_is_${posture}` })),
       },
       {
         kind: 'category',
@@ -382,6 +395,8 @@ function createBotLabToolbox(scratchBlocks: ScratchBlocksApi) {
         name: scratchBlocks.Msg['CATEGORY_CONTROL'],
         categorystyle: 'control_category',
         contents: [
+          { kind: 'block', type: 'control_if' },
+          { kind: 'block', type: 'control_if_else' },
           {
             kind: 'block',
             type: 'control_wait',

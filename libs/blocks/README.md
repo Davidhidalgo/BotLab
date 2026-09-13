@@ -6,13 +6,13 @@ This library was generated with [Nx](https://nx.dev).
 
 <!-- wait toolbox defaults and XML normalization from src/lib/scratch-blocks-local-bridge.ts -->
 
-The `control_wait` toolbox entry includes an editable `math_positive_number` shadow with a default of one second. Loading an older workspace repairs missing or empty `DURATION` inputs without replacing existing numeric values or connected blocks. Decimal values are preserved when exporting and reloading the workspace. Compilation and execution belong to the app and simulator, not this editor bridge.
+The `control_wait` toolbox entry includes an editable `math_positive_number` shadow with a default of one second. Loading an older workspace repairs missing or empty `DURATION` inputs without replacing existing numeric values or connected blocks. Decimal values are preserved when exporting and reloading the workspace. XML parsing belongs to this library; robot command lowering belongs to the adapter and native execution to the simulator boundary.
 
 ## Movement Blocks
 
-<!-- movement palette and fields from src/lib/scratch-blocks-local-bridge.ts and src/lib/microduck-block-messages.ts; execution units from apps/botlab-web/src/app/botlab-flow-machine.ts -->
+<!-- movement palette and fields from src/lib/scratch-blocks-local-bridge.ts and src/lib/microduck-block-messages.ts; execution units from src/lib/microduck-program.ts and ../adapters/microduck/src/lib/microduck-program.ts -->
 
-All movement blocks combine a bundled Lucide SVG with localized text. The two categories can be mixed in one script:
+The directional movement blocks combine a bundled Lucide SVG with localized text. The two categories can be mixed in one script:
 
 | Category | Block type (prefix `botlab_microduck_`) | Input / meaning |
 | --- | --- | --- |
@@ -21,6 +21,7 @@ All movement blocks combine a bundled Lucide SVG with localized text. The two ca
 | Movement | `turn_around` | Fixed +180 degrees |
 | Precise movement | `walk_distance`, `back_distance` | `DISTANCE` in meters, 0–20; defaults 5 / 1 |
 | Precise movement | `turn_degrees` | `ANGLE`, default 90, range -360 to 360 |
+| Precise movement | `sit`, `stand` | Explicit posture; posture-capable native or iframe simulator required, no input |
 
 Negative angles turn left, positive angles turn right, relative to the robot heading. The variable turn's icon follows the sign and is not serialized. The existing `walk_distance` type, `DISTANCE` field and `walk` translation key remain compatible with saved programs and translation overlays. Numeric defaults supply Scratch's text-field configuration as well as Blockly's numeric configuration; Scratch's field limits primarily configure its keypad, so the compiler also validates all inputs.
 
@@ -65,3 +66,13 @@ An adapter must explicitly bind message keys to its block definitions. This cata
 <!-- test target from project.json -->
 
 Run `npm run nx -- test blocks --run` to execute the unit tests via Vitest.
+
+## Program parsing
+
+<!-- parser API from src/lib/microduck-program.ts and typed steps from ../botlab-model/src/lib/program.ts -->
+
+`readMicroDuckProgramFromWorkspace(artifact)` parses the single enabled green-flag script, including nested `control_if` and `control_if_else` branches, into typed `MicroDuckProgramStep[]`, retaining source block IDs. It validates numeric fields and rejects unsupported connected blocks/expressions; detached blocks remain ignored. It does not dispatch robot commands. `compileMicroDuckProgram` in the MicroDuck adapter lowers these steps to target-specific commands; the app composes the two functions. Posture blocks stay explicit (`sit`/`stand`) rather than becoming toggles at compile time.
+
+<!-- posture predicates and control palette from src/lib/scratch-blocks-local-bridge.ts; validation from src/lib/microduck-program.ts -->
+
+Sensing offers Boolean `botlab_microduck_is_sit`, `botlab_microduck_is_stand` and `botlab_microduck_is_transitioning`. Control offers `control_if` and `control_if_else`; their `CONDITION` must contain one of these predicates, and their `SUBSTACK` / `SUBSTACK2` statement inputs may contain nested sequences or be empty. Both branches are validated before execution. The parser preserves predicate and statement IDs, limits nesting to 16 levels and action/control nodes to 256, and rejects missing or unsupported conditions. General Boolean expressions and loops are not implemented yet.

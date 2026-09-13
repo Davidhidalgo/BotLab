@@ -1,0 +1,52 @@
+{
+  "date": "2026-09-13",
+  "checks": {
+    "decisions": [
+      true,
+      true,
+      true,
+      true,
+      false
+    ],
+    "finalPosture": {
+      "mode": "sitstand",
+      "sitFlag": 1,
+      "height": 0.05939649385199118
+    },
+    "repeatedError": true,
+    "cancelAndInspectTransition": {
+      "mode": "sitstand",
+      "sitFlag": 1,
+      "command": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "pageErrors": [],
+  "finalState": {
+    "raw": {
+      "supported": true,
+      "posture": "sit",
+      "height": 0.0594104718113922,
+      "gyro": [
+        0.0008480934008890897,
+        -0.00037210204135743345,
+        -0.000735886993612485
+      ],
+      "time": 6.859999999999876,
+      "fallen": false
+    },
+    "cursor": 6
+  },
+  "unitTests": 355,
+  "testFiles": 29,
+  "verificationCommand": "npm run test:simulator-postures",
+  "notes": [
+    "Real iframe physics in Feet mode with official sitstand policy.",
+    "Both branches, nested conditions, physical posture completion, walk/turn handoff and repeated posture errors verified.",
+    "Cancellation test reruns the same program in the same scene to observe the ongoing transition; file import intentionally starts a new scene.",
+    "The native Mac companion was not modified for this iframe increment."
+  ]
+}

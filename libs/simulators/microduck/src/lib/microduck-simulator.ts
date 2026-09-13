@@ -13,6 +13,7 @@ import {
 import type { MicroDuckSimulatorAssetCachePlan } from './microduck-simulator-assets';
 import { createMicroDuckDistanceTracker } from './microduck-distance';
 import { createMicroDuckTurnTracker } from './microduck-turn';
+import { createMicroDuckPostureObserver, type MicroDuckPostureState } from './microduck-posture';
 
 export const microDuckOfficialSimulatorIntegration = defineSimulatorIntegration(
   {
@@ -54,7 +55,23 @@ export interface MicroDuckSimulatorDifferentialDriveFrame {
   angleDegrees?: number;
 }
 
+export interface MicroDuckSimulatorPostureFrame {
+  id: string; sourceBlockId?: string; targetId: string;
+  type: 'posture'; posture: 'sit' | 'stand';
+}
+export interface MicroDuckSimulatorConditionFrame {
+  id: string; sourceBlockId?: string; targetId: string;
+  type: 'posture-condition'; posture: 'sit' | 'stand' | 'transitioning';
+  thenIndex: number; elseIndex: number; endIndex: number;
+}
+export interface MicroDuckSimulatorJumpFrame {
+  id: string; sourceBlockId?: string; targetId: string;
+  type: 'jump'; nextIndex: number;
+}
 export type MicroDuckSimulatorControlFrame =
+  | MicroDuckSimulatorPostureFrame
+  | MicroDuckSimulatorConditionFrame
+  | MicroDuckSimulatorJumpFrame
   | MicroDuckSimulatorLedFrame
   | MicroDuckSimulatorDifferentialDriveFrame;
 
@@ -96,6 +113,8 @@ export interface MicroDuckBotLabOfficialSourceOptions {
   id?: string;
   getVelocityLimits: () => readonly [number, number, number];
   getPosition?: () => readonly number[];
+  getPostureState?: () => MicroDuckPostureState;
+  requestPosture?: (posture: 'sit' | 'stand') => boolean;
   getHeading?: () => number;
 }
 
@@ -170,6 +189,8 @@ export interface MicroDuckOfficialSimulatorConnectionOptions {
   loadRuntime: MicroDuckOfficialSimulatorRuntimeLoader;
   getVelocityLimits: () => readonly [number, number, number];
   getPosition?: () => readonly number[];
+  getPostureState?: () => MicroDuckPostureState;
+  requestPosture?: (posture: 'sit' | 'stand') => boolean;
   getHeading?: () => number;
   sourceId?: string;
 }
@@ -379,6 +400,8 @@ export async function connectMicroDuckBotLabSourceToOfficialSimulator(
         getVelocityLimits: options.getVelocityLimits,
         getPosition: options.getPosition,
         getHeading: options.getHeading,
+        getPostureState: options.getPostureState,
+        requestPosture: options.requestPosture,
       });
 
   if (!existingSource) {
@@ -410,6 +433,9 @@ export function createMicroDuckBotLabOfficialSource(
     ride: 0,
   };
   const pressed: Record<string, boolean> = {};
+  const postureObserver = createMicroDuckPostureObserver(options.getPostureState);
+  let postureRequested = false;
+  let postureElapsed = 0;
   let frames: MicroDuckSimulatorControlFrame[] = [];
   let cursor = 0;
   let frameElapsedMs = 0;
@@ -441,6 +467,7 @@ export function createMicroDuckBotLabOfficialSource(
       return;
     }
 
+    if (frame.type !== 'led-pattern') return;
     pressed[`led:${frame.pattern}`] = true;
     axes.jaw = frame.brightness > 0 ? Math.min(frame.brightness / 100, 1) : 0;
     active = false;
@@ -450,6 +477,7 @@ export function createMicroDuckBotLabOfficialSource(
     frames = [];
     cursor = 0;
     frameElapsedMs = 0;
+    postureRequested = false; postureElapsed = 0;
     distanceTracker = undefined;
     turnTracker = undefined;
     active = false;
@@ -472,6 +500,7 @@ export function createMicroDuckBotLabOfficialSource(
       frames = [...controlSource.frames];
       cursor = 0;
       frameElapsedMs = 0;
+      postureRequested = false; postureElapsed = 0;
       distanceTracker = undefined;
       turnTracker = undefined;
       active = false;
@@ -490,6 +519,7 @@ export function createMicroDuckBotLabOfficialSource(
       clear();
     },
     poll(dt = 1 / 50) {
+      const observation = postureObserver.observe(dt);
       const frame = frames[cursor];
 
       if (!frame) {
@@ -498,11 +528,40 @@ export function createMicroDuckBotLabOfficialSource(
         return;
       }
 
+      if (frame.type === 'jump') { cursor = frame.nextIndex; return; }
+      if (frame.type === 'posture-condition' || frame.type === 'posture') {
+        resetCommand(command); resetPressed(pressed); active = true;
+        if (observation.error) { clear(); throw new Error(observation.error); }
+        if (frame.type === 'posture-condition') {
+          if (observation.observed === 'unknown') { clear(); throw new Error('posture-unknown'); }
+          cursor = observation.observed === frame.posture ? frame.thenIndex : frame.elseIndex;
+          return;
+        }
+        postureElapsed += dt;
+        if (postureElapsed > 12) { clear(); throw new Error('posture-timeout'); }
+        if (observation.observed === frame.posture) {
+          if (!postureRequested) { clear(); throw new Error(`posture-already-${frame.posture}`); }
+          cursor++; postureRequested = false; postureElapsed = 0; return;
+        }
+        if (!postureRequested && (observation.observed === 'sit' || observation.observed === 'stand')) {
+          if (!options.requestPosture?.(frame.posture)) { clear(); throw new Error('posture-refused'); }
+          postureRequested = true; postureObserver.begin();
+        }
+        return;
+      }
+      if (options.getPostureState && frameElapsedMs === 0 && !distanceTracker && !turnTracker && frame.type === 'differential-drive' &&
+          (frame.leftPower !== 0 || frame.rightPower !== 0) && observation.observed !== 'stand') { clear(); throw new Error('posture-required'); }
       if (frame.type === 'differential-drive' && frame.angleDegrees !== undefined) {
         turnTracker ??= createMicroDuckTurnTracker(frame.angleDegrees, options.getHeading);
         const progress = turnTracker(dt);
         if (progress.error) { clear(); throw new Error(progress.error); }
         if (progress.done) {
+          if (options.getPostureState && observation.observed !== 'stand') {
+            postureElapsed += dt; resetCommand(command); resetPressed(pressed); active = true;
+            if (postureElapsed > 12) { clear(); throw new Error('posture-timeout'); }
+            return;
+          }
+          postureElapsed = 0;
           cursor += 1;
           turnTracker = undefined;
           frameElapsedMs = 0;
@@ -513,6 +572,8 @@ export function createMicroDuckBotLabOfficialSource(
         }
         applyFrame(frame);
         command[2] *= progress.powerScale;
+        pressed['turnLeft'] = command[2] > 0;
+        pressed['turnRight'] = command[2] < 0;
         active = true;
         return;
       }
@@ -524,6 +585,12 @@ export function createMicroDuckBotLabOfficialSource(
           throw new Error(progress.error);
         }
         if (progress.done) {
+          if (options.getPostureState && observation.observed !== 'stand') {
+            postureElapsed += dt; resetCommand(command); resetPressed(pressed); active = true;
+            if (postureElapsed > 12) { clear(); throw new Error('posture-timeout'); }
+            return;
+          }
+          postureElapsed = 0;
           cursor += 1;
           distanceTracker = undefined;
           frameElapsedMs = 0;
@@ -683,6 +750,7 @@ const receivedExecutions = new Set();
 const executions = new Map();
 const createDistanceTracker = (${createMicroDuckDistanceTracker.toString()});
 const createTurnTracker = (${createMicroDuckTurnTracker.toString()});
+const createPostureObserver = (${createMicroDuckPostureObserver.toString()});
 
 function reportExecution(execution, status, frameIndex, progress = {}) {
   if (!execution) return;
@@ -759,7 +827,7 @@ window.addEventListener("message", (event) => {
 });
 
 export class ${className} {
-  constructor({ getVelocityLimits, isInputLocked, getPosition, getHeading } = {}) {
+  constructor({ getVelocityLimits, isInputLocked, getPosition, getHeading, getPostureState, requestPosture } = {}) {
     this.id = "botlab";
     this.connected = true;
     this.command = new Float32Array(3);
@@ -770,6 +838,10 @@ export class ${className} {
     this.isInputLocked = isInputLocked ?? (() => false);
     this.getPosition = getPosition;
     this.getHeading = getHeading;
+    this.getPostureState = getPostureState;
+    this.requestPosture = requestPosture;
+    this.postureObserver = createPostureObserver(getPostureState);
+    this.postureRequested = false;
     this.frames = [];
     this.cursor = 0;
     this.frameElapsedMs = 0;
@@ -805,6 +877,8 @@ export class ${className} {
     this.frames = [...controlSource.frames];
     this.cursor = 0;
     this.frameElapsedMs = 0;
+    this.postureRequested = false;
+    this.motionSettleElapsed = 0;
     this.active = false;
     this.resetCommand();
     this.resetPressed();
@@ -818,6 +892,8 @@ export class ${className} {
     this.frames = [];
     this.cursor = 0;
     this.frameElapsedMs = 0;
+    this.postureRequested = false;
+    this.motionSettleElapsed = 0;
     this.active = false;
     this.resetCommand();
     this.resetPressed();
@@ -840,6 +916,7 @@ export class ${className} {
   }
 
   pollFrame(dt) {
+    const observation = this.postureObserver.observe(dt);
     if (this.isInputLocked()) {
       if (this.reportedCursor >= 0 && this.execution) this.clear("failed", "scene-interrupted");
       this.active = false;
@@ -856,6 +933,41 @@ export class ${className} {
       return;
     }
 
+    if (frame.type === "jump") { this.cursor = frame.nextIndex; this.frameElapsedMs = 0; return; }
+    if (frame.type === "posture" || frame.type === "posture-condition") {
+      this.resetCommand(); this.resetPressed(); this.active = true;
+      this.frameElapsedMs += dt * 1000;
+      this.heartbeatElapsed += dt;
+      if (observation.error) { this.clear("failed", observation.error); return; }
+      if (frame.type === "posture-condition") {
+        if (observation.observed === "unknown") { this.clear("failed", "posture-unknown"); return; }
+        const conditionResult = observation.observed === frame.posture;
+        reportExecution(this.execution, "running", this.cursor, { observedPosture: observation.observed, conditionResult });
+        this.cursor = conditionResult ? frame.thenIndex : frame.elseIndex;
+        this.frameElapsedMs = 0;
+        return;
+      }
+      if (this.reportedCursor !== this.cursor || this.heartbeatElapsed >= .1) {
+        reportExecution(this.execution, "running", this.cursor, { elapsedMs: this.frameElapsedMs, observedPosture: observation.observed });
+        this.reportedCursor = this.cursor; this.heartbeatElapsed = 0;
+      }
+      if (this.frameElapsedMs > 12000) { this.clear("failed", "posture-timeout"); return; }
+      if (observation.observed === frame.posture) {
+        if (!this.postureRequested) { this.clear("failed", "posture-already-" + frame.posture); return; }
+        reportExecution(this.execution, "running", this.cursor, { observedPosture: observation.observed, postureCompleted: true });
+        this.cursor++; this.frameElapsedMs = 0; this.postureRequested = false;
+        return;
+      }
+      if (!this.postureRequested && (observation.observed === "sit" || observation.observed === "stand")) {
+        if (!this.requestPosture?.(frame.posture)) { this.clear("failed", "posture-refused"); return; }
+        this.postureRequested = true; this.postureObserver.begin();
+      }
+      return;
+    }
+    if (this.getPostureState && this.frameElapsedMs === 0 && frame.type === "differential-drive" &&
+        (frame.leftPower !== 0 || frame.rightPower !== 0) && observation.observed !== "stand") {
+      this.clear("failed", observation.error ?? "posture-required"); return;
+    }
     const distanceFrame = frame.type === "differential-drive" && frame.distanceMeters !== undefined;
     const turnFrame = frame.type === "differential-drive" && frame.angleDegrees !== undefined;
     let progress;
@@ -874,7 +986,7 @@ export class ${className} {
     }
     this.frameElapsedMs += dt * 1000;
     this.heartbeatElapsed += dt;
-    if (this.reportedCursor !== this.cursor || this.heartbeatElapsed >= 0.1 || progress?.done) {
+    if (this.reportedCursor !== this.cursor || this.heartbeatElapsed >= 0.1 || progress?.done || progress?.crossed) {
       reportExecution(this.execution, "running", this.cursor, {
         elapsedMs: this.frameElapsedMs,
         distanceMeters: progress?.distanceMeters,
@@ -884,6 +996,13 @@ export class ${className} {
       this.heartbeatElapsed = 0;
     }
     if ((distanceFrame || turnFrame) && progress.done) {
+      if (this.getPostureState && observation.observed !== "stand") {
+        this.resetCommand(); this.resetPressed(); this.active = true;
+        this.motionSettleElapsed = (this.motionSettleElapsed ?? 0) + dt;
+        if (this.motionSettleElapsed > 12) this.clear("failed", "posture-timeout");
+        return;
+      }
+      this.motionSettleElapsed = 0;
       this.cursor += 1;
       this.frameElapsedMs = 0;
       this.distanceTracker = undefined;
@@ -894,7 +1013,11 @@ export class ${className} {
       return;
     }
     this.applyFrame(frame);
-    if (turnFrame) this.command[2] *= progress.powerScale;
+    if (turnFrame) {
+      this.command[2] *= progress.powerScale;
+      this.pressed.turnLeft = this.command[2] > 0;
+      this.pressed.turnRight = this.command[2] < 0;
+    }
     this.active = true;
     if (distanceFrame || turnFrame) return;
     const durationMs = getFrameDurationMs(frame);
@@ -986,7 +1109,16 @@ function parseControlSourceMessage(event) {
       (typeof message.executionId !== "string" || message.executionId.length === 0)) ||
     message.simulatorId !== "microduck-official-sim" ||
     !message.source ||
-    !Array.isArray(message.source.frames)
+    !Array.isArray(message.source.frames) || message.source.frames.length > 512 ||
+    !message.source.frames.every((frame, index, frames) => {
+      if (!frame || typeof frame !== "object") return false;
+      if (frame.type === "posture") return frame.posture === "sit" || frame.posture === "stand";
+      if (frame.type === "posture-condition") return ["sit", "stand", "transitioning"].includes(frame.posture) &&
+        frame.thenIndex === index + 1 && Number.isInteger(frame.elseIndex) && Number.isInteger(frame.endIndex) &&
+        frame.elseIndex > index && frame.elseIndex <= frame.endIndex && frame.endIndex <= frames.length;
+      if (frame.type === "jump") return Number.isInteger(frame.nextIndex) && frame.nextIndex > index && frame.nextIndex <= frames.length;
+      return frame.type === "differential-drive" || frame.type === "led-pattern";
+    })
   ) {
     return undefined;
   }
@@ -1000,15 +1132,16 @@ export function createMicroDuckOfficialSimulatorPatchInstructions(
   options: MicroDuckOfficialSimulatorPatchOptions = {}
 ): MicroDuckOfficialSimulatorPatchInstructions {
   const className = options.className ?? 'BotLabSource';
-  // The bundled walking policy stalls at the upstream -0.2 reverse command.
+  // The bundled Feet policy stalls at the upstream reverse/angular inputs.
+  // Measured simulator calibration: reverse -0.4, angular 2 (minimum 1.5 while turning).
   const velocityLimitsExpression =
-    options.velocityLimitsExpression ?? '(loco === "legs" ? [VEL_FWD, -0.4, VEL_ANG] : velLims())';
+    options.velocityLimitsExpression ?? '(loco === "legs" ? [VEL_FWD, -0.4, 2] : velLims())';
 
   return {
     modulePath: MICRODUCK_BOTLAB_SOURCE_MODULE_PATH,
     gamePath: MICRODUCK_SIMULATOR_GAME_SOURCE_PATH,
     importLine: `import { ${className} } from "./controls/botlab.js";`,
-    sourceFactoryLine: `const botLabSource = new ${className}({ getVelocityLimits: () => ${velocityLimitsExpression}, isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos) });`,
+    sourceFactoryLine: `const botLabSource = new ${className}({ getVelocityLimits: () => ${velocityLimitsExpression}, isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos), getPostureState: () => ({ supported: loco === "legs" && !customPolicy && !!sessions.sitstand, posture: sitTimer || standTimer ? "transitioning" : mode === "sitstand" && sitFlag === 1 ? "sit" : mode === "walk" ? "stand" : "unknown", height: data.qpos[2], gyro: [data.sensordata[gyroAdr], data.sensordata[gyroAdr + 1], data.sensordata[gyroAdr + 2]], time: data.time, fallen: !!recovery || fallenSince !== null }), requestPosture: (posture) => { if (inputLocked || loco !== "legs" || customPolicy || recovery || (mode !== "walk" && mode !== "sitstand")) return false; setMode(posture === "sit" ? "sit" : "walk"); return posture === "sit" ? mode === "sitstand" : !!standTimer || mode === "walk"; } });`,
     controllerSourceName: 'botLabSource',
   };
 }
@@ -1023,16 +1156,21 @@ export function patchMicroDuckOfficialSimulatorGameSource(
   const legacyFactoryLine = createMicroDuckOfficialSimulatorPatchInstructions({
     ...options, velocityLimitsExpression: options.velocityLimitsExpression ?? 'velLims()',
   }).sourceFactoryLine;
+  const reverseCalibratedFactoryLine = createMicroDuckOfficialSimulatorPatchInstructions({
+    ...options,
+    velocityLimitsExpression: options.velocityLimitsExpression ?? '(loco === "legs" ? [VEL_FWD, -0.4, VEL_ANG] : velLims())',
+  }).sourceFactoryLine;
   const distanceFactoryLine = legacyFactoryLine.replace(', getHeading: () => duckYaw(data.qpos)', '');
   const lockedFactoryLine = distanceFactoryLine.replace(
     ', getPosition: () => [data.qpos[0], data.qpos[1]]',
     ''
   );
   const previousFactoryLine = lockedFactoryLine.replace(', isInputLocked: () => inputLocked', '');
-  let patched = source.replace(previousFactoryLine, instructions.sourceFactoryLine)
+  let patched = source.replace(/^([ \t]*)const botLabSource = new [\w$]+\(.*\);$/m, (_line, indent: string) => indent + instructions.sourceFactoryLine).replace(previousFactoryLine, instructions.sourceFactoryLine)
     .replace(lockedFactoryLine, instructions.sourceFactoryLine)
     .replace(distanceFactoryLine, instructions.sourceFactoryLine)
-    .replace(legacyFactoryLine, instructions.sourceFactoryLine);
+    .replace(legacyFactoryLine, instructions.sourceFactoryLine)
+    .replace(reverseCalibratedFactoryLine, instructions.sourceFactoryLine);
 
   if (!patched.includes(instructions.importLine)) {
     patched = insertAfterLastImport(patched, instructions.importLine);
@@ -1081,16 +1219,38 @@ export function createMicroDuckSimulatorControlSource(
   const frames: MicroDuckSimulatorControlFrame[] = [];
   const errors: string[] = [];
 
-  for (const command of artifact.commands) {
-    const frame = createMicroDuckSimulatorControlFrame(command);
-
-    if (typeof frame === 'string') {
-      errors.push(frame);
-      continue;
+  let nodes = 0;
+  function lower(commands: unknown, depth = 0) {
+    if (!Array.isArray(commands) || depth > 16) { errors.push('Invalid conditional branch or nesting limit.'); return; }
+    for (const command of commands) {
+      if (++nodes > 256 || !isRecord(command) || !isRecord(command['inputs'])) { errors.push('Invalid program or too many blocks.'); return; }
+      if (command['commandId'] === 'if-posture' && command['capabilityId'] === 'microduck-control') {
+        const input = command['inputs'];
+        const condition = input['condition'];
+        if (!isRecord(condition) || condition['type'] !== 'posture' || !['sit', 'stand', 'transitioning'].includes(String(condition['posture']))) {
+          errors.push('Invalid posture condition.'); continue;
+        }
+        const index = frames.length;
+        const frame: MicroDuckSimulatorConditionFrame = {
+          id: String(command['id']), targetId: String(command['targetId']), sourceBlockId: command['sourceBlockId'] as string | undefined,
+          type: 'posture-condition', posture: condition['posture'] as 'sit' | 'stand' | 'transitioning', thenIndex: index + 1, elseIndex: 0, endIndex: 0,
+        };
+        frames.push(frame);
+        lower(input['then'], depth + 1);
+        const jump: MicroDuckSimulatorJumpFrame = { id: `${frame.id}-end`, targetId: frame.targetId, type: 'jump', nextIndex: 0 };
+        frames.push(jump);
+        frame.elseIndex = frames.length;
+        lower(input['else'], depth + 1);
+        frame.endIndex = frames.length;
+        jump.nextIndex = frames.length;
+        continue;
+      }
+      const frame = createMicroDuckSimulatorControlFrame(command as unknown as CompiledCommand);
+      if (typeof frame === 'string') errors.push(frame);
+      else frames.push(frame);
     }
-
-    frames.push(frame);
   }
+  lower(artifact.commands);
 
   return {
     artifactId: artifact.id,
@@ -1113,6 +1273,11 @@ function createMicroDuckSnapshot(
 function createMicroDuckSimulatorControlFrame(
   command: CompiledCommand
 ): MicroDuckSimulatorControlFrame | string {
+  if (command.capabilityId === 'microduck-posture' && command.commandId === 'set-posture') {
+    const posture = command.inputs['posture'];
+    if (posture !== 'sit' && posture !== 'stand') return 'Invalid posture.';
+    return { id: command.id, sourceBlockId: command.sourceBlockId, targetId: command.targetId, type: 'posture', posture };
+  }
   if (
     command.capabilityId === 'microduck-leds' &&
     (command.commandId === 'set-led-pattern' ||
@@ -1279,7 +1444,9 @@ function isMicroDuckSimulatorControlSource(
     Array.isArray(value['frames']) &&
     Array.isArray(value['messages']) &&
     Array.isArray(value['errors']) &&
-    value['frames'].every(isMicroDuckSimulatorControlFrame) &&
+    value['frames'].length <= 512 && value['frames'].every(isMicroDuckSimulatorControlFrame) &&
+    value['frames'].every((frame, index, frames) => frame.type === 'jump' ? frame.nextIndex > index && frame.nextIndex <= frames.length : frame.type !== 'posture-condition' ||
+      (frame.thenIndex === index + 1 && frame.elseIndex > index && frame.elseIndex <= frame.endIndex && frame.endIndex <= frames.length)) &&
     value['messages'].every((message) => typeof message === 'string') &&
     value['errors'].every((error) => typeof error === 'string')
   );
@@ -1303,6 +1470,12 @@ function isMicroDuckSimulatorControlFrame(
     return true;
   }
 
+  if (typeof value['id'] === 'string' && typeof value['targetId'] === 'string') {
+    if (value['type'] === 'posture') return value['posture'] === 'sit' || value['posture'] === 'stand';
+    if (value['type'] === 'posture-condition') return ['sit', 'stand', 'transitioning'].includes(String(value['posture'])) &&
+      ['thenIndex', 'elseIndex', 'endIndex'].every(key => Number.isInteger(value[key]) && Number(value[key]) >= 0);
+    if (value['type'] === 'jump') return Number.isInteger(value['nextIndex']) && Number(value['nextIndex']) >= 0;
+  }
   return (
     value['type'] === 'differential-drive' &&
     typeof value['id'] === 'string' &&
@@ -1348,6 +1521,8 @@ function getFrameDurationMs(frame: MicroDuckSimulatorControlFrame) {
 }
 
 function formatControlFrameMessage(frame: MicroDuckSimulatorControlFrame) {
+  if (frame.type === 'posture' || frame.type === 'posture-condition') return `${frame.type} -> ${frame.posture}`;
+  if (frame.type === 'jump') return `branch-end -> ${frame.nextIndex}`;
   if (frame.type === 'led-pattern') {
     return `${frame.type} -> ${JSON.stringify({
       pattern: frame.pattern,

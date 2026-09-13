@@ -8,7 +8,7 @@ BotLab should let a user build robot behaviors visually, test them safely in a s
 
 The first supported target is MicroDuck. StackChan is planned as the next robot family. The visual editor should use the official Scratch Blocks package first, while keeping TurboWarp or raw Blockly as future swappable options behind an internal BotLab boundary.
 
-Product focus (2026-09-12): refine the product against the MicroDuck simulator before further hardware work. Prioritize faithful block execution, visible per-block progress, scene/reset/camera ergonomics, a cleaner workbench, and saved educational programs. StackChan, already available to the project owner, will be the first physical target when that experience is ready. Hardware policy and transport tasks below remain requirements before hardware enablement, not blockers for simulator product development.
+Product focus (agreed 2026-09-13): refine the product against the MicroDuck simulator before further hardware work. Prioritize the reported turn regression, reliable execution, package-level verification, architecture consolidation, and new executable blocks. A program/example library is outside the next product increment; preserve existing local save/import/export. StackChan, already available to the project owner, will be the first physical target when that experience is ready. Hardware policy and transport tasks below remain requirements before hardware enablement, not blockers for simulator product development.
 
 ## Architecture Principles
 
@@ -21,68 +21,170 @@ Product focus (2026-09-12): refine the product against the MicroDuck simulator b
 - Treat generated artifacts as first-class data: blocks, compiled plans, traces, logs, simulator outputs, and deployment payloads.
 - Make safety policy explicit before real robot execution.
 
-## Current State
+## Current State — Reviewed 2026-09-13
 
-Implemented:
+The current baseline below supersedes older status descriptions in the numbered milestones. Those milestones retain the longer-term scope and historical implementation notes; they are not a sequential delivery checklist. Use the agreed delivery order below for new work.
 
-- Nx monorepo generated with `create-nx-workspace`.
-- React + TypeScript web app in `apps/botlab-web`.
-- Tailwind and shadcn/ui-style primitives in `libs/ui`.
-- Visual editor shell in `libs/blocks`.
-- Shared BotLab model in `libs/botlab-model`.
-- Runtime facade in `libs/runtime`.
-- Initial MicroDuck adapter contract in `libs/adapters/microduck`.
-- Planned StackChan adapter contract in `libs/adapters/stackchan`.
-- Simulator integration contracts in `libs/simulators/core` and robot-specific simulator packages under `libs/simulators/*`.
-- First screen showing project model, runtime counts, targets, and editor placeholder.
-- Project tags in each `project.json` for app, UI, model, runtime, adapter, simulator, and editor boundaries.
-- Lightweight ADR folder with the first boundary decision.
-- BotLab glossary linked from the README.
-- Expanded domain model contracts for policies, skills, behavior graphs/AST, artifacts, target profiles, and capability schemas.
-- Sample MicroDuck LED and StackChan expression behaviors in `@botlab/model`.
-- Validation helpers and model tests for valid and invalid behavior definitions.
-- Adapter target profiles and capability command schemas for MicroDuck and StackChan placeholders.
-- Build targets for every library plus the root `npm run build:libs` workflow.
-- Root Nx affected scripts for build, test, and lint workflows.
-- Validation helpers for policies, capability schemas, compiled behavior artifacts, and behavior graph/AST references.
-- Initial `@botlab/blocks` editor boundary with workspace artifacts, import/export helpers, a mock provider, workspace states, callbacks, and package tests.
-- `@botlab/blocks` now has a Scratch Blocks provider boundary with Scratch XML workspace support and an injected bridge contract.
-- `@botlab/blocks` now depends on the official `scratch-blocks` package locally, mounts it directly without iframes, and registers an initial BotLab custom MicroDuck block.
-- The web app auto-mounts the real Scratch Blocks editor in the browser, serves Scratch/Blockly media from local dependencies in development, and copies those assets into production builds.
-- App-level workspace state receives mock editor artifact updates and displays editor status metadata.
-- Runtime sessions can load compiled behavior artifacts, dispatch commands through injected target dispatchers, emit lifecycle events, and produce trace artifacts.
-- Runtime sessions can load validated behavior definitions and record structured diagnostics with validation, lifecycle, adapter, transport, scheduler, simulator, and policy categories.
-- Runtime can produce global introspection snapshots with targets, capabilities, simulators, sessions, diagnostics, active session counts, and recent events.
-- Runtime evaluates policy rules for compiled plans, blocks denied execution, pauses for required confirmation, records policy diagnostics, and resumes after confirmation.
-- Runtime has an initial priority run queue, scheduler events, capability locks, and arbitration diagnostics for conflicting sessions.
-- The web app can run a MicroDuck runtime demo from the UI and display session state, queue entries, and capability locks.
-- The web app uses an initial XState v5 parallel flow machine for workspace, build, simulation, and execution lifecycles.
-- The UI now exposes a demo compile step that produces a compiled plan artifact before runtime execution is enabled.
-- The demo compile step now reads the current Scratch Blocks XML and turns the BotLab MicroDuck LED block into a runtime command.
-- The UI now surfaces the compiled MicroDuck command with target, LED pattern, and brightness details.
-- The UI now exposes a demo simulation step that verifies the compiled plan before runtime execution is enabled.
-- The UI now exposes a target selector that defaults to the MicroDuck simulator demo target and blocks planned or incompatible targets from compilation.
-- The UI now exposes a runtime log panel with recent events, session trace entries, and diagnostics.
-- The UI now exposes an artifact inventory for the current workspace, compiled plan, simulation output, and runtime trace.
-- The web app now has a lightweight i18n layer with Catalan as the default official language and English/Spanish selectable from the shell.
-- The UI now exposes policy status for the compiled demo plan, including decision, confirmation state, and rule ids.
+| Area | Implemented and inspected | Still open |
+| --- | --- | --- |
+| Foundation | Nx, React/TypeScript, tagged libraries, shared model and package contracts | Enforced dependency rules and full-workspace CI |
+| Blocks | Official Scratch Blocks; one green-flag sequence; movement, turns, waits, simulator postures, nested posture conditions and LED compilation; XML parsing in blocks, command lowering in the adapter; localized blocks | Disconnected-block diagnostics; loops, general expressions and generic-runtime control flow |
+| Simulator | Official local host with postMessage commands and identified execution status; measured displacement/yaw, progress, stop acknowledgement and reset | Further locomotion-mode/scene coverage; upstream pin/hash/setup consolidation |
+| Persistence and UX | Versioned local workspace and last trace, import/export, responsive workbench and block highlighting | Full end-to-end acceptance recheck; multiple-program storage is deferred |
+| Runtime | Session lifecycle, cooperative cancellation, queue, locks, traces and initial policies | Explicit run outcomes, current target eligibility and revision/target-bound user approval; hardware stop contract |
+| Hardware | Adapter contracts and placeholders | Real transport and deployment; StackChan is the first intended physical target |
 
-Not implemented yet:
+Verification performed on 2026-09-13:
 
-- Real block-to-behavior serialization and compilation from Scratch XML.
-- Behavior serialization and compilation.
-- Real MicroDuck transport.
-- Real simulator bridge.
-- Timed/event-driven scheduler loop.
-- Full arbitration engine beyond initial priority queue and exclusive capability locks.
-- Richer runtime introspection UI beyond the initial event, trace, diagnostic, artifact, and policy summaries.
-- Full product statechart for deployment, recovery, real compiler integration, and real simulator bridge integration.
-- Persistence.
-- Deployment workflow.
+| Project | Test files | Passing tests | Runner |
+| --- | ---: | ---: | --- |
+| botlab-web | 9 | 88 | Jest |
+| botlab-model | 1 | 8 | Vitest |
+| runtime | 1 | 32 | Vitest |
+| blocks | 4 | 42 | Vitest |
+| simulators-core | 1 | 2 | Vitest |
+| simulators-microduck | 5 | 118 | Vitest |
+| microduck adapter | 2 | 12 | Vitest |
+| simulators-microduck-native | 6 | 53 | Vitest + Python unittest |
+| **Total** | **29** | **355** | |
+
+All eight configured test targets passed across the `npm run test:all` run and the isolated blocks rerun (the root alias for `nx run-many --target=test --all --parallel=2`). The app also passed `node_modules/.bin/tsc -p apps/botlab-web/tsconfig.app.json --noEmit` in the earlier review. App/adapter builds and MicroDuck adapter lint passed after the native experiment; the earlier simulator-library build/lint retained six pre-existing non-null assertion warnings. Browser/physics turn verification is recorded below. Full-workspace build/lint coverage remains a separate milestone. `npm test` currently runs only the app. The MicroDuck adapter now owns eight proximity-subscription tests; its broader target/capability contract tests remain open. `stackchan` and `ui` have no dedicated suites yet. The simulator library includes unit tests and generated-receiver integration tests, not just app mocks.
+
+The new native library passed build, lint and TypeScript checks. Its compiled client also passed a real local service smoke check: subscription, telemetry, healthy control-loop status and acknowledged stop, with owned services terminated afterwards. [Recorded result](evidence/microduck-native-library-2026-09-13.json).
+
+The experimental native app passed browser acceptance for rendering, reset, movement/wait completion, posture, explicit stop, iframe fallback and simulated network loss; see [app evidence](evidence/microduck-native-app-2026-09-13.json). App/native builds, TypeScript checks and lint of the new native modules passed. Native sessions remain live-only and use the separate local gateway.
+
+Native video follow-up: PNG/base64 snapshot polling at 5 fps was replaced by an isolated renderer and latest-frame MJPEG stream targeting 30 fps. Chrome measured 29.1 received fps, 28.7 painted images/s and 49.8 Hz policy control. See [performance evidence](evidence/microduck-native-video-2026-09-13.json).
+
+### macOS simulator companion
+
+Verification: [companion evidence](evidence/microduck-native-companion-2026-09-13.json) records the relocated bundle, editor acceptance, zero video requests, native scene cadence and clean window/application/service shutdown. All 302 tests, app/Mac builds, TypeScript checks and changed-module lint passed.
+
+User proposal on 2026-09-13: keep the editor in the browser and package only the native simulator as a separate Mac application. The external-window integration and a standalone Apple Silicon development bundle are now implemented. It preserves both the iframe and embedded native view. Distribution signing/notarization and a supported update path remain open.
+
+The intended experience is to open `BotLab Simulator.app` from Finder, see the native MuJoCo window, and connect from the web editor. The application starts and owns the required local services. The installed user needs no terminal commands, Node, Python or Rust installation. Opening the editor URL from the companion can simplify startup; launching the companion from a browser through a custom URL scheme is optional later work.
+
+Ownership: reuse `@botlab/simulators-microduck-native` for session startup, local transport, execution and shutdown. `apps/simulator-macos` supplies the application lifecycle, resources and packaging. It does not duplicate the simulator library or contain the editor. The native window renders the existing physics world directly; this mode does not start the MJPEG render worker. The editor retains program controls, progress and sensor status over the local gateway.
+
+Delivery sequence (items 1–2 implemented; item 3 remains release work):
+
+1. **External-window mode:** let the gateway start the existing native viewer, advertise presentation mode and protocol compatibility, and let the editor display connection/execution status without requesting video. Preserve exclusive ownership, stale-command rejection and heartbeat cancellation. Verify reset, viewer closure and browser reconnect with one physics instance.
+2. **Standalone Apple Silicon prototype:** package the launcher, interpreter/native libraries, compiled daemons, policies and scene assets into a `.app`. Validate MuJoCo's macOS main-thread/`mjpython` requirements in the packaged executable. Run a relocated bundle outside the repository with the development environment unavailable; no paths into `tmp`, the source checkout or its virtual environment may be required. The implemented build copies the pinned standalone interpreter and dependencies and compiles a small AppKit launcher; no Python freezer or editor wrapper is needed.
+3. **Distribution:** add reproducible release builds, dependency/license notices, signing and notarization, versioned compatibility checks and an update strategy. Validate other Mac architectures separately if supported.
+
+Acceptance: double-click startup without Terminal; usable native-window rendering with measured frame rate and frame-time percentiles; healthy policy control while editing; movement, posture, stop and reset pass against the same gateway semantics; browser loss cancels the program and leaves the viewer idle; closing the simulator stops execution and cleans up owned services; repeated launches do not create competing instances. Existing iframe and embedded-native acceptance must continue to pass. Native control-loop Hz must not be reported as viewer FPS.
+
+### Multi-simulator distribution direction
+
+The user requested a common **BotLab Simulator** application for future simulators, with either downloadable simulation packages or an all-included distribution when size permits. The Mac host now reads a versioned installed-simulator catalog (`apps/simulator-macos/simulators.json`); process arguments, environment, health handshake and editor URL belong to each entry. One installed entry starts directly; multiple installed entries are selectable, with one active simulator at a time. Only MicroDuck is currently bundled and tested. This is installed-package selection, not a download manager.
+
+The measured first MicroDuck development bundle occupies approximately 332 MB uncompressed, including its runtime and resources. Do not assume future simulators are similarly sized. Keep a small common host and per-simulator packages as the ownership boundary; offer a default bundle with the first simulator and optional all-included/offline bundles when measured size justifies them. Avoid duplicating compatible runtimes across packages where practical.
+
+Next packaging increment: define package ID/version, OS/architecture, runtime dependencies, gateway compatibility, download and installed sizes, integrity/authenticity metadata and launch descriptor. Implement catalog discovery, download/install progress, atomic installation, removal and updates without modifying an active simulation. The user chooses simulations; they do not configure Python environments or daemon processes. Evaluate total download size, installed size and shared runtime savings before setting an all-included bundle threshold. The current build remains fully bundled and offline after installation; downloading additional simulators is pending.
+
+Deferred platform requested by the user: **Windows companion application**, after the Mac experience is validated. Keep the editor protocol, program execution and simulator semantics shared. Plan a Windows launcher/installer plus platform-specific runtime paths, native library loading, viewer startup and child-process cleanup. First verify upstream daemon/IPC compatibility on Windows; the current macOS Unix-socket and `.dylib` setup is not evidence of Windows support. Acceptance must include installation without developer tools, browser control, stop/reset, connection loss and clean shutdown. Do not start this work in the current Mac increment.
+
+See [the companion assessment](microduck-simulator-evaluation.md#macos-companion-proposal) for the rendering and packaging rationale.
+
+### Posture conditions follow-up
+
+Implemented native `if` / `if-else`, including nested branches and Boolean sitting/standing/transitioning blocks in Sensing. The panel displays observed posture and decision outcomes. Transitioning tracks a dispatched native posture action for up to 12 seconds; missing/unstable initial observations remain unknown. Redundant explicit postures now fail, superseding the idempotent behavior in the historical first-increment evidence. A stopped latched transition can be inspected by a new conditional program, without allowing movement before standing stabilizes.
+
+Validation: 338 tests across 28 files; the first full run encountered one existing locale-switch test timeout under concurrent builds, then the blocks suite was rerun independently. Real browser/physics acceptance covers nested true/false branches, retained decisions, repeated-posture error and cancellation. The final regression also passes movement/turn/wait, stop, iframe fallback and connection loss; the latter resets the scene to isolate it from the preceding cancelled walk. Movement completion now includes standing stability, fixing a premature walk-to-turn handoff. App/Mac builds, TypeScript and changed-module lint pass. Evidence: [native conditions](evidence/microduck-native-conditions-2026-09-13.json). No automatic corrective posture action is inserted. Next language increment remains bounded repetition, then general Boolean operators; native skill expansion follows its physical lifecycle checks.
+
+### Iframe posture parity
+
+Explicit Sit/Stand and sitting/standing/transitioning conditions now execute in the iframe as well as natively. The bridge binds the existing official Feet posture policy to explicit actions and observes physical height, gyro and simulator time. It rejects unsupported modes, redundant postures and unknown conditions; no corrective Stand is inserted. Forward-only branch frames preserve indices for active-block highlighting and saved traces. Selected posture frames require completion evidence; an unselected branch is excluded only after its condition decision is validated.
+
+Verified real browser/physics behavior: nested true/false branches, Sit/Stand, walk-to-turn handoff, repeated Sit error at the second block, cancellation during sitting and a new run that detects the continuing transition while leaving the following Stand unexecuted. [Iframe evidence](evidence/microduck-iframe-postures-2026-09-13.json). The full configured suite plus the final focused library check pass 355 tests in 29 files. Build and TypeScript checks pass; lint retains the six existing non-null assertion warnings in receiver tests. Both the web app and the static `/simulator/` build must be published together for the tunnel to receive these changes. Generator consolidation (A3) remains planned; both implementations run the shared behavioral tests.
+
+## Agreed Delivery Order — 2026-09-13
+
+Native experiment completed after user authorization: [MicroDuck simulator evaluation](microduck-simulator-evaluation.md) records real service/physics execution on macOS, skills, odometry, ToF-driven stop, cancellation and connection-loss checks. All seven angle cases passed a 10° budget but still needed feedback/corrections. A native proximity helper and eight tests now belong to the MicroDuck adapter; the app now offers browser and experimental native simulators. The user authorized keeping the iframe and adding native integration through a separate library. `@botlab/simulators-microduck-native` now owns the native session/process code and a transport-independent JSON-RPC client, with dedicated protocol tests. Existing CLI experiments reuse the library. The native app panel now uses a leased local gateway, MuJoCo-rendered body truth, measured movement/wait execution, sit/stand, live ToF and stop/reset/disconnect. The iframe remains available. Generic runtime registration, capability discovery, persisted native traces, camera/WebRTC and person blocks remain open; this is not a full migration.
+
+### Recommended next increment: native MicroDuck skills
+
+After the Mac companion, prioritize useful native blocks over package downloads. The first increment (capability discovery and native posture blocks) is implemented; posture conditions with if/if-else are also implemented; additional skills remain planned. The pinned daemon exposes `robot.do`, `robot.skills` and loaded-policy information; the current gateway only permits `sit_toggle`, through the shared posture execution path for the toolbar and explicit blocks. The prepared configuration loads `kick_left`, `kick_right`, `roulade`, `ground_pick` and the posture policy. Loading a policy does not establish editor support or verified physical completion.
+
+Verification of the first increment: [native posture evidence](evidence/microduck-native-posture-2026-09-13.json) records actual repeated posture actions, a walk between posture transitions, stable final sitting, and cancellation during rising with no subsequent movement. The existing movement/turn/wait/posture/fallback/connection-loss acceptance also passes. All 319 configured tests pass across 27 test files; app/Mac builds and changed-module checks pass. Runtime target registration remains separate from the implemented native capability-to-adapter mapping.
+
+Educational semantics raised by the user: BotLab must not insert corrective actions such as standing up automatically before a walk. Walking from a seated state reports a failure at that block. The follow-up implements a redundant posture as a visible teaching error that stops execution at its block, with guidance to use an explicit condition. Do not silently reinterpret a second Stand as Sit.
+
+Prioritize **posture conditions plus if/if-else** before kicks: expose observed sitting, standing and transitioning states, with an explicit unavailable/unknown state when telemetry is missing. A first educational program should be expressible as “if seated → stand; advance”. The typed model, blocks parser and adapter now preserve nested branches. The native interpreter evaluates current observations, executes one branch and records its decision/source IDs; it handles cancellation and validates both branches before execution. Unknown posture fails visibly. Generic runtime control flow remains separate work; the iframe now executes the same posture conditions. Automatic action insertion remains out of scope.
+
+1. **Discover executable capabilities:** map loaded skills and available built-ins through the MicroDuck adapter/target contract. `robot.skills` describes configuration; reconcile it with loaded policies. Do not use the subscription's `skills` array alone: posture and `ground_pick` are conditional built-ins outside that array. The app should show capabilities from the connected target rather than inventing simulator-specific availability.
+2. **Deliver posture blocks first:** explicit Sit and Stand blocks, backed by the native toggle only when a change is needed. Observe the current posture/transition so running Stand twice cannot sit the robot back down. Integrate source-block highlighting and actual completion into program execution, replacing the fixed toolbar busy delay for this path.
+3. **After posture conditions, extend the common skill lifecycle and then expose one-shot actions:** validate acceptance, observed start, completion/recovery, refusal, timeout and cancellation against the native engine. Add kick left/right, then roulade and `ground_pick` after their behavior and stop semantics are measured. Do not treat an RPC acknowledgement or a duration alone as proof of completion, repeatedly dispatch a chaining skill, or disable fall checks globally to accommodate a deliberate roll.
+4. **Add the first sensor condition:** use the already measured ToF proximity helper for a distance condition / wait-until block, with cancellation and rearming tests. This needs the expression/condition execution boundary described below. Person detection remains separate until an actual producer and transport exist.
+
+Ownership: block definitions/compiler in `@botlab/blocks`; typed steps/results in the model and runtime; robot capability semantics in `@botlab/adapters-microduck`; native transport/observations in the native simulator library. Deliver the minimum A1/A2 contract consolidation needed by these blocks rather than growing a second app-specific compiler/executor. Tests belong in those libraries, with app composition checks and a real simulator acceptance sequence (walk → kick → turn → sit), plus interruption during each supported skill. The first completion criterion is executable posture blocks, not an example gallery or a complete event scheduler.
+
+### 1. Reproduce and resolve the turn regression
+
+Owner: `@botlab/simulators-microduck`, with compiler/app integration where evidence requires it.
+
+Status: corrected and verified in Feet mode on 2026-09-13. A requested 90° right turn stalled at approximately 15° with the upstream angular input of 1. The calibrated input is now 2 with a 1.5 floor. Calibration alone exposed transient torso twist and rebound on small angles, so the tracker now holds zero motion after crossing, waits for a quiet settled heading, and corrects error above 5° before advancing. First-crossing messages bypass heartbeat throttling to preserve measured arrival evidence even when the body subsequently settles below the requested angle.
+
+The maintained `tools/microduck/verify-turns.mjs` browser regression passed against upstream `023172c8a7d629b5258d90364c13bafe013abbfa`: a 0.25 m walk followed by 90°, -90°, 180°, 15°, -15°, -180° and 360°, plus replay and acknowledged stop during the first turn. The seven settled angular errors were 0.95°, 0.06°, 2.71°, 4.55°, 1.39°, 2.59° and 0.07°. Reports and raw physics samples are in `tmp/turn-regression/`; setup is documented in the simulator README. This result verifies the recorded Feet policy/scene, not all possible angles or Rollers mode. The existing local host has been regenerated; independently built previews require regeneration and rebuild.
+
+Tasks:
+
+- [x] Capture the failing block/program, requested angle, Feet/Rollers mode, scene state and exact app/receiver/upstream revisions. Compare a clean run with a turn after movement and repeated runs.
+- [x] Reproduce left/right quarter turns, a half turn and signed degree turns in the actual engine. Include yaw wraparound and stop during a turn.
+- [x] Record commanded angular velocity, measured yaw, reported progress, completion time and settled heading after zero motion is requested. Investigate wrong direction, under/overshoot and stall separately.
+- [x] Review the slowdown floor and completion criterion against measured engine behavior. The former tracker retained half angular command and declared completion at the first crossing. Physics traces confirmed both stalling and post-crossing rebound; the calibrated command and settled-heading feedback address these cases.
+- [x] Verify that the local receiver matches its generator. The local host was regenerated, and library/setup-tool tests verify idempotent upgrades of existing registrations. Eliminating the duplicate generator implementation remains architecture task A3.
+- [x] Add the regression at its owning library boundary and a repeatable browser/engine check. Record the upstream revision, locomotion mode and observed angular error; define and document a supported tolerance from measured results.
+- [ ] Extend the physics matrix to additional scenes and locomotion modes and make unsupported combinations explicit.
+
+Acceptance: the reported case is reproduced and then passes after a targeted fix; each supported direction finishes within the documented tolerance without premature completion, indefinite turning or dispatch after stop. Unsupported locomotion modes must be explicit. Unit tests alone do not close this item.
+
+### 2. Close the reliable end-to-end milestone and test gaps
+
+- [ ] Recheck the real editor flow: author advance/turn/wait actions, save, reload, execute, stop, edit and rerun, and inspect matching progress and traces.
+- [x] Add a root `test:all` command for every configured app/library test target. `npm test` retains its app-only behavior; both commands are documented.
+- [ ] Wire the full command into CI.
+- [ ] Add independent adapter contract tests for target status, capability bindings, command validation and unsupported commands. Test UI primitives when they own meaningful interactions; avoid tests of static wrappers alone.
+- [ ] Keep domain/compiler/runtime/simulator semantics in library tests; app tests cover composition and user interaction. Move compiler tests with the compiler when its boundary changes.
+- [ ] Promote useful ignored browser-check scripts into maintained, reproducible tests with local URLs, isolated browser storage and recorded simulator setup. Separate quick controlled transport tests from slower physics checks.
+- [ ] Run app/library typechecks, all configured tests, lint and builds in the standard workflow. Passing tests do not substitute for the engine-level turn check.
+
+Acceptance: a documented local command and CI exercise every configured suite, each behavioral library owns its regressions, and browser acceptance verifies the visible result and interruption path.
+
+### 3. Consolidate architecture in bounded changes
+
+Plan these changes as separate reviewable increments; preserve the working sequential program path while introducing the contracts needed by new blocks.
+
+| Order | Change and ownership | Acceptance |
+| --- | --- | --- |
+| A1 | Move Scratch XML traversal from `botlab-flow-machine.ts` into `@botlab/blocks`; define engine-independent program nodes and source references in `@botlab/model`; keep robot command lowering behind adapter/simulator contracts | The app handles BotLab artifacts without parsing Scratch XML or encoding robot commands; existing programs and diagnostics remain compatible |
+| A2 | Define program revision/target identity, typed execution results and diagnostic codes in the model; consolidate demo and real execution paths using runtime orchestration and simulator transport boundaries | Validation, accepted/running, completed, failed, cancelled and no-work outcomes remain distinct; stale results and approvals cannot attach to a replacement program; UI progress comes from the active execution |
+| A3 | Give the MicroDuck receiver, motion trackers, message schema and patch generator one source of truth in the simulator package; make the setup tool consume that output | Native and generated receivers pass shared contract tests; regeneration is reproducible and idempotent without manually synchronizing algorithm copies |
+| A4 | Enforce ADR 0001 with Nx tags; keep editor/UI dependencies out of model/runtime and transport/engine internals out of the app | Lint rejects forbidden imports while allowing composition through public package APIs |
+| A5 | Document the current iframe host in ADR 0002; pin upstream source and bridge versions and make setup verification concrete | The supported integration matches the ADR, can be reproduced at a known revision and reports incompatible bridge versions; in-process hosting requires a demonstrated benefit before migration |
+| A6 | Put versioned workspace serialization/storage behind an injected boundary; let the app own browser lifecycle and user feedback | Storage migration/validation/failure behavior is testable independently of app orchestration; restored documents cannot resume execution or restore approval |
+| A7 | Complete runtime target eligibility, per-plan/target approval and acknowledged hardware stop contracts | Offline/unsupported/denied targets dispatch nothing; required confirmation is an explicit user action tied to the current plan; physical execution stays disabled until the transport stop guarantee is verified |
+
+A1 progress: XML traversal is now in `@botlab/blocks`, typed sequential actions in `@botlab/model`, and MicroDuck command lowering in the adapter. The app composes those APIs. Broader engine-independent control flow and A2 runtime consolidation remain open.
+
+A1–A3 and A4 establish the boundaries used by block expansion. A5 and A6 can be delivered independently; A7 gates hardware enablement. New packages should only be introduced when existing ownership boundaries cannot express the responsibility clearly.
+
+### 4. Expand executable blocks
+
+Agreed product scope: add blocks. Do not build a program library or example gallery in this increment. Existing example files remain useful as fixtures; local save/import/export remains supported.
+
+Proposed implementation sequence:
+
+1. **Repeat N times**: finite repetition with nested sequences, source-block tracking per iteration and cancellation between actions. Define valid counts, nesting and execution budgets, including zero/invalid counts, before implementation.
+2. **Expressions and comparisons**: numeric inputs, arithmetic and boolean comparisons with explicit types and diagnostics, usable in movement, waits and control blocks.
+3. **If / if-else**: conditional execution using those expressions, with trace evidence showing the selected branch and source block.
+4. **Variables and condition-driven control**: introduce variables and then `repeat until`/`wait until` once expression evaluation and cancellation are established. Only expose sensor conditions actually available through target capabilities.
+
+The order within this block increment is a proposal; adjust it around the first educational behavior the user wants to express. Each addition must include palette registration, Catalan/Spanish/English labels, typed program representation, validation, execution semantics, library tests and visible progress/stop behavior. Displaying a standard Scratch block does not imply BotLab can execute it. Defer concurrent scripts, event scheduling and unbounded loops until their runtime semantics and resource limits are designed.
 
 ## Immediate Milestone: Reliable MicroDuck End-to-End Flow
 
-Priority: complete this consolidation milestone before expanding robot support, adding timed/event-driven scheduling, or extending arbitration strategies. It pulls forward the essential parts of milestones 3–6, 8–10, and 12 without renumbering the roadmap.
+Priority: follow the agreed delivery order above, beginning with the turn regression. Complete this consolidation milestone before expanding robot support, adding timed/event-driven scheduling, or extending arbitration strategies. It pulls forward the essential parts of milestones 3–6, 8–10, and 12 without renumbering the roadmap.
 
 Goal: a user can author two connected actions, save and reload the workspace, compile exactly those actions, execute them on an observable target, stop execution reliably, and inspect an accurate result and trace.
 
@@ -155,9 +257,13 @@ Review baseline: the full test run reported 69 passing tests and one failure cau
 
 Tasks:
 
-- [ ] Correct the validation actor output typing and include an explicit app typecheck in the standard validation workflow; a successful Vite build alone is insufficient.
-- [ ] Resolve the Scratch Blocks error-message test failure and keep localized UI messages separate from stable diagnostic identifiers where appropriate.
-- [ ] Provide a documented full-workspace test command covering app and library suites, and wire tests, typechecks, lint, and builds into CI.
+- [x] Correct the validation actor output typing. Its explicit output type is present and the app typecheck passed on 2026-09-13.
+- [ ] Include the explicit app typecheck in the standard validation workflow; a successful Vite build alone is insufficient.
+- [x] Recheck the historical Scratch Blocks error-message test failure: all app and blocks suites passed on 2026-09-13.
+- [ ] Keep localized UI messages separate from stable diagnostic identifiers where appropriate.
+- [x] Document and execute the full-workspace test command covering all seven configured app/library targets.
+- [x] Add `test:all` and the separate `test:simulator-turns` physics regression command.
+- [ ] Wire tests, typechecks, lint, and builds into CI.
 - [ ] Replace unrestricted Nx tag dependencies with rules reflecting ADR 0001. Keep transport and simulator internals out of the app, and UI/editor-engine dependencies out of the runtime/model.
 - [ ] Add browser-level coverage for the real editor's two-action save/reload/execute/stop flow, alongside runtime regression tests using controlled asynchronous dispatchers.
 
@@ -381,7 +487,7 @@ Infrastructure decisions:
 - Do not modify `node_modules`.
 - Do not vendor upstream MicroDuck meshes, ONNX policies, logos, sounds, or simulator bundles unless licensing is explicitly verified.
 - Prefer a pinned upstream asset manifest with hashes and a user cache for MicroDuck simulator assets.
-- Integrate the official browser simulator through its controller/source boundary where possible, not through an iframe.
+- Use the current isolated iframe host with the BotLab controller/source bridge and explicit execution messages, as documented in ADR 0002. Revisit in-process hosting only for a concrete product or operational need.
 - Use Nx affected validation before committing simulator infrastructure changes.
 
 Tasks:
@@ -525,15 +631,13 @@ Acceptance criteria:
 
 ## Near-Term Backlog
 
-Execution order follows the [immediate consolidation milestone](#immediate-milestone-reliable-microduck-end-to-end-flow):
+Execution follows the [agreed delivery order](#agreed-delivery-order--2026-09-13):
 
-1. Recheck the review findings against concurrent work and establish passing regression checks for each fix.
-2. Fix runtime interruption, queue lifecycle, policy confirmation, and target eligibility before enabling hardware execution.
-3. Implement ordered compilation of two connected actions and accurate execution outcomes in the statechart.
-4. Connect one observable target and clearly distinguish command validation, preview, and actual simulator execution.
-5. Add workspace save/reload and retained execution traces, then verify the complete two-action flow including stop.
-6. Complete typecheck/test/CI coverage and enforce the documented Nx boundaries. Run relevant checks throughout implementation rather than deferring verification to the end.
-7. Resume broader robot, scheduler, and arbitration work after the consolidation acceptance criteria pass.
+1. Completed for the recorded Feet configuration: reproduce and fix the turn regression, with library and browser/physics coverage. Extend the mode/scene matrix as needed.
+2. Verify the saved-program execution/stop flow and complete app/library/browser verification coverage.
+3. Deliver architecture changes A1–A7 in bounded increments, with hardware-specific guarantees required before hardware enablement.
+4. Expand executable blocks, beginning with finite repetition and then expressions and conditions. A library of programs/examples is deferred.
+5. Resume physical StackChan support and broader scheduler/arbitration work after the simulator experience is reliable.
 
 ## Technical Risks
 

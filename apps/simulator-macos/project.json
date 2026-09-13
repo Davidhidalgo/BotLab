@@ -1,0 +1,21 @@
+{
+  "name": "simulator-macos",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "tags": [
+    "scope:simulator",
+    "type:app"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "outputs": [
+        "{workspaceRoot}/dist/apps/simulator-macos"
+      ],
+      "options": {
+        "command": "python3 apps/simulator-macos/build.py"
+      }
+    }
+  }
+}

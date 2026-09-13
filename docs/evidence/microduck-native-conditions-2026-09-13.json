@@ -1,0 +1,105 @@
+{
+  "date": "2026-09-13",
+  "checks": {
+    "sequence": true,
+    "capabilities": {
+      "skills": [
+        "ground_pick",
+        "kick_left",
+        "kick_right",
+        "roulade",
+        "sit_toggle"
+      ],
+      "postures": [
+        "sit",
+        "stand"
+      ],
+      "postureConditions": [
+        "sit",
+        "stand",
+        "transitioning"
+      ]
+    },
+    "decisions": [
+      {
+        "sourceBlockId": "choose-initial",
+        "conditionBlockId": "choose-initial-predicate",
+        "posture": "sit",
+        "observed": "stand",
+        "result": false
+      },
+      {
+        "sourceBlockId": "nested-outer",
+        "conditionBlockId": "nested-outer-predicate",
+        "posture": "sit",
+        "observed": "sit",
+        "result": true
+      },
+      {
+        "sourceBlockId": "nested-inner",
+        "conditionBlockId": "nested-inner-predicate",
+        "posture": "sit",
+        "observed": "sit",
+        "result": true
+      },
+      {
+        "sourceBlockId": "choose-final",
+        "conditionBlockId": "choose-final-predicate",
+        "posture": "stand",
+        "observed": "stand",
+        "result": true
+      },
+      {
+        "sourceBlockId": "check-stable",
+        "conditionBlockId": "check-stable-predicate",
+        "posture": "transitioning",
+        "observed": "sit",
+        "result": false
+      }
+    ],
+    "redundantPostureError": true,
+    "stop": {
+      "index": 0,
+      "policy": "stand",
+      "height": 0.11623088639445246
+    }
+  },
+  "browserErrors": [],
+  "samples": 90,
+  "meanControlHz": 46.756850153312065,
+  "semantics": "Explicit repeated posture fails at its source block; posture conditions select one branch at execution time. Unknown posture is an error.",
+  "unitTests": 338,
+  "testFiles": 28,
+  "screenshots": "tmp/native-posture-qa/",
+  "notes": [
+    "Native policies and physics exercised through a compiled browser preview on port 4205.",
+    "Condition coverage includes nested branches, five true/false decisions, repeated Sit error, and cancellation while rising.",
+    "Regression exposed a premature walk-to-turn handoff; movement completion now waits for observed standing stability, bounded to 12 seconds.",
+    "The final posture acceptance queries standing immediately after walking, without a compensating wait; all five decisions match expected outcomes."
+  ],
+  "regression": {
+    "movement": true,
+    "fallback": true,
+    "stop": true,
+    "posture": true,
+    "presentation": {
+      "mode": "external",
+      "videoRequests": 0
+    },
+    "connectionLoss": {
+      "status": "failed",
+      "error": "Browser connection lost.",
+      "applied": [
+        8.627182932082292e-09,
+        0,
+        0
+      ]
+    }
+  },
+  "builds": {
+    "web": true,
+    "macCompanion": true,
+    "typecheck": true,
+    "changedModuleLint": true
+  }
+}

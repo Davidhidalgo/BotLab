@@ -6,6 +6,8 @@ export const microDuckBlockMessages: BlockMessageCatalog = {
   revision: '1',
   sourceLocale: 'en',
   messages: {
+    is_sit: 'is sitting?', is_stand: 'is standing?', is_transitioning: 'is changing posture?', conditionTooltip: 'Checks the observed posture when this condition runs.',
+    sit: 'sit down', stand: 'stand up', postureTooltip: 'Requires simulator posture support. Waits until the requested posture is stable.',
     leds: 'set MicroDuck LEDs %1',
     walk: 'move forward %1 m',
     movement: 'Movement', preciseMovement: 'Precise movement',
@@ -22,6 +24,8 @@ export const microDuckBlockMessages: BlockMessageCatalog = {
   },
   translations: {
     ca: {
+      is_sit: 'està assegut?', is_stand: 'està dret?', is_transitioning: 'està canviant de postura?', conditionTooltip: 'Comprova la postura observada quan s’executa la condició.',
+      sit: 'seu', stand: 'aixeca’t', postureTooltip: 'Requereix suport de postures del simulador. Espera que la postura demanada sigui estable.',
       leds: 'LED MicroDuck: %1',
       walk: 'avança %1 m',
       movement: 'Moviment', preciseMovement: 'Moviment precís',
@@ -37,6 +41,8 @@ export const microDuckBlockMessages: BlockMessageCatalog = {
       smile: 'somriure', blink: 'parpelleig', solid: 'fix', off: 'apagat',
     },
     es: {
+      is_sit: '¿está sentado?', is_stand: '¿está de pie?', is_transitioning: '¿está cambiando de postura?', conditionTooltip: 'Comprueba la postura observada al ejecutar la condición.',
+      sit: 'siéntate', stand: 'levántate', postureTooltip: 'Requiere soporte de posturas del simulador. Espera hasta que la postura solicitada sea estable.',
       leds: 'LED MicroDuck: %1',
       walk: 'avanza %1 m',
       movement: 'Movimiento', preciseMovement: 'Movimiento preciso',

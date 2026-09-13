@@ -1,0 +1,27 @@
+{
+  "date": "2026-09-13",
+  "command": "npm run test:simulator-native-video",
+  "baseline": {
+    "max_snapshot_fps": 5,
+    "render_png_median_ms": 28.94,
+    "base64_frame_bytes": 171476
+  },
+  "after": {
+    "changedImagesPerSecond": 28.67104224760335,
+    "animationCallbacksPerSecond": 59.14026832955116,
+    "receivedFps": 29.070276181407046,
+    "intervalP95Ms": 36.367166,
+    "meanFrameBytes": 32926.22260273973,
+    "meanControlHz": 49.82271590677752,
+    "telemetryBytes": 4446,
+    "errors": []
+  },
+  "configuration": {
+    "image": "640x480 JPEG quality 85",
+    "target_fps": 30,
+    "shadows": true,
+    "floor_reflections": false,
+    "transport": "MJPEG in a separate HTTP request; latest-frame IPC queue, separate render process"
+  },
+  "limits": "Local Chrome on this Mac; rates vary with hardware/load."
+}

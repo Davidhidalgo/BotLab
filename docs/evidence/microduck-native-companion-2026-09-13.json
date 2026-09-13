@@ -1,0 +1,70 @@
+{
+  "date": "2026-09-13",
+  "platform": "macOS arm64",
+  "artifact": "dist/apps/simulator-macos/BotLab Simulator.app",
+  "relocationTest": "/tmp/botlab-multisim-qa/BotLab Simulator.app",
+  "bundledSimulators": [
+    "microduck"
+  ],
+  "catalogVersion": 1,
+  "bundleBytes": 332485659,
+  "browser": {
+    "movement": true,
+    "fallback": true,
+    "stop": true,
+    "posture": true,
+    "presentation": {
+      "mode": "external",
+      "videoRequests": 0
+    },
+    "connectionLoss": {
+      "status": "failed",
+      "error": "Browser connection lost.",
+      "applied": [
+        8.627182931767318e-09,
+        0,
+        -4.3052999894618566e-66
+      ]
+    }
+  },
+  "browserErrors": [],
+  "meanPolicyHz": 50.02359015048536,
+  "viewer": {
+    "sceneSyncHz": 50.00176606527096,
+    "sceneSyncIntervalP95Ms": 23.962417151778936,
+    "samples": 2286,
+    "note": "Scene synchronization cadence, not measured display FPS."
+  },
+  "cleanup": [
+    {
+      "pid": 21484,
+      "exit_code": 0
+    },
+    {
+      "pid": 21488,
+      "exit_code": 0
+    },
+    {
+      "pid": 21489,
+      "exit_code": 0
+    }
+  ],
+  "afterClose": {
+    "ports4401And17831Released": true,
+    "companionAndViewerAbsentFromAppInventory": true
+  },
+  "verification": {
+    "tests": 302,
+    "appBuild": "passed",
+    "macAppBuild": "passed",
+    "typecheckAndChangedModuleLint": "passed",
+    "embeddedAcceptance": "passed",
+    "nativeWindowVisualInspection": "passed"
+  },
+  "limits": [
+    "Local development signature, not notarized distribution.",
+    "Only MicroDuck is bundled and tested; additional packages/downloader pending.",
+    "Scene synchronization is measured; display FPS is not.",
+    "Windows deferred."
+  ]
+}

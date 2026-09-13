@@ -11,7 +11,8 @@ describe('measured turns', () => {
       expect(track(0.1).done).toBe(false);
     }
     yaw -= Math.sign(angle) * 11 * Math.PI / 180;
-    expect(track(0.1)).toMatchObject({ done: true, powerScale: 0 });
+    expect(track(0.1)).toMatchObject({ done: false, powerScale: 0 });
+    expect(track(0.75)).toMatchObject({ done: true, powerScale: 0 });
   });
   it('does not count motion in the wrong direction or oscillation as arrival', () => {
     let yaw = 0;
@@ -23,14 +24,14 @@ describe('measured turns', () => {
     expect(track(0.1).turnedDegrees).toBe(0);
     expect(track(10).error).toBe('motion-stalled');
   });
-  it('slows down near arrival', () => {
+  it('slows down near arrival while retaining the calibrated Feet stepping input', () => {
     let yaw = 0;
     const track = createMicroDuckTurnTracker(90, () => yaw);
     const initial = track(0.02).powerScale;
     yaw = -85 * Math.PI / 180;
     const power = track(1).powerScale;
     expect(power).toBeLessThan(initial);
-    expect(power * 0.3).toBeGreaterThan(0.1);
+    expect(power * 2).toBeGreaterThanOrEqual(1.5);
   });
   it('uses measured yaw in the direct source and starts backward motion only after the turn', () => {
     let heading = 0;
@@ -45,10 +46,39 @@ describe('measured turns', () => {
     heading = Math.PI / 2 + 0.01;
     source.poll?.(1);
     expect(Array.from(source.command)).toEqual([0, 0, 0]);
+    source.poll?.(0.75);
+    expect(Array.from(source.command)).toEqual([0, 0, 0]);
     source.poll?.(0.02);
     expect(source.command[0]).toBeCloseTo(-0.1);
     expect(source.command[2]).toBe(0);
     source.dispose?.();
+  });
+  it.each([8, 24])('corrects a 15-degree turn that settles at %s degrees', (settled) => {
+    let yaw = 0;
+    const track = createMicroDuckTurnTracker(15, () => yaw);
+    track(0.02);
+    yaw = -16 * Math.PI / 180;
+    expect(track(0.3)).toMatchObject({ done: false, powerScale: 0 });
+    yaw = -settled * Math.PI / 180;
+    expect(track(0.3).done).toBe(false);
+    const correction = track(0.75);
+    expect(correction.done).toBe(false);
+    expect(Math.sign(correction.powerScale)).toBe(settled < 15 ? 1 : -1);
+    yaw = -(settled < 15 ? 16 : 14) * Math.PI / 180;
+    expect(track(0.3)).toMatchObject({ done: false, powerScale: 0 });
+    expect(track(0.75)).toMatchObject({ done: true, powerScale: 0 });
+  });
+  it('does not finish while the heading is still drifting through the tolerance', () => {
+    let yaw = 0;
+    const track = createMicroDuckTurnTracker(90, () => yaw);
+    track(0.02);
+    yaw = -91 * Math.PI / 180;
+    track(1);
+    for (let i = 0; i < 8; i++) {
+      yaw -= 0.6 * Math.PI / 180;
+      expect(track(0.1).done).toBe(false);
+    }
+    expect(track(0.75).powerScale).toBeLessThan(0);
   });
   it('handles zero and rejects missing telemetry, invalid angles and resets', () => {
     expect(createMicroDuckTurnTracker(0)(0.02).done).toBe(true);

@@ -97,7 +97,7 @@ describe('App', () => {
       ['en', 'Run'],
       ['ca', 'Executar'],
     ]) {
-      fireEvent.change(view.getByRole('combobox'), {
+      fireEvent.change(view.getByRole('combobox', { name: /Idioma|Language/ }), {
         target: { value: locale },
       });
       expect(view.getByRole('button', { name })).toBeTruthy();

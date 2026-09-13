@@ -1,0 +1,57 @@
+{
+  "date": "2026-09-13",
+  "command": "npm run test:simulator-native",
+  "result": {
+    "subscription": {
+      "accepted": true,
+      "ground_pick": "alpha_ground_pick.onnx",
+      "sitstand": "alpha_sitstand.onnx",
+      "skills": [
+        "roulade",
+        "kick_left",
+        "kick_right"
+      ],
+      "stand": "alpha_stand.onnx",
+      "walk": "alpha_walking.onnx"
+    },
+    "health": {
+      "bus": {
+        "consecutive_errors": 0,
+        "startup_failures": 0
+      },
+      "control_loop": {
+        "achieved_hz": null,
+        "last_tick_age_ms": 14,
+        "missed": 0,
+        "target_hz": 50,
+        "ticks": 4
+      },
+      "healthy": true,
+      "imu": {
+        "consecutive_stale_blocks": 0,
+        "ready": false,
+        "stale_blocks": 0
+      }
+    },
+    "stopped": {
+      "accepted": true
+    },
+    "stateCount": 9
+  },
+  "cleanup": [
+    {
+      "pid": 8134,
+      "exit_code": -15
+    },
+    {
+      "pid": 8138,
+      "exit_code": 0
+    },
+    {
+      "pid": 8139,
+      "exit_code": 0
+    }
+  ],
+  "scope": "Built TypeScript library client against actual local robotd and MuJoCo; no app rendering verification.",
+  "body_port_closed": true
+}

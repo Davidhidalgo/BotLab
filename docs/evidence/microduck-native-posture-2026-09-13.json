@@ -1,0 +1,32 @@
+{
+  "date": "2026-09-13",
+  "platform": "macOS arm64",
+  "checks": {
+    "sequence": true,
+    "capabilities": {
+      "skills": [
+        "ground_pick",
+        "kick_left",
+        "kick_right",
+        "roulade",
+        "sit_toggle"
+      ],
+      "postures": [
+        "sit",
+        "stand"
+      ]
+    },
+    "idempotent": true,
+    "stop": {
+      "index": 0,
+      "policy": "stand",
+      "height": 0.11623483457202775
+    }
+  },
+  "errors": [],
+  "samples": 87,
+  "meanControlHz": 46.82186701847294,
+  "postureSemantics": "Current implementation completes an already reached posture without toggling. Educational error versus visible no-op remains a pending product preference.",
+  "stopSemantics": "Cancels program immediately; already latched native posture settles, with no subsequent block dispatch.",
+  "tests": 319
+}

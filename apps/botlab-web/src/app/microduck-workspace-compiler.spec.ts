@@ -44,6 +44,11 @@ function compile(blocks: string[], detached = '') {
 }
 
 describe('sequential MicroDuck compilation', () => {
+  it('keeps posture compilation in libraries and maps it to the iframe backend', () => {
+    const artifact = compile(['<block type="botlab_microduck_sit" id="sit"/>']);
+    expect(artifact.commands[0]).toMatchObject({ commandId: 'set-posture', inputs: { posture: 'sit' }, sourceBlockId: 'sit' });
+    expect(createMicroDuckSimulatorControlSource(artifact).frames[0]).toMatchObject({ type: 'posture', posture: 'sit' });
+  });
   it('compiles all eight movement blocks with stable IDs, units and clockwise positive angles', () => {
     const blocks = ['walk_steps', 'back_steps', 'turn_left', 'turn_right', 'turn_around', 'walk_distance', 'back_distance', 'turn_degrees'];
     const artifact = compile(blocks.map((type) => `<block type="botlab_microduck_${type}" id="${type}"/>`));

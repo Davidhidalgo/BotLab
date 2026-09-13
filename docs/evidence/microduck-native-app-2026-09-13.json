@@ -1,0 +1,96 @@
+{
+  "date": "2026-09-13",
+  "command": "npm run test:simulator-native-app",
+  "page_errors": [],
+  "checks_passed": [
+    "unsupported LEDs rejected before execution",
+    "native rendered scene",
+    "scene reset",
+    "0.25 m walk / 90 degree turn / wait completion",
+    "native sit and stand",
+    "acknowledged stop",
+    "switch back to iframe",
+    "browser loss: program failed with Browser connection lost; all applied velocities below 0.001 after 3.5 seconds"
+  ],
+  "runs": [
+    {
+      "runId": "4533fdf6-b9a8-451b-82a1-d109d8e8e590",
+      "observed_status": "stopped",
+      "elapsed_s": 0.218,
+      "first_odom": {
+        "position": [
+          0.35644893637657504,
+          0.011235227149963795,
+          0.11624180536332093
+        ],
+        "yaw": -1.5046640525794015
+      },
+      "last_odom": {
+        "position": [
+          0.356449092242536,
+          0.011233606119533932,
+          0.11624191644242322
+        ],
+        "yaw": -1.504625270511432
+      },
+      "mean_policy_hz": 50.1272942338656,
+      "steps_seen": [
+        "walk"
+      ]
+    },
+    {
+      "runId": "ef7835ab-7799-4c32-b131-9c667b82512e",
+      "observed_status": "completed",
+      "elapsed_s": 19.661,
+      "first_odom": {
+        "position": [
+          0.05300512672889282,
+          0.015255238698091575,
+          0.11617800265605525
+        ],
+        "yaw": -0.1963480550981099
+      },
+      "last_odom": {
+        "position": [
+          0.33120780335444777,
+          -0.06384639350422343,
+          0.1162280025498995
+        ],
+        "yaw": -1.764698409826649
+      },
+      "mean_policy_hz": 49.99865002217642,
+      "steps_seen": [
+        "turn",
+        "wait",
+        "walk"
+      ]
+    },
+    {
+      "runId": "84762384-ae0c-4f96-82c0-6f9409bd21d9",
+      "observed_status": "stopped",
+      "elapsed_s": 0.213,
+      "first_odom": {
+        "position": [
+          0.3315102059523584,
+          -0.06478100828973804,
+          0.1161557928445054
+        ],
+        "yaw": -1.770533687686846
+      },
+      "last_odom": {
+        "position": [
+          0.33192964430730737,
+          -0.06472873871156214,
+          0.11614970226316729
+        ],
+        "yaw": -1.7766843370078491
+      },
+      "mean_policy_hz": 49.94574320466055,
+      "steps_seen": [
+        "walk"
+      ]
+    }
+  ],
+  "raw_evidence": "tmp/native-app-qa/result.json",
+  "screenshot": "tmp/native-app-qa/native-completed.png"
+}

@@ -52,7 +52,7 @@ describe('One-click simulator execution', () => {
     const original = editor.value;
     post.mockClear();
     for (const locale of ['es', 'en', 'ca']) {
-      fireEvent.change(view.getByRole('combobox'), { target: { value: locale } });
+      fireEvent.change(view.getByRole('combobox', { name: /Idioma|Language/ }), { target: { value: locale } });
       expect(editor.dataset.locale).toBe(locale);
       expect(editor.value).toBe(original);
       expect(editor.dataset.activeBlock).toBe('botlab-walk');
@@ -242,7 +242,7 @@ describe('One-click simulator execution', () => {
       ['en', 'Simulator execution', 'Execution stopped by an error'],
       ['ca', 'Execució del simulador', 'Execució aturada per un error'],
     ]) {
-      fireEvent.change(view.getByRole('combobox'), { target: { value: locale } });
+      fireEvent.change(view.getByRole('combobox', { name: /Idioma|Language/ }), { target: { value: locale } });
       expect(view.getByLabelText(label).textContent).toBe(text);
       expect(view.getByTitle('MicroDuck official simulator preview')).toBe(frame);
     }
@@ -333,14 +333,14 @@ describe('One-click simulator execution', () => {
     xml.querySelector('field[name="DISTANCE"]')!.textContent = '12';
     const content = new XMLSerializer().serializeToString(xml);
     fireEvent.change(editor, { target: { value: content } });
-    fireEvent.change(first.getByRole('combobox'), { target: { value: 'en' } });
+    fireEvent.change(first.getByRole('combobox', { name: /Idioma|Language/ }), { target: { value: 'en' } });
     first.unmount();
     const second = render(<App />);
     expect(second.getByLabelText('Test workspace')).toHaveProperty(
       'value',
       content
     );
-    expect(second.getByRole('combobox')).toHaveProperty('value', 'en');
+    expect(second.getByRole('combobox', { name: /Idioma|Language/ })).toHaveProperty('value', 'en');
     expect(
       second.queryByTitle('MicroDuck official simulator preview')
     ).toBeNull();
@@ -376,7 +376,7 @@ describe('One-click simulator execution', () => {
       target: { files: [{ size: json.length, text: async () => json }] },
     });
     await waitFor(() =>
-      expect(view.getByRole('combobox')).toHaveProperty('value', 'es')
+      expect(view.getByRole('combobox', { name: /Idioma|Language/ })).toHaveProperty('value', 'es')
     );
     expect(view.getByLabelText('Test workspace')).toHaveProperty(
       'value',

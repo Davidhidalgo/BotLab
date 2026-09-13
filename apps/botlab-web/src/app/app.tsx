@@ -1,3 +1,4 @@
+import { NativeSimulatorPanel, nativeSimulatorLabels } from './native-simulator-panel';
 import { BlocksEditorShell } from '@botlab/blocks';
 import { type CompiledBehaviorArtifact } from '@botlab/model';
 import {
@@ -95,6 +96,9 @@ export function scheduleMicroDuckSimulatorControlSourceDelivery(
 }
 
 export function App() {
+  const [simulatorBackend, setSimulatorBackend] = useState<'browser' | 'native'>('browser');
+  const [nativeActiveBlock, setNativeActiveBlock] = useState<string>();
+  const [nativeBusy, setNativeBusy] = useState(false);
   const [restored] = useState(readWorkspaceDocument);
   const [flowSnapshot, sendFlow, flowActor] = useMachine(botLabFlowMachine, {
     input: { workspace: restored.document?.workspace },
@@ -218,7 +222,7 @@ export function App() {
   const executionUpdate = executionSnapshot.context.update;
   const executionFrame = executionUpdate?.frameIndex === undefined ? undefined
     : executionSnapshot.context.request?.source.frames[executionUpdate.frameIndex];
-  const activeBlockId = (executionState === 'running' || executionState === 'failed') &&
+  const activeBlockId = simulatorBackend === 'native' ? nativeActiveBlock : (executionState === 'running' || executionState === 'failed') &&
     compiledArtifact?.id === executionSnapshot.context.request?.source.artifactId
       ? executionFrame?.sourceBlockId : undefined;
   latestWorkspace.current = workspaceArtifact;
@@ -508,7 +512,7 @@ export function App() {
             </div>
             <div className="flex gap-2">
               <Button size="icon" variant="secondary" onClick={() => importInputRef.current?.click()}
-                disabled={isPreparingLaunch || executionBusy} title={copy.storage.import} aria-label={copy.storage.import}>
+                disabled={isPreparingLaunch || executionBusy || nativeBusy} title={copy.storage.import} aria-label={copy.storage.import}>
                 <Upload className="h-4 w-4" />
               </Button>
               <Button size="icon" variant="secondary" onClick={exportWorkspaceFile} title={copy.storage.export} aria-label={copy.storage.export}>
@@ -519,6 +523,19 @@ export function App() {
             </div>
           </div>
           {fileFailed ? <p role="alert" className="text-sm text-destructive">{copy.storage.fileFailed}</p> : null}
+          <label className="mb-3 flex items-center gap-3 text-sm font-medium">
+            {nativeSimulatorLabels[locale].backend}
+            <select aria-label={nativeSimulatorLabels[locale].backend} value={simulatorBackend}
+              disabled={executionBusy || isPreparingLaunch || nativeBusy}
+              className="rounded-md border bg-background px-3 py-2"
+              onChange={event => {
+                disconnectOfficialSimulatorRuntimePreview();
+                setSimulatorBackend(event.target.value as 'browser' | 'native');
+              }}>
+              <option value="browser">{nativeSimulatorLabels[locale].browser}</option>
+              <option value="native">{nativeSimulatorLabels[locale].native}</option>
+            </select>
+          </label>
           <WorkbenchLayout labels={copy.workbench} editor={<BlocksEditorShell
             key={editorRevision}
             workspaceName={copy.blocks.workspaceName}
@@ -535,7 +552,9 @@ export function App() {
             onArtifactChange={(artifact) =>
               sendFlow({ type: 'workspace.changed', artifact })
             }
-          />} simulator={<MicroDuckSimulatorHost
+          />} simulator={simulatorBackend === 'native' ? <NativeSimulatorPanel
+            workspace={workspaceArtifact} locale={locale} onActiveBlock={setNativeActiveBlock} onBusy={setNativeBusy}
+          /> : <MicroDuckSimulatorHost
             targetName={selectedTarget?.name ?? copy.empty.noTarget}
             assetReady={simulatorAssetPlan.ready}
             assetPlan={simulatorAssetPlan}
@@ -589,7 +608,7 @@ export function App() {
             simulationMessage={translateFlowMessage(simulationMessage, copy)}
             copy={copy}
           />} />
-          {lastExecution ? (
+          {lastExecution && simulatorBackend === 'browser' ? (
             <details className="border-t pt-3 text-sm">
               <summary className="cursor-pointer font-medium">
                 {copy.storage.lastExecution}: {copy.host.executionStates[lastExecution.status === 'accepted' ? 'awaiting' : lastExecution.status]}
@@ -603,7 +622,7 @@ export function App() {
               </ol>
             </details>
           ) : null}
-        <details className="workbench-diagnostics">
+        <details className="workbench-diagnostics" hidden={simulatorBackend === 'native'}>
           <summary><SlidersHorizontal size={16} />{copy.workbench.diagnostics}</summary>
         <aside className="diagnostics-grid">
           <Panel title={copy.panels.editor}>

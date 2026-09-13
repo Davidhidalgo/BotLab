@@ -105,6 +105,14 @@ export const botLabTranslations = {
       turning: 'Girant',
       waiting: 'Esperant',
       executionErrors: {
+        'posture-unavailable': "Les postures no estan disponibles en aquest mode del simulador.",
+        'posture-unknown': "La postura és desconeguda. Espera una observació estable abans de comprovar-la.",
+        'posture-timeout': "La postura no s’ha estabilitzat a temps.",
+        'posture-refused': "El simulador no ha acceptat el canvi de postura.",
+        'posture-required': "El robot ha d’estar dret i estable abans de moure’s.",
+        'posture-already-sit': "El robot ja està assegut. Comprova la postura amb un bloc «si» abans de repetir l’ordre.",
+        'posture-already-stand': "El robot ja està dret. Comprova la postura amb un bloc «si» abans de repetir l’ordre.",
+
         'invalid-frame': 'El bloc conté valors no vàlids.',
         'telemetry-unavailable': 'No es pot llegir la posició o l’orientació del robot.',
         'position-reset': 'La posició ha canviat sobtadament. Torna a executar el programa.',
@@ -352,6 +360,14 @@ export const botLabTranslations = {
       turning: 'Girando',
       waiting: 'Esperando',
       executionErrors: {
+        'posture-unavailable': "Las posturas no están disponibles en este modo del simulador.",
+        'posture-unknown': "La postura es desconocida. Espera una observación estable antes de comprobarla.",
+        'posture-timeout': "La postura no se ha estabilizado a tiempo.",
+        'posture-refused': "El simulador no ha aceptado el cambio de postura.",
+        'posture-required': "El robot debe estar de pie y estable antes de moverse.",
+        'posture-already-sit': "El robot ya está sentado. Comprueba su postura con un bloque «si» antes de repetir la orden.",
+        'posture-already-stand': "El robot ya está de pie. Comprueba su postura con un bloque «si» antes de repetir la orden.",
+
         'invalid-frame': 'El bloque contiene valores no válidos.',
         'telemetry-unavailable': 'No se puede leer la posición o la orientación del robot.',
         'position-reset': 'La posición ha cambiado bruscamente. Vuelve a ejecutar el programa.',
@@ -599,6 +615,14 @@ export const botLabTranslations = {
       turning: 'Turning',
       waiting: 'Waiting',
       executionErrors: {
+        'posture-unavailable': "Postures are unavailable in this simulator mode.",
+        'posture-unknown': "Posture is unknown. Wait for a stable observation before checking it.",
+        'posture-timeout': "Posture did not stabilize before the timeout.",
+        'posture-refused': "The simulator refused the posture change.",
+        'posture-required': "The robot must be standing and stable before moving.",
+        'posture-already-sit': "The robot is already sitting. Check its posture with an if block before repeating the command.",
+        'posture-already-stand': "The robot is already standing. Check its posture with an if block before repeating the command.",
+
         'invalid-frame': 'The block contains invalid values.',
         'telemetry-unavailable': 'The robot position or orientation is unavailable.',
         'position-reset': 'The position changed abruptly. Run the program again.',

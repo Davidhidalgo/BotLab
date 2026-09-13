@@ -5,13 +5,22 @@
   "scripts": {
     "dev": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx serve botlab-web",
     "build": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx build botlab-web",
-    "build:libs": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx run-many --target=build --projects=botlab-model,runtime,simulators-core,simulators-microduck,microduck,stackchan,blocks,ui",
+    "build:libs": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx run-many --target=build --projects=botlab-model,runtime,simulators-core,simulators-microduck,simulators-microduck-native,microduck,stackchan,blocks,ui",
     "affected:build": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx affected --target=build",
     "affected:test": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx affected --target=test",
     "affected:lint": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx affected --target=lint",
     "test": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx test botlab-web",
     "microduck:sim": "node tools/microduck/prepare-official-simulator.mjs",
-    "nx": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx"
+    "nx": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx",
+    "test:all": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx run-many --target=test --all --parallel=2",
+    "test:simulator-turns": "node tools/microduck/verify-turns.mjs",
+    "test:simulator-native": "npm run nx -- build simulators-microduck-native && tmp/microduck-native/venv/bin/python tools/microduck/native/client.py",
+    "microduck:native": "tmp/microduck-native/venv/bin/python tools/microduck/native/serve.py",
+    "test:simulator-native-app": "node tools/microduck/native/verify-app.mjs",
+    "test:simulator-native-video": "node tools/microduck/native/verify-video.mjs",
+    "build:simulator-macos": "npm run nx -- build simulator-macos",
+    "test:simulator-native-posture": "node tools/microduck/native/verify-posture.mjs",
+    "test:simulator-postures": "node tools/microduck/verify-postures.mjs"
   },
   "private": true,
   "dependencies": {

@@ -18,6 +18,9 @@ export interface MicroDuckExecutionUpdate {
   distanceMeters?: number;
   turnedDegrees?: number;
   errorCode?: string;
+  observedPosture?: 'sit' | 'stand' | 'transitioning' | 'unknown';
+  conditionResult?: boolean;
+  postureCompleted?: boolean;
   failureOrigin?: 'simulator' | 'transport';
 }
 export interface MicroDuckExecutionRequest {
@@ -42,6 +45,9 @@ export function observeMicroDuckExecution(
   let disposed = false;
   let timers: number[] = [];
   const reachedDistanceFrames = new Set<number>();
+  const reachedPostureFrames = new Set<number>();
+  const decidedFrames = new Set<number>();
+  const skippedFrames = new Set<number>();
   const base = { executionId, artifactId: source.artifactId };
   const clearTimers = () => {
     timers.forEach((timer) => hostWindow.clearTimeout(timer));
@@ -118,10 +124,23 @@ export function observeMicroDuckExecution(
         'motion-stalled',
         'motion-timeout',
         'scene-interrupted',
+        'posture-unavailable', 'posture-unknown', 'posture-timeout', 'posture-refused', 'posture-required', 'posture-already-sit', 'posture-already-stand',
       ].includes(data.errorCode)
     )
       return;
     const frame = source.frames[data.frameIndex];
+    if (data.observedPosture !== undefined && !['sit', 'stand', 'transitioning', 'unknown'].includes(data.observedPosture)) return;
+    if (data.conditionResult !== undefined && (typeof data.conditionResult !== 'boolean' || frame?.type !== 'posture-condition' ||
+        !['sit', 'stand', 'transitioning'].includes(data.observedPosture) || data.conditionResult !== (data.observedPosture === frame.posture))) return;
+    if (data.postureCompleted !== undefined && (data.postureCompleted !== true || frame?.type !== 'posture' || data.observedPosture !== frame.posture)) return;
+    if (skippedFrames.has(data.frameIndex)) return;
+    if (data.status === 'running' && frame?.type === 'posture-condition' && data.conditionResult !== undefined) {
+      decidedFrames.add(data.frameIndex);
+      const start = data.conditionResult ? frame.elseIndex : frame.thenIndex;
+      const end = data.conditionResult ? frame.endIndex : frame.elseIndex;
+      for (let index = start; index < end; index++) skippedFrames.add(index);
+    }
+    if (data.status === 'running' && data.postureCompleted) reachedPostureFrames.add(data.frameIndex);
     if (
       data.status === 'running' &&
       frame?.type === 'differential-drive' &&
@@ -136,9 +155,11 @@ export function observeMicroDuckExecution(
       data.status === 'completed'
         ? source.frames.findIndex(
             (frame, index) =>
-              frame.type === 'differential-drive' &&
-              (frame.distanceMeters !== undefined || frame.angleDegrees !== undefined) &&
-              !reachedDistanceFrames.has(index)
+              !skippedFrames.has(index) && (frame.type === 'posture' ? !reachedPostureFrames.has(index) :
+                frame.type === 'posture-condition' ? !decidedFrames.has(index) :
+                frame.type === 'differential-drive' &&
+                (frame.distanceMeters !== undefined || frame.angleDegrees !== undefined) &&
+                !reachedDistanceFrames.has(index))
           )
         : -1;
     terminal = ['completed', 'stopped', 'failed'].includes(data.status);
@@ -161,6 +182,7 @@ export function observeMicroDuckExecution(
       distanceMeters: data.distanceMeters,
       turnedDegrees: data.turnedDegrees,
       errorCode: data.errorCode,
+      observedPosture: data.observedPosture, conditionResult: data.conditionResult, postureCompleted: data.postureCompleted,
       failureOrigin: data.status === 'failed' ? 'simulator' : undefined,
     });
   }

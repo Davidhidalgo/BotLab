@@ -1,30 +1,14 @@
-import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import * as ts from 'typescript';
-import { createMicroDuckBotLabPostMessageSourceModule, createMicroDuckOfficialSimulatorPatchInstructions } from './microduck-simulator';
+import { createMicroDuckBotLabPostMessageSourceModule, createMicroDuckOfficialSimulatorPatchInstructions, patchMicroDuckOfficialSimulatorGameSource as patchGameSource, patchMicroDuckOfficialSimulatorArenaSource as patchBotLabArena } from './microduck-simulator';
 
-const toolSource = ts.createSourceFile(
-  'prepare.mjs',
-  readFileSync(
-    resolve(
-      __dirname,
-      '../../../../../tools/microduck/prepare-official-simulator.mjs'
-    ),
-    'utf8'
-  ),
-  ts.ScriptTarget.Latest,
-  true,
-  ts.ScriptKind.JS
-);
-const declaration = toolSource.statements.find(
-  (node) =>
-    ts.isFunctionDeclaration(node) &&
-    node.name?.text === 'createBotLabSourceModule'
-)!;
-const toolGenerator = new Function(
-  'MESSAGE_TYPE',
-  declaration.getText(toolSource) + ';return createBotLabSourceModule;'
-)('botlab.microduck.control-source.v1');
+const bridgePath = resolve(__dirname, '../../../../../tools/microduck/load-simulator-bridge.mjs');
+const toolModule = execFileSync(process.execPath, ['--input-type=module', '-e', `
+  import { loadSimulatorBridge } from ${JSON.stringify(bridgePath)};
+  const bridge = await loadSimulatorBridge();
+  process.stdout.write(bridge.createMicroDuckBotLabPostMessageSourceModule({ allowedOrigins: ['https://botlab.test'] }));
+`], { encoding: 'utf8' });
+const toolGenerator = () => toolModule;
 
 describe.each([
   ['library', createMicroDuckBotLabPostMessageSourceModule],
@@ -466,27 +450,7 @@ describe.each([
   });
 });
 
-it('upgrades the tool factory without duplicating the source and expands only known arena declarations', () => {
-  const functions = [
-    'patchGameSource',
-    'insertAfterLastImport',
-    'insertBeforeControllerConstruction',
-    'controllerSourcesInclude',
-    'insertControllerSource',
-    'readControllerSourcesArray',
-    'patchBotLabArena',
-  ];
-  const text = toolSource.statements
-    .filter(
-      (node) =>
-        ts.isFunctionDeclaration(node) &&
-        functions.includes(node.name?.text ?? '')
-    )
-    .map((node) => node.getText(toolSource))
-    .join('\n');
-  const { patchGameSource, patchBotLabArena } = new Function(
-    text + ';return { patchGameSource, patchBotLabArena };'
-  )();
+it('upgrades the shared factory without duplicating the source and expands only known arena declarations', () => {
   const old =
     'import { BotLabSource } from "./controls/botlab.js";\nconst botLabSource = new BotLabSource({ getVelocityLimits: () => velLims(), isInputLocked: () => inputLocked });\nconst controller = new Controller({ sources: [botLabSource] });';
   const patched = patchGameSource(old);

@@ -1538,3 +1538,10 @@ function formatControlFrameMessage(frame: MicroDuckSimulatorControlFrame) {
     angleDegrees: frame.angleDegrees,
   })}`;
 }
+
+/** Expand only the known upstream arena declarations; refuse unknown revisions. */
+export function patchMicroDuckOfficialSimulatorArenaSource(source: string) {
+  const declaration = /export const ARENA_HALF = (?:1\.5|6);/;
+  if (!declaration.test(source)) throw new Error("Unknown official arena size declaration. Review the BotLab arena patch.");
+  return source.replace(declaration, "export const ARENA_HALF = 6;");
+}

@@ -165,6 +165,8 @@ Plan these changes as separate reviewable increments; preserve the working seque
 | A6 | Put versioned workspace serialization/storage behind an injected boundary; let the app own browser lifecycle and user feedback | Storage migration/validation/failure behavior is testable independently of app orchestration; restored documents cannot resume execution or restore approval |
 | A7 | Complete runtime target eligibility, per-plan/target approval and acknowledged hardware stop contracts | Offline/unsupported/denied targets dispatch nothing; required confirmation is an explicit user action tied to the current plan; physical execution stays disabled until the transport stop guarantee is verified |
 
+A3 generation follow-up: the setup tool now bundles the current simulator library with Vite and consumes its receiver generator, game patch and arena patch. The manually synchronized tool copy has been removed. All 118 simulator tests pass, including shared receiver contracts against the setup bundle and idempotent patch upgrades.
+
 A1 progress: XML traversal is now in `@botlab/blocks`, typed sequential actions in `@botlab/model`, and MicroDuck command lowering in the adapter. The app composes those APIs. Broader engine-independent control flow and A2 runtime consolidation remain open.
 
 A1–A3 and A4 establish the boundaries used by block expansion. A5 and A6 can be delivered independently; A7 gates hardware enablement. New packages should only be introduced when existing ownership boundaries cannot express the responsibility clearly.

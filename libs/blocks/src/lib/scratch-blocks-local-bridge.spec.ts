@@ -123,11 +123,11 @@ describe('createLocalScratchBlocksEditorBridge', () => {
 
   it('uses an optional overlay palette in narrow editors and restores the desktop layout', async () => {
     let width = 390;
-    let resize = () => {};
+    let resize = () => { /* Test double intentionally does nothing. */ };
     vi.stubGlobal('ResizeObserver', class {
       constructor(callback: () => void) { resize = callback; }
-      observe() {}
-      disconnect() {}
+      observe() { /* No real observer in this test. */ }
+      disconnect() { /* No real observer in this test. */ }
     });
     const element = document.createElement('div');
     Object.defineProperty(element, 'clientWidth', { get: () => width });

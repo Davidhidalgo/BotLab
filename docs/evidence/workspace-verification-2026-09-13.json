@@ -1,0 +1,20 @@
+{
+  "date": "2026-09-13",
+  "localPlatform": "macOS arm64",
+  "node": "22.22.0",
+  "python": "3.11.1",
+  "freshSourceCopy": true,
+  "separateNpmCi": true,
+  "preparedSimulatorAssetsRequired": false,
+  "verificationCommand": "CI=true npm run verify",
+  "result": "passed",
+  "unitTests": 381,
+  "typecheckConfigs": 10,
+  "lintProjects": 10,
+  "architectureProbes": 8,
+  "libraryBuilds": 9,
+  "webBuild": "passed",
+  "macCompanionBuild": "passed separately",
+  "hostedWorkflow": "configured; first run pending push",
+  "warnings": "Existing lint warnings and Vite bundle-size warnings remain visible."
+}

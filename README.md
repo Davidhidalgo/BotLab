@@ -99,6 +99,10 @@ npm run build
 npm run build:libs
 npm run test
 npm run test:all
+npm run typecheck:all
+npm run lint:all
+npm run test:architecture
+npm run verify
 npm run affected:build
 npm run affected:test
 npm run affected:lint
@@ -106,7 +110,7 @@ npm run microduck:sim -- --start
 npm run nx -- show projects
 ```
 
-Use the affected scripts for everyday validation when only part of the workspace changed. Use `build:libs` when you want a full library contract check.
+Use the affected scripts for everyday validation when only part of the workspace changed. Use `build:libs` when you want a full library contract check. `npm run verify` runs all app/library typechecks, configured test suites, lint, architecture regression checks and library/app builds. It requires Node 22 and Python 3.11 or newer; native unit tests use only the Python standard library.
 
 `npm test` runs only the web app's Jest suite. `npm run test:all` runs every configured test target: the app plus the model, runtime, blocks, simulator core, MicroDuck browser simulator, MicroDuck native simulator and MicroDuck adapter libraries. The libraries use Vitest, including controlled bridge/receiver integration tests and native proximity-trigger tests. The StackChan adapter and UI libraries do not yet have dedicated test suites. These tests do not run the official physics engine. `npm run test:simulator-turns` and `npm run test:simulator-postures` provide separate browser-engine regressions; see the MicroDuck simulator README for its setup. The [native MicroDuck experiment](tools/microduck/native/README.md) separately exercises the real robot services against MuJoCo.
 
@@ -195,3 +199,8 @@ The iframe executes explicit Sit/Stand and posture conditions in Feet mode with 
 
 <!-- repeat semantics from libs/adapters/microduck/src/lib/microduck-program.ts and package.json#scripts -->
 The Control category includes **repeat N times**, with integer counts from 0 to 100. Zero skips the body; nested repeats and posture conditions retain source-block highlighting and an iteration path in either simulator. Programs allow 16 nested control levels and 256 expanded steps including loop checkpoints and the final stop. Reduce counts or body size if the budget is exceeded. `npm run test:simulator-repeats` exercises real iframe physics; set `BOTLAB_QA_BACKEND=native` for native acceptance.
+
+<!-- CI workflow and architecture policy from .github/workflows/verify.yml, eslint.config.js and tools/ci/ -->
+GitHub Actions runs `npm ci` and `npm run verify` on pushes, pull requests and manual dispatch, using Ubuntu 24.04, Node 22.22.0 and Python 3.12. The workflow uses the official [checkout](https://github.com/actions/checkout), [Node setup](https://github.com/actions/setup-node) and [Python setup](https://github.com/actions/setup-python) actions. Physics acceptance and Mac packaging remain separate local commands requiring prepared simulator assets; this workflow does not download or run the physics engine.
+
+Nx enforces the library boundaries in ADR 0001. Model/runtime cannot depend on editor/UI packages; simulator core cannot depend on a robot simulator; the app uses public package APIs and cannot import Scratch Blocks directly. Eight positive/negative import probes guard the architecture rules themselves. Global TypeScript/lint configuration and the setup bridge loader participate in Nx cache inputs.

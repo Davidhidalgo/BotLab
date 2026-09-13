@@ -7,7 +7,7 @@ describe('WorkbenchLayout', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it('switches accessible mobile panels without unmounting the editor or simulator', () => {
-    let resize: () => void = () => {};
+    let resize: () => void = () => { /* Test double intentionally does nothing. */ };
     const media = { matches: true, addEventListener: jest.fn((_, callback) => { resize = callback; }), removeEventListener: jest.fn() };
     Object.defineProperty(window, 'matchMedia', { configurable: true, writable: true, value: jest.fn(() => media) });
     const mounted = jest.fn();

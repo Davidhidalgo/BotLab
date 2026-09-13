@@ -27,7 +27,7 @@ The current baseline below supersedes older status descriptions in the numbered 
 
 | Area | Implemented and inspected | Still open |
 | --- | --- | --- |
-| Foundation | Nx, React/TypeScript, tagged libraries, shared model and package contracts | Enforced dependency rules and full-workspace CI |
+| Foundation | Nx, React/TypeScript, enforced library boundaries, shared contracts and app/library verification workflow | Physics/release CI and first hosted workflow run |
 | Blocks | Official Scratch Blocks; one green-flag sequence; movement, turns, waits, simulator postures, nested posture conditions, finite repeats and LED compilation; XML parsing in blocks, command lowering in the adapter; localized blocks | Disconnected-block diagnostics; general expressions and generic-runtime control flow |
 | Simulator | Official local host with postMessage commands and identified execution status; measured displacement/yaw, progress, stop acknowledgement and reset | Further locomotion-mode/scene coverage; upstream pin/hash/setup consolidation |
 | Persistence and UX | Versioned local workspace and last trace, import/export, responsive workbench and block highlighting | Full end-to-end acceptance recheck; multiple-program storage is deferred |
@@ -143,11 +143,11 @@ Acceptance: the reported case is reproduced and then passes after a targeted fix
 
 - [ ] Recheck the real editor flow: author advance/turn/wait actions, save, reload, execute, stop, edit and rerun, and inspect matching progress and traces.
 - [x] Add a root `test:all` command for every configured app/library test target. `npm test` retains its app-only behavior; both commands are documented.
-- [ ] Wire the full command into CI.
+- [x] Wire the full command into CI. `.github/workflows/verify.yml` runs `npm run verify`; its first hosted run will occur after pushing.
 - [ ] Add independent adapter contract tests for target status, capability bindings, command validation and unsupported commands. Test UI primitives when they own meaningful interactions; avoid tests of static wrappers alone.
 - [ ] Keep domain/compiler/runtime/simulator semantics in library tests; app tests cover composition and user interaction. Move compiler tests with the compiler when its boundary changes.
 - [ ] Promote useful ignored browser-check scripts into maintained, reproducible tests with local URLs, isolated browser storage and recorded simulator setup. Separate quick controlled transport tests from slower physics checks.
-- [ ] Run app/library typechecks, all configured tests, lint and builds in the standard workflow. Passing tests do not substitute for the engine-level turn check.
+- [x] Run app/library typechecks, all configured tests, lint and builds in the standard workflow. Passing tests do not substitute for the engine-level turn check.
 
 Acceptance: a documented local command and CI exercise every configured suite, each behavioral library owns its regressions, and browser acceptance verifies the visible result and interruption path.
 
@@ -170,6 +170,14 @@ A3 generation follow-up: the setup tool now bundles the current simulator librar
 A1 progress: XML traversal is now in `@botlab/blocks`, typed sequential actions in `@botlab/model`, and MicroDuck command lowering in the adapter. The app composes those APIs. Broader engine-independent control flow and A2 runtime consolidation remain open.
 
 A1–A3 and A4 establish the boundaries used by block expansion. A5 and A6 can be delivered independently; A7 gates hardware enablement. New packages should only be introduced when existing ownership boundaries cannot express the responsibility clearly.
+
+### Verification and dependency boundaries follow-up
+
+`npm run verify` runs all app/library typechecks, every configured test target, full-workspace lint, eight positive/negative architecture probes, library builds and the web app build. GitHub Actions runs the same command after `npm ci` on Ubuntu 24.04 with Node 22.22.0 and Python 3.12, on pushes, pull requests and manual dispatch. Native Python unit tests require no prepared physics assets. Engine acceptance and Mac release packaging remain separate commands.
+
+Validation: `npm ci` and `CI=true npm run verify` passed in a fresh temporary source copy with a separately installed dependency tree and no prepared simulator assets (macOS, Node 22.22.0, Python 3.11.1). This includes 381 tests, all ten app/library TypeScript configurations, lint for ten projects, eight architecture probes, all nine library builds and the app build. Workflow YAML was parsed; the hosted Ubuntu run is pending push. The Mac companion build also passed separately.
+
+A4 is implemented through Nx scope/type constraints, public package imports and external editor/UI import restrictions. Blocks may use UI primitives; model/runtime cannot depend on editor/UI, and simulator core cannot import robot integrations. Root lint/TypeScript configuration and the setup bridge loader are hashed for cache invalidation. Existing empty test doubles now state their intent so lint can run without errors; pre-existing warnings remain visible.
 
 ### Finite repetition follow-up
 

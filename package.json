@@ -21,7 +21,11 @@
     "build:simulator-macos": "npm run nx -- build simulator-macos",
     "test:simulator-native-posture": "node tools/microduck/native/verify-posture.mjs",
     "test:simulator-postures": "node tools/microduck/verify-postures.mjs",
-    "test:simulator-repeats": "node tools/microduck/verify-repeats.mjs"
+    "test:simulator-repeats": "node tools/microduck/verify-repeats.mjs",
+    "lint:all": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false nx run-many --target=lint --all --parallel=2",
+    "typecheck:all": "node tools/ci/typecheck.mjs",
+    "verify": "npm run typecheck:all && npm run test:all && npm run lint:all && npm run test:architecture && npm run build:libs && npm run build",
+    "test:architecture": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false node tools/ci/check-boundaries.mjs"
   },
   "private": true,
   "dependencies": {

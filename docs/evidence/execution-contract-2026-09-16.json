@@ -1,0 +1,112 @@
+{
+  "status": "passed",
+  "baseRevision": "99419f31f456b9aa9211d93347935b017804c842",
+  "testedWorkingTree": true,
+  "sourceSha256": {
+    "libs/botlab-model/src/lib/execution.ts": "48e0710ebed86c7255f9dff8228c749b71f83cca9ff6d2c9c7e420c8018ff887",
+    "libs/runtime/src/lib/execution.ts": "7e4acfc85c6bf26cd2c5603f429c7cdb40553d198f3945cfbfe0c90f70923691",
+    "libs/runtime/src/lib/runtime.ts": "187603e7e19ab212a2e42fcbe93f7ac208d7bb8529997892371e70087e937ab0",
+    "libs/simulators/microduck/src/lib/microduck-execution.ts": "694f838d6e59fc55e98e137abc3cd86a090a244a09cf52bfc3d8df0e8a033ef3",
+    "apps/botlab-web/src/app/native-simulator-machine.ts": "7e47b3f6f50dabdef2818e0e0dc764f23184bbe4e6ba657d27afa88c0414f1ec",
+    "apps/botlab-web/src/app/botlab-flow-machine.ts": "5ce276a734590673a14bfdeb1cc7fd99cf47485210d48b35149acc24b6a4ca55"
+  },
+  "unitTests": 405,
+  "workspaceChecks": [
+    "typecheck:all",
+    "test:all",
+    "lint:all",
+    "test:architecture",
+    "build:libs",
+    "build"
+  ],
+  "architectureProbes": 8,
+  "iframe": {
+    "appUrl": "http://127.0.0.1:4206/",
+    "upstreamRevision": "023172c8a7d629b5258d90364c13bafe013abbfa",
+    "checks": {
+      "editAutosaveExportReload": true,
+      "measuredExecutionAndTrace": true,
+      "restoreTraceWithoutResuming": true,
+      "acknowledgedStopWithoutFollowingActions": true,
+      "editInvalidationAndFreshRerun": true,
+      "editDuringExecutionCancelsOldPlan": true,
+      "reloadDuringExecutionDoesNotResume": true
+    },
+    "outcomes": [
+      {
+        "executionId": "b53f1f99-8e0d3893-de380167-15cac8d5",
+        "program": {
+          "programId": "workspace-acceptance",
+          "targetId": "microduck-sim",
+          "revision": "{\"commands\":[{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-walk-0\",\"inputs\":{\"distanceMeters\":0.25,\"leftPower\":1,\"rightPower\":1},\"sourceBlockId\":\"walk\",\"targetId\":\"microduck-sim\"},{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-turn-1\",\"inputs\":{\"angleDegrees\":90,\"leftPower\":1,\"rightPower\":-1},\"sourceBlockId\":\"turn\",\"targetId\":\"microduck-sim\"},{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-wait-2\",\"inputs\":{\"durationMs\":2000,\"leftPower\":0,\"rightPower\":0},\"sourceBlockId\":\"wait\",\"targetId\":\"microduck-sim\"},{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-stop\",\"inputs\":{\"durationMs\":250,\"leftPower\":0,\"rightPower\":0},\"targetId\":\"microduck-sim\"}],\"requiredPolicyIds\":[\"confirm-visible-output\"]}"
+        },
+        "status": "completed",
+        "evidence": "simulator"
+      },
+      {
+        "executionId": "95ca8f15-fb376cb-7c49577-af1c3e09",
+        "program": {
+          "programId": "workspace-acceptance",
+          "targetId": "microduck-sim",
+          "revision": "{\"commands\":[{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-walk-0\",\"inputs\":{\"distanceMeters\":0.5,\"leftPower\":1,\"rightPower\":1},\"sourceBlockId\":\"walk\",\"targetId\":\"microduck-sim\"},{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-turn-1\",\"inputs\":{\"angleDegrees\":90,\"leftPower\":1,\"rightPower\":-1},\"sourceBlockId\":\"turn\",\"targetId\":\"microduck-sim\"},{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-wait-2\",\"inputs\":{\"durationMs\":2000,\"leftPower\":0,\"rightPower\":0},\"sourceBlockId\":\"wait\",\"targetId\":\"microduck-sim\"},{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-stop\",\"inputs\":{\"durationMs\":250,\"leftPower\":0,\"rightPower\":0},\"targetId\":\"microduck-sim\"}],\"requiredPolicyIds\":[\"confirm-visible-output\"]}"
+        },
+        "status": "cancelled",
+        "evidence": "none",
+        "diagnostic": {
+          "code": "execution-cancelled"
+        },
+        "sourceBlockId": "walk"
+      },
+      {
+        "executionId": "afa2878a-42a1bf18-fa40c808-10b18c77",
+        "program": {
+          "programId": "workspace-acceptance",
+          "targetId": "microduck-sim",
+          "revision": "{\"commands\":[{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-walk-0\",\"inputs\":{\"distanceMeters\":0.15,\"leftPower\":1,\"rightPower\":1},\"sourceBlockId\":\"walk\",\"targetId\":\"microduck-sim\"},{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-turn-1\",\"inputs\":{\"angleDegrees\":90,\"leftPower\":1,\"rightPower\":-1},\"sourceBlockId\":\"turn\",\"targetId\":\"microduck-sim\"},{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-wait-2\",\"inputs\":{\"durationMs\":2000,\"leftPower\":0,\"rightPower\":0},\"sourceBlockId\":\"wait\",\"targetId\":\"microduck-sim\"},{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-stop\",\"inputs\":{\"durationMs\":250,\"leftPower\":0,\"rightPower\":0},\"targetId\":\"microduck-sim\"}],\"requiredPolicyIds\":[\"confirm-visible-output\"]}"
+        },
+        "status": "completed",
+        "evidence": "simulator"
+      },
+      {
+        "executionId": "3d6b7673-ecb81b40-87e03a7a-dfad8f66",
+        "program": {
+          "programId": "workspace-acceptance",
+          "targetId": "microduck-sim",
+          "revision": "{\"commands\":[{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-walk-0\",\"inputs\":{\"distanceMeters\":0.5,\"leftPower\":1,\"rightPower\":1},\"sourceBlockId\":\"walk\",\"targetId\":\"microduck-sim\"},{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-turn-1\",\"inputs\":{\"angleDegrees\":90,\"leftPower\":1,\"rightPower\":-1},\"sourceBlockId\":\"turn\",\"targetId\":\"microduck-sim\"},{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-wait-2\",\"inputs\":{\"durationMs\":2000,\"leftPower\":0,\"rightPower\":0},\"sourceBlockId\":\"wait\",\"targetId\":\"microduck-sim\"},{\"capabilityId\":\"microduck-motion\",\"commandId\":\"drive-differential\",\"id\":\"command-microduck-stop\",\"inputs\":{\"durationMs\":250,\"leftPower\":0,\"rightPower\":0},\"targetId\":\"microduck-sim\"}],\"requiredPolicyIds\":[\"confirm-visible-output\"]}"
+        },
+        "status": "cancelled",
+        "evidence": "none",
+        "diagnostic": {
+          "code": "execution-cancelled"
+        },
+        "sourceBlockId": "walk"
+      }
+    ],
+    "errors": []
+  },
+  "native": {
+    "checks": {
+      "movement": true,
+      "fallback": true,
+      "stop": true,
+      "posture": true,
+      "presentation": {
+        "mode": "embedded",
+        "videoRequests": 2
+      },
+      "connectionLoss": {
+        "status": "failed",
+        "error": "Browser connection lost.",
+        "applied": [2.106245832533156e-8, 0, 0]
+      }
+    },
+    "errors": []
+  },
+  "notes": [
+    "Browser acceptance used an isolated compiled local preview.",
+    "Native stop fixture waits for stable standing after posture transitions.",
+    "Final runtime instance IDs and immutable trace snapshot changes were covered by subsequent unit/type/lint/build checks.",
+    "Existing lint/build warnings remain.",
+    "No physical device was connected or controlled; StackChan firmware 1.3.0 is owner-reported."
+  ]
+}

@@ -41,11 +41,14 @@ describe('botlabModel', () => {
   });
 
   it('can represent a future StackChan expression behavior', () => {
-    const result = validateBehaviorDefinition(sampleStackChanExpressionBehavior, {
-      skills: sampleSkills,
-      schedulers: sampleSchedulers,
-      arbitrationStrategies: sampleArbitrationStrategies,
-    });
+    const result = validateBehaviorDefinition(
+      sampleStackChanExpressionBehavior,
+      {
+        skills: sampleSkills,
+        schedulers: sampleSchedulers,
+        arbitrationStrategies: sampleArbitrationStrategies,
+      },
+    );
 
     expect(result).toEqual({ valid: true, errors: [] });
     expect(sampleStackChanExpressionBehavior.skillIds).toEqual([
@@ -131,7 +134,10 @@ describe('botlabModel', () => {
       ],
     };
 
-    expect(validateAdapterManifest(adapter)).toEqual({ valid: true, errors: [] });
+    expect(validateAdapterManifest(adapter)).toEqual({
+      valid: true,
+      errors: [],
+    });
 
     expect(
       validateAdapterManifest({
@@ -145,7 +151,9 @@ describe('botlabModel', () => {
       }),
     ).toEqual({
       valid: false,
-      errors: ['Capability demo-light references unknown target missing-target.'],
+      errors: [
+        'Capability demo-light references unknown target missing-target.',
+      ],
     });
   });
 
@@ -266,17 +274,20 @@ describe('botlabModel', () => {
 
   it('validates compiled behavior artifacts against adapter schemas', () => {
     expect(
-      validateCompiledBehaviorArtifact(sampleMicroDuckCompiledBehaviorArtifact, {
-        behaviors: [sampleMicroDuckLedBehavior],
-        adapters: [microDuckAdapter],
-        policies: [
-          {
-            id: 'confirm-visible-output',
-            name: 'Confirm visible output',
-            rules: [],
-          },
-        ],
-      }),
+      validateCompiledBehaviorArtifact(
+        sampleMicroDuckCompiledBehaviorArtifact,
+        {
+          behaviors: [sampleMicroDuckLedBehavior],
+          adapters: [microDuckAdapter],
+          policies: [
+            {
+              id: 'confirm-visible-output',
+              name: 'Confirm visible output',
+              rules: [],
+            },
+          ],
+        },
+      ),
     ).toEqual({ valid: true, errors: [] });
 
     expect(

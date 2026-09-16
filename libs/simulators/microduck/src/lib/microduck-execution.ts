@@ -1,4 +1,9 @@
-import type { ProgramIteration } from '@botlab/model';
+import {
+  createProgramIdentity,
+  type ExecutionResult,
+  type ProgramIteration,
+} from '@botlab/model';
+import { createExecutionLifecycle } from '@botlab/runtime';
 import {
   postMicroDuckSimulatorControlSource,
   type MicroDuckSimulatorControlSource,
@@ -11,6 +16,7 @@ export type MicroDuckExecutionStatus =
   | 'stopped'
   | 'failed';
 export interface MicroDuckExecutionUpdate {
+  outcome?: ExecutionResult;
   executionId: string;
   artifactId: string;
   status: MicroDuckExecutionStatus;
@@ -34,13 +40,45 @@ export interface MicroDuckExecutionRequest {
 export function observeMicroDuckExecution(
   request: MicroDuckExecutionRequest,
   onUpdate: (update: MicroDuckExecutionUpdate) => void,
-  hostWindow: Window = window
+  hostWindow: Window = window,
 ) {
   const executionId = Array.from(
     hostWindow.crypto.getRandomValues(new Uint32Array(4)),
-    (n) => n.toString(16)
+    (n) => n.toString(16),
   ).join('-');
   const { targetWindow, targetOrigin, source } = request;
+  const program =
+    source.program ??
+    createProgramIdentity(source.artifactId, source.targetId, source.frames);
+  const lifecycle = createExecutionLifecycle(executionId, program);
+  function publish(update: MicroDuckExecutionUpdate) {
+    if (
+      !lifecycle.update({
+        executionId,
+        program,
+        status: update.status === 'stopped' ? 'cancelled' : update.status,
+        evidence: update.status === 'completed' ? 'simulator' : 'none',
+        diagnostic:
+          update.status === 'failed'
+            ? {
+                code:
+                  update.failureOrigin === 'simulator'
+                    ? 'simulator-failed'
+                    : 'transport-failed',
+                message: update.errorCode,
+              }
+            : update.status === 'stopped'
+              ? { code: 'execution-cancelled' }
+              : undefined,
+        sourceBlockId:
+          update.frameIndex === undefined
+            ? undefined
+            : source.frames[update.frameIndex]?.sourceBlockId,
+      })
+    )
+      return;
+    onUpdate({ ...update, outcome: lifecycle.snapshot() });
+  }
   const origin = new URL(targetOrigin).origin;
   let stopping = false;
   let terminal = false;
@@ -66,19 +104,19 @@ export function observeMicroDuckExecution(
             simulatorId: 'microduck-official-sim',
             ...base,
           },
-          origin
+          origin,
         );
       else
         postMicroDuckSimulatorControlSource(
           targetWindow,
           source,
           origin,
-          executionId
+          executionId,
         );
     } catch {
       terminal = true;
       clearTimers();
-      onUpdate({ ...base, status: 'failed', failureOrigin: 'transport' });
+      publish({ ...base, status: 'failed', failureOrigin: 'transport' });
     }
   }
   function receive(event: MessageEvent) {
@@ -98,7 +136,7 @@ export function observeMicroDuckExecution(
       data.executionId !== executionId ||
       data.artifactId !== source.artifactId ||
       !['accepted', 'running', 'completed', 'stopped', 'failed'].includes(
-        data.status
+        data.status,
       )
     )
       return;
@@ -113,7 +151,7 @@ export function observeMicroDuckExecution(
       [data.elapsedMs, data.distanceMeters, data.turnedDegrees].some(
         (value) =>
           value !== undefined &&
-          (typeof value !== 'number' || !Number.isFinite(value) || value < 0)
+          (typeof value !== 'number' || !Number.isFinite(value) || value < 0),
       )
     )
       return;
@@ -126,28 +164,59 @@ export function observeMicroDuckExecution(
         'motion-stalled',
         'motion-timeout',
         'scene-interrupted',
-        'posture-unavailable', 'posture-unknown', 'posture-timeout', 'posture-refused', 'posture-required', 'posture-already-sit', 'posture-already-stand',
+        'posture-unavailable',
+        'posture-unknown',
+        'posture-timeout',
+        'posture-refused',
+        'posture-required',
+        'posture-already-sit',
+        'posture-already-stand',
       ].includes(data.errorCode)
     )
       return;
     const frame = source.frames[data.frameIndex];
-    if (data.observedPosture !== undefined && !['sit', 'stand', 'transitioning', 'unknown'].includes(data.observedPosture)) return;
-    if (data.conditionResult !== undefined && (typeof data.conditionResult !== 'boolean' || frame?.type !== 'posture-condition' ||
-        !['sit', 'stand', 'transitioning'].includes(data.observedPosture) || data.conditionResult !== (data.observedPosture === frame.posture))) return;
-    if (data.postureCompleted !== undefined && (data.postureCompleted !== true || frame?.type !== 'posture' || data.observedPosture !== frame.posture)) return;
+    if (
+      data.observedPosture !== undefined &&
+      !['sit', 'stand', 'transitioning', 'unknown'].includes(
+        data.observedPosture,
+      )
+    )
+      return;
+    if (
+      data.conditionResult !== undefined &&
+      (typeof data.conditionResult !== 'boolean' ||
+        frame?.type !== 'posture-condition' ||
+        !['sit', 'stand', 'transitioning'].includes(data.observedPosture) ||
+        data.conditionResult !== (data.observedPosture === frame.posture))
+    )
+      return;
+    if (
+      data.postureCompleted !== undefined &&
+      (data.postureCompleted !== true ||
+        frame?.type !== 'posture' ||
+        data.observedPosture !== frame.posture)
+    )
+      return;
     if (skippedFrames.has(data.frameIndex)) return;
-    if (data.status === 'running' && frame?.type === 'posture-condition' && data.conditionResult !== undefined) {
+    if (
+      data.status === 'running' &&
+      frame?.type === 'posture-condition' &&
+      data.conditionResult !== undefined
+    ) {
       decidedFrames.add(data.frameIndex);
       const start = data.conditionResult ? frame.elseIndex : frame.thenIndex;
       const end = data.conditionResult ? frame.endIndex : frame.elseIndex;
       for (let index = start; index < end; index++) skippedFrames.add(index);
     }
-    if (data.status === 'running' && data.postureCompleted) reachedPostureFrames.add(data.frameIndex);
+    if (data.status === 'running' && data.postureCompleted)
+      reachedPostureFrames.add(data.frameIndex);
     if (
       data.status === 'running' &&
       frame?.type === 'differential-drive' &&
-      ((frame.distanceMeters !== undefined && data.distanceMeters >= frame.distanceMeters) ||
-        (frame.angleDegrees !== undefined && data.turnedDegrees >= Math.abs(frame.angleDegrees)))
+      ((frame.distanceMeters !== undefined &&
+        data.distanceMeters >= frame.distanceMeters) ||
+        (frame.angleDegrees !== undefined &&
+          data.turnedDegrees >= Math.abs(frame.angleDegrees)))
     ) {
       reachedDistanceFrames.add(data.frameIndex);
     }
@@ -157,17 +226,21 @@ export function observeMicroDuckExecution(
       data.status === 'completed'
         ? source.frames.findIndex(
             (frame, index) =>
-              !skippedFrames.has(index) && (frame.type === 'posture' ? !reachedPostureFrames.has(index) :
-                frame.type === 'posture-condition' ? !decidedFrames.has(index) :
-                frame.type === 'differential-drive' &&
-                (frame.distanceMeters !== undefined || frame.angleDegrees !== undefined) &&
-                !reachedDistanceFrames.has(index))
+              !skippedFrames.has(index) &&
+              (frame.type === 'posture'
+                ? !reachedPostureFrames.has(index)
+                : frame.type === 'posture-condition'
+                  ? !decidedFrames.has(index)
+                  : frame.type === 'differential-drive' &&
+                    (frame.distanceMeters !== undefined ||
+                      frame.angleDegrees !== undefined) &&
+                    !reachedDistanceFrames.has(index)),
           )
         : -1;
     terminal = ['completed', 'stopped', 'failed'].includes(data.status);
     clearTimers();
     if (missingArrival >= 0) {
-      onUpdate({
+      publish({
         ...base,
         status: 'failed',
         frameIndex: missingArrival,
@@ -176,7 +249,7 @@ export function observeMicroDuckExecution(
       });
       return;
     }
-    onUpdate({
+    publish({
       ...base,
       status: data.status,
       frameIndex: data.frameIndex,
@@ -184,14 +257,19 @@ export function observeMicroDuckExecution(
       distanceMeters: data.distanceMeters,
       turnedDegrees: data.turnedDegrees,
       errorCode: data.errorCode,
-      iterations: data.frameIndex === undefined ? undefined : source.frames[data.frameIndex]?.iterations,
-      observedPosture: data.observedPosture, conditionResult: data.conditionResult, postureCompleted: data.postureCompleted,
+      iterations:
+        data.frameIndex === undefined
+          ? undefined
+          : source.frames[data.frameIndex]?.iterations,
+      observedPosture: data.observedPosture,
+      conditionResult: data.conditionResult,
+      postureCompleted: data.postureCompleted,
       failureOrigin: data.status === 'failed' ? 'simulator' : undefined,
     });
   }
   hostWindow.addEventListener('message', receive);
   timers = [1000, 3000, 8000, 15000].map((delay) =>
-    hostWindow.setTimeout(() => post(), delay)
+    hostWindow.setTimeout(() => post(), delay),
   );
   post();
   return {
@@ -201,7 +279,7 @@ export function observeMicroDuckExecution(
       stopping = true;
       clearTimers();
       timers = [250, 750, 1500].map((delay) =>
-        hostWindow.setTimeout(() => post(true), delay)
+        hostWindow.setTimeout(() => post(true), delay),
       );
       post(true);
     },

@@ -5,12 +5,12 @@ function directXmlChild(element: Element, tag: string, name?: string) {
   return Array.from(element.children).find(
     (child) =>
       child.localName === tag &&
-      (name === undefined || child.getAttribute('name') === name)
+      (name === undefined || child.getAttribute('name') === name),
   );
 }
 
 export function readMicroDuckProgramFromWorkspace(
-  artifact: BlocksWorkspaceArtifact
+  artifact: BlocksWorkspaceArtifact,
 ) {
   if (artifact.format !== 'scratch-xml') {
     throw new Error('Only Scratch XML can be compiled in this demo.');
@@ -18,7 +18,7 @@ export function readMicroDuckProgramFromWorkspace(
 
   const xmlDocument = new DOMParser().parseFromString(
     artifact.content,
-    'text/xml'
+    'text/xml',
   );
   const parserError = xmlDocument.querySelector('parsererror');
 
@@ -36,7 +36,7 @@ export function readMicroDuckProgramFromWorkspace(
     (child) =>
       child.localName === 'block' &&
       child.getAttribute('type') === 'event_whenflagclicked' &&
-      child.getAttribute('disabled') !== 'true'
+      child.getAttribute('disabled') !== 'true',
   );
   const startBlock = starts[0];
 
@@ -46,13 +46,13 @@ export function readMicroDuckProgramFromWorkspace(
 
   if (starts.length !== 1) {
     throw new Error(
-      'Use one green flag script. Parallel scripts are not supported yet.'
+      'Use one green flag script. Parallel scripts are not supported yet.',
     );
   }
   let count = 0;
   function readSequence(
     container: Element | undefined,
-    depth = 0
+    depth = 0,
   ): MicroDuckProgramStep[] {
     if (depth > 16)
       throw new Error('Programs support at most 16 nested control blocks.');
@@ -69,16 +69,38 @@ export function readMicroDuckProgramFromWorkspace(
       switch (type) {
         case 'control_repeat': {
           const input = directXmlChild(block, 'value', 'TIMES');
-          const value = input && (directXmlChild(input, 'block') ?? directXmlChild(input, 'shadow'));
-          const text = value && directXmlChild(value, 'field', 'NUM')?.textContent?.trim();
+          const value =
+            input &&
+            (directXmlChild(input, 'block') ?? directXmlChild(input, 'shadow'));
+          const text =
+            value && directXmlChild(value, 'field', 'NUM')?.textContent?.trim();
           const repeats = text ? Number(text) : NaN;
-          if (!value || value.getAttribute('disabled') === 'true' ||
-              !['math_number', 'math_positive_number', 'math_whole_number', 'math_integer'].includes(value.getAttribute('type') ?? '') ||
-              !Number.isInteger(repeats) || repeats < 0 || repeats > 100) {
-            throw new Error('Repeat requires a whole number from 0 to 100. Expressions are not supported yet.');
+          if (
+            !value ||
+            value.getAttribute('disabled') === 'true' ||
+            ![
+              'math_number',
+              'math_positive_number',
+              'math_whole_number',
+              'math_integer',
+            ].includes(value.getAttribute('type') ?? '') ||
+            !Number.isInteger(repeats) ||
+            repeats < 0 ||
+            repeats > 100
+          ) {
+            throw new Error(
+              'Repeat requires a whole number from 0 to 100. Expressions are not supported yet.',
+            );
           }
-          steps.push({ type: 'repeat', count: repeats, sourceBlockId: block.getAttribute('id') ?? undefined,
-            body: readSequence(directXmlChild(block, 'statement', 'SUBSTACK'), depth + 1) });
+          steps.push({
+            type: 'repeat',
+            count: repeats,
+            sourceBlockId: block.getAttribute('id') ?? undefined,
+            body: readSequence(
+              directXmlChild(block, 'statement', 'SUBSTACK'),
+              depth + 1,
+            ),
+          });
           break;
         }
         case 'control_if':
@@ -105,13 +127,13 @@ export function readMicroDuckProgramFromWorkspace(
             },
             then: readSequence(
               directXmlChild(block, 'statement', 'SUBSTACK'),
-              depth + 1
+              depth + 1,
             ),
             else:
               type === 'control_if_else'
                 ? readSequence(
                     directXmlChild(block, 'statement', 'SUBSTACK2'),
-                    depth + 1
+                    depth + 1,
                   )
                 : [],
           });
@@ -130,7 +152,7 @@ export function readMicroDuckProgramFromWorkspace(
             type: 'leds',
             sourceBlockId: block.getAttribute('id') ?? undefined,
             pattern: normalizeMicroDuckLedPattern(
-              directXmlChild(block, 'field', 'PATTERN')?.textContent
+              directXmlChild(block, 'field', 'PATTERN')?.textContent,
             ),
           });
           break;
@@ -144,7 +166,7 @@ export function readMicroDuckProgramFromWorkspace(
               type === 'botlab_microduck_back_distance'
                 ? readMotionNumber(block, 'DISTANCE', 1, 0, 20)
                 : normalizeMicroDuckWalkDistance(
-                    directXmlChild(block, 'field', 'DISTANCE')?.textContent
+                    directXmlChild(block, 'field', 'DISTANCE')?.textContent,
                   ),
           });
           break;
@@ -172,10 +194,10 @@ export function readMicroDuckProgramFromWorkspace(
               type === 'botlab_microduck_turn_left'
                 ? -90
                 : type === 'botlab_microduck_turn_right'
-                ? 90
-                : type === 'botlab_microduck_turn_around'
-                ? 180
-                : readMotionNumber(block, 'ANGLE', 90, -360, 360),
+                  ? 90
+                  : type === 'botlab_microduck_turn_around'
+                    ? 180
+                    : readMotionNumber(block, 'ANGLE', 90, -360, 360),
           });
           break;
         case 'control_wait': {
@@ -193,13 +215,13 @@ export function readMicroDuckProgramFromWorkspace(
             ].includes(value.getAttribute('type') ?? '')
           ) {
             throw new Error(
-              'Wait requires a numeric duration. Expressions are not supported yet.'
+              'Wait requires a numeric duration. Expressions are not supported yet.',
             );
           }
           const text = directXmlChild(
             value,
             'field',
-            'NUM'
+            'NUM',
           )?.textContent?.trim();
           const seconds = text ? Number(text) : NaN;
           if (
@@ -208,7 +230,7 @@ export function readMicroDuckProgramFromWorkspace(
             !Number.isFinite(seconds * 1000)
           ) {
             throw new Error(
-              'Wait duration must be a finite, non-negative number of seconds.'
+              'Wait duration must be a finite, non-negative number of seconds.',
             );
           }
           steps.push({
@@ -263,13 +285,13 @@ function readMotionNumber(
   name: string,
   fallback: number,
   min: number,
-  max: number
+  max: number,
 ) {
   const text = directXmlChild(block, 'field', name)?.textContent;
   const value = text == null ? fallback : Number(text.trim() || NaN);
   if (!Number.isFinite(value) || value < min || value > max) {
     throw new Error(
-      `Invalid motion ${name}: expected a number from ${min} to ${max}.`
+      `Invalid motion ${name}: expected a number from ${min} to ${max}.`,
     );
   }
   return value;

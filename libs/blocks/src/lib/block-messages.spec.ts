@@ -1,11 +1,21 @@
-import { createBlockMessageResolver, parseBlockMessageCatalog, type BlockMessageCatalog } from './block-messages';
+import {
+  createBlockMessageResolver,
+  parseBlockMessageCatalog,
+  type BlockMessageCatalog,
+} from './block-messages';
 import { microDuckBlockMessages } from './microduck-block-messages';
 
 describe('block message catalogs', () => {
   const external: BlockMessageCatalog = {
-    schemaVersion: 1, namespace: 'org.example.balance', revision: 'commit-123', sourceLocale: 'fr',
+    schemaVersion: 1,
+    namespace: 'org.example.balance',
+    revision: 'commit-123',
+    sourceLocale: 'fr',
     messages: { run: 'équilibrer %1 pendant %2', tooltip: 'Politique externe' },
-    translations: { en: { run: 'balance %1 for %2' }, es: { run: 'equilibra %1 durante %2' } },
+    translations: {
+      en: { run: 'balance %1 for %2' },
+      es: { run: 'equilibra %1 durante %2' },
+    },
   };
 
   it('resolves bundled Catalan, Spanish and English text', () => {
@@ -18,7 +28,9 @@ describe('block message catalogs', () => {
   it('adds local external translations without modifying the original catalog', () => {
     const original = JSON.stringify(external);
     const resolve = createBlockMessageResolver(external, {
-      schemaVersion: 1, namespace: external.namespace, revision: external.revision,
+      schemaVersion: 1,
+      namespace: external.namespace,
+      revision: external.revision,
       translations: { ca: { run: 'durant %2 equilibra %1' } },
     });
     expect(resolve('run', 'ca')).toBe('durant %2 equilibra %1');
@@ -28,22 +40,46 @@ describe('block message catalogs', () => {
     expect(JSON.stringify(external)).toBe(original);
   });
 
-  it.each(['revision', 'namespace'] as const)('rejects overlays for a different %s', (field) => {
-    expect(() => createBlockMessageResolver(external, { ...external, [field]: 'other' })).toThrow('different integration or revision');
-  });
+  it.each(['revision', 'namespace'] as const)(
+    'rejects overlays for a different %s',
+    (field) => {
+      expect(() =>
+        createBlockMessageResolver(external, { ...external, [field]: 'other' }),
+      ).toThrow('different integration or revision');
+    },
+  );
 
-  it.each(['equilibra %1', 'equilibra %1 %1', 'equilibra %1 %2 %3'])('rejects altered parameters: %s', (run) => {
-    expect(() => parseBlockMessageCatalog({ ...external, translations: { ca: { run } } })).toThrow('parameters');
-  });
+  it.each(['equilibra %1', 'equilibra %1 %1', 'equilibra %1 %2 %3'])(
+    'rejects altered parameters: %s',
+    (run) => {
+      expect(() =>
+        parseBlockMessageCatalog({
+          ...external,
+          translations: { ca: { run } },
+        }),
+      ).toThrow('parameters');
+    },
+  );
 
-  it.each([null, [], { schemaVersion: 2 }, { ...external, translations: { ca: { unknown: 'No' } } },
-    { ...external, translations: { ca: { run: 42 } } }, { ...external, translations: { ca: { run: '%{BKY_OTHER}' } } }])(
-    'rejects malformed catalogs', (input) => expect(() => parseBlockMessageCatalog(input)).toThrow()
+  it.each([
+    null,
+    [],
+    { schemaVersion: 2 },
+    { ...external, translations: { ca: { unknown: 'No' } } },
+    { ...external, translations: { ca: { run: 42 } } },
+    { ...external, translations: { ca: { run: '%{BKY_OTHER}' } } },
+  ])('rejects malformed catalogs', (input) =>
+    expect(() => parseBlockMessageCatalog(input)).toThrow(),
   );
 
   it('does not resolve inherited properties or accept executable translation values', () => {
     const resolve = createBlockMessageResolver(external);
     expect(() => resolve('constructor', 'ca')).toThrow('Unknown block message');
-    expect(() => parseBlockMessageCatalog({ ...external, translations: { ca: { run: () => 'text' } } })).toThrow();
+    expect(() =>
+      parseBlockMessageCatalog({
+        ...external,
+        translations: { ca: { run: () => 'text' } },
+      }),
+    ).toThrow();
   });
 });

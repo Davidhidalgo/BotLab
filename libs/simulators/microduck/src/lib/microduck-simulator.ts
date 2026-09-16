@@ -1,3 +1,4 @@
+import { identifyCompiledProgram, type ProgramIdentity } from '@botlab/model';
 import type {
   CompiledBehaviorArtifact,
   CompiledCommand,
@@ -14,7 +15,10 @@ import {
 import type { MicroDuckSimulatorAssetCachePlan } from './microduck-simulator-assets';
 import { createMicroDuckDistanceTracker } from './microduck-distance';
 import { createMicroDuckTurnTracker } from './microduck-turn';
-import { createMicroDuckPostureObserver, type MicroDuckPostureState } from './microduck-posture';
+import {
+  createMicroDuckPostureObserver,
+  type MicroDuckPostureState,
+} from './microduck-posture';
 
 export const microDuckOfficialSimulatorIntegration = defineSimulatorIntegration(
   {
@@ -22,7 +26,7 @@ export const microDuckOfficialSimulatorIntegration = defineSimulatorIntegration(
     name: 'MicroDuck demo simulator bridge',
     status: 'available',
     dependencyStrategy: 'manual-bridge',
-  }
+  },
 );
 
 export const microDuckSimulatorIntegrations = defineSimulatorIntegrations([
@@ -37,7 +41,8 @@ export type MicroDuckLedPattern = 'smile' | 'blink' | 'solid' | 'off';
 
 export interface MicroDuckSimulatorLedFrame {
   id: string;
-  sourceBlockId?: string; iterations?: ProgramIteration[];
+  sourceBlockId?: string;
+  iterations?: ProgramIteration[];
   type: 'led-pattern';
   targetId: string;
   pattern: MicroDuckLedPattern;
@@ -46,7 +51,8 @@ export interface MicroDuckSimulatorLedFrame {
 
 export interface MicroDuckSimulatorDifferentialDriveFrame {
   id: string;
-  sourceBlockId?: string; iterations?: ProgramIteration[];
+  sourceBlockId?: string;
+  iterations?: ProgramIteration[];
   type: 'differential-drive';
   targetId: string;
   leftPower: number;
@@ -57,17 +63,31 @@ export interface MicroDuckSimulatorDifferentialDriveFrame {
 }
 
 export interface MicroDuckSimulatorPostureFrame {
-  id: string; sourceBlockId?: string; iterations?: ProgramIteration[]; targetId: string;
-  type: 'posture'; posture: 'sit' | 'stand';
+  id: string;
+  sourceBlockId?: string;
+  iterations?: ProgramIteration[];
+  targetId: string;
+  type: 'posture';
+  posture: 'sit' | 'stand';
 }
 export interface MicroDuckSimulatorConditionFrame {
-  id: string; sourceBlockId?: string; iterations?: ProgramIteration[]; targetId: string;
-  type: 'posture-condition'; posture: 'sit' | 'stand' | 'transitioning';
-  thenIndex: number; elseIndex: number; endIndex: number;
+  id: string;
+  sourceBlockId?: string;
+  iterations?: ProgramIteration[];
+  targetId: string;
+  type: 'posture-condition';
+  posture: 'sit' | 'stand' | 'transitioning';
+  thenIndex: number;
+  elseIndex: number;
+  endIndex: number;
 }
 export interface MicroDuckSimulatorJumpFrame {
-  id: string; sourceBlockId?: string; iterations?: ProgramIteration[]; targetId: string;
-  type: 'jump'; nextIndex: number;
+  id: string;
+  sourceBlockId?: string;
+  iterations?: ProgramIteration[];
+  targetId: string;
+  type: 'jump';
+  nextIndex: number;
 }
 export type MicroDuckSimulatorControlFrame =
   | MicroDuckSimulatorPostureFrame
@@ -77,6 +97,7 @@ export type MicroDuckSimulatorControlFrame =
   | MicroDuckSimulatorDifferentialDriveFrame;
 
 export interface MicroDuckSimulatorControlSource {
+  program?: ProgramIdentity;
   artifactId: string;
   targetId: string;
   frames: MicroDuckSimulatorControlFrame[];
@@ -104,8 +125,7 @@ export interface MicroDuckOfficialSimulatorSource {
   poll?(dt: number): void;
 }
 
-export interface MicroDuckBotLabOfficialSource
-  extends MicroDuckOfficialSimulatorSource {
+export interface MicroDuckBotLabOfficialSource extends MicroDuckOfficialSimulatorSource {
   load(controlSource: MicroDuckSimulatorControlSource): void;
   clear(): void;
 }
@@ -119,13 +139,9 @@ export interface MicroDuckBotLabOfficialSourceOptions {
   getHeading?: () => number;
 }
 
-export interface MicroDuckBotLabPostMessageSourceOptions
-  extends MicroDuckBotLabOfficialSourceOptions {
+export interface MicroDuckBotLabPostMessageSourceOptions extends MicroDuckBotLabOfficialSourceOptions {
   allowedOrigins?: string[];
-  window?: Pick<
-    Window,
-    'addEventListener' | 'removeEventListener'
-  >;
+  window?: Pick<Window, 'addEventListener' | 'removeEventListener'>;
 }
 
 export interface MicroDuckSimulatorControlMessage {
@@ -141,8 +157,7 @@ export interface MicroDuckBotLabPostMessageSourceModuleOptions {
   className?: string;
 }
 
-export interface MicroDuckOfficialSimulatorPatchOptions
-  extends MicroDuckBotLabPostMessageSourceModuleOptions {
+export interface MicroDuckOfficialSimulatorPatchOptions extends MicroDuckBotLabPostMessageSourceModuleOptions {
   velocityLimitsExpression?: string;
 }
 
@@ -211,14 +226,13 @@ export interface MicroDuckOfficialSimulatorHostResult {
   controlSource?: MicroDuckSimulatorControlSource;
 }
 
-export interface LoadMicroDuckOfficialSimulatorHostOptions
-  extends MicroDuckOfficialSimulatorConnectionOptions {
+export interface LoadMicroDuckOfficialSimulatorHostOptions extends MicroDuckOfficialSimulatorConnectionOptions {
   assetPlan: MicroDuckSimulatorAssetCachePlan;
   artifact?: CompiledBehaviorArtifact;
 }
 
 export function createMicroDuckSimulatorBridge(
-  options: MicroDuckSimulatorBridgeOptions = {}
+  options: MicroDuckSimulatorBridgeOptions = {},
 ): SimulatorBridge {
   let snapshot = createMicroDuckSnapshot({
     state: 'idle',
@@ -262,7 +276,7 @@ export function createMicroDuckSimulatorBridge(
         snapshot.targetId !== artifact.targetId
       ) {
         throw new Error(
-          'Boot the MicroDuck simulator target before simulating.'
+          'Boot the MicroDuck simulator target before simulating.',
         );
       }
 
@@ -324,7 +338,7 @@ export function createMicroDuckSimulatorBridge(
 }
 
 export async function loadMicroDuckOfficialSimulatorHost(
-  options: LoadMicroDuckOfficialSimulatorHostOptions
+  options: LoadMicroDuckOfficialSimulatorHostOptions,
 ): Promise<MicroDuckOfficialSimulatorHostResult> {
   if (!options.assetPlan.loadable) {
     const blockedAssets = options.assetPlan.entries
@@ -346,7 +360,7 @@ export async function loadMicroDuckOfficialSimulatorHost(
         .filter((entry) => entry.status !== 'ready')
         .map(
           (entry) =>
-            `${entry.asset.label}: ${entry.status}. BotLab will not vendor this asset; educational preview loading remains opt-in.`
+            `${entry.asset.label}: ${entry.status}. BotLab will not vendor this asset; educational preview loading remains opt-in.`,
         );
 
   if (!options.artifact) {
@@ -369,9 +383,8 @@ export async function loadMicroDuckOfficialSimulatorHost(
     };
   }
 
-  const connection = await connectMicroDuckBotLabSourceToOfficialSimulator(
-    options
-  );
+  const connection =
+    await connectMicroDuckBotLabSourceToOfficialSimulator(options);
   connection.load(controlSource);
 
   return {
@@ -387,12 +400,12 @@ export async function loadMicroDuckOfficialSimulatorHost(
 }
 
 export async function connectMicroDuckBotLabSourceToOfficialSimulator(
-  options: MicroDuckOfficialSimulatorConnectionOptions
+  options: MicroDuckOfficialSimulatorConnectionOptions,
 ): Promise<MicroDuckOfficialSimulatorConnection> {
   const runtime = await options.loadRuntime();
   const sourceId = options.sourceId ?? 'botlab';
   const existingSource = runtime.controller.sources?.find(
-    (candidate) => candidate.id === sourceId
+    (candidate) => candidate.id === sourceId,
   );
   const source = isMicroDuckBotLabOfficialSource(existingSource)
     ? existingSource
@@ -424,7 +437,7 @@ export async function connectMicroDuckBotLabSourceToOfficialSimulator(
 }
 
 export function createMicroDuckBotLabOfficialSource(
-  options: MicroDuckBotLabOfficialSourceOptions
+  options: MicroDuckBotLabOfficialSourceOptions,
 ): MicroDuckBotLabOfficialSource {
   const command = new Float32Array(3);
   const axes: MicroDuckOfficialSimulatorSourceAxes = {
@@ -434,13 +447,17 @@ export function createMicroDuckBotLabOfficialSource(
     ride: 0,
   };
   const pressed: Record<string, boolean> = {};
-  const postureObserver = createMicroDuckPostureObserver(options.getPostureState);
+  const postureObserver = createMicroDuckPostureObserver(
+    options.getPostureState,
+  );
   let postureRequested = false;
   let postureElapsed = 0;
   let frames: MicroDuckSimulatorControlFrame[] = [];
   let cursor = 0;
   let frameElapsedMs = 0;
-  let distanceTracker: ReturnType<typeof createMicroDuckDistanceTracker> | undefined;
+  let distanceTracker:
+    | ReturnType<typeof createMicroDuckDistanceTracker>
+    | undefined;
   let turnTracker: ReturnType<typeof createMicroDuckTurnTracker> | undefined;
   let active = false;
 
@@ -478,7 +495,8 @@ export function createMicroDuckBotLabOfficialSource(
     frames = [];
     cursor = 0;
     frameElapsedMs = 0;
-    postureRequested = false; postureElapsed = 0;
+    postureRequested = false;
+    postureElapsed = 0;
     distanceTracker = undefined;
     turnTracker = undefined;
     active = false;
@@ -501,7 +519,8 @@ export function createMicroDuckBotLabOfficialSource(
       frames = [...controlSource.frames];
       cursor = 0;
       frameElapsedMs = 0;
-      postureRequested = false; postureElapsed = 0;
+      postureRequested = false;
+      postureElapsed = 0;
       distanceTracker = undefined;
       turnTracker = undefined;
       active = false;
@@ -529,37 +548,92 @@ export function createMicroDuckBotLabOfficialSource(
         return;
       }
 
-      if (frame.type === 'jump') { cursor = frame.nextIndex; return; }
+      if (frame.type === 'jump') {
+        cursor = frame.nextIndex;
+        return;
+      }
       if (frame.type === 'posture-condition' || frame.type === 'posture') {
-        resetCommand(command); resetPressed(pressed); active = true;
-        if (observation.error) { clear(); throw new Error(observation.error); }
+        resetCommand(command);
+        resetPressed(pressed);
+        active = true;
+        if (observation.error) {
+          clear();
+          throw new Error(observation.error);
+        }
         if (frame.type === 'posture-condition') {
-          if (observation.observed === 'unknown') { clear(); throw new Error('posture-unknown'); }
-          cursor = observation.observed === frame.posture ? frame.thenIndex : frame.elseIndex;
+          if (observation.observed === 'unknown') {
+            clear();
+            throw new Error('posture-unknown');
+          }
+          cursor =
+            observation.observed === frame.posture
+              ? frame.thenIndex
+              : frame.elseIndex;
           return;
         }
         postureElapsed += dt;
-        if (postureElapsed > 12) { clear(); throw new Error('posture-timeout'); }
-        if (observation.observed === frame.posture) {
-          if (!postureRequested) { clear(); throw new Error(`posture-already-${frame.posture}`); }
-          cursor++; postureRequested = false; postureElapsed = 0; return;
+        if (postureElapsed > 12) {
+          clear();
+          throw new Error('posture-timeout');
         }
-        if (!postureRequested && (observation.observed === 'sit' || observation.observed === 'stand')) {
-          if (!options.requestPosture?.(frame.posture)) { clear(); throw new Error('posture-refused'); }
-          postureRequested = true; postureObserver.begin();
+        if (observation.observed === frame.posture) {
+          if (!postureRequested) {
+            clear();
+            throw new Error(`posture-already-${frame.posture}`);
+          }
+          cursor++;
+          postureRequested = false;
+          postureElapsed = 0;
+          return;
+        }
+        if (
+          !postureRequested &&
+          (observation.observed === 'sit' || observation.observed === 'stand')
+        ) {
+          if (!options.requestPosture?.(frame.posture)) {
+            clear();
+            throw new Error('posture-refused');
+          }
+          postureRequested = true;
+          postureObserver.begin();
         }
         return;
       }
-      if (options.getPostureState && frameElapsedMs === 0 && !distanceTracker && !turnTracker && frame.type === 'differential-drive' &&
-          (frame.leftPower !== 0 || frame.rightPower !== 0) && observation.observed !== 'stand') { clear(); throw new Error('posture-required'); }
-      if (frame.type === 'differential-drive' && frame.angleDegrees !== undefined) {
-        turnTracker ??= createMicroDuckTurnTracker(frame.angleDegrees, options.getHeading);
+      if (
+        options.getPostureState &&
+        frameElapsedMs === 0 &&
+        !distanceTracker &&
+        !turnTracker &&
+        frame.type === 'differential-drive' &&
+        (frame.leftPower !== 0 || frame.rightPower !== 0) &&
+        observation.observed !== 'stand'
+      ) {
+        clear();
+        throw new Error('posture-required');
+      }
+      if (
+        frame.type === 'differential-drive' &&
+        frame.angleDegrees !== undefined
+      ) {
+        turnTracker ??= createMicroDuckTurnTracker(
+          frame.angleDegrees,
+          options.getHeading,
+        );
         const progress = turnTracker(dt);
-        if (progress.error) { clear(); throw new Error(progress.error); }
+        if (progress.error) {
+          clear();
+          throw new Error(progress.error);
+        }
         if (progress.done) {
           if (options.getPostureState && observation.observed !== 'stand') {
-            postureElapsed += dt; resetCommand(command); resetPressed(pressed); active = true;
-            if (postureElapsed > 12) { clear(); throw new Error('posture-timeout'); }
+            postureElapsed += dt;
+            resetCommand(command);
+            resetPressed(pressed);
+            active = true;
+            if (postureElapsed > 12) {
+              clear();
+              throw new Error('posture-timeout');
+            }
             return;
           }
           postureElapsed = 0;
@@ -578,8 +652,14 @@ export function createMicroDuckBotLabOfficialSource(
         active = true;
         return;
       }
-      if (frame.type === 'differential-drive' && frame.distanceMeters !== undefined) {
-        distanceTracker ??= createMicroDuckDistanceTracker(frame.distanceMeters, options.getPosition);
+      if (
+        frame.type === 'differential-drive' &&
+        frame.distanceMeters !== undefined
+      ) {
+        distanceTracker ??= createMicroDuckDistanceTracker(
+          frame.distanceMeters,
+          options.getPosition,
+        );
         const progress = distanceTracker(dt);
         if (progress.error) {
           clear();
@@ -587,8 +667,14 @@ export function createMicroDuckBotLabOfficialSource(
         }
         if (progress.done) {
           if (options.getPostureState && observation.observed !== 'stand') {
-            postureElapsed += dt; resetCommand(command); resetPressed(pressed); active = true;
-            if (postureElapsed > 12) { clear(); throw new Error('posture-timeout'); }
+            postureElapsed += dt;
+            resetCommand(command);
+            resetPressed(pressed);
+            active = true;
+            if (postureElapsed > 12) {
+              clear();
+              throw new Error('posture-timeout');
+            }
             return;
           }
           postureElapsed = 0;
@@ -625,7 +711,7 @@ export function createMicroDuckBotLabOfficialSource(
 }
 
 export function createMicroDuckBotLabPostMessageSource(
-  options: MicroDuckBotLabPostMessageSourceOptions
+  options: MicroDuckBotLabPostMessageSourceOptions,
 ): MicroDuckBotLabOfficialSource {
   const source = createMicroDuckBotLabOfficialSource(options);
   const targetWindow = options.window ?? globalThis.window;
@@ -675,7 +761,7 @@ export function createMicroDuckBotLabPostMessageSource(
 
 export function createMicroDuckSimulatorControlMessage(
   source: MicroDuckSimulatorControlSource,
-  executionId?: string
+  executionId?: string,
 ): MicroDuckSimulatorControlMessage {
   return {
     type: MICRODUCK_SIMULATOR_CONTROL_MESSAGE_TYPE,
@@ -690,16 +776,16 @@ export function postMicroDuckSimulatorControlSource(
   targetWindow: Pick<Window, 'postMessage'>,
   source: MicroDuckSimulatorControlSource,
   targetOrigin: string,
-  executionId?: string
+  executionId?: string,
 ) {
   targetWindow.postMessage(
     createMicroDuckSimulatorControlMessage(source, executionId),
-    targetOrigin
+    targetOrigin,
   );
 }
 
 export function parseMicroDuckSimulatorControlMessage(
-  value: unknown
+  value: unknown,
 ): MicroDuckSimulatorControlMessage | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -720,8 +806,10 @@ export function parseMicroDuckSimulatorControlMessage(
   }
 
   const executionId = value['executionId'];
-  if (executionId !== undefined &&
-      (typeof executionId !== 'string' || executionId.length === 0)) {
+  if (
+    executionId !== undefined &&
+    (typeof executionId !== 'string' || executionId.length === 0)
+  ) {
     return undefined;
   }
 
@@ -735,13 +823,13 @@ export function parseMicroDuckSimulatorControlMessage(
 }
 
 export function createMicroDuckBotLabPostMessageSourceModule(
-  options: MicroDuckBotLabPostMessageSourceModuleOptions = {}
+  options: MicroDuckBotLabPostMessageSourceModuleOptions = {},
 ) {
   const className = options.className ?? 'BotLabSource';
   const allowedOrigins = JSON.stringify(options.allowedOrigins ?? []);
 
   return `const MESSAGE_TYPE = ${JSON.stringify(
-    MICRODUCK_SIMULATOR_CONTROL_MESSAGE_TYPE
+    MICRODUCK_SIMULATOR_CONTROL_MESSAGE_TYPE,
   )};
 const ALLOWED_ORIGINS = ${allowedOrigins};
 const ACTIVE_SOURCES = new Set();
@@ -1130,13 +1218,14 @@ function parseControlSourceMessage(event) {
 }
 
 export function createMicroDuckOfficialSimulatorPatchInstructions(
-  options: MicroDuckOfficialSimulatorPatchOptions = {}
+  options: MicroDuckOfficialSimulatorPatchOptions = {},
 ): MicroDuckOfficialSimulatorPatchInstructions {
   const className = options.className ?? 'BotLabSource';
   // The bundled Feet policy stalls at the upstream reverse/angular inputs.
   // Measured simulator calibration: reverse -0.4, angular 2 (minimum 1.5 while turning).
   const velocityLimitsExpression =
-    options.velocityLimitsExpression ?? '(loco === "legs" ? [VEL_FWD, -0.4, 2] : velLims())';
+    options.velocityLimitsExpression ??
+    '(loco === "legs" ? [VEL_FWD, -0.4, 2] : velLims())';
 
   return {
     modulePath: MICRODUCK_BOTLAB_SOURCE_MODULE_PATH,
@@ -1149,25 +1238,40 @@ export function createMicroDuckOfficialSimulatorPatchInstructions(
 
 export function patchMicroDuckOfficialSimulatorGameSource(
   source: string,
-  options: MicroDuckOfficialSimulatorPatchOptions = {}
+  options: MicroDuckOfficialSimulatorPatchOptions = {},
 ): MicroDuckOfficialSimulatorGamePatchResult {
   const instructions =
     createMicroDuckOfficialSimulatorPatchInstructions(options);
   const warnings: string[] = [];
   const legacyFactoryLine = createMicroDuckOfficialSimulatorPatchInstructions({
-    ...options, velocityLimitsExpression: options.velocityLimitsExpression ?? 'velLims()',
-  }).sourceFactoryLine;
-  const reverseCalibratedFactoryLine = createMicroDuckOfficialSimulatorPatchInstructions({
     ...options,
-    velocityLimitsExpression: options.velocityLimitsExpression ?? '(loco === "legs" ? [VEL_FWD, -0.4, VEL_ANG] : velLims())',
+    velocityLimitsExpression: options.velocityLimitsExpression ?? 'velLims()',
   }).sourceFactoryLine;
-  const distanceFactoryLine = legacyFactoryLine.replace(', getHeading: () => duckYaw(data.qpos)', '');
+  const reverseCalibratedFactoryLine =
+    createMicroDuckOfficialSimulatorPatchInstructions({
+      ...options,
+      velocityLimitsExpression:
+        options.velocityLimitsExpression ??
+        '(loco === "legs" ? [VEL_FWD, -0.4, VEL_ANG] : velLims())',
+    }).sourceFactoryLine;
+  const distanceFactoryLine = legacyFactoryLine.replace(
+    ', getHeading: () => duckYaw(data.qpos)',
+    '',
+  );
   const lockedFactoryLine = distanceFactoryLine.replace(
     ', getPosition: () => [data.qpos[0], data.qpos[1]]',
-    ''
+    '',
   );
-  const previousFactoryLine = lockedFactoryLine.replace(', isInputLocked: () => inputLocked', '');
-  let patched = source.replace(/^([ \t]*)const botLabSource = new [\w$]+\(.*\);$/m, (_line, indent: string) => indent + instructions.sourceFactoryLine).replace(previousFactoryLine, instructions.sourceFactoryLine)
+  const previousFactoryLine = lockedFactoryLine.replace(
+    ', isInputLocked: () => inputLocked',
+    '',
+  );
+  let patched = source
+    .replace(
+      /^([ \t]*)const botLabSource = new [\w$]+\(.*\);$/m,
+      (_line, indent: string) => indent + instructions.sourceFactoryLine,
+    )
+    .replace(previousFactoryLine, instructions.sourceFactoryLine)
     .replace(lockedFactoryLine, instructions.sourceFactoryLine)
     .replace(distanceFactoryLine, instructions.sourceFactoryLine)
     .replace(legacyFactoryLine, instructions.sourceFactoryLine)
@@ -1180,12 +1284,12 @@ export function patchMicroDuckOfficialSimulatorGameSource(
   if (!patched.includes(instructions.sourceFactoryLine)) {
     const next = insertBeforeControllerConstruction(
       patched,
-      instructions.sourceFactoryLine
+      instructions.sourceFactoryLine,
     );
 
     if (next === patched) {
       warnings.push(
-        'Could not find the official simulator Controller construction. Add the BotLabSource factory manually near initControls().'
+        'Could not find the official simulator Controller construction. Add the BotLabSource factory manually near initControls().',
       );
     }
 
@@ -1195,12 +1299,12 @@ export function patchMicroDuckOfficialSimulatorGameSource(
   if (!controllerSourcesInclude(patched, instructions.controllerSourceName)) {
     const next = insertControllerSource(
       patched,
-      instructions.controllerSourceName
+      instructions.controllerSourceName,
     );
 
     if (next === patched) {
       warnings.push(
-        'Could not find a Controller sources array. Add botLabSource to the sources list manually.'
+        'Could not find a Controller sources array. Add botLabSource to the sources list manually.',
       );
     }
 
@@ -1215,30 +1319,58 @@ export function patchMicroDuckOfficialSimulatorGameSource(
 }
 
 export function createMicroDuckSimulatorControlSource(
-  artifact: CompiledBehaviorArtifact
+  artifact: CompiledBehaviorArtifact,
 ): MicroDuckSimulatorControlSource {
   const frames: MicroDuckSimulatorControlFrame[] = [];
   const errors: string[] = [];
 
   let nodes = 0;
   function lower(commands: unknown, depth = 0) {
-    if (!Array.isArray(commands) || depth > 16) { errors.push('Invalid conditional branch or nesting limit.'); return; }
+    if (!Array.isArray(commands) || depth > 16) {
+      errors.push('Invalid conditional branch or nesting limit.');
+      return;
+    }
     for (const command of commands) {
-      if (++nodes > 256 || !isRecord(command) || !isRecord(command['inputs'])) { errors.push('Invalid program or too many blocks.'); return; }
-      if (command['commandId'] === 'if-posture' && command['capabilityId'] === 'microduck-control') {
+      if (++nodes > 256 || !isRecord(command) || !isRecord(command['inputs'])) {
+        errors.push('Invalid program or too many blocks.');
+        return;
+      }
+      if (
+        command['commandId'] === 'if-posture' &&
+        command['capabilityId'] === 'microduck-control'
+      ) {
         const input = command['inputs'];
         const condition = input['condition'];
-        if (!isRecord(condition) || condition['type'] !== 'posture' || !['sit', 'stand', 'transitioning'].includes(String(condition['posture']))) {
-          errors.push('Invalid posture condition.'); continue;
+        if (
+          !isRecord(condition) ||
+          condition['type'] !== 'posture' ||
+          !['sit', 'stand', 'transitioning'].includes(
+            String(condition['posture']),
+          )
+        ) {
+          errors.push('Invalid posture condition.');
+          continue;
         }
         const index = frames.length;
         const frame: MicroDuckSimulatorConditionFrame = {
-          id: String(command['id']), targetId: String(command['targetId']), sourceBlockId: command['sourceBlockId'] as string | undefined, iterations: command['iterations'] as ProgramIteration[] | undefined,
-          type: 'posture-condition', posture: condition['posture'] as 'sit' | 'stand' | 'transitioning', thenIndex: index + 1, elseIndex: 0, endIndex: 0,
+          id: String(command['id']),
+          targetId: String(command['targetId']),
+          sourceBlockId: command['sourceBlockId'] as string | undefined,
+          iterations: command['iterations'] as ProgramIteration[] | undefined,
+          type: 'posture-condition',
+          posture: condition['posture'] as 'sit' | 'stand' | 'transitioning',
+          thenIndex: index + 1,
+          elseIndex: 0,
+          endIndex: 0,
         };
         frames.push(frame);
         lower(input['then'], depth + 1);
-        const jump: MicroDuckSimulatorJumpFrame = { id: `${frame.id}-end`, targetId: frame.targetId, type: 'jump', nextIndex: 0 };
+        const jump: MicroDuckSimulatorJumpFrame = {
+          id: `${frame.id}-end`,
+          targetId: frame.targetId,
+          type: 'jump',
+          nextIndex: 0,
+        };
         frames.push(jump);
         frame.elseIndex = frames.length;
         lower(input['else'], depth + 1);
@@ -1246,9 +1378,15 @@ export function createMicroDuckSimulatorControlSource(
         jump.nextIndex = frames.length;
         continue;
       }
-      const frame = createMicroDuckSimulatorControlFrame(command as unknown as CompiledCommand);
+      const frame = createMicroDuckSimulatorControlFrame(
+        command as unknown as CompiledCommand,
+      );
       if (typeof frame === 'string') errors.push(frame);
-      else frames.push({ ...frame, iterations: command['iterations'] as ProgramIteration[] | undefined });
+      else
+        frames.push({
+          ...frame,
+          iterations: command['iterations'] as ProgramIteration[] | undefined,
+        });
     }
   }
   lower(artifact.commands);
@@ -1256,6 +1394,7 @@ export function createMicroDuckSimulatorControlSource(
   return {
     artifactId: artifact.id,
     targetId: artifact.targetId,
+    program: identifyCompiledProgram(artifact),
     frames,
     errors,
     messages: frames.map(formatControlFrameMessage),
@@ -1263,7 +1402,7 @@ export function createMicroDuckSimulatorControlSource(
 }
 
 function createMicroDuckSnapshot(
-  snapshot: Omit<SimulatorSnapshot, 'simulatorId'>
+  snapshot: Omit<SimulatorSnapshot, 'simulatorId'>,
 ): SimulatorSnapshot {
   return createSimulatorSnapshot({
     simulatorId: microDuckOfficialSimulatorIntegration.id,
@@ -1272,12 +1411,21 @@ function createMicroDuckSnapshot(
 }
 
 function createMicroDuckSimulatorControlFrame(
-  command: CompiledCommand
+  command: CompiledCommand,
 ): MicroDuckSimulatorControlFrame | string {
-  if (command.capabilityId === 'microduck-posture' && command.commandId === 'set-posture') {
+  if (
+    command.capabilityId === 'microduck-posture' &&
+    command.commandId === 'set-posture'
+  ) {
     const posture = command.inputs['posture'];
     if (posture !== 'sit' && posture !== 'stand') return 'Invalid posture.';
-    return { id: command.id, sourceBlockId: command.sourceBlockId, targetId: command.targetId, type: 'posture', posture };
+    return {
+      id: command.id,
+      sourceBlockId: command.sourceBlockId,
+      targetId: command.targetId,
+      type: 'posture',
+      posture,
+    };
   }
   if (
     command.capabilityId === 'microduck-leds' &&
@@ -1319,14 +1467,31 @@ function createMicroDuckSimulatorControlFrame(
       return `MicroDuck simulator command ${command.id} needs numeric differential drive inputs.`;
     }
 
-    if (durationMs !== undefined && (typeof durationMs !== 'number' || !Number.isFinite(durationMs) || durationMs < 0)) {
+    if (
+      durationMs !== undefined &&
+      (typeof durationMs !== 'number' ||
+        !Number.isFinite(durationMs) ||
+        durationMs < 0)
+    ) {
       return `MicroDuck simulator command ${command.id} needs numeric duration.`;
     }
 
-    if (distanceMeters !== undefined && (typeof distanceMeters !== 'number' || !Number.isFinite(distanceMeters) || distanceMeters < 0)) {
+    if (
+      distanceMeters !== undefined &&
+      (typeof distanceMeters !== 'number' ||
+        !Number.isFinite(distanceMeters) ||
+        distanceMeters < 0)
+    ) {
       return `MicroDuck simulator command ${command.id} needs numeric distance.`;
     }
-    if (angleDegrees !== undefined && (typeof angleDegrees !== 'number' || !Number.isFinite(angleDegrees) || Math.abs(angleDegrees) > 360 || distanceMeters !== undefined || durationMs !== undefined)) {
+    if (
+      angleDegrees !== undefined &&
+      (typeof angleDegrees !== 'number' ||
+        !Number.isFinite(angleDegrees) ||
+        Math.abs(angleDegrees) > 360 ||
+        distanceMeters !== undefined ||
+        durationMs !== undefined)
+    ) {
       return `MicroDuck simulator command ${command.id} needs an exclusive angle from -360 to 360 degrees.`;
     }
 
@@ -1356,7 +1521,7 @@ function isMicroDuckLedPattern(value: unknown): value is MicroDuckLedPattern {
 }
 
 function isMicroDuckBotLabOfficialSource(
-  source: MicroDuckOfficialSimulatorSource | undefined
+  source: MicroDuckOfficialSimulatorSource | undefined,
 ): source is MicroDuckBotLabOfficialSource {
   return (
     Boolean(source) &&
@@ -1380,10 +1545,10 @@ function insertAfterLastImport(source: string, importLine: string) {
 
 function insertBeforeControllerConstruction(
   source: string,
-  sourceFactoryLine: string
+  sourceFactoryLine: string,
 ) {
   const controllerMatch = source.match(
-    /^(\s*)(?:controller|const\s+controller|let\s+controller)\s*=\s*new Controller\(\{\s*sources:\s*\[/m
+    /^(\s*)(?:controller|const\s+controller|let\s+controller)\s*=\s*new Controller\(\{\s*sources:\s*\[/m,
   );
 
   if (!controllerMatch || controllerMatch.index === undefined) {
@@ -1393,7 +1558,7 @@ function insertBeforeControllerConstruction(
   const indent = controllerMatch[1] ?? '';
 
   return `${source.slice(0, controllerMatch.index)}${indent}${sourceFactoryLine}\n${source.slice(
-    controllerMatch.index
+    controllerMatch.index,
   )}`;
 }
 
@@ -1433,30 +1598,47 @@ function readControllerSourcesArray(source: string) {
 }
 
 function isMicroDuckSimulatorControlSource(
-  value: unknown
+  value: unknown,
 ): value is MicroDuckSimulatorControlSource {
   if (!isRecord(value)) {
     return false;
   }
 
   return (
+    (value['program'] === undefined ||
+      (isRecord(value['program']) &&
+        typeof value['program']['programId'] === 'string' &&
+        typeof value['program']['revision'] === 'string' &&
+        value['program']['targetId'] === value['targetId'])) &&
     typeof value['artifactId'] === 'string' &&
     typeof value['targetId'] === 'string' &&
     Array.isArray(value['frames']) &&
     Array.isArray(value['messages']) &&
     Array.isArray(value['errors']) &&
-    value['frames'].length <= 512 && value['frames'].every(isMicroDuckSimulatorControlFrame) &&
-    value['frames'].every((frame, index, frames) => frame.type === 'jump' ? frame.nextIndex > index && frame.nextIndex <= frames.length : frame.type !== 'posture-condition' ||
-      (frame.thenIndex === index + 1 && frame.elseIndex > index && frame.elseIndex <= frame.endIndex && frame.endIndex <= frames.length)) &&
+    value['frames'].length <= 512 &&
+    value['frames'].every(isMicroDuckSimulatorControlFrame) &&
+    value['frames'].every((frame, index, frames) =>
+      frame.type === 'jump'
+        ? frame.nextIndex > index && frame.nextIndex <= frames.length
+        : frame.type !== 'posture-condition' ||
+          (frame.thenIndex === index + 1 &&
+            frame.elseIndex > index &&
+            frame.elseIndex <= frame.endIndex &&
+            frame.endIndex <= frames.length),
+    ) &&
     value['messages'].every((message) => typeof message === 'string') &&
     value['errors'].every((error) => typeof error === 'string')
   );
 }
 
 function isMicroDuckSimulatorControlFrame(
-  value: unknown
+  value: unknown,
 ): value is MicroDuckSimulatorControlFrame {
-  if (!isRecord(value) || (value['sourceBlockId'] !== undefined && typeof value['sourceBlockId'] !== 'string')) {
+  if (
+    !isRecord(value) ||
+    (value['sourceBlockId'] !== undefined &&
+      typeof value['sourceBlockId'] !== 'string')
+  ) {
     return false;
   }
 
@@ -1465,17 +1647,29 @@ function isMicroDuckSimulatorControlFrame(
     typeof value['id'] === 'string' &&
     typeof value['targetId'] === 'string' &&
     isMicroDuckLedPattern(value['pattern']) &&
-    typeof value['brightness'] === 'number'
-    && Number.isFinite(value['brightness'])
+    typeof value['brightness'] === 'number' &&
+    Number.isFinite(value['brightness'])
   ) {
     return true;
   }
 
-  if (typeof value['id'] === 'string' && typeof value['targetId'] === 'string') {
-    if (value['type'] === 'posture') return value['posture'] === 'sit' || value['posture'] === 'stand';
-    if (value['type'] === 'posture-condition') return ['sit', 'stand', 'transitioning'].includes(String(value['posture'])) &&
-      ['thenIndex', 'elseIndex', 'endIndex'].every(key => Number.isInteger(value[key]) && Number(value[key]) >= 0);
-    if (value['type'] === 'jump') return Number.isInteger(value['nextIndex']) && Number(value['nextIndex']) >= 0;
+  if (
+    typeof value['id'] === 'string' &&
+    typeof value['targetId'] === 'string'
+  ) {
+    if (value['type'] === 'posture')
+      return value['posture'] === 'sit' || value['posture'] === 'stand';
+    if (value['type'] === 'posture-condition')
+      return (
+        ['sit', 'stand', 'transitioning'].includes(String(value['posture'])) &&
+        ['thenIndex', 'elseIndex', 'endIndex'].every(
+          (key) => Number.isInteger(value[key]) && Number(value[key]) >= 0,
+        )
+      );
+    if (value['type'] === 'jump')
+      return (
+        Number.isInteger(value['nextIndex']) && Number(value['nextIndex']) >= 0
+      );
   }
   return (
     value['type'] === 'differential-drive' &&
@@ -1486,11 +1680,19 @@ function isMicroDuckSimulatorControlFrame(
     typeof value['rightPower'] === 'number' &&
     Number.isFinite(value['rightPower']) &&
     (value['durationMs'] === undefined ||
-      (typeof value['durationMs'] === 'number' && Number.isFinite(value['durationMs']) && value['durationMs'] >= 0)) &&
+      (typeof value['durationMs'] === 'number' &&
+        Number.isFinite(value['durationMs']) &&
+        value['durationMs'] >= 0)) &&
     (value['distanceMeters'] === undefined ||
-      (typeof value['distanceMeters'] === 'number' && Number.isFinite(value['distanceMeters']) && value['distanceMeters'] >= 0)) &&
+      (typeof value['distanceMeters'] === 'number' &&
+        Number.isFinite(value['distanceMeters']) &&
+        value['distanceMeters'] >= 0)) &&
     (value['angleDegrees'] === undefined ||
-      (typeof value['angleDegrees'] === 'number' && Number.isFinite(value['angleDegrees']) && Math.abs(value['angleDegrees']) <= 360 && value['distanceMeters'] === undefined && value['durationMs'] === undefined))
+      (typeof value['angleDegrees'] === 'number' &&
+        Number.isFinite(value['angleDegrees']) &&
+        Math.abs(value['angleDegrees']) <= 360 &&
+        value['distanceMeters'] === undefined &&
+        value['durationMs'] === undefined))
   );
 }
 
@@ -1522,7 +1724,8 @@ function getFrameDurationMs(frame: MicroDuckSimulatorControlFrame) {
 }
 
 function formatControlFrameMessage(frame: MicroDuckSimulatorControlFrame) {
-  if (frame.type === 'posture' || frame.type === 'posture-condition') return `${frame.type} -> ${frame.posture}`;
+  if (frame.type === 'posture' || frame.type === 'posture-condition')
+    return `${frame.type} -> ${frame.posture}`;
   if (frame.type === 'jump') return `branch-end -> ${frame.nextIndex}`;
   if (frame.type === 'led-pattern') {
     return `${frame.type} -> ${JSON.stringify({
@@ -1543,6 +1746,9 @@ function formatControlFrameMessage(frame: MicroDuckSimulatorControlFrame) {
 /** Expand only the known upstream arena declarations; refuse unknown revisions. */
 export function patchMicroDuckOfficialSimulatorArenaSource(source: string) {
   const declaration = /export const ARENA_HALF = (?:1\.5|6);/;
-  if (!declaration.test(source)) throw new Error("Unknown official arena size declaration. Review the BotLab arena patch.");
-  return source.replace(declaration, "export const ARENA_HALF = 6;");
+  if (!declaration.test(source))
+    throw new Error(
+      'Unknown official arena size declaration. Review the BotLab arena patch.',
+    );
+  return source.replace(declaration, 'export const ARENA_HALF = 6;');
 }

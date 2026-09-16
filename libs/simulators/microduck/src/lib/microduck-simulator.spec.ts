@@ -61,7 +61,7 @@ describe('microDuckSimulatorBridge', () => {
     const bridge = createMicroDuckSimulatorBridge();
 
     expect(() => bridge.simulate(createCompiledBehaviorArtifact())).toThrow(
-      'Boot the MicroDuck simulator target before simulating.'
+      'Boot the MicroDuck simulator target before simulating.',
     );
   });
 
@@ -84,7 +84,7 @@ describe('microDuckSimulatorBridge', () => {
             },
           },
         ],
-      })
+      }),
     ).toMatchObject({
       artifactId: 'artifact-microduck-led-demo-microduck-sim-smile-plan',
       targetId: 'microduck-sim',
@@ -123,9 +123,9 @@ describe('microDuckSimulatorBridge', () => {
             commandId: 'unknown-command',
           },
         ],
-      })
+      }),
     ).toThrow(
-      'Unsupported MicroDuck simulator command unknown-command for capability microduck-leds.'
+      'Unsupported MicroDuck simulator command unknown-command for capability microduck-leds.',
     );
   });
 
@@ -151,7 +151,7 @@ describe('microDuckSimulatorBridge', () => {
             },
           },
         ],
-      })
+      }),
     );
 
     source.poll?.(1 / 50);
@@ -187,7 +187,7 @@ describe('microDuckSimulatorBridge', () => {
     });
 
     source.load(
-      createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact())
+      createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact()),
     );
     source.poll?.(1 / 50);
 
@@ -205,7 +205,7 @@ describe('microDuckSimulatorBridge', () => {
     });
 
     source.load(
-      createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact())
+      createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact()),
     );
     source.poll?.(1 / 50);
     source.dispose?.();
@@ -236,7 +236,7 @@ describe('microDuckSimulatorBridge', () => {
     expect(sources).toEqual([connection.source]);
 
     connection.load(
-      createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact())
+      createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact()),
     );
     connection.source.poll?.(1 / 50);
 
@@ -268,7 +268,7 @@ describe('microDuckSimulatorBridge', () => {
 
   it('serializes BotLab control frames for a simulator postMessage host', () => {
     const controlSource = createMicroDuckSimulatorControlSource(
-      createCompiledBehaviorArtifact()
+      createCompiledBehaviorArtifact(),
     );
     const postedMessages: unknown[] = [];
 
@@ -279,14 +279,14 @@ describe('microDuckSimulatorBridge', () => {
         },
       },
       controlSource,
-      'https://simulator.test'
+      'https://simulator.test',
     );
 
     expect(postedMessages).toEqual([
       createMicroDuckSimulatorControlMessage(controlSource),
     ]);
     expect(
-      parseMicroDuckSimulatorControlMessage(postedMessages[0])
+      parseMicroDuckSimulatorControlMessage(postedMessages[0]),
     ).toMatchObject({
       simulatorId: 'microduck-official-sim',
       source: {
@@ -308,7 +308,7 @@ describe('microDuckSimulatorBridge', () => {
     fakeWindow.dispatch({
       origin: 'https://botlab.test',
       data: createMicroDuckSimulatorControlMessage(
-        createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact())
+        createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact()),
       ),
     });
     source.poll?.(1 / 50);
@@ -332,7 +332,7 @@ describe('microDuckSimulatorBridge', () => {
               },
             },
           ],
-        })
+        }),
       ),
     });
     source.poll?.(1 / 50);
@@ -347,11 +347,17 @@ describe('microDuckSimulatorBridge', () => {
       allowedOrigins: ['https://botlab.test'],
       getVelocityLimits: () => [2, -1, 3],
     });
-    const controlSource = createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact());
-    const deliver = (executionId: string) => fakeWindow.dispatch({
-      origin: 'https://botlab.test',
-      data: createMicroDuckSimulatorControlMessage(controlSource, executionId),
-    });
+    const controlSource = createMicroDuckSimulatorControlSource(
+      createCompiledBehaviorArtifact(),
+    );
+    const deliver = (executionId: string) =>
+      fakeWindow.dispatch({
+        origin: 'https://botlab.test',
+        data: createMicroDuckSimulatorControlMessage(
+          controlSource,
+          executionId,
+        ),
+      });
     source.init?.();
     deliver('first');
     source.poll?.(0.02);
@@ -366,9 +372,12 @@ describe('microDuckSimulatorBridge', () => {
     deliver('first');
     source.poll?.(0.02);
     expect(source.axes.jaw).toBe(0);
-    expect(parseMicroDuckSimulatorControlMessage({
-      ...createMicroDuckSimulatorControlMessage(controlSource), executionId: 123,
-    })).toBeUndefined();
+    expect(
+      parseMicroDuckSimulatorControlMessage({
+        ...createMicroDuckSimulatorControlMessage(controlSource),
+        executionId: 123,
+      }),
+    ).toBeUndefined();
     source.dispose?.();
   });
 
@@ -384,7 +393,7 @@ describe('microDuckSimulatorBridge', () => {
     fakeWindow.dispatch({
       origin: 'https://other.test',
       data: createMicroDuckSimulatorControlMessage(
-        createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact())
+        createMicroDuckSimulatorControlSource(createCompiledBehaviorArtifact()),
       ),
     });
     source.poll?.(1 / 50);
@@ -398,10 +407,10 @@ describe('microDuckSimulatorBridge', () => {
     });
 
     expect(moduleSource).toContain(
-      'const MESSAGE_TYPE = "botlab.microduck.control-source.v1";'
+      'const MESSAGE_TYPE = "botlab.microduck.control-source.v1";',
     );
     expect(moduleSource).toContain(
-      'const ALLOWED_ORIGINS = ["http://127.0.0.1:4200"];'
+      'const ALLOWED_ORIGINS = ["http://127.0.0.1:4200"];',
     );
     expect(moduleSource).toContain('export class BotLabSource');
     expect(moduleSource).toContain('window.addEventListener("message"');
@@ -412,19 +421,36 @@ describe('microDuckSimulatorBridge', () => {
       modulePath: 'app/src/game/controls/botlab.js',
       gamePath: 'app/src/game/game.js',
       importLine: 'import { BotLabSource } from "./controls/botlab.js";',
-      sourceFactoryLine:
-        expect.stringContaining('getPostureState: () => ({ supported: loco === "legs"'),
+      sourceFactoryLine: expect.stringContaining(
+        'getPostureState: () => ({ supported: loco === "legs"',
+      ),
       controllerSourceName: 'botLabSource',
     });
   });
 
   it('calibrates the default Feet reverse and angular inputs and preserves custom limits', () => {
     const limits = (loco: string, velocityLimitsExpression?: string) => {
-      const { sourceFactoryLine } = createMicroDuckOfficialSimulatorPatchInstructions({ velocityLimitsExpression });
-      const source = new Function('BotLabSource', 'loco', 'VEL_FWD', 'VEL_ANG', 'velLims',
-        `${sourceFactoryLine}; return botLabSource;`)(
-        class { constructor(options: object) { Object.assign(this, options); } },
-        loco, 0.25, 1, () => loco === 'legs' ? [0.25, -0.2, 1] : [0.6, -0.5, 0.3]
+      const { sourceFactoryLine } =
+        createMicroDuckOfficialSimulatorPatchInstructions({
+          velocityLimitsExpression,
+        });
+      const source = new Function(
+        'BotLabSource',
+        'loco',
+        'VEL_FWD',
+        'VEL_ANG',
+        'velLims',
+        `${sourceFactoryLine}; return botLabSource;`,
+      )(
+        class {
+          constructor(options: object) {
+            Object.assign(this, options);
+          }
+        },
+        loco,
+        0.25,
+        1,
+        () => (loco === 'legs' ? [0.25, -0.2, 1] : [0.6, -0.5, 0.3]),
       );
       return source.getVelocityLimits();
     };
@@ -451,13 +477,13 @@ describe('microDuckSimulatorBridge', () => {
     expect(result.warnings).toEqual([]);
     expect(result.changed).toBe(true);
     expect(result.source).toContain(
-      'import { BotLabSource } from "./controls/botlab.js";'
+      'import { BotLabSource } from "./controls/botlab.js";',
     );
     expect(result.source).toContain(
-      createMicroDuckOfficialSimulatorPatchInstructions().sourceFactoryLine
+      createMicroDuckOfficialSimulatorPatchInstructions().sourceFactoryLine,
     );
     expect(result.source).toContain(
-      'controller = new Controller({ sources: [botLabSource, kbSource] });'
+      'controller = new Controller({ sources: [botLabSource, kbSource] });',
     );
 
     const second = patchMicroDuckOfficialSimulatorGameSource(result.source);
@@ -471,25 +497,37 @@ describe('microDuckSimulatorBridge', () => {
     ', isInputLocked: () => inputLocked',
     ', isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]]',
     ', isInputLocked: () => inputLocked, getPosition: () => [data.qpos[0], data.qpos[1]], getHeading: () => duckYaw(data.qpos)',
-  ])('upgrades an existing simulator patch without declaring the source twice: %s', (callbacks) => {
-    const previous = [
-      `const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims()${callbacks} });`,
-      'const controller = new Controller({ sources: [botLabSource, kbSource] });',
-    ].join('\n');
-    const result = patchMicroDuckOfficialSimulatorGameSource(previous);
-    expect(result.source.match(/const botLabSource =/g)).toHaveLength(1);
-    expect(result.source).toContain('isInputLocked: () => inputLocked');
-    expect(result.source).toContain('[VEL_FWD, -0.4, 2]');
-    expect(patchMicroDuckOfficialSimulatorGameSource(result.source).changed).toBe(false);
-  });
+  ])(
+    'upgrades an existing simulator patch without declaring the source twice: %s',
+    (callbacks) => {
+      const previous = [
+        `const botLabSource = new BotLabSource({ getVelocityLimits: () => velLims()${callbacks} });`,
+        'const controller = new Controller({ sources: [botLabSource, kbSource] });',
+      ].join('\n');
+      const result = patchMicroDuckOfficialSimulatorGameSource(previous);
+      expect(result.source.match(/const botLabSource =/g)).toHaveLength(1);
+      expect(result.source).toContain('isInputLocked: () => inputLocked');
+      expect(result.source).toContain('[VEL_FWD, -0.4, 2]');
+      expect(
+        patchMicroDuckOfficialSimulatorGameSource(result.source).changed,
+      ).toBe(false);
+    },
+  );
 
   it('upgrades a reverse-calibrated host to the measured turn calibration exactly once', () => {
-    const previous = createMicroDuckOfficialSimulatorPatchInstructions().sourceFactoryLine
-      .replace('[VEL_FWD, -0.4, 2]', '[VEL_FWD, -0.4, VEL_ANG]');
+    const previous =
+      createMicroDuckOfficialSimulatorPatchInstructions().sourceFactoryLine.replace(
+        '[VEL_FWD, -0.4, 2]',
+        '[VEL_FWD, -0.4, VEL_ANG]',
+      );
     const result = patchMicroDuckOfficialSimulatorGameSource(previous);
     expect(result.source.match(/const botLabSource =/g)).toHaveLength(1);
-    expect(result.source).toContain(createMicroDuckOfficialSimulatorPatchInstructions().sourceFactoryLine);
-    expect(patchMicroDuckOfficialSimulatorGameSource(result.source).changed).toBe(false);
+    expect(result.source).toContain(
+      createMicroDuckOfficialSimulatorPatchInstructions().sourceFactoryLine,
+    );
+    expect(
+      patchMicroDuckOfficialSimulatorGameSource(result.source).changed,
+    ).toBe(false);
   });
 
   it('executes the generated receiver once after startup unlock, despite delivery retries', () => {
@@ -500,21 +538,34 @@ describe('microDuckSimulatorBridge', () => {
     const BotLabSource = new Function(
       'window',
       moduleSource.replace('export class BotLabSource', 'class BotLabSource') +
-        '\nreturn BotLabSource;'
+        '\nreturn BotLabSource;',
     )(receiverWindow);
     const sourceData = {
       artifactId: 'walk-test',
       targetId: 'microduck-sim',
-      frames: [{
-        id: 'walk', type: 'differential-drive' as const,
-        targetId: 'microduck-sim', leftPower: 1, rightPower: 1, durationMs: 100,
-      }],
-      messages: [], errors: [],
+      frames: [
+        {
+          id: 'walk',
+          type: 'differential-drive' as const,
+          targetId: 'microduck-sim',
+          leftPower: 1,
+          rightPower: 1,
+          durationMs: 100,
+        },
+      ],
+      messages: [],
+      errors: [],
     };
-    const deliver = (origin = 'http://127.0.0.1:4200', executionId?: string) => {
-      receiverWindow.dispatchEvent(new MessageEvent('message', {
-        origin, data: createMicroDuckSimulatorControlMessage(sourceData, executionId),
-      }));
+    const deliver = (
+      origin = 'http://127.0.0.1:4200',
+      executionId?: string,
+    ) => {
+      receiverWindow.dispatchEvent(
+        new MessageEvent('message', {
+          origin,
+          data: createMicroDuckSimulatorControlMessage(sourceData, executionId),
+        }),
+      );
     };
 
     // Buffer before the controller exists, then preserve frames during its entrance.
@@ -563,12 +614,12 @@ describe('microDuckSimulatorBridge', () => {
     await expect(
       loadMicroDuckOfficialSimulatorHost({
         assetPlan: createMicroDuckSimulatorAssetCachePlan(
-          microDuckSimulatorAssetManifest
+          microDuckSimulatorAssetManifest,
         ),
         artifact: createCompiledBehaviorArtifact(),
         loadRuntime: () => runtime,
         getVelocityLimits: () => [2, -1, 3],
-      })
+      }),
     ).resolves.toMatchObject({
       state: 'running',
       messages: [
@@ -601,7 +652,7 @@ describe('microDuckSimulatorBridge', () => {
         artifact: createCompiledBehaviorArtifact(),
         loadRuntime: createFakeOfficialRuntime,
         getVelocityLimits: () => [2, -1, 3],
-      })
+      }),
     ).resolves.toMatchObject({
       state: 'blocked',
       messages: [
@@ -616,7 +667,7 @@ describe('microDuckSimulatorBridge', () => {
     const result = await loadMicroDuckOfficialSimulatorHost({
       assetPlan: createMicroDuckSimulatorAssetCachePlan(
         createReviewedAssetManifest(),
-        [{ id: 'reviewed-policy', sha256: 'a'.repeat(64) }]
+        [{ id: 'reviewed-policy', sha256: 'a'.repeat(64) }],
       ),
       artifact: createCompiledBehaviorArtifact(),
       loadRuntime: () => runtime,
@@ -648,14 +699,14 @@ describe('microDuckSimulatorBridge', () => {
 describe('microDuckSimulatorAssetManifest', () => {
   it('documents upstream assets without marking unreviewed assets ready', () => {
     expect(
-      validateMicroDuckSimulatorAssetManifest(microDuckSimulatorAssetManifest)
+      validateMicroDuckSimulatorAssetManifest(microDuckSimulatorAssetManifest),
     ).toEqual({
       valid: true,
       errors: [],
     });
 
     const plan = createMicroDuckSimulatorAssetCachePlan(
-      microDuckSimulatorAssetManifest
+      microDuckSimulatorAssetManifest,
     );
 
     expect(plan.ready).toBe(false);
@@ -671,21 +722,21 @@ describe('microDuckSimulatorAssetManifest', () => {
     const manifest = createReviewedAssetManifest();
 
     expect(
-      createMicroDuckSimulatorAssetCachePlan(manifest).entries[0]
+      createMicroDuckSimulatorAssetCachePlan(manifest).entries[0],
     ).toMatchObject({
       status: 'missing',
     });
     expect(
       createMicroDuckSimulatorAssetCachePlan(manifest, [
         { id: 'reviewed-policy', sha256: '0'.repeat(64) },
-      ]).entries[0]
+      ]).entries[0],
     ).toMatchObject({
       status: 'stale',
     });
     expect(
       createMicroDuckSimulatorAssetCachePlan(manifest, [
         { id: 'reviewed-policy', sha256: 'a'.repeat(64) },
-      ])
+      ]),
     ).toMatchObject({
       ready: true,
       entries: [{ status: 'ready' }],
@@ -718,7 +769,7 @@ describe('microDuckSimulatorAssetManifest', () => {
     });
 
     await expect(
-      inspectMicroDuckSimulatorAssetCache(manifest, cache, hashTestBytes)
+      inspectMicroDuckSimulatorAssetCache(manifest, cache, hashTestBytes),
     ).resolves.toMatchObject({
       ready: true,
       entries: [{ status: 'ready' }],
@@ -766,7 +817,7 @@ describe('microDuckSimulatorAssetManifest', () => {
       skippedAssetIds: ['reviewed-policy'],
       errors: [
         `Downloaded asset reviewed-policy has SHA-256 ${'b'.repeat(
-          64
+          64,
         )}, expected ${'a'.repeat(64)}.`,
       ],
       plan: {
@@ -819,7 +870,7 @@ describe('microDuckSimulatorAssetManifest', () => {
     await cache.write(manifest.assets[0], new Uint8Array([1, 2, 3]));
 
     await expect(cache.read(manifest.assets[0])).resolves.toEqual(
-      new Uint8Array([1, 2, 3])
+      new Uint8Array([1, 2, 3]),
     );
     expect(cacheStorage.writtenUrls).toEqual([
       'https://botlab.test/cache/microduck/policies/policy.onnx',
@@ -829,27 +880,27 @@ describe('microDuckSimulatorAssetManifest', () => {
   it('downloads assets with fetch and reports HTTP failures', async () => {
     const asset = createReviewedAssetManifest().assets[0];
     const downloader = createMicroDuckFetchAssetDownloader(
-      async () => new Response(new Uint8Array([1, 2]), { status: 200 })
+      async () => new Response(new Uint8Array([1, 2]), { status: 200 }),
     );
 
     await expect(downloader.download(asset)).resolves.toEqual(
-      new Uint8Array([1, 2])
+      new Uint8Array([1, 2]),
     );
 
     const failingDownloader = createMicroDuckFetchAssetDownloader(
-      async () => new Response(undefined, { status: 404 })
+      async () => new Response(undefined, { status: 404 }),
     );
 
     await expect(failingDownloader.download(asset)).rejects.toThrow(
-      'HTTP 404 while downloading https://example.test/policy.onnx.'
+      'HTTP 404 while downloading https://example.test/policy.onnx.',
     );
   });
 
   it('hashes asset bytes with Web Crypto SHA-256', async () => {
     await expect(
-      sha256MicroDuckSimulatorAssetBytes(new Uint8Array([1]))
+      sha256MicroDuckSimulatorAssetBytes(new Uint8Array([1])),
     ).resolves.toBe(
-      '4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a'
+      '4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a',
     );
   });
 });
@@ -903,7 +954,7 @@ function createCompiledBehaviorArtifact(): CompiledBehaviorArtifact {
 }
 
 function createReviewedAssetManifest(
-  overrides: Partial<MicroDuckSimulatorAssetManifest> = {}
+  overrides: Partial<MicroDuckSimulatorAssetManifest> = {},
 ): MicroDuckSimulatorAssetManifest {
   return {
     id: 'test-manifest',
@@ -935,7 +986,7 @@ function createReviewedAssetManifest(
 }
 
 function createMemoryAssetCache(
-  initialAssets: Record<string, Uint8Array> = {}
+  initialAssets: Record<string, Uint8Array> = {},
 ): MicroDuckSimulatorAssetCacheStore {
   const assets = new Map(Object.entries(initialAssets));
 
@@ -999,7 +1050,10 @@ function createFakeMessageWindow() {
   const listeners = new Set<(event: MessageEvent) => void>();
 
   return {
-    addEventListener(type: string, listener: EventListenerOrEventListenerObject) {
+    addEventListener(
+      type: string,
+      listener: EventListenerOrEventListenerObject,
+    ) {
       if (type !== 'message' || typeof listener !== 'function') {
         return;
       }
@@ -1008,7 +1062,7 @@ function createFakeMessageWindow() {
     },
     removeEventListener(
       type: string,
-      listener: EventListenerOrEventListenerObject
+      listener: EventListenerOrEventListenerObject,
     ) {
       if (type !== 'message' || typeof listener !== 'function') {
         return;

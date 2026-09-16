@@ -5,10 +5,7 @@
   "backends": {
     "iframe": {
       "checks": {
-        "decisions": [
-          true,
-          false
-        ],
+        "decisions": [true, false],
         "nestedProgress": true,
         "finalPosture": {
           "mode": "walk",
@@ -21,10 +18,7 @@
     },
     "native": {
       "checks": {
-        "decisions": [
-          true,
-          false
-        ],
+        "decisions": [true, false],
         "nestedProgress": true,
         "finalPosture": {
           "mode": "stand",

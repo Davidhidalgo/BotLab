@@ -10,14 +10,14 @@ Requires `uv`, Python 3, Node 22.22 (or a compatible TypeScript-stripping runtim
 
 ```sh
 python3 tools/microduck/native/prepare.py
-npm run test:simulator-native
+pnpm run test:simulator-native
 tmp/microduck-native/venv/bin/python tools/microduck/native/angles.py
 tmp/microduck-native/venv/bin/python tools/microduck/native/reactive.py
 tmp/microduck-native/venv/bin/python tools/microduck/native/lifecycle.py
 tmp/microduck-native/venv/bin/python tools/microduck/native/viewer.py
 ```
 
-For the app, run `npm run microduck:native` and `npm run dev`, then select native MuJoCo and connect. Run `npm run test:simulator-native-app` separately for browser acceptance, and `npm run test:simulator-native-video` for received/painted fps and policy-rate checks (requires Chrome/Playwright). Stop the gateway before the standalone checks below.
+For the app, run `pnpm run microduck:native` and `pnpm run dev`, then select native MuJoCo and connect. Run `pnpm run test:simulator-native-app` separately for browser acceptance, and `pnpm run test:simulator-native-video` for received/painted fps and policy-rate checks (requires Chrome/Playwright). Stop the gateway before the standalone checks below.
 
 Run checks sequentially: they share port 17831 and measurement depends on keeping real time. The preparer downloads official source revisions, a local Rust toolchain, Python and the locked execution-only dependencies. It builds `robotd`, `robotctl` and `tofd`, verifies policy checksums, and writes `tmp/microduck-native/setup.json`. It changes no shell profile or system installation. The measured cache/build footprint was about 2.2 GB; the first Rust build took 37 seconds, excluding downloads and toolchain installation. A warm preparation is not a cold-install benchmark.
 
@@ -48,15 +48,15 @@ The pinned body branch lacks the launcher's newer camera arguments. `mediad` is 
 
 <!-- native companion build command from ../../../package.json and external acceptance from verify-app.mjs -->
 
-After preparation, `npm run build:simulator-macos` creates the standalone Apple Silicon application. See [its build and usage guide](../../../apps/simulator-macos/README.md). The development equivalent is `npm run microduck:native -- --presentation external`. Close either mode before running standalone native probes because they share the body port.
+After preparation, `pnpm run build:simulator-macos` creates the standalone Apple Silicon application. See [its build and usage guide](../../../apps/simulator-macos/README.md). The development equivalent is `pnpm run microduck:native --presentation external`. Close either mode before running standalone native probes because they share the body port.
 
-With the companion and editor running, `BOTLAB_NATIVE_PRESENTATION=external npm run test:simulator-native-app` verifies the external window integration and zero video requests. The existing embedded-app and video checks retain their default behavior.
+With the companion and editor running, `BOTLAB_NATIVE_PRESENTATION=external pnpm run test:simulator-native-app` verifies the external window integration and zero video requests. The existing embedded-app and video checks retain their default behavior.
 
 ## Posture block acceptance
 
 <!-- posture acceptance command from ../../../package.json and verify-posture.mjs -->
 
-Run `npm run test:simulator-native-posture` with the updated gateway and editor. It checks repeated explicit postures, posture/walk sequencing, final physical sitting and cancellation during rising. Set `BOTLAB_QA_URL` for a compiled preview and add its exact `--origin` to the gateway. Use this to avoid development hot reload during long physics checks. Results are written to `tmp/native-posture-qa/`.
+Run `pnpm run test:simulator-native-posture` with the updated gateway and editor. It checks repeated explicit postures, posture/walk sequencing, final physical sitting and cancellation during rising. Set `BOTLAB_QA_URL` for a compiled preview and add its exact `--origin` to the gateway. Use this to avoid development hot reload during long physics checks. Results are written to `tmp/native-posture-qa/`.
 
 <!-- posture acceptance from verify-posture.mjs -->
 

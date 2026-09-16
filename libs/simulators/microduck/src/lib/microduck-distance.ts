@@ -1,7 +1,7 @@
 // Self-contained so the browser bridge can embed the same tracker in its generated module.
 export function createMicroDuckDistanceTracker(
   target: number,
-  readPosition?: () => readonly number[]
+  readPosition?: () => readonly number[],
 ) {
   let origin: number[] | undefined;
   let previous: number[] | undefined;
@@ -45,7 +45,7 @@ export function createMicroDuckDistanceTracker(
     elapsed += dt;
     const distanceMeters = Math.hypot(
       point[0] - origin[0],
-      point[1] - origin[1]
+      point[1] - origin[1],
     );
     if (distanceMeters >= target) return { distanceMeters, done: true };
     if (distanceMeters > best + 0.01) {
@@ -56,8 +56,8 @@ export function createMicroDuckDistanceTracker(
       elapsed - lastProgressAt >= 10
         ? 'motion-stalled'
         : elapsed > Math.max(30, target / 0.05)
-        ? 'motion-timeout'
-        : undefined;
+          ? 'motion-timeout'
+          : undefined;
     return { distanceMeters, done: false, error };
   };
 }

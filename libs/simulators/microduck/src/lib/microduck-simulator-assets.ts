@@ -60,22 +60,22 @@ export interface MicroDuckSimulatorCachedAsset {
 
 export interface MicroDuckSimulatorAssetCacheStore {
   read(
-    asset: MicroDuckSimulatorAssetManifestEntry
+    asset: MicroDuckSimulatorAssetManifestEntry,
   ): Uint8Array | undefined | Promise<Uint8Array | undefined>;
   write(
     asset: MicroDuckSimulatorAssetManifestEntry,
-    bytes: Uint8Array
+    bytes: Uint8Array,
   ): void | Promise<void>;
 }
 
 export interface MicroDuckSimulatorAssetDownloader {
   download(
-    asset: MicroDuckSimulatorAssetManifestEntry
+    asset: MicroDuckSimulatorAssetManifestEntry,
   ): Uint8Array | Promise<Uint8Array>;
 }
 
 export type MicroDuckSimulatorAssetHashFunction = (
-  bytes: Uint8Array
+  bytes: Uint8Array,
 ) => string | Promise<string>;
 
 export type MicroDuckSimulatorAssetCacheStatus =
@@ -125,7 +125,7 @@ export interface MicroDuckBrowserAssetCacheStoreOptions {
 
 export type MicroDuckSimulatorAssetFetchFunction = (
   input: RequestInfo | URL,
-  init?: RequestInit
+  init?: RequestInit,
 ) => Promise<Response>;
 
 const MICRODUCK_RL_REVISION = '53b8971b61baf5b7f3c16d135dd7cac37623de4b';
@@ -211,14 +211,14 @@ export const microDuckSimulatorAssetManifest: MicroDuckSimulatorAssetManifest =
   };
 
 export function validateMicroDuckSimulatorAssetManifest(
-  manifest: MicroDuckSimulatorAssetManifest
+  manifest: MicroDuckSimulatorAssetManifest,
 ): MicroDuckSimulatorAssetManifestValidationResult {
   const errors: string[] = [];
   const assetIds = new Set<string>();
 
   if (manifest.simulatorId !== 'microduck-official-sim') {
     errors.push(
-      `Manifest ${manifest.id} targets ${manifest.simulatorId}, expected microduck-official-sim.`
+      `Manifest ${manifest.id} targets ${manifest.simulatorId}, expected microduck-official-sim.`,
     );
   }
 
@@ -243,7 +243,7 @@ export function validateMicroDuckSimulatorAssetManifest(
 
     if (asset.expectedSha256 && !isSha256(asset.expectedSha256)) {
       errors.push(
-        `Asset ${asset.id} expectedSha256 must be a SHA-256 hex digest.`
+        `Asset ${asset.id} expectedSha256 must be a SHA-256 hex digest.`,
       );
     }
 
@@ -260,13 +260,13 @@ export function validateMicroDuckSimulatorAssetManifest(
 
 export function createMicroDuckSimulatorAssetCachePlan(
   manifest: MicroDuckSimulatorAssetManifest,
-  cachedAssets: MicroDuckSimulatorCachedAsset[] = []
+  cachedAssets: MicroDuckSimulatorCachedAsset[] = [],
 ): MicroDuckSimulatorAssetCachePlan {
   const cachedAssetsById = new Map(
-    cachedAssets.map((asset) => [asset.id, asset])
+    cachedAssets.map((asset) => [asset.id, asset]),
   );
   const entries = manifest.assets.map((asset) =>
-    createCachePlanEntry(asset, cachedAssetsById.get(asset.id))
+    createCachePlanEntry(asset, cachedAssetsById.get(asset.id)),
   );
 
   return {
@@ -280,7 +280,7 @@ export function createMicroDuckSimulatorAssetCachePlan(
 export async function inspectMicroDuckSimulatorAssetCache(
   manifest: MicroDuckSimulatorAssetManifest,
   cache: MicroDuckSimulatorAssetCacheStore,
-  hashBytes: MicroDuckSimulatorAssetHashFunction
+  hashBytes: MicroDuckSimulatorAssetHashFunction,
 ): Promise<MicroDuckSimulatorAssetCachePlan> {
   const maybeCachedAssets = await Promise.all(
     manifest.assets.map(async (asset) => {
@@ -294,17 +294,17 @@ export async function inspectMicroDuckSimulatorAssetCache(
         id: asset.id,
         sha256: await hashBytes(bytes),
       };
-    })
+    }),
   );
 
   return createMicroDuckSimulatorAssetCachePlan(
     manifest,
-    maybeCachedAssets.filter((asset) => asset !== undefined)
+    maybeCachedAssets.filter((asset) => asset !== undefined),
   );
 }
 
 export async function setupMicroDuckSimulatorAssetCache(
-  options: MicroDuckSimulatorAssetCacheSetupOptions
+  options: MicroDuckSimulatorAssetCacheSetupOptions,
 ): Promise<MicroDuckSimulatorAssetCacheSetupResult> {
   const validation = validateMicroDuckSimulatorAssetManifest(options.manifest);
 
@@ -320,7 +320,7 @@ export async function setupMicroDuckSimulatorAssetCache(
   const initialPlan = await inspectMicroDuckSimulatorAssetCache(
     options.manifest,
     options.cache,
-    options.hashBytes
+    options.hashBytes,
   );
   const downloadedAssetIds: string[] = [];
   const skippedAssetIds: string[] = [];
@@ -343,7 +343,7 @@ export async function setupMicroDuckSimulatorAssetCache(
 
       if (sha256 !== entry.asset.expectedSha256) {
         errors.push(
-          `Downloaded asset ${entry.asset.id} has SHA-256 ${sha256}, expected ${entry.asset.expectedSha256}.`
+          `Downloaded asset ${entry.asset.id} has SHA-256 ${sha256}, expected ${entry.asset.expectedSha256}.`,
         );
         skippedAssetIds.push(entry.asset.id);
         continue;
@@ -355,7 +355,7 @@ export async function setupMicroDuckSimulatorAssetCache(
       errors.push(
         `Failed to cache asset ${entry.asset.id}: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
       skippedAssetIds.push(entry.asset.id);
     }
@@ -365,7 +365,7 @@ export async function setupMicroDuckSimulatorAssetCache(
     plan: await inspectMicroDuckSimulatorAssetCache(
       options.manifest,
       options.cache,
-      options.hashBytes
+      options.hashBytes,
     ),
     downloadedAssetIds,
     skippedAssetIds,
@@ -374,7 +374,7 @@ export async function setupMicroDuckSimulatorAssetCache(
 }
 
 export function createMicroDuckBrowserAssetCacheStore(
-  options: MicroDuckBrowserAssetCacheStoreOptions = {}
+  options: MicroDuckBrowserAssetCacheStoreOptions = {},
 ): MicroDuckSimulatorAssetCacheStore {
   return {
     async read(asset) {
@@ -393,12 +393,12 @@ export function createMicroDuckBrowserAssetCacheStore(
         await openMicroDuckBrowserCache(options)
       ).put(
         createMicroDuckBrowserAssetCacheRequest(asset, options),
-        new Response(bytes, {
+        new Response(new Uint8Array(bytes), {
           headers: {
             'content-type': asset.cache.mediaType ?? 'application/octet-stream',
             'x-botlab-asset-id': asset.id,
           },
-        })
+        }),
       );
     },
   };
@@ -406,8 +406,8 @@ export function createMicroDuckBrowserAssetCacheStore(
 
 export function createMicroDuckFetchAssetDownloader(
   fetchAsset: MicroDuckSimulatorAssetFetchFunction = globalThis.fetch.bind(
-    globalThis
-  )
+    globalThis,
+  ),
 ): MicroDuckSimulatorAssetDownloader {
   return {
     async download(asset) {
@@ -415,7 +415,7 @@ export function createMicroDuckFetchAssetDownloader(
 
       if (!response.ok) {
         throw new Error(
-          `HTTP ${response.status} while downloading ${asset.source.url}.`
+          `HTTP ${response.status} while downloading ${asset.source.url}.`,
         );
       }
 
@@ -426,9 +426,9 @@ export function createMicroDuckFetchAssetDownloader(
 
 export async function sha256MicroDuckSimulatorAssetBytes(
   bytes: Uint8Array,
-  crypto: Crypto = globalThis.crypto
+  crypto: Crypto = globalThis.crypto,
 ): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  const digest = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes));
 
   return [...new Uint8Array(digest)]
     .map((byte) => byte.toString(16).padStart(2, '0'))
@@ -437,7 +437,7 @@ export async function sha256MicroDuckSimulatorAssetBytes(
 
 function createCachePlanEntry(
   asset: MicroDuckSimulatorAssetManifestEntry,
-  cachedAsset?: MicroDuckSimulatorCachedAsset
+  cachedAsset?: MicroDuckSimulatorCachedAsset,
 ): MicroDuckSimulatorAssetCachePlanEntry {
   if (
     asset.license.status === 'blocked' ||
@@ -490,7 +490,7 @@ function isSha256(value: string) {
 }
 
 async function openMicroDuckBrowserCache(
-  options: MicroDuckBrowserAssetCacheStoreOptions
+  options: MicroDuckBrowserAssetCacheStoreOptions,
 ) {
   const cacheStorage = options.cacheStorage ?? globalThis.caches;
 
@@ -503,12 +503,12 @@ async function openMicroDuckBrowserCache(
 
 function createMicroDuckBrowserAssetCacheRequest(
   asset: MicroDuckSimulatorAssetManifestEntry,
-  options: MicroDuckBrowserAssetCacheStoreOptions
+  options: MicroDuckBrowserAssetCacheStoreOptions,
 ) {
   return new Request(
     new URL(
       asset.cache.path,
-      options.cacheBaseUrl ?? MICRODUCK_BROWSER_CACHE_BASE_URL
-    ).toString()
+      options.cacheBaseUrl ?? MICRODUCK_BROWSER_CACHE_BASE_URL,
+    ).toString(),
   );
 }

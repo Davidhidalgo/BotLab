@@ -15,6 +15,7 @@ export const simulatorExecutionMachine = setup({
       | { type: 'start'; request: MicroDuckExecutionRequest }
       | { type: 'status'; update: MicroDuckExecutionUpdate }
       | { type: 'stop' }
+      | { type: 'source.changed' }
       | { type: 'scene.reset' }
       | { type: 'detach' };
   },
@@ -22,11 +23,11 @@ export const simulatorExecutionMachine = setup({
     transport: fromCallback<{ type: 'stop' }, MicroDuckExecutionRequest>(
       ({ input, sendBack, receive }) => {
         const client = observeMicroDuckExecution(input, (update) =>
-          sendBack({ type: 'status', update })
+          sendBack({ type: 'status', update }),
         );
         receive(() => client.stop());
         return () => client.dispose();
-      }
+      },
     ),
   },
   actions: {
@@ -40,6 +41,10 @@ export const simulatorExecutionMachine = setup({
   initial: 'idle',
   context: {},
   on: {
+    'source.changed': {
+      target: '.idle',
+      actions: assign({ request: undefined, update: undefined }),
+    },
     'scene.reset': {
       target: '.idle',
       actions: assign({ request: undefined, update: undefined }),
@@ -64,6 +69,7 @@ export const simulatorExecutionMachine = setup({
         input: ({ context }) => context.request!,
       },
       on: {
+        'source.changed': { target: '.invalidating' },
         stop: { target: '.stopping' },
         detach: { target: 'stopped' },
         status: [
@@ -110,6 +116,22 @@ export const simulatorExecutionMachine = setup({
         stopping: {
           entry: sendTo('transport', { type: 'stop' }),
           after: { 3000: { target: '#simulatorExecution.failed' } },
+        },
+        invalidating: {
+          entry: sendTo('transport', { type: 'stop' }),
+          after: { 3000: { target: '#simulatorExecution.failed' } },
+          on: {
+            // Further edits or Stop must not renew the acknowledgement deadline.
+            'source.changed': {},
+            stop: {},
+            status: {
+              guard: ({ event }) =>
+                ['stopped', 'completed'].includes(event.update.status),
+              target: '#simulatorExecution.idle',
+              // Retain the old run's terminal event for historical trace persistence.
+              actions: 'remember',
+            },
+          },
         },
       },
     },

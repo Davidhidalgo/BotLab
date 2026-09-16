@@ -10,15 +10,8 @@
         "roulade",
         "sit_toggle"
       ],
-      "postures": [
-        "sit",
-        "stand"
-      ],
-      "postureConditions": [
-        "sit",
-        "stand",
-        "transitioning"
-      ]
+      "postures": ["sit", "stand"],
+      "postureConditions": ["sit", "stand", "transitioning"]
     },
     "decisions": [
       {
@@ -89,11 +82,7 @@
     "connectionLoss": {
       "status": "failed",
       "error": "Browser connection lost.",
-      "applied": [
-        8.627182932082292e-09,
-        0,
-        0
-      ]
+      "applied": [8.627182932082292e-9, 0, 0]
     }
   },
   "builds": {

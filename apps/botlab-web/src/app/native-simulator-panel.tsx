@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { identifyCompiledProgram, sameProgram } from '@botlab/model';
+import { useEffect, useMemo, useState } from 'react';
 import { useMachine } from '@xstate/react';
 import type { BlocksWorkspaceArtifact } from '@botlab/blocks';
 import { createNativeProgram } from '@botlab/simulators-microduck-native';
@@ -143,11 +144,13 @@ export function NativeSimulatorPanel({
   locale,
   onActiveBlock,
   onBusy,
+  executionBlocked = false,
 }: {
   workspace: BlocksWorkspaceArtifact;
   locale: BotLabLocale;
   onActiveBlock: (id: string | undefined) => void;
   onBusy: (busy: boolean) => void;
+  executionBlocked?: boolean;
 }) {
   const [snapshot, send, actor] = useMachine(nativeSimulatorMachine, {
     input: {
@@ -157,7 +160,20 @@ export function NativeSimulatorPanel({
   const [compileError, setCompileError] = useState<string>();
   const copy = labels[locale];
   const data = snapshot.context.snapshot;
-  const program = data?.program;
+  const currentIdentity = useMemo(() => {
+    try {
+      return identifyCompiledProgram(
+        compileMicroDuckWorkspaceArtifact(workspace, 'microduck-native'),
+      );
+    } catch {
+      return undefined;
+    }
+  }, [workspace]);
+  const program =
+    sameProgram(currentIdentity, snapshot.context.execution?.program) &&
+    data?.program?.runId === snapshot.context.runId
+      ? data?.program
+      : undefined;
   const supportsPosture =
     nativeMicroDuckCapabilities(data?.capabilities, 'microduck-native').length >
     0;
@@ -173,10 +189,10 @@ export function NativeSimulatorPanel({
     program?.errorCode === 'posture-already-sit'
       ? `${copy.already} ${copy.sit}. ${copy.checkFirst}`
       : program?.errorCode === 'posture-already-stand'
-      ? `${copy.already} ${copy.stand}. ${copy.checkFirst}`
-      : program?.errorCode === 'posture-unknown'
-      ? copy.unknownPosture
-      : undefined;
+        ? `${copy.already} ${copy.stand}. ${copy.checkFirst}`
+        : program?.errorCode === 'posture-unknown'
+          ? copy.unknownPosture
+          : undefined;
   const error =
     compileError ?? snapshot.context.error ?? postureError ?? program?.error;
   useEffect(() => {
@@ -187,7 +203,7 @@ export function NativeSimulatorPanel({
     onActiveBlock(
       running || program?.status === 'failed'
         ? program?.step.sourceBlockId
-        : undefined
+        : undefined,
     );
     return () => onActiveBlock(undefined);
   }, [onActiveBlock, program?.step.sourceBlockId, program?.status, running]);
@@ -202,14 +218,22 @@ export function NativeSimulatorPanel({
       actor.send({ type: 'operate', operation: { kind: 'stop' } });
   }, [workspace, actor]);
   function run() {
+    if (executionBlocked) return;
     try {
       const compiled = compileMicroDuckWorkspaceArtifact(
         workspace,
-        'microduck-native'
+        'microduck-native',
       );
       const steps = createNativeProgram(compiled, data?.capabilities);
       setCompileError(undefined);
-      send({ type: 'operate', operation: { kind: 'run', steps } });
+      send({
+        type: 'operate',
+        operation: {
+          kind: 'run',
+          steps,
+          program: identifyCompiledProgram(compiled),
+        },
+      });
     } catch (error) {
       setCompileError(error instanceof Error ? error.message : String(error));
     }
@@ -224,12 +248,12 @@ export function NativeSimulatorPanel({
   const stateLabel = snapshot.matches({ online: 'connecting' })
     ? copy.connecting
     : !online
-    ? copy.offline
-    : running
-    ? copy.running
-    : program
-    ? copy[program.status]
-    : copy.ready;
+      ? copy.offline
+      : running
+        ? copy.running
+        : program
+          ? copy[program.status]
+          : copy.ready;
   return (
     <section className="simulator-workbench" aria-label={copy.native}>
       <div className="simulator-toolbar">
@@ -241,7 +265,7 @@ export function NativeSimulatorPanel({
             </Button>
           ) : (
             <>
-              <Button onClick={run} disabled={!canRun}>
+              <Button onClick={run} disabled={!canRun || executionBlocked}>
                 {copy.run}
               </Button>
               <Button
@@ -290,7 +314,10 @@ export function NativeSimulatorPanel({
         ) : null}
         {running && program?.step.iterations?.length ? (
           <span role="status" className="text-xs">
-            {copy.iteration} {program.step.iterations.map(item => `${item.iteration}/${item.count}`).join(' · ')}
+            {copy.iteration}{' '}
+            {program.step.iterations
+              .map((item) => `${item.iteration}/${item.count}`)
+              .join(' · ')}
           </span>
         ) : null}
         {running && program ? (
@@ -299,8 +326,8 @@ export function NativeSimulatorPanel({
             {program.step.kind === 'walk'
               ? 'm'
               : program.step.kind === 'turn'
-              ? '°'
-              : 's'}
+                ? '°'
+                : 's'}
           </span>
         ) : null}
         {error ? (
@@ -325,7 +352,7 @@ export function NativeSimulatorPanel({
             <p>{copy.start}</p>
             <details className="mt-3">
               <summary>{copy.developer}</summary>
-              <code className="mt-3 block">npm run microduck:native</code>
+              <code className="mt-3 block">pnpm run microduck:native</code>
             </details>
           </div>
         )}

@@ -13,10 +13,18 @@ Shared session orchestration, target registration, policy evaluation, dispatch, 
 - Missing dispatchers, rejected promises, and failed results stop the sequence at the first failure. Invalid pause/resume transitions leave the current state unchanged and record a diagnostic.
 - Loading a behavior or compiled plan clears the old compiled plan, queue entry, dispatch counter, and policy approval, even when the new input fails validation. Loads during an unsettled run or after disposal are rejected without replacing the current plan.
 
-The existing snapshot state `stopped` covers both normal completion and explicit stop; the lifecycle trace distinguishes them. Structured run outcomes, removal of app-side automatic policy confirmation, current target eligibility checks, and complete policy revision binding remain separate consolidation work.
+The legacy snapshot state `stopped` remains compatible with previous clients. Use the returned `outcome` to distinguish completion, dispatch-only acknowledgement, cancellation, failure, confirmation required and no work. `runNextQueuedSession()` returns an explicit `no-work` result for an empty queue instead of `undefined`.
+
+<!-- shared execution identities, outcomes and lifecycle from ../../botlab-model/src/lib/execution.ts and src/lib/execution.ts -->
+
+`createExecutionLifecycle(executionId, program)` is shared by the command runtime, iframe observer and native app orchestration. `ProgramIdentity` includes the program ID, target ID and an exact canonical JSON revision; it includes nested commands and block references, not timestamps or display labels. The lifecycle rejects foreign runs/revisions/targets, regressions from running to acceptance, and updates after a terminal result. It requires simulator or hardware evidence for `completed`; `dispatched` only acknowledges sending commands.
+
+The runtime owns a copy of each loaded plan and binds its approval to that identity. Loading a replacement clears approval, and trace entries carry their original program identity across session reloads. Target availability is checked before starting and before each subsequent command; current command/capability validation and policy evaluation run before starting. Compilation does not confirm policy. A dispatcher may return `completed` only with evidence matching the target kind (`simulator` or `hardware`); the dispatcher owns the real completion check. Returning `dispatched` remains supported without implying physical completion.
+
+An explicit user-confirmation UI bound to the presented revision, native target registration in the shared scheduler, generic runtime control-flow interpretation, and the hardware transport stop/acknowledgement guarantee remain separate work. No physical transport is enabled by these contracts.
 
 ## Verification
 
 <!-- runtime test target from project.json -->
 
-Run `npm run nx -- test runtime --run` from the repository root. Regression tests use deferred dispatches to exercise pause/resume, cancellation, late results, queued disposal, lock ownership, replacement loads, and failures.
+Run `pnpm nx test runtime --run` from the repository root. Regression tests use deferred dispatches to exercise pause/resume, cancellation, late results, queued disposal, lock ownership, replacement loads, and failures.

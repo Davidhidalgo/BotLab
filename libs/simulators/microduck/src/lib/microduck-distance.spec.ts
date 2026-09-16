@@ -15,7 +15,7 @@ describe('measured walk distance', () => {
 
   it.each([NaN, Infinity, -1])('rejects invalid distance %s', (target) => {
     expect(
-      createMicroDuckDistanceTracker(target, () => [0, 0])(0.02).error
+      createMicroDuckDistanceTracker(target, () => [0, 0])(0.02).error,
     ).toBe('invalid-frame');
   });
 

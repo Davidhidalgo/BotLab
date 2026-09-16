@@ -9,7 +9,7 @@ Simulator companion for the web editor, initially bundling MicroDuck. The editor
 On an Apple Silicon Mac, prepare the pinned native cache following [the native setup](../../tools/microduck/native/README.md), then run:
 
 ```sh
-npm run build:simulator-macos
+pnpm run build:simulator-macos
 open 'dist/apps/simulator-macos/BotLab Simulator.app'
 ```
 
@@ -19,7 +19,7 @@ The build requires Python 3 and Xcode command-line tools. The resulting `.app` i
 
 <!-- application lifecycle from Simulator.swift and ../../libs/simulators/microduck-native/python/botlab_microduck_native/gateway.py -->
 
-Double-click **BotLab Simulator.app**. The host reads `simulators.json`. A single installed simulator starts automatically; multiple entries show a selector and Start button, allowing one active simulator at a time. The startup window hides when the native scene is ready. The Dock icon reopens the status window; **Open Editor** opens `http://localhost:4200`. Start the web editor separately during development (`npm run dev`), select **Native MuJoCo**, then **Connect**. The editor detects the external presentation, shows commands/progress/sensors and requests no video. The iframe and embedded MJPEG modes remain available.
+Double-click **BotLab Simulator.app**. The host reads `simulators.json`. A single installed simulator starts automatically; multiple entries show a selector and Start button, allowing one active simulator at a time. The startup window hides when the native scene is ready. The Dock icon reopens the status window; **Open Editor** opens `http://localhost:4200`. Start the web editor separately during development (`pnpm run dev`), select **Native MuJoCo**, then **Connect**. The editor detects the external presentation, shows commands/progress/sensors and requests no video. The iframe and embedded MJPEG modes remain available.
 
 Closing the native scene exits the companion and cleans up its services. **Quit BotLab Simulator** also stops the owned gateway and services. Disconnecting or losing the browser stops the active program and leaves the viewer idle; reconnecting does not resume it. Reset replaces the scene and opens a fresh native window. The companion watches its parent process and refuses conflicting local ports; it never kills another simulator to take its place. Opening the same app again through Finder uses the existing application instance.
 
@@ -32,7 +32,7 @@ Logs and traces are written to `~/Library/Logs/BotLab Simulator`, outside the bu
 With the companion and web editor open:
 
 ```sh
-BOTLAB_NATIVE_PRESENTATION=external npm run test:simulator-native-app
+BOTLAB_NATIVE_PRESENTATION=external pnpm run test:simulator-native-app
 ```
 
 Set `BOTLAB_PLAYWRIGHT_MODULE` if Playwright is installed outside the workspace. The check covers movement/turn/wait, reset, posture, explicit stop, iframe fallback and browser loss, and asserts zero video requests in external mode. Library tests cover presentation compatibility, reset ownership and service/window termination. Verify packaging by copying the whole `.app` outside the checkout and opening that copy.

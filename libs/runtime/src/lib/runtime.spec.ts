@@ -560,7 +560,9 @@ describe('runtime', () => {
       runtime.queueSession(session.id);
       const terminal = runtime[action](session.id).state;
       expect(runtime.inspectQueue().entries).toEqual([]);
-      expect(await runtime.runNextQueuedSession()).toBeUndefined();
+      expect((await runtime.runNextQueuedSession()).outcome.status).toBe(
+        'no-work',
+      );
       runtime.queueSession(session.id);
       expect(runtime.inspectQueue().entries).toEqual([]);
       expect(runtime.inspectSession(session.id).state).toBe(terminal);
@@ -575,7 +577,9 @@ describe('runtime', () => {
     const session = loadTwoCommandSession(runtime);
     runtime.queueSession(session.id);
     await runtime.startSession(session.id);
-    expect(await runtime.runNextQueuedSession()).toBeUndefined();
+    expect((await runtime.runNextQueuedSession()).outcome.status).toBe(
+      'no-work',
+    );
     expect(runtime.inspectSession(session.id).dispatchedCommandCount).toBe(2);
   });
 
@@ -769,13 +773,160 @@ describe('runtime', () => {
     expect(runtime.inspectSession(session.id).state).toBe('ready');
   });
 
+  it('reports physical completion only when the dispatcher provides matching evidence', async () => {
+    const runtime = createTestRuntime({
+      dispatch: (command) => ({
+        commandId: command.id,
+        status: 'completed',
+        evidence: 'hardware',
+        message: 'Device acknowledged completion.',
+      }),
+    });
+    const session = loadTwoCommandSession(runtime);
+    expect((await runtime.startSession(session.id)).outcome).toMatchObject({
+      status: 'completed',
+      evidence: 'hardware',
+    });
+    const wrong = createTestRuntime({
+      dispatch: (command) => ({
+        commandId: command.id,
+        status: 'completed',
+        evidence: 'simulator',
+        message: 'Wrong target kind.',
+      }),
+    });
+    expect(
+      (await wrong.startSession(loadTwoCommandSession(wrong).id)).outcome
+        .status,
+    ).toBe('failed');
+  });
+
+  it('returns explicit dispatch, confirmation and empty-queue outcomes', async () => {
+    const runtime = createTestRuntime({
+      dispatch: (command) => dispatched(command.id),
+    });
+    const session = runtime.createSession();
+    runtime.loadCompiledBehavior(
+      session.id,
+      sampleMicroDuckCompiledBehaviorArtifact,
+    );
+    const blocked = await runtime.startSession(session.id);
+    expect(blocked.outcome.status).toBe('confirmation-required');
+    expect(blocked.dispatchResults).toEqual([]);
+    runtime.confirmPolicy(session.id);
+    const result = await runtime.startSession(session.id);
+    expect(result.outcome).toMatchObject({
+      status: 'dispatched',
+      evidence: 'dispatch',
+      program: { targetId: 'microduck-usb' },
+    });
+    expect((await runtime.runNextQueuedSession()).outcome.status).toBe(
+      'no-work',
+    );
+  });
+
+  it('owns the loaded plan and binds approval and trace to its exact revision', async () => {
+    const calls: unknown[] = [];
+    const runtime = createTestRuntime({
+      dispatch(command) {
+        calls.push(command.inputs);
+        return dispatched(command.id);
+      },
+    });
+    const artifact = JSON.parse(
+      JSON.stringify(sampleMicroDuckCompiledBehaviorArtifact),
+    );
+    const session = runtime.createSession();
+    runtime.loadCompiledBehavior(session.id, artifact);
+    runtime.confirmPolicy(session.id);
+    const firstIdentity = runtime.inspectSession(session.id).program;
+    artifact.commands[0].inputs.brightness = 1;
+    const first = await runtime.startSession(session.id);
+    expect(calls).toEqual([{ pattern: 'smile', brightness: 50 }]);
+    expect(first.outcome.program).toEqual(firstIdentity);
+    runtime.loadCompiledBehavior(session.id, artifact);
+    expect(runtime.inspectSession(session.id).program).not.toEqual(
+      firstIdentity,
+    );
+    expect((await runtime.startSession(session.id)).outcome.status).toBe(
+      'confirmation-required',
+    );
+    expect(
+      runtime
+        .getSessionTrace(session.id)
+        .entries.some(
+          (entry) => entry.program?.revision === firstIdentity?.revision,
+        ),
+    ).toBe(true);
+  });
+
+  it('distinguishes cancellation from a late successful dispatch', async () => {
+    const pending = deferred<RuntimeCommandDispatchResult>();
+    const runtime = createTestRuntime({ dispatch: () => pending.promise });
+    const session = loadTwoCommandSession(runtime);
+    const running = runtime.startSession(session.id);
+    runtime.stopSession(session.id);
+    pending.resolve(dispatched('first'));
+    expect((await running).outcome).toMatchObject({
+      status: 'cancelled',
+      evidence: 'none',
+    });
+  });
+
+  it('refuses a reply identifying a different command', async () => {
+    const runtime = createTestRuntime({
+      dispatch: () => dispatched('another-command'),
+    });
+    const session = loadTwoCommandSession(runtime);
+    expect((await runtime.startSession(session.id)).outcome).toMatchObject({
+      status: 'failed',
+      diagnostic: { code: 'dispatcher-threw' },
+    });
+  });
+
+  it('rechecks target availability before starting and between commands', async () => {
+    const adapter = JSON.parse(JSON.stringify(microDuckAdapter));
+    const calls: string[] = [];
+    const runtime = createBotLabRuntime({
+      adapters: [adapter],
+      simulators: [],
+      behaviors: [sampleMicroDuckLedBehavior],
+      policies: samplePolicies,
+      dispatchers: [
+        {
+          targetId: 'microduck-usb',
+          dispatch(command) {
+            calls.push(command.id);
+            adapter.targets[0].status = 'offline';
+            return dispatched(command.id);
+          },
+        },
+      ],
+    });
+    const session = loadTwoCommandSession(runtime);
+    const result = await runtime.startSession(session.id);
+    expect(calls).toEqual(['first']);
+    expect(result.outcome).toMatchObject({
+      status: 'failed',
+      diagnostic: { code: 'target-unavailable' },
+    });
+    const next = loadTwoCommandSession(runtime);
+    expect((await runtime.startSession(next.id)).outcome.diagnostic?.code).toBe(
+      'target-unavailable',
+    );
+    expect(calls).toEqual(['first']);
+  });
+
   it('does not overwrite disposal requested by an artifact-loaded listener', () => {
     const runtime = createTestRuntime();
     const session = runtime.createSession();
-    runtime.subscribe(event => {
+    runtime.subscribe((event) => {
       if (event.type === 'artifact-loaded') runtime.disposeSession(session.id);
     });
-    runtime.loadCompiledBehavior(session.id, sampleMicroDuckCompiledBehaviorArtifact);
+    runtime.loadCompiledBehavior(
+      session.id,
+      sampleMicroDuckCompiledBehaviorArtifact,
+    );
     expect(runtime.inspectSession(session.id).state).toBe('disposed');
   });
 });

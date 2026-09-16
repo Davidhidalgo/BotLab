@@ -3,24 +3,16 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/simulators/microduck-native/src",
   "projectType": "library",
-  "tags": [
-    "scope:simulator",
-    "target:microduck",
-    "type:integration"
-  ],
+  "tags": ["scope:simulator", "target:microduck", "type:integration"],
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/libs/simulators/microduck-native",
         "main": "libs/simulators/microduck-native/src/index.ts",
         "tsConfig": "libs/simulators/microduck-native/tsconfig.lib.json",
-        "assets": [
-          "libs/simulators/microduck-native/*.md"
-        ]
+        "assets": ["libs/simulators/microduck-native/*.md"]
       }
     },
     "test": {

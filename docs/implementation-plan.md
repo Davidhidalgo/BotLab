@@ -25,28 +25,28 @@ Product focus (agreed 2026-09-13): refine the product against the MicroDuck simu
 
 The current baseline below supersedes older status descriptions in the numbered milestones. Those milestones retain the longer-term scope and historical implementation notes; they are not a sequential delivery checklist. Use the agreed delivery order below for new work.
 
-| Area | Implemented and inspected | Still open |
-| --- | --- | --- |
-| Foundation | Nx, React/TypeScript, enforced library boundaries, shared contracts and app/library verification workflow | Physics/release CI and first hosted workflow run |
-| Blocks | Official Scratch Blocks; one green-flag sequence; movement, turns, waits, simulator postures, nested posture conditions, finite repeats and LED compilation; XML parsing in blocks, command lowering in the adapter; localized blocks | Disconnected-block diagnostics; general expressions and generic-runtime control flow |
-| Simulator | Official local host with postMessage commands and identified execution status; measured displacement/yaw, progress, stop acknowledgement and reset | Further locomotion-mode/scene coverage; upstream pin/hash/setup consolidation |
-| Persistence and UX | Versioned local workspace and last trace, import/export, responsive workbench and block highlighting | Full end-to-end acceptance recheck; multiple-program storage is deferred |
-| Runtime | Session lifecycle, cooperative cancellation, queue, locks, traces and initial policies | Explicit run outcomes, current target eligibility and revision/target-bound user approval; hardware stop contract |
-| Hardware | Adapter contracts and placeholders | Real transport and deployment; StackChan is the first intended physical target |
+| Area               | Implemented and inspected                                                                                                                                                                                                             | Still open                                                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Foundation         | Nx, React/TypeScript, enforced library boundaries, shared contracts and app/library verification workflow                                                                                                                             | Physics/release CI and first hosted workflow run                                                                                     |
+| Blocks             | Official Scratch Blocks; one green-flag sequence; movement, turns, waits, simulator postures, nested posture conditions, finite repeats and LED compilation; XML parsing in blocks, command lowering in the adapter; localized blocks | Disconnected-block diagnostics; general expressions and generic-runtime control flow                                                 |
+| Simulator          | Official local host with postMessage commands and identified execution status; measured displacement/yaw, progress, stop acknowledgement and reset                                                                                    | Further locomotion-mode/scene coverage; upstream pin/hash/setup consolidation                                                        |
+| Persistence and UX | Versioned local workspace and last trace, import/export, responsive workbench and block highlighting                                                                                                                                  | Iframe end-to-end acceptance rechecked below; multiple-program storage is deferred                                                   |
+| Runtime            | Session lifecycle, cooperative cancellation, queue, locks, traces and initial policies                                                                                                                                                | Shared outcomes and plan identity delivered below; user-facing revision/target-bound approval and hardware stop contract remain open |
+| Hardware           | Adapter contracts and placeholders                                                                                                                                                                                                    | Real transport and deployment; StackChan is the first intended physical target                                                       |
 
 Verification performed on 2026-09-13:
 
-| Project | Test files | Passing tests | Runner |
-| --- | ---: | ---: | --- |
-| botlab-web | 9 | 89 | Jest |
-| botlab-model | 1 | 8 | Vitest |
-| runtime | 1 | 32 | Vitest |
-| blocks | 4 | 53 | Vitest |
-| simulators-core | 1 | 2 | Vitest |
-| simulators-microduck | 5 | 119 | Vitest |
-| microduck adapter | 2 | 22 | Vitest |
-| simulators-microduck-native | 6 | 56 | Vitest + Python unittest |
-| **Total** | **29** | **381** | |
+| Project                     | Test files | Passing tests | Runner                   |
+| --------------------------- | ---------: | ------------: | ------------------------ |
+| botlab-web                  |          9 |            89 | Jest                     |
+| botlab-model                |          1 |             8 | Vitest                   |
+| runtime                     |          1 |            32 | Vitest                   |
+| blocks                      |          4 |            53 | Vitest                   |
+| simulators-core             |          1 |             2 | Vitest                   |
+| simulators-microduck        |          5 |           119 | Vitest                   |
+| microduck adapter           |          2 |            22 | Vitest                   |
+| simulators-microduck-native |          6 |            56 | Vitest + Python unittest |
+| **Total**                   |     **29** |       **381** |                          |
 
 All eight configured test targets passed across the `npm run test:all` run and the isolated blocks rerun (the root alias for `nx run-many --target=test --all --parallel=2`). The app also passed `node_modules/.bin/tsc -p apps/botlab-web/tsconfig.app.json --noEmit` in the earlier review. App/adapter builds and MicroDuck adapter lint passed after the native experiment; the earlier simulator-library build/lint retained six pre-existing non-null assertion warnings. Browser/physics turn verification is recorded below. Full-workspace build/lint coverage remains a separate milestone. `npm test` currently runs only the app. The MicroDuck adapter now owns eight proximity-subscription tests; its broader target/capability contract tests remain open. `stackchan` and `ui` have no dedicated suites yet. The simulator library includes unit tests and generated-receiver integration tests, not just app mocks.
 
@@ -141,7 +141,7 @@ Acceptance: the reported case is reproduced and then passes after a targeted fix
 
 ### 2. Close the reliable end-to-end milestone and test gaps
 
-- [ ] Recheck the real editor flow: author advance/turn/wait actions, save, reload, execute, stop, edit and rerun, and inspect matching progress and traces.
+- [x] Recheck the real editor flow: author advance/turn/wait actions, save, reload, execute, stop, edit and rerun, and inspect matching progress and traces. The maintained iframe acceptance imports a connected fixture and edits it through the real Scratch UI; see the workspace acceptance follow-up below.
 - [x] Add a root `test:all` command for every configured app/library test target. `npm test` retains its app-only behavior; both commands are documented.
 - [x] Wire the full command into CI. `.github/workflows/verify.yml` runs `npm run verify`; its first hosted run will occur after pushing.
 - [ ] Add independent adapter contract tests for target status, capability bindings, command validation and unsupported commands. Test UI primitives when they own meaningful interactions; avoid tests of static wrappers alone.
@@ -155,15 +155,15 @@ Acceptance: a documented local command and CI exercise every configured suite, e
 
 Plan these changes as separate reviewable increments; preserve the working sequential program path while introducing the contracts needed by new blocks.
 
-| Order | Change and ownership | Acceptance |
-| --- | --- | --- |
-| A1 | Move Scratch XML traversal from `botlab-flow-machine.ts` into `@botlab/blocks`; define engine-independent program nodes and source references in `@botlab/model`; keep robot command lowering behind adapter/simulator contracts | The app handles BotLab artifacts without parsing Scratch XML or encoding robot commands; existing programs and diagnostics remain compatible |
-| A2 | Define program revision/target identity, typed execution results and diagnostic codes in the model; consolidate demo and real execution paths using runtime orchestration and simulator transport boundaries | Validation, accepted/running, completed, failed, cancelled and no-work outcomes remain distinct; stale results and approvals cannot attach to a replacement program; UI progress comes from the active execution |
-| A3 | Give the MicroDuck receiver, motion trackers, message schema and patch generator one source of truth in the simulator package; make the setup tool consume that output | Native and generated receivers pass shared contract tests; regeneration is reproducible and idempotent without manually synchronizing algorithm copies |
-| A4 | Enforce ADR 0001 with Nx tags; keep editor/UI dependencies out of model/runtime and transport/engine internals out of the app | Lint rejects forbidden imports while allowing composition through public package APIs |
-| A5 | Document the current iframe host in ADR 0002; pin upstream source and bridge versions and make setup verification concrete | The supported integration matches the ADR, can be reproduced at a known revision and reports incompatible bridge versions; in-process hosting requires a demonstrated benefit before migration |
-| A6 | Put versioned workspace serialization/storage behind an injected boundary; let the app own browser lifecycle and user feedback | Storage migration/validation/failure behavior is testable independently of app orchestration; restored documents cannot resume execution or restore approval |
-| A7 | Complete runtime target eligibility, per-plan/target approval and acknowledged hardware stop contracts | Offline/unsupported/denied targets dispatch nothing; required confirmation is an explicit user action tied to the current plan; physical execution stays disabled until the transport stop guarantee is verified |
+| Order | Change and ownership                                                                                                                                                                                                             | Acceptance                                                                                                                                                                                                       |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A1    | Move Scratch XML traversal from `botlab-flow-machine.ts` into `@botlab/blocks`; define engine-independent program nodes and source references in `@botlab/model`; keep robot command lowering behind adapter/simulator contracts | The app handles BotLab artifacts without parsing Scratch XML or encoding robot commands; existing programs and diagnostics remain compatible                                                                     |
+| A2    | Define program revision/target identity, typed execution results and diagnostic codes in the model; consolidate demo and real execution paths using runtime orchestration and simulator transport boundaries                     | Validation, accepted/running, completed, failed, cancelled and no-work outcomes remain distinct; stale results and approvals cannot attach to a replacement program; UI progress comes from the active execution |
+| A3    | Give the MicroDuck receiver, motion trackers, message schema and patch generator one source of truth in the simulator package; make the setup tool consume that output                                                           | Native and generated receivers pass shared contract tests; regeneration is reproducible and idempotent without manually synchronizing algorithm copies                                                           |
+| A4    | Enforce ADR 0001 with Nx tags; keep editor/UI dependencies out of model/runtime and transport/engine internals out of the app                                                                                                    | Lint rejects forbidden imports while allowing composition through public package APIs                                                                                                                            |
+| A5    | Document the current iframe host in ADR 0002; pin upstream source and bridge versions and make setup verification concrete                                                                                                       | The supported integration matches the ADR, can be reproduced at a known revision and reports incompatible bridge versions; in-process hosting requires a demonstrated benefit before migration                   |
+| A6    | Put versioned workspace serialization/storage behind an injected boundary; let the app own browser lifecycle and user feedback                                                                                                   | Storage migration/validation/failure behavior is testable independently of app orchestration; restored documents cannot resume execution or restore approval                                                     |
+| A7    | Complete runtime target eligibility, per-plan/target approval and acknowledged hardware stop contracts                                                                                                                           | Offline/unsupported/denied targets dispatch nothing; required confirmation is an explicit user action tied to the current plan; physical execution stays disabled until the transport stop guarantee is verified |
 
 A3 generation follow-up: the setup tool now bundles the current simulator library with Vite and consumes its receiver generator, game patch and arena patch. The manually synchronized tool copy has been removed. All 118 simulator tests pass, including shared receiver contracts against the setup bundle and idempotent patch upgrades.
 
@@ -178,6 +178,38 @@ A1–A3 and A4 establish the boundaries used by block expansion. A5 and A6 can b
 Validation: `npm ci` and `CI=true npm run verify` passed in a fresh temporary source copy with a separately installed dependency tree and no prepared simulator assets (macOS, Node 22.22.0, Python 3.11.1). This includes 381 tests, all ten app/library TypeScript configurations, lint for ten projects, eight architecture probes, all nine library builds and the app build. Workflow YAML was parsed; the hosted Ubuntu run is pending push. The Mac companion build also passed separately.
 
 A4 is implemented through Nx scope/type constraints, public package imports and external editor/UI import restrictions. Blocks may use UI primitives; model/runtime cannot depend on editor/UI, and simulator core cannot import robot integrations. Root lint/TypeScript configuration and the setup bridge loader are hashed for cache invalidation. Existing empty test doubles now state their intent so lint can run without errors; pre-existing warnings remain visible.
+
+### A2 execution contract follow-up — 2026-09-16
+
+The model now defines exact program/target identities, typed execution results, evidence and diagnostic codes. Canonical revisions include nested commands and source-block references, so reused display IDs cannot identify a changed plan. The shared runtime lifecycle is used by command dispatch, the iframe observer and native app orchestration; it rejects foreign identities, backwards progress and updates after a terminal result.
+
+Runtime calls distinguish dispatch acknowledgement, observed completion, cancellation, failure, required confirmation and empty queues. Dispatcher completion requires evidence matching the target kind. The app routes resolved failures and no-work results to their own states. It labels simulator preparation as command validation, does not automatically confirm policy during compilation, and no longer contains a pretend hardware dispatcher. Loaded plans are copied, approvals are attached to the loaded identity, and trace entries retain their original identity. Live target availability is checked before starting and between commands. Native progress excludes other run IDs and prior revisions; iframe workspace files preserve the common outcome and remain compatible with old documents.
+
+This completes the common result/identity boundary for A2. Physical completion and stop checks remain owned by each transport. Native registration in the shared scheduler and generic runtime interpretation of control flow remain separate integration work; the native/iframe engines still execute their own branch semantics. A7's user-facing approval contract and hardware stop acknowledgement must be verified before enabling a physical target.
+
+Validation: **405 tests**, all workspace TypeScript checks, lint, eight architecture probes, library builds and the web build pass. Real iframe acceptance covers the complete workspace flow and asserts common identity/evidence in each saved trace. Native engine acceptance covers movement, postures, stop, iframe fallback and browser connection loss; its stop fixture now waits for physical posture stability. Existing lint/build warnings remain. [Recorded evidence](evidence/execution-contract-2026-09-16.json). The first live-development browser attempt was interrupted by hot reload; successful browser checks use the isolated compiled preview.
+
+Next physical target confirmed by the owner: Kickstarter StackChan, updated to firmware **1.5.1** (owner correction on 2026-09-16; installed version and available updates have not yet been independently checked). The next StackChan step is a read-only compatibility check of that firmware's actual connection/API, then a bounded expression command through an adapter. Do not assume that APIs from other StackChan firmware projects are compatible.
+
+### StackChan compatibility preparation — 2026-09-16
+
+Owner confirmed successful Bluetooth operation at all three manual yaw positions (-10/0/+10 degrees). This is owner-observed physical evidence, not firmware position telemetry. Palette follow-up now filters blocks against implemented target/capability support and updates the mounted Scratch flyout on robot changes without deleting blocks. StackChan excludes MicroDuck motion/posture/sensor/LED blocks; shared start/wait/repeat structure remains. Existing incompatible blocks produce a warning. Servo block compilation/execution is the next integration step.
+
+Direct BLE follow-up: factory DANCE starts the BLE motion service, unlike AVATAR. Added a browser Bluetooth transport with explicit device selection, sequential 20-byte fragments, bounded yaw, timeout/disconnect handling, and a manual -10/0/+10-degree panel. Connection sends no motion; the owner checks the starting pose before manual commands. The owner has DANCE open and the robot nearby; browser pairing and physical movement are pending. Validation: 23 adapter tests, 108 app tests, and production build pass. Shared block execution/physical completion and stop acknowledgement remain pending.
+
+Workspace follow-up: robot selection now lives in the header, with browser/native simulator selection shown for MicroDuck. New projects default to StackChan. Named local projects save blocks, robot, simulator, locale, and the last iframe trace; startup reopens the last active project without execution or connection. Projects can be created, renamed, and reopened. Browser-local storage is scoped to the site origin. Validation: 106 app tests, TypeScript and production build pass; isolated Chrome acceptance verified two projects, restored active project/native selection, and layout at 1280px and 390px.
+
+Owner steering: prioritize servo movement. Prepared an offline horizontal servo encoder with absolute destinations restricted to ±20 degrees and speed 100/1000. First intended physical trial is a 10-degree displacement and return from a verified starting pose. Position readback and stop acknowledgement remain unverified; `GetAvatarPosture` exists in the relay/app but is absent from the inspected firmware WebSocket handler. No automatic centering or physical command is enabled.
+
+Inspected official M5Stack source revision `1b5765599fba8aaad1811d9a79358ccc7051f5f3`, which declares firmware 1.5.1. Added an offline encoder for the verified happy/neutral eye presets and the app-to-relay binary framing. The factory AVATAR route uses an authenticated outbound WebSocket connection; local HTTP and available BLE expression control have not been established. The adapter remains planned. Physical sending awaits a verified owner session/target and transport integration; successful sends alone cannot establish completion. See [compatibility evidence and trial steps](stackchan-1.5.1.md).
+
+### Workspace acceptance follow-up — 2026-09-15
+
+`npm run test:workspace` now verifies the real Scratch editor and official iframe engine in an isolated browser context. It imports a connected advance/turn/wait fixture, edits numeric fields through the visible editor, checks autosave/export/reload without execution, and verifies measured movement/turn arrival, highlighting and matching saved traces. It also checks acknowledged stop without later actions, editing and rerunning with a fresh execution ID, editing while running, and reload of an active run as interrupted without reconnection or resumption.
+
+The acceptance exposed a stale UI result: changing a completed/stopped/failed program retained the previous execution status. Source changes now invalidate the current result while preserving historical traces. During execution, source changes request cancellation and wait for acknowledgement; further edits do not extend the timeout. Missing acknowledgement still fails and uses the existing iframe shutdown fallback. This bounded fix does not complete A2's shared execution-result and program/target identity consolidation.
+
+Validation: real browser/physics acceptance passed all seven checks, and `CI=true npm run verify` passed 387 tests, workspace TypeScript checks, lint, eight architecture probes, library builds and the web build. Existing lint/build warnings remain. [Recorded acceptance](evidence/workspace-acceptance-2026-09-15.json). Full local reports, exported fixture and screenshots are written to `tmp/workspace-qa`. Native saved traces, general runtime consolidation, broader adapter contracts and hosted CI execution remain separate work.
 
 ### Finite repetition follow-up
 
@@ -281,7 +313,7 @@ Tasks:
 - [x] Add `test:all` and the separate `test:simulator-turns` physics regression command.
 - [ ] Wire tests, typechecks, lint, and builds into CI.
 - [ ] Replace unrestricted Nx tag dependencies with rules reflecting ADR 0001. Keep transport and simulator internals out of the app, and UI/editor-engine dependencies out of the runtime/model.
-- [ ] Add browser-level coverage for the real editor's two-action save/reload/execute/stop flow, alongside runtime regression tests using controlled asynchronous dispatchers.
+- [x] Add browser-level coverage for the real editor's two-action save/reload/execute/stop flow, alongside runtime regression tests using controlled asynchronous dispatchers. The maintained iframe workspace check covers three connected actions plus edit/rerun and interruption.
 
 Acceptance criteria:
 
@@ -671,3 +703,7 @@ Execution follows the [agreed delivery order](#agreed-delivery-order--2026-09-13
 - Keep simulator-specific code behind simulator bridges.
 - Keep browser UI declarative and domain-driven.
 - Add tests when changing shared model, runtime, adapter contracts, or execution behavior.
+
+### StackChan DANCE blocks (2026-09-16)
+
+Implemented a dedicated BLE program route for bounded horizontal head position/center and side LED color/brightness/off. Full preflight, bounded angles, distance-based pauses and periodic automatic rests, source-block tracking, and abort-on-edit/cancel/disconnect are active. Vertical motion stays excluded. Manual −10°/0°/+10° was confirmed by the owner; new sequences/LEDs await physical observation. Generic hardware runtime remains planned. See `docs/stackchan-1.5.1.md` and the importable `examples/stackchan-first-program.botlab.json`.

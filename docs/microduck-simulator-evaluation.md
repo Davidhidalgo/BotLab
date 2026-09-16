@@ -21,14 +21,14 @@ Inference: the iframe let BotLab reuse an existing standalone web application in
 
 ## Options
 
-| Aspect | Existing browser host in iframe | Same browser engine in-process | Daemons + native MuJoCo body |
-| --- | --- | --- | --- |
-| Current BotLab evidence | Movement, turns, progress and stop tested | Not integrated | Native probe plus app acceptance: rendered scene, movement, posture, stop, fallback and connection loss |
-| Robot software | Browser controller and ONNX policies | Same browser controller and policies | Actual robot services against simulated inputs |
-| Native skills/sensors | Need individual mapping and simulation support | Same work as iframe | Stronger reuse opportunity, subject to actual service/transport support |
-| Installation | Prepared Node/browser host and assets | Browser assets and tighter app integration | Rust, Python, model/policy assets and service lifecycle |
-| Visible scene | Existing embedded 3D preview | Adapt upstream rendering into BotLab | Native viewer and embedded MuJoCo render of body truth |
-| Main cost | Patches, protocol and duplicated receiver | Upstream coupling without service parity | Setup, platform support and browser-to-service transport |
+| Aspect                  | Existing browser host in iframe                | Same browser engine in-process             | Daemons + native MuJoCo body                                                                            |
+| ----------------------- | ---------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| Current BotLab evidence | Movement, turns, progress and stop tested      | Not integrated                             | Native probe plus app acceptance: rendered scene, movement, posture, stop, fallback and connection loss |
+| Robot software          | Browser controller and ONNX policies           | Same browser controller and policies       | Actual robot services against simulated inputs                                                          |
+| Native skills/sensors   | Need individual mapping and simulation support | Same work as iframe                        | Stronger reuse opportunity, subject to actual service/transport support                                 |
+| Installation            | Prepared Node/browser host and assets          | Browser assets and tighter app integration | Rust, Python, model/policy assets and service lifecycle                                                 |
+| Visible scene           | Existing embedded 3D preview                   | Adapt upstream rendering into BotLab       | Native viewer and embedded MuJoCo render of body truth                                                  |
+| Main cost               | Patches, protocol and duplicated receiver      | Upstream coupling without service parity   | Setup, platform support and browser-to-service transport                                                |
 
 The browser application is a standalone MuJoCo WASM/ONNX web application. Embedding it differently changes integration and packaging, not the services it executes. [Official browser README](https://huggingface.co/spaces/pollen-robotics/microduck-simulator/blob/main/README.md).
 
@@ -38,10 +38,10 @@ Upstream describes the native boundary as replacing body I/O while retaining con
 
 Inspected revisions:
 
-| Repository | Revision | Finding |
-| --- | --- | --- |
-| `microduck` main | `e9cca6272f633dd9054dd0e021f356fe086e5be1` | Contains daemon simulator integration and launcher |
-| `microduck_rl` main | `1e79c29c97d8b38aee9eefde77a545860ba7658e` | Does **not** contain `mjlab_microduck.sim.body_server` |
+| Repository                              | Revision                                   | Finding                                                       |
+| --------------------------------------- | ------------------------------------------ | ------------------------------------------------------------- |
+| `microduck` main                        | `e9cca6272f633dd9054dd0e021f356fe086e5be1` | Contains daemon simulator integration and launcher            |
+| `microduck_rl` main                     | `1e79c29c97d8b38aee9eefde77a545860ba7658e` | Does **not** contain `mjlab_microduck.sim.body_server`        |
 | `microduck_rl` branch `sim-body-server` | `363b7effd4eae9f24dd1bb8bf647aef4d74edca9` | Contains the required body server and `duck-body` entry point |
 
 Cloning both default branches is therefore insufficient. The branch is public in the official repository; it is not necessary to invent a replacement body server. The two revisions passed the local control/ToF compatibility experiment. [RL main tree](https://github.com/pollen-robotics/microduck_rl/tree/1e79c29c97d8b38aee9eefde77a545860ba7658e/src/mjlab_microduck), [published body server](https://github.com/pollen-robotics/microduck_rl/blob/363b7effd4eae9f24dd1bb8bf647aef4d74edca9/src/mjlab_microduck/sim/body_server.py).
@@ -76,31 +76,31 @@ If adopted, move transport-independent execution semantics and their tests into 
 
 Commands and reproducible setup are in [the native probe README](../tools/microduck/native/README.md). [Compact evidence](evidence/microduck-native-2026-09-13.json) records revisions and results; full traces/logs remain under `tmp/microduck-native/`.
 
-| Check | Observed result |
-| --- | --- |
-| Startup and stable standing | Native sitstand policy raised the trunk to approximately 11.6 cm; headless loop approximately 50 Hz, zero missed ticks in the baseline |
-| Skills | `sit_toggle` transitioned to `sit` at 5.94 cm and back to `stand` at 11.59 cm |
-| Distance | Requested 25 cm using odometry; settled physics displacement 25.92 cm and odometry 26.62 cm |
-| Native proximity | Actual wall ray casts through `tofd --sim`; library trigger fired at 43.5 and 38.7 cm, stopped, held without repeating and rearmed on reverse |
-| Cancelled proximity | A fresh run crossed the threshold at 41.9 cm with zero events after cancellation |
-| Explicit stop | Acknowledged; applied command magnitude below 0.001 after 0.57 s; approximately 2.8 cm subsequent displacement during the observation |
-| Lost command connection | Deadman observed after 0.53 s; applied command below 0.001 after 0.95 s; approximately 10 cm subsequent displacement |
-| Native viewer process | Thirty-second run, mean 49.96 Hz, one missed tick, real-time ratio 0.9996; no logged viewer fallback. Pixel/interaction acceptance remains open because the UI inspection tool timed out |
-| BotLab checks | 270 tests across seven targets, including eight new adapter tests; app/adapter builds and adapter lint passed |
+| Check                       | Observed result                                                                                                                                                                          |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Startup and stable standing | Native sitstand policy raised the trunk to approximately 11.6 cm; headless loop approximately 50 Hz, zero missed ticks in the baseline                                                   |
+| Skills                      | `sit_toggle` transitioned to `sit` at 5.94 cm and back to `stand` at 11.59 cm                                                                                                            |
+| Distance                    | Requested 25 cm using odometry; settled physics displacement 25.92 cm and odometry 26.62 cm                                                                                              |
+| Native proximity            | Actual wall ray casts through `tofd --sim`; library trigger fired at 43.5 and 38.7 cm, stopped, held without repeating and rearmed on reverse                                            |
+| Cancelled proximity         | A fresh run crossed the threshold at 41.9 cm with zero events after cancellation                                                                                                         |
+| Explicit stop               | Acknowledged; applied command magnitude below 0.001 after 0.57 s; approximately 2.8 cm subsequent displacement during the observation                                                    |
+| Lost command connection     | Deadman observed after 0.53 s; applied command below 0.001 after 0.95 s; approximately 10 cm subsequent displacement                                                                     |
+| Native viewer process       | Thirty-second run, mean 49.96 Hz, one missed tick, real-time ratio 0.9996; no logged viewer fallback. Pixel/interaction acceptance remains open because the UI inspection tool timed out |
+| BotLab checks               | 270 tests across seven targets, including eight new adapter tests; app/adapter builds and adapter lint passed                                                                            |
 
 The proximity event is produced by BotLab from native sensor frames, not a pre-existing native `person.detected` event. Its algorithm lives in the adapter library and the native probe invokes that exact TypeScript implementation. It is not yet an editor block.
 
 The native gait also stalled on small commands: a 0.15 m/s request moved about 6 mm in three seconds, and ±1 rad/s produced mostly transient torso rotation. Measured ±2 rad/s produced sustained rotation. The angle experiment consequently still needed heading feedback, settling and corrections; a velocity command is not an angle-completion API.
 
 | Requested BotLab angle | Settled physics angle | Absolute error | Corrections |
-| ---: | ---: | ---: | ---: |
-| 90° | 87.96° | 2.04° | 1 |
-| -90° | -95.44° | 5.44° | 7 |
-| 180° | 174.33° | 5.67° | 4 |
-| 15° | 18.50° | 3.50° | 0 |
-| -15° | -10.08° | 4.92° | 4 |
-| -180° | -185.46° | 5.46° | 13 |
-| 360° | 359.35° | 0.65° | 1 |
+| ---------------------: | --------------------: | -------------: | ----------: |
+|                    90° |                87.96° |          2.04° |           1 |
+|                   -90° |               -95.44° |          5.44° |           7 |
+|                   180° |               174.33° |          5.67° |           4 |
+|                    15° |                18.50° |          3.50° |           0 |
+|                   -15° |               -10.08° |          4.92° |           4 |
+|                  -180° |              -185.46° |          5.46° |          13 |
+|                   360° |               359.35° |          0.65° |           1 |
 
 All seven cases met the existing 10° regression budget without falling. Three exceeded 5° after the three-second post-command observation, and -180° took about 24 seconds including that observation. This is evidence against claiming the native path automatically improves turning. The native/body revisions and prototype controller differ from the browser setup; these are not controlled performance rankings. Native odometry yaw and physical yaw nearly coincide here because the simulated IMU receives the physics quaternion, which does not establish real-robot sensor accuracy.
 

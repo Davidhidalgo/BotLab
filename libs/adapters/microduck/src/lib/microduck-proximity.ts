@@ -28,7 +28,7 @@ export function createMicroDuckProximityTrigger({
     confirmationFrames < 1
   ) {
     throw new Error(
-      'Proximity requires positive ordered distances and a positive frame count.'
+      'Proximity requires positive ordered distances and a positive frame count.',
     );
   }
   let armed = true;

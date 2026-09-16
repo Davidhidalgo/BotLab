@@ -91,42 +91,78 @@ export const botLabTranslations = {
         'publicar artifact',
       ],
     },
-    storage: {"label":"Desament","saved":"Desat en aquest navegador","failed":"No s’ha pogut desar o recuperar la còpia local. Exporta el programa per conservar-lo.","import":"Importar programa","export":"Exportar programa","fileFailed":"No s’ha pogut importar o exportar el fitxer. Comprova el format i que no superi 2 MB.","lastExecution":"Última execució"},
-    workbench: { program: 'Programa', simulator: 'Simulador', views: 'Espai de treball', diagnostics: 'Diagnòstic', simulatorDetails: 'Detalls del simulador' },
+    storage: {
+      label: 'Desament',
+      saved: 'Desat en aquest navegador',
+      failed:
+        'No s’ha pogut desar o recuperar la còpia local. Exporta el programa per conservar-lo.',
+      import: 'Importar programa',
+      export: 'Exportar programa',
+      fileFailed:
+        'No s’ha pogut importar o exportar el fitxer. Comprova el format i que no superi 2 MB.',
+      lastExecution: 'Última execució',
+    },
+    workbench: {
+      program: 'Programa',
+      simulator: 'Simulador',
+      views: 'Espai de treball',
+      diagnostics: 'Diagnòstic',
+      simulatorDetails: 'Detalls del simulador',
+    },
     host: {
       title: 'MicroDuck Simulator Host',
       loadRuntime: 'Carregar runtime',
       connected: 'Connectat',
-      stop: "Aturar",
+      stop: 'Aturar',
       resetScene: 'Reiniciar escena',
-      executionLabel: "Execució del simulador",
+      executionLabel: 'Execució del simulador',
       progressLabel: 'Progrés del bloc',
       walking: 'Caminant',
       turning: 'Girant',
       waiting: 'Esperant',
       iteration: 'Repetició',
       executionErrors: {
-        'posture-unavailable': "Les postures no estan disponibles en aquest mode del simulador.",
-        'posture-unknown': "La postura és desconeguda. Espera una observació estable abans de comprovar-la.",
-        'posture-timeout': "La postura no s’ha estabilitzat a temps.",
-        'posture-refused': "El simulador no ha acceptat el canvi de postura.",
-        'posture-required': "El robot ha d’estar dret i estable abans de moure’s.",
-        'posture-already-sit': "El robot ja està assegut. Comprova la postura amb un bloc «si» abans de repetir l’ordre.",
-        'posture-already-stand': "El robot ja està dret. Comprova la postura amb un bloc «si» abans de repetir l’ordre.",
+        'posture-unavailable':
+          'Les postures no estan disponibles en aquest mode del simulador.',
+        'posture-unknown':
+          'La postura és desconeguda. Espera una observació estable abans de comprovar-la.',
+        'posture-timeout': 'La postura no s’ha estabilitzat a temps.',
+        'posture-refused': 'El simulador no ha acceptat el canvi de postura.',
+        'posture-required':
+          'El robot ha d’estar dret i estable abans de moure’s.',
+        'posture-already-sit':
+          'El robot ja està assegut. Comprova la postura amb un bloc «si» abans de repetir l’ordre.',
+        'posture-already-stand':
+          'El robot ja està dret. Comprova la postura amb un bloc «si» abans de repetir l’ordre.',
 
         'invalid-frame': 'El bloc conté valors no vàlids.',
-        'telemetry-unavailable': 'No es pot llegir la posició o l’orientació del robot.',
-        'position-reset': 'La posició ha canviat sobtadament. Torna a executar el programa.',
-        'motion-stalled': 'El robot no es mou com s’esperava. Comprova si hi ha un obstacle.',
+        'telemetry-unavailable':
+          'No es pot llegir la posició o l’orientació del robot.',
+        'position-reset':
+          'La posició ha canviat sobtadament. Torna a executar el programa.',
+        'motion-stalled':
+          'El robot no es mou com s’esperava. Comprova si hi ha un obstacle.',
         'motion-timeout': 'El robot no ha completat el moviment indicat.',
-        'scene-interrupted': 'La simulació s’ha interromput. Torna a executar el programa.',
+        'scene-interrupted':
+          'La simulació s’ha interromput. Torna a executar el programa.',
       },
-      executionLost: "El simulador no confirma l’estat. S’ha tancat la vista per aturar-lo.",
+      executionLost:
+        'El simulador no confirma l’estat. S’ha tancat la vista per aturar-lo.',
       executionUnconfirmed: 'Sense confirmació del simulador',
-      executionStates: {"interrupted":"Execució interrompuda","idle":"Sense executar","awaiting":"Esperant el simulador","running":"Executant al simulador","stopping":"Aturant","completed":"Execució confirmada","stopped":"Execució aturada","failed":"Execució aturada per un error"},
+      executionStates: {
+        interrupted: 'Execució interrompuda',
+        idle: 'Sense executar',
+        awaiting: 'Esperant el simulador',
+        running: 'Executant al simulador',
+        stopping: 'Aturant',
+        completed: 'Execució confirmada',
+        stopped: 'Execució aturada',
+        failed: 'Execució aturada per un error',
+      },
       run: 'Executar',
       preparing: 'Preparant',
-      runFailed: "No s'ha pogut executar el programa. Revisa els blocs o la connexió i torna-ho a provar.",
+      runFailed:
+        "No s'ha pogut executar el programa. Revisa els blocs o la connexió i torna-ho a provar.",
       disconnectRuntime: 'Desconnectar runtime',
       loading: 'Carregant',
       remotePreview: 'Host local oficial',
@@ -191,6 +227,8 @@ export const botLabTranslations = {
       error: 'Error',
       disposed: 'Tancada',
       pending: 'Pendent',
+      noWork: 'Sense feina pendent',
+      dispatched: 'Ordres enviades',
       completed: 'Completada',
       selected: 'Seleccionat',
       available: 'Disponible',
@@ -227,11 +265,15 @@ export const botLabTranslations = {
       solid: 'solid',
     },
     messages: {
-      singleScript: 'Utilitza un sol programa amb bandera verda. Els programes en paral·lel encara no són compatibles.',
-      numericWait: 'L’espera necessita una durada numèrica. Les expressions encara no són compatibles.',
-      invalidWait: 'La durada de l’espera ha de ser un nombre finit de segons, igual o superior a zero.',
+      singleScript:
+        'Utilitza un sol programa amb bandera verda. Els programes en paral·lel encara no són compatibles.',
+      numericWait:
+        'L’espera necessita una durada numèrica. Les expressions encara no són compatibles.',
+      invalidWait:
+        'La durada de l’espera ha de ser un nombre finit de segons, igual o superior a zero.',
       invalidSteps: 'Indica un nombre enter de passos entre 0 i 40.',
-      invalidAngle: 'Indica un angle entre -360 i 360 graus. Negatiu: esquerra; positiu: dreta.',
+      invalidAngle:
+        'Indica un angle entre -360 i 360 graus. Negatiu: esquerra; positiu: dreta.',
       invalidDistance: 'Indica una distància entre 0 i 20 metres.',
       emptyScript: 'Connecta almenys un bloc a la bandera verda.',
       unsupportedBlock: 'Bloc connectat no compatible:',
@@ -347,42 +389,78 @@ export const botLabTranslations = {
         'publicar artefacto',
       ],
     },
-    storage: {"label":"Guardado","saved":"Guardado en este navegador","failed":"No se ha podido guardar o recuperar la copia local. Exporta el programa para conservarlo.","import":"Importar programa","export":"Exportar programa","fileFailed":"No se ha podido importar o exportar el archivo. Comprueba el formato y que no supere 2 MB.","lastExecution":"Última ejecución"},
-    workbench: { program: 'Programa', simulator: 'Simulador', views: 'Espacio de trabajo', diagnostics: 'Diagnóstico', simulatorDetails: 'Detalles del simulador' },
+    storage: {
+      label: 'Guardado',
+      saved: 'Guardado en este navegador',
+      failed:
+        'No se ha podido guardar o recuperar la copia local. Exporta el programa para conservarlo.',
+      import: 'Importar programa',
+      export: 'Exportar programa',
+      fileFailed:
+        'No se ha podido importar o exportar el archivo. Comprueba el formato y que no supere 2 MB.',
+      lastExecution: 'Última ejecución',
+    },
+    workbench: {
+      program: 'Programa',
+      simulator: 'Simulador',
+      views: 'Espacio de trabajo',
+      diagnostics: 'Diagnóstico',
+      simulatorDetails: 'Detalles del simulador',
+    },
     host: {
       title: 'MicroDuck Simulator Host',
       loadRuntime: 'Cargar runtime',
       connected: 'Conectado',
-      stop: "Detener",
+      stop: 'Detener',
       resetScene: 'Reiniciar escena',
-      executionLabel: "Ejecución del simulador",
+      executionLabel: 'Ejecución del simulador',
       progressLabel: 'Progreso del bloque',
       walking: 'Caminando',
       turning: 'Girando',
       waiting: 'Esperando',
       iteration: 'Repetición',
       executionErrors: {
-        'posture-unavailable': "Las posturas no están disponibles en este modo del simulador.",
-        'posture-unknown': "La postura es desconocida. Espera una observación estable antes de comprobarla.",
-        'posture-timeout': "La postura no se ha estabilizado a tiempo.",
-        'posture-refused': "El simulador no ha aceptado el cambio de postura.",
-        'posture-required': "El robot debe estar de pie y estable antes de moverse.",
-        'posture-already-sit': "El robot ya está sentado. Comprueba su postura con un bloque «si» antes de repetir la orden.",
-        'posture-already-stand': "El robot ya está de pie. Comprueba su postura con un bloque «si» antes de repetir la orden.",
+        'posture-unavailable':
+          'Las posturas no están disponibles en este modo del simulador.',
+        'posture-unknown':
+          'La postura es desconocida. Espera una observación estable antes de comprobarla.',
+        'posture-timeout': 'La postura no se ha estabilizado a tiempo.',
+        'posture-refused': 'El simulador no ha aceptado el cambio de postura.',
+        'posture-required':
+          'El robot debe estar de pie y estable antes de moverse.',
+        'posture-already-sit':
+          'El robot ya está sentado. Comprueba su postura con un bloque «si» antes de repetir la orden.',
+        'posture-already-stand':
+          'El robot ya está de pie. Comprueba su postura con un bloque «si» antes de repetir la orden.',
 
         'invalid-frame': 'El bloque contiene valores no válidos.',
-        'telemetry-unavailable': 'No se puede leer la posición o la orientación del robot.',
-        'position-reset': 'La posición ha cambiado bruscamente. Vuelve a ejecutar el programa.',
-        'motion-stalled': 'El robot no se mueve como se esperaba. Comprueba si hay un obstáculo.',
+        'telemetry-unavailable':
+          'No se puede leer la posición o la orientación del robot.',
+        'position-reset':
+          'La posición ha cambiado bruscamente. Vuelve a ejecutar el programa.',
+        'motion-stalled':
+          'El robot no se mueve como se esperaba. Comprueba si hay un obstáculo.',
         'motion-timeout': 'El robot no ha completado el movimiento indicado.',
-        'scene-interrupted': 'La simulación se ha interrumpido. Vuelve a ejecutar el programa.',
+        'scene-interrupted':
+          'La simulación se ha interrumpido. Vuelve a ejecutar el programa.',
       },
-      executionLost: "El simulador no confirma el estado. Se ha cerrado la vista para detenerlo.",
+      executionLost:
+        'El simulador no confirma el estado. Se ha cerrado la vista para detenerlo.',
       executionUnconfirmed: 'Sin confirmación del simulador',
-      executionStates: {"interrupted":"Ejecución interrumpida","idle":"Sin ejecutar","awaiting":"Esperando al simulador","running":"Ejecutando en el simulador","stopping":"Deteniendo","completed":"Ejecución confirmada","stopped":"Ejecución detenida","failed":"Ejecución detenida por un error"},
+      executionStates: {
+        interrupted: 'Ejecución interrumpida',
+        idle: 'Sin ejecutar',
+        awaiting: 'Esperando al simulador',
+        running: 'Ejecutando en el simulador',
+        stopping: 'Deteniendo',
+        completed: 'Ejecución confirmada',
+        stopped: 'Ejecución detenida',
+        failed: 'Ejecución detenida por un error',
+      },
       run: 'Ejecutar',
       preparing: 'Preparando',
-      runFailed: 'No se ha podido ejecutar el programa. Revisa los bloques o la conexión y vuelve a intentarlo.',
+      runFailed:
+        'No se ha podido ejecutar el programa. Revisa los bloques o la conexión y vuelve a intentarlo.',
       disconnectRuntime: 'Desconectar runtime',
       loading: 'Cargando',
       remotePreview: 'Host local oficial',
@@ -447,6 +525,8 @@ export const botLabTranslations = {
       error: 'Error',
       disposed: 'Cerrada',
       pending: 'Pendiente',
+      noWork: 'Sin trabajo pendiente',
+      dispatched: 'Órdenes enviadas',
       completed: 'Completada',
       selected: 'Seleccionado',
       available: 'Disponible',
@@ -483,11 +563,15 @@ export const botLabTranslations = {
       solid: 'solido',
     },
     messages: {
-      singleScript: 'Utiliza un solo programa con bandera verde. Los programas en paralelo aún no son compatibles.',
-      numericWait: 'La espera necesita una duración numérica. Las expresiones aún no son compatibles.',
-      invalidWait: 'La duración de la espera debe ser un número finito de segundos, igual o superior a cero.',
+      singleScript:
+        'Utiliza un solo programa con bandera verde. Los programas en paralelo aún no son compatibles.',
+      numericWait:
+        'La espera necesita una duración numérica. Las expresiones aún no son compatibles.',
+      invalidWait:
+        'La duración de la espera debe ser un número finito de segundos, igual o superior a cero.',
       invalidSteps: 'Indica un número entero de pasos entre 0 y 40.',
-      invalidAngle: 'Indica un ángulo entre -360 y 360 grados. Negativo: izquierda; positivo: derecha.',
+      invalidAngle:
+        'Indica un ángulo entre -360 y 360 grados. Negativo: izquierda; positivo: derecha.',
       invalidDistance: 'Indica una distancia entre 0 y 20 metros.',
       emptyScript: 'Conecta al menos un bloque a la bandera verde.',
       unsupportedBlock: 'Bloque conectado no compatible:',
@@ -603,42 +687,78 @@ export const botLabTranslations = {
         'publish artifact',
       ],
     },
-    storage: {"label":"Storage","saved":"Saved in this browser","failed":"Could not save or restore the local copy. Export the program to keep it.","import":"Import program","export":"Export program","fileFailed":"Could not import or export the file. Check the format and the 2 MB size limit.","lastExecution":"Last execution"},
-    workbench: { program: 'Program', simulator: 'Simulator', views: 'Workspace views', diagnostics: 'Diagnostics', simulatorDetails: 'Simulator details' },
+    storage: {
+      label: 'Storage',
+      saved: 'Saved in this browser',
+      failed:
+        'Could not save or restore the local copy. Export the program to keep it.',
+      import: 'Import program',
+      export: 'Export program',
+      fileFailed:
+        'Could not import or export the file. Check the format and the 2 MB size limit.',
+      lastExecution: 'Last execution',
+    },
+    workbench: {
+      program: 'Program',
+      simulator: 'Simulator',
+      views: 'Workspace views',
+      diagnostics: 'Diagnostics',
+      simulatorDetails: 'Simulator details',
+    },
     host: {
       title: 'MicroDuck Simulator Host',
       loadRuntime: 'Load runtime',
       connected: 'Connected',
-      stop: "Stop",
+      stop: 'Stop',
       resetScene: 'Reset scene',
-      executionLabel: "Simulator execution",
+      executionLabel: 'Simulator execution',
       progressLabel: 'Block progress',
       walking: 'Walking',
       turning: 'Turning',
       waiting: 'Waiting',
       iteration: 'Iteration',
       executionErrors: {
-        'posture-unavailable': "Postures are unavailable in this simulator mode.",
-        'posture-unknown': "Posture is unknown. Wait for a stable observation before checking it.",
-        'posture-timeout': "Posture did not stabilize before the timeout.",
-        'posture-refused': "The simulator refused the posture change.",
-        'posture-required': "The robot must be standing and stable before moving.",
-        'posture-already-sit': "The robot is already sitting. Check its posture with an if block before repeating the command.",
-        'posture-already-stand': "The robot is already standing. Check its posture with an if block before repeating the command.",
+        'posture-unavailable':
+          'Postures are unavailable in this simulator mode.',
+        'posture-unknown':
+          'Posture is unknown. Wait for a stable observation before checking it.',
+        'posture-timeout': 'Posture did not stabilize before the timeout.',
+        'posture-refused': 'The simulator refused the posture change.',
+        'posture-required':
+          'The robot must be standing and stable before moving.',
+        'posture-already-sit':
+          'The robot is already sitting. Check its posture with an if block before repeating the command.',
+        'posture-already-stand':
+          'The robot is already standing. Check its posture with an if block before repeating the command.',
 
         'invalid-frame': 'The block contains invalid values.',
-        'telemetry-unavailable': 'The robot position or orientation is unavailable.',
-        'position-reset': 'The position changed abruptly. Run the program again.',
-        'motion-stalled': 'The robot is not moving as expected. Check for an obstacle.',
+        'telemetry-unavailable':
+          'The robot position or orientation is unavailable.',
+        'position-reset':
+          'The position changed abruptly. Run the program again.',
+        'motion-stalled':
+          'The robot is not moving as expected. Check for an obstacle.',
         'motion-timeout': 'The robot did not complete the requested movement.',
-        'scene-interrupted': 'The simulation was interrupted. Run the program again.',
+        'scene-interrupted':
+          'The simulation was interrupted. Run the program again.',
       },
-      executionLost: "The simulator did not confirm its state. The preview was closed to stop it.",
+      executionLost:
+        'The simulator did not confirm its state. The preview was closed to stop it.',
       executionUnconfirmed: 'Simulator did not confirm',
-      executionStates: {"interrupted":"Execution interrupted","idle":"Not run","awaiting":"Waiting for simulator","running":"Running in simulator","stopping":"Stopping","completed":"Execution confirmed","stopped":"Execution stopped","failed":"Execution stopped by an error"},
+      executionStates: {
+        interrupted: 'Execution interrupted',
+        idle: 'Not run',
+        awaiting: 'Waiting for simulator',
+        running: 'Running in simulator',
+        stopping: 'Stopping',
+        completed: 'Execution confirmed',
+        stopped: 'Execution stopped',
+        failed: 'Execution stopped by an error',
+      },
       run: 'Run',
       preparing: 'Preparing',
-      runFailed: 'Could not run the program. Check the blocks or connection and try again.',
+      runFailed:
+        'Could not run the program. Check the blocks or connection and try again.',
       disconnectRuntime: 'Disconnect runtime',
       loading: 'Loading',
       remotePreview: 'Official local host',
@@ -703,6 +823,8 @@ export const botLabTranslations = {
       error: 'Error',
       disposed: 'Closed',
       pending: 'Pending',
+      noWork: 'No pending work',
+      dispatched: 'Commands sent',
       completed: 'Completed',
       selected: 'Selected',
       available: 'Available',
@@ -739,11 +861,15 @@ export const botLabTranslations = {
       solid: 'solid',
     },
     messages: {
-      singleScript: 'Use one green flag script. Parallel scripts are not supported yet.',
-      numericWait: 'Wait requires a numeric duration. Expressions are not supported yet.',
-      invalidWait: 'Wait duration must be a finite, non-negative number of seconds.',
+      singleScript:
+        'Use one green flag script. Parallel scripts are not supported yet.',
+      numericWait:
+        'Wait requires a numeric duration. Expressions are not supported yet.',
+      invalidWait:
+        'Wait duration must be a finite, non-negative number of seconds.',
       invalidSteps: 'Enter a whole number of steps from 0 to 40.',
-      invalidAngle: 'Enter an angle from -360 to 360 degrees. Negative: left; positive: right.',
+      invalidAngle:
+        'Enter an angle from -360 to 360 degrees. Negative: left; positive: right.',
       invalidDistance: 'Enter a distance from 0 to 20 meters.',
       emptyScript: 'Connect at least one block to the green flag.',
       unsupportedBlock: 'Unsupported connected block:',

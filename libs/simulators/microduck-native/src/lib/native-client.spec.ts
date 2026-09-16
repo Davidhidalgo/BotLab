@@ -43,7 +43,7 @@ describe('native MicroDuck daemon protocol', () => {
     const subscribed = f.client.subscribeRobot();
     f.data('{"jsonrpc":"2.0","method":"robot.state",');
     f.data(
-      '"params":{"policy":"stand"}}\n{"jsonrpc":"2.0","id":2,"result":{"accepted":true}}\n'
+      '"params":{"policy":"stand"}}\n{"jsonrpc":"2.0","id":2,"result":{"accepted":true}}\n',
     );
     f.reply(1, { healthy: true });
     await expect(health).resolves.toEqual({ healthy: true });
@@ -91,7 +91,7 @@ describe('native MicroDuck daemon protocol', () => {
     const f = fixture();
     const response = f.client.togglePosture();
     f.data(
-      '{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"policy disabled"}}\n'
+      '{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"policy disabled"}}\n',
     );
     await expect(response).rejects.toThrow('policy disabled');
     f.client.dispose();
@@ -101,7 +101,7 @@ describe('native MicroDuck daemon protocol', () => {
     vi.useFakeTimers();
     const f = fixture();
     const response = expect(f.client.move({ vx: 0.25 })).rejects.toThrow(
-      'timed out'
+      'timed out',
     );
     await vi.advanceTimersByTimeAsync(101);
     await response;
@@ -134,7 +134,7 @@ describe('native MicroDuck daemon protocol', () => {
       f.data(data);
       await expect(response).rejects.toThrow();
       expect(f.transport.close).toHaveBeenCalledTimes(1);
-    }
+    },
   );
 
   it('cleans up pending requests when sending fails', async () => {

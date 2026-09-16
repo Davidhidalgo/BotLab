@@ -38,7 +38,7 @@ export interface SimulatorBridge {
   readonly integration: SimulatorIntegration;
   boot(target: Target): SimulatorSnapshot | Promise<SimulatorSnapshot>;
   simulate(
-    artifact: CompiledBehaviorArtifact
+    artifact: CompiledBehaviorArtifact,
   ): SimulatorRunResult | Promise<SimulatorRunResult>;
   reset?(): SimulatorSnapshot | Promise<SimulatorSnapshot>;
   dispose?(): SimulatorSnapshot | Promise<SimulatorSnapshot>;
@@ -46,19 +46,19 @@ export interface SimulatorBridge {
 }
 
 export function defineSimulatorIntegration(
-  integration: SimulatorIntegration
+  integration: SimulatorIntegration,
 ): SimulatorIntegration {
   return integration;
 }
 
 export function defineSimulatorIntegrations(
-  integrations: SimulatorIntegration[]
+  integrations: SimulatorIntegration[],
 ): SimulatorIntegration[] {
   return integrations;
 }
 
 export function createSimulatorSnapshot(
-  snapshot: SimulatorSnapshot
+  snapshot: SimulatorSnapshot,
 ): SimulatorSnapshot {
   return {
     ...snapshot,

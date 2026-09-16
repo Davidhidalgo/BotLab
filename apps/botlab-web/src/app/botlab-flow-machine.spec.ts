@@ -1,4 +1,6 @@
-import { createActor } from 'xstate';
+import { createActor, fromPromise, waitFor } from 'xstate';
+import type { BotLabRuntime } from '@botlab/runtime';
+import type { ExecutionResult } from '@botlab/model';
 import { botLabFlowMachine } from './botlab-flow-machine';
 
 describe('botLabFlowMachine', () => {
@@ -23,7 +25,7 @@ describe('botLabFlowMachine', () => {
           kind: 'simulator',
           adapterId: 'microduck',
         }),
-      ])
+      ]),
     );
     expect(capabilities).toEqual(
       expect.arrayContaining([
@@ -35,7 +37,7 @@ describe('botLabFlowMachine', () => {
           id: 'microduck-motion',
           targetIds: expect.arrayContaining(['microduck-usb', 'microduck-sim']),
         }),
-      ])
+      ]),
     );
   });
 
@@ -50,7 +52,10 @@ describe('botLabFlowMachine', () => {
       simulation: 'idle',
       execution: 'ready',
     });
-    expect(actor.getSnapshot().context.selectedTargetId).toBe('microduck-sim');
+    expect(actor.getSnapshot().context.selectedTargetId).toBe(
+      'stackchan-planned',
+    );
+    actor.send({ type: 'target.selected', targetId: 'microduck-sim' });
 
     const compiled = new Promise<void>((resolve, reject) => {
       const subscription = actor.subscribe((snapshot) => {
@@ -88,7 +93,7 @@ describe('botLabFlowMachine', () => {
 
     const completed = new Promise<void>((resolve, reject) => {
       const subscription = actor.subscribe((snapshot) => {
-        if (snapshot.matches({ execution: 'completed' })) {
+        if (snapshot.matches({ execution: 'dispatched' })) {
           globalThis.clearTimeout(timeout);
           subscription.unsubscribe();
           resolve();
@@ -107,22 +112,22 @@ describe('botLabFlowMachine', () => {
       workspace: 'loaded',
       build: 'compiled',
       simulation: 'passed',
-      execution: 'completed',
+      execution: 'dispatched',
     });
     expect(actor.getSnapshot().context.compiledArtifact?.id).toBe(
-      'artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan'
+      'artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan',
     );
     expect(actor.getSnapshot().context.compiledArtifact?.targetId).toBe(
-      'microduck-sim'
+      'microduck-sim',
     );
     expect(
-      actor.getSnapshot().context.compiledArtifact?.commands[0].inputs
+      actor.getSnapshot().context.compiledArtifact?.commands[0].inputs,
     ).toEqual({
       brightness: 50,
       pattern: 'smile',
     });
     expect(
-      actor.getSnapshot().context.compiledArtifact?.commands[1]
+      actor.getSnapshot().context.compiledArtifact?.commands[1],
     ).toMatchObject({
       capabilityId: 'microduck-motion',
       commandId: 'drive-differential',
@@ -133,21 +138,67 @@ describe('botLabFlowMachine', () => {
       },
     });
     expect(actor.getSnapshot().context.simulationResult).toMatchObject({
-      artifactId: 'simout-artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan',
+      artifactId:
+        'simout-artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan',
       status: 'passed',
       outputArtifact: {
         kind: 'simulator-output',
-        sourceArtifactId: 'artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan',
+        sourceArtifactId:
+          'artifact-microduck-led-demo-microduck-sim-smile-walk-5m-plan',
         commandCount: 3,
       },
     });
     expect(
-      actor.getSnapshot().context.flowLog.map((entry) => entry.category)
+      actor.getSnapshot().context.flowLog.map((entry) => entry.category),
     ).toEqual(expect.arrayContaining(['build', 'simulation', 'execution']));
     expect(actor.getSnapshot().context.runMessage).toContain(
-      '3 command(s) sent'
+      '3 command(s) sent',
     );
   });
+
+  it.each(['failed', 'cancelled', 'confirmation-required', 'no-work'] as const)(
+    'routes a resolved %s result without claiming completion',
+    async (status) => {
+      const actor = createActor(
+        botLabFlowMachine.provide({
+          actors: {
+            runQueuedDemo: fromPromise<
+              {
+                runtimeSnapshot: ReturnType<BotLabRuntime['inspectRuntime']>;
+                runMessage: string;
+                outcome: ExecutionResult;
+              },
+              { runtime: BotLabRuntime }
+            >(async ({ input }: { input: { runtime: BotLabRuntime } }) => ({
+              runtimeSnapshot: input.runtime.inspectRuntime(),
+              runMessage: status,
+              outcome: {
+                executionId: 'test-run',
+                status,
+                evidence: 'none' as const,
+              },
+            })),
+          },
+        }),
+        { input: {} },
+      ).start();
+      actor.send({ type: 'target.selected', targetId: 'microduck-sim' });
+      actor.send({ type: 'build.compile' });
+      await waitFor(actor, (state) => state.matches({ build: 'compiled' }));
+      actor.send({ type: 'simulation.run' });
+      await waitFor(actor, (state) => state.matches({ simulation: 'passed' }));
+      actor.send({ type: 'demo.run' });
+      await waitFor(actor, (state) => state.matches({ execution: status }));
+      expect(actor.getSnapshot().context.executionResult?.status).toBe(status);
+      actor.send({
+        type: 'workspace.changed',
+        artifact: actor.getSnapshot().context.workspaceArtifact,
+      });
+      expect(actor.getSnapshot().matches({ execution: 'ready' })).toBe(true);
+      expect(actor.getSnapshot().context.executionResult).toBeUndefined();
+      actor.stop();
+    },
+  );
 
   it('blocks compilation for planned or incompatible targets', () => {
     const actor = createActor(botLabFlowMachine, { input: {} });
@@ -162,7 +213,7 @@ describe('botLabFlowMachine', () => {
       execution: 'ready',
     });
     expect(actor.getSnapshot().context.selectedTargetId).toBe(
-      'stackchan-planned'
+      'stackchan-planned',
     );
     expect(actor.getSnapshot().context.compiledArtifact).toBeUndefined();
   });
@@ -171,6 +222,7 @@ describe('botLabFlowMachine', () => {
     const actor = createActor(botLabFlowMachine, { input: {} });
 
     actor.start();
+    actor.send({ type: 'target.selected', targetId: 'microduck-sim' });
     actor.send({
       type: 'workspace.changed',
       artifact: {
@@ -199,13 +251,13 @@ describe('botLabFlowMachine', () => {
     await compiled;
 
     expect(
-      actor.getSnapshot().context.compiledArtifact?.commands[0].inputs
+      actor.getSnapshot().context.compiledArtifact?.commands[0].inputs,
     ).toEqual({
       brightness: 50,
       pattern: 'off',
     });
     expect(
-      actor.getSnapshot().context.compiledArtifact?.commands[1].inputs
+      actor.getSnapshot().context.compiledArtifact?.commands[1].inputs,
     ).toMatchObject({
       distanceMeters: 2.5,
     });

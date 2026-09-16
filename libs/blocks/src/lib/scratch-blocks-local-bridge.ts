@@ -1,8 +1,22 @@
+import {
+  applyStackChanLocale,
+  registerStackChanBlocks,
+} from './stackchan-blocks';
 import type * as ScratchBlocksModule from 'scratch-blocks';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { ArrowUp, ArrowDown, CornerUpLeft, CornerUpRight, Undo2 } from 'lucide-react';
-import { createBlockMessageResolver, type BlocksLocale, type BlockTranslationOverlay } from './block-messages';
+import {
+  ArrowUp,
+  ArrowDown,
+  CornerUpLeft,
+  CornerUpRight,
+  Undo2,
+} from 'lucide-react';
+import {
+  createBlockMessageResolver,
+  type BlocksLocale,
+  type BlockTranslationOverlay,
+} from './block-messages';
 import { microDuckBlockMessages } from './microduck-block-messages';
 import type {
   BlocksEditorMountRequest,
@@ -21,15 +35,21 @@ let botLabScratchBlocksTheme:
   | undefined;
 
 const SCRATCH_BLOCKS_MEDIA_PATH = '/vendor/scratch-blocks/media/';
+const incompatibleTargetReason = 'botlab-incompatible-target';
 
-export function createLocalScratchBlocksEditorBridge(translations?: BlockTranslationOverlay): ScratchBlocksEditorBridge {
-  const translate = createBlockMessageResolver(microDuckBlockMessages, translations);
+export function createLocalScratchBlocksEditorBridge(
+  translations?: BlockTranslationOverlay,
+): ScratchBlocksEditorBridge {
+  const translate = createBlockMessageResolver(
+    microDuckBlockMessages,
+    translations,
+  );
   return {
     async mount(request) {
       return mountLocalScratchBlocksWorkspace(
         request,
         await loadScratchBlocks(),
-        translate
+        translate,
       );
     },
   };
@@ -43,20 +63,26 @@ function loadScratchBlocks() {
 function mountLocalScratchBlocksWorkspace(
   request: BlocksEditorMountRequest,
   scratchBlocks: ScratchBlocksApi,
-  translate: ReturnType<typeof createBlockMessageResolver>
+  translate: ReturnType<typeof createBlockMessageResolver>,
 ): BlocksEditorMountResult {
   let locale = request.locale ?? 'ca';
+  let availableBlockTypes = request.availableBlockTypes;
   let highlightedBlock: string | undefined;
   let disposed = false;
   function applyLocale(value: BlocksLocale) {
     scratchBlocks.ScratchMsgs.setLocale('en');
     scratchBlocks.ScratchMsgs.setLocale(value);
+    applyStackChanLocale(scratchBlocks, value);
     for (const key of Object.keys(microDuckBlockMessages.messages)) {
-      scratchBlocks.Msg[`BOTLAB_MICRODUCK_${key.toUpperCase()}`] = translate(key, value);
+      scratchBlocks.Msg[`BOTLAB_MICRODUCK_${key.toUpperCase()}`] = translate(
+        key,
+        value,
+      );
     }
   }
   applyLocale(locale);
   registerBotLabBlocks(scratchBlocks);
+  registerStackChanBlocks(scratchBlocks);
 
   request.element.replaceChildren();
   request.element.classList.add('botlab-scratch-blocks-workspace');
@@ -69,7 +95,7 @@ function mountLocalScratchBlocksWorkspace(
       readOnly: request.artifact.status === 'read-only',
       scrollbars: true,
       theme: getBotLabScratchBlocksTheme(scratchBlocks),
-      toolbox: createBotLabToolbox(scratchBlocks),
+      toolbox: createBotLabToolbox(scratchBlocks, availableBlockTypes),
       zoom: {
         controls: true,
         startScale: 0.85,
@@ -78,11 +104,37 @@ function mountLocalScratchBlocksWorkspace(
     });
 
     loadWorkspaceXml(request.artifact.content, workspace, scratchBlocks);
+    function updateBlockCompatibility() {
+      const warning =
+        locale === 'es'
+          ? 'Este bloque no es compatible con el robot seleccionado.'
+          : locale === 'ca'
+            ? 'Aquest bloc no és compatible amb el robot seleccionat.'
+            : 'This block is not compatible with the selected robot.';
+      scratchBlocks.Events.disable();
+      try {
+        for (const block of workspace.getAllBlocks(false)) {
+          const incompatible =
+            !block.isShadow() &&
+            availableBlockTypes !== undefined &&
+            !availableBlockTypes.includes(block.type);
+          block.setDisabledReason(incompatible, incompatibleTargetReason);
+          block.setWarningText(
+            incompatible ? warning : null,
+            incompatibleTargetReason,
+          );
+        }
+      } finally {
+        scratchBlocks.Events.enable();
+      }
+    }
+    updateBlockCompatibility();
     const desktopMetrics = workspace.getMetricsManager();
     const compactMetrics = new scratchBlocks.MetricsManager(workspace);
     let compact = false;
     function resizeWorkspace() {
-      const nextCompact = request.element.clientWidth > 0 && request.element.clientWidth <= 600;
+      const nextCompact =
+        request.element.clientWidth > 0 && request.element.clientWidth <= 600;
       if (nextCompact !== compact) {
         compact = nextCompact;
         workspace.setMetricsManager(compact ? compactMetrics : desktopMetrics);
@@ -97,8 +149,10 @@ function mountLocalScratchBlocksWorkspace(
       }
       scratchBlocks.svgResize(workspace);
     }
-    const resizeObserver = typeof ResizeObserver === 'undefined' ? undefined
-      : new ResizeObserver(resizeWorkspace);
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined'
+        ? undefined
+        : new ResizeObserver(resizeWorkspace);
     resizeObserver?.observe(request.element);
     resizeWorkspace();
 
@@ -106,6 +160,8 @@ function mountLocalScratchBlocksWorkspace(
       if (event.isUiEvent || request.artifact.status === 'read-only') {
         return;
       }
+
+      updateBlockCompatibility();
 
       request.onArtifactChange?.({
         ...request.artifact,
@@ -123,9 +179,46 @@ function mountLocalScratchBlocksWorkspace(
     return {
       mounted: true,
       handle: {
+        setAvailableBlockTypes(types) {
+          if (
+            disposed ||
+            JSON.stringify(types) === JSON.stringify(availableBlockTypes)
+          )
+            return;
+          availableBlockTypes = [...types];
+          const flyout = workspace.getFlyout();
+          const visible = flyout?.isVisible();
+          const recycling =
+            flyout &&
+            'setRecyclingEnabled' in flyout &&
+            typeof flyout.setRecyclingEnabled === 'function'
+              ? flyout.setRecyclingEnabled.bind(flyout)
+              : undefined;
+          scratchBlocks.Events.disable();
+          try {
+            recycling?.(false);
+            workspace.updateToolbox(
+              createBotLabToolbox(scratchBlocks, availableBlockTypes),
+            );
+            const toolbox = workspace.getToolbox();
+            if (
+              toolbox &&
+              'forceRerender' in toolbox &&
+              typeof toolbox.forceRerender === 'function'
+            )
+              toolbox.forceRerender();
+            flyout?.setVisible(visible ?? !compact);
+            updateBlockCompatibility();
+          } finally {
+            recycling?.(true);
+            scratchBlocks.Events.enable();
+          }
+        },
         setLocale(nextLocale) {
           if (disposed || nextLocale === locale) return;
-          const xml = scratchBlocks.Xml.workspaceToDom(workspace);
+          const xml = scratchBlocks.utils.xml.textToDom(
+            exportWorkspaceXml(workspace, scratchBlocks),
+          );
           const scroll = { x: workspace.scrollX, y: workspace.scrollY };
           const paletteVisible = workspace.getFlyout()?.isVisible();
           const undo = [...workspace.getUndoStack()];
@@ -136,23 +229,40 @@ function mountLocalScratchBlocksWorkspace(
             applyLocale(nextLocale);
             const toolbox = workspace.getToolbox();
             const flyout = workspace.getFlyout();
-            const recycling = flyout && 'setRecyclingEnabled' in flyout && typeof flyout.setRecyclingEnabled === 'function'
-              ? flyout.setRecyclingEnabled.bind(flyout) : undefined;
+            const recycling =
+              flyout &&
+              'setRecyclingEnabled' in flyout &&
+              typeof flyout.setRecyclingEnabled === 'function'
+                ? flyout.setRecyclingEnabled.bind(flyout)
+                : undefined;
             // Scratch caches flyout blocks; changing category names alone leaves old labels.
             recycling?.(false);
             try {
               if (toolbox) {
-                workspace.updateToolbox(createBotLabToolbox(scratchBlocks));
-                if ('forceRerender' in toolbox && typeof toolbox.forceRerender === 'function') toolbox.forceRerender();
+                workspace.updateToolbox(
+                  createBotLabToolbox(scratchBlocks, availableBlockTypes),
+                );
+                if (
+                  'forceRerender' in toolbox &&
+                  typeof toolbox.forceRerender === 'function'
+                )
+                  toolbox.forceRerender();
               }
-            } finally { recycling?.(true); }
+            } finally {
+              recycling?.(true);
+            }
             scratchBlocks.clearWorkspaceAndLoadFromXml(xml, workspace);
             workspace.getUndoStack().splice(0, Infinity, ...undo);
             workspace.getRedoStack().splice(0, Infinity, ...redo);
             workspace.getFlyout()?.setVisible(paletteVisible ?? !compact);
             workspace.scroll(scroll.x, scroll.y);
-            workspace.highlightBlock(highlightedBlock && workspace.getBlockById(highlightedBlock) ? highlightedBlock : null);
+            workspace.highlightBlock(
+              highlightedBlock && workspace.getBlockById(highlightedBlock)
+                ? highlightedBlock
+                : null,
+            );
             locale = nextLocale;
+            updateBlockCompatibility();
           } finally {
             scratchBlocks.Events.enable();
           }
@@ -166,7 +276,9 @@ function mountLocalScratchBlocksWorkspace(
         },
         highlightBlock(blockId) {
           highlightedBlock = blockId;
-          workspace.highlightBlock(blockId && workspace.getBlockById(blockId) ? blockId : null);
+          workspace.highlightBlock(
+            blockId && workspace.getBlockById(blockId) ? blockId : null,
+          );
         },
         exportWorkspace() {
           return {
@@ -204,39 +316,155 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
     return;
   }
 
-  const icon = (component: typeof ArrowUp) => `data:image/svg+xml,${encodeURIComponent(renderToStaticMarkup(
-    createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', width: 33, height: 28, viewBox: '0 0 33 28' },
-      createElement(component, { x: 9.5, y: 4.5, color: 'white', size: 25, strokeWidth: 2.5 }))
-  ))}`;
-  const icons = { forward: icon(ArrowUp), backward: icon(ArrowDown), left: icon(CornerUpLeft), right: icon(CornerUpRight), around: icon(Undo2) };
-  const message = (key: string) => `%{BKY_BOTLAB_MICRODUCK_${key.toUpperCase()}}`;
+  const icon = (component: typeof ArrowUp) =>
+    `data:image/svg+xml,${encodeURIComponent(
+      renderToStaticMarkup(
+        createElement(
+          'svg',
+          {
+            xmlns: 'http://www.w3.org/2000/svg',
+            width: 33,
+            height: 28,
+            viewBox: '0 0 33 28',
+          },
+          createElement(component, {
+            x: 9.5,
+            y: 4.5,
+            color: 'white',
+            size: 25,
+            strokeWidth: 2.5,
+          }),
+        ),
+      ),
+    )}`;
+  const icons = {
+    forward: icon(ArrowUp),
+    backward: icon(ArrowDown),
+    left: icon(CornerUpLeft),
+    right: icon(CornerUpRight),
+    around: icon(Undo2),
+  };
+  const message = (key: string) =>
+    `%{BKY_BOTLAB_MICRODUCK_${key.toUpperCase()}}`;
   const movementBlocks = [
-    { type: 'walk_steps', key: 'forwardSteps', tooltip: 'stepsTooltip', icon: icons.forward, field: 'STEPS', value: 1, min: 0, max: 40, precision: 1 },
-    { type: 'back_steps', key: 'backwardSteps', tooltip: 'stepsTooltip', icon: icons.backward, field: 'STEPS', value: 1, min: 0, max: 40, precision: 1 },
-    { type: 'turn_left', key: 'turnLeft', tooltip: 'turnLeftTooltip', icon: icons.left },
-    { type: 'turn_right', key: 'turnRight', tooltip: 'turnRightTooltip', icon: icons.right },
-    { type: 'turn_around', key: 'turnAround', tooltip: 'turnAroundTooltip', icon: icons.around },
-    { type: 'walk_distance', key: 'walk', tooltip: 'walkTooltip', icon: icons.forward, field: 'DISTANCE', value: 5, min: 0, max: 20, precision: 0.1 },
-    { type: 'back_distance', key: 'backwardMeters', tooltip: 'backwardTooltip', icon: icons.backward, field: 'DISTANCE', value: 1, min: 0, max: 20, precision: 0.1 },
-    { type: 'turn_degrees', key: 'turnDegrees', tooltip: 'turnTooltip', icon: icons.right, field: 'ANGLE', value: 90, min: -360, max: 360, precision: 1 },
+    {
+      type: 'walk_steps',
+      key: 'forwardSteps',
+      tooltip: 'stepsTooltip',
+      icon: icons.forward,
+      field: 'STEPS',
+      value: 1,
+      min: 0,
+      max: 40,
+      precision: 1,
+    },
+    {
+      type: 'back_steps',
+      key: 'backwardSteps',
+      tooltip: 'stepsTooltip',
+      icon: icons.backward,
+      field: 'STEPS',
+      value: 1,
+      min: 0,
+      max: 40,
+      precision: 1,
+    },
+    {
+      type: 'turn_left',
+      key: 'turnLeft',
+      tooltip: 'turnLeftTooltip',
+      icon: icons.left,
+    },
+    {
+      type: 'turn_right',
+      key: 'turnRight',
+      tooltip: 'turnRightTooltip',
+      icon: icons.right,
+    },
+    {
+      type: 'turn_around',
+      key: 'turnAround',
+      tooltip: 'turnAroundTooltip',
+      icon: icons.around,
+    },
+    {
+      type: 'walk_distance',
+      key: 'walk',
+      tooltip: 'walkTooltip',
+      icon: icons.forward,
+      field: 'DISTANCE',
+      value: 5,
+      min: 0,
+      max: 20,
+      precision: 0.1,
+    },
+    {
+      type: 'back_distance',
+      key: 'backwardMeters',
+      tooltip: 'backwardTooltip',
+      icon: icons.backward,
+      field: 'DISTANCE',
+      value: 1,
+      min: 0,
+      max: 20,
+      precision: 0.1,
+    },
+    {
+      type: 'turn_degrees',
+      key: 'turnDegrees',
+      tooltip: 'turnTooltip',
+      icon: icons.right,
+      field: 'ANGLE',
+      value: 90,
+      min: -360,
+      max: 360,
+      precision: 1,
+    },
   ];
   scratchBlocks.defineBlocksWithJsonArray([
     ...['sit', 'stand', 'transitioning'].map((posture) => ({
-      type: `botlab_microduck_is_${posture}`, message0: message(`is_${posture}`),
-      style: 'sensing', extensions: ['output_boolean'], tooltip: message('conditionTooltip'),
+      type: `botlab_microduck_is_${posture}`,
+      message0: message(`is_${posture}`),
+      style: 'sensing',
+      extensions: ['output_boolean'],
+      tooltip: message('conditionTooltip'),
     })),
     ...['sit', 'stand'].map((posture) => ({
-      type: `botlab_microduck_${posture}`, message0: message(posture),
-      style: 'motion', extensions: ['shape_statement'], tooltip: message('postureTooltip'),
+      type: `botlab_microduck_${posture}`,
+      message0: message(posture),
+      style: 'motion',
+      extensions: ['shape_statement'],
+      tooltip: message('postureTooltip'),
     })),
     ...movementBlocks.map((block) => ({
       type: `botlab_microduck_${block.type}`,
       message0: `%${block.field ? 2 : 1} ${message(block.key)}`,
       args0: [
-        ...(block.field ? [{ type: 'field_number', name: block.field, value: block.value, text: String(block.value), min: block.min, max: block.max, precision: block.precision }] : []),
-        { type: 'field_image', name: 'DIRECTION', src: block.icon, width: 33, height: 28, alt: message(block.tooltip) },
+        ...(block.field
+          ? [
+              {
+                type: 'field_number',
+                name: block.field,
+                value: block.value,
+                text: String(block.value),
+                min: block.min,
+                max: block.max,
+                precision: block.precision,
+              },
+            ]
+          : []),
+        {
+          type: 'field_image',
+          name: 'DIRECTION',
+          src: block.icon,
+          width: 33,
+          height: 28,
+          alt: message(block.tooltip),
+        },
       ],
-      style: 'motion', extensions: ['shape_statement'], tooltip: message(block.tooltip),
+      style: 'motion',
+      extensions: ['shape_statement'],
+      tooltip: message(block.tooltip),
     })),
     {
       type: 'botlab_microduck_set_leds',
@@ -299,7 +527,7 @@ function getBotLabScratchBlocksTheme(scratchBlocks: ScratchBlocksApi) {
         scrollbarColour: '#CBD5E1',
         insertionMarkerColour: '#0F766E',
       },
-    }
+    },
   );
 
   return botLabScratchBlocksTheme;
@@ -324,7 +552,7 @@ function createScratchBlockStyles(scratchBlocks: ScratchBlocksApi) {
 }
 
 function normalizeBlocklyBlockStyles(
-  blockStyles: Record<string, Partial<ScratchBlockStyle>>
+  blockStyles: Record<string, Partial<ScratchBlockStyle>>,
 ) {
   return Object.fromEntries(
     Object.entries(blockStyles).map(([name, style]) => [
@@ -336,9 +564,9 @@ function normalizeBlocklyBlockStyles(
           style.colourSecondary ??
           style.colourPrimary ??
           '#334155',
-        style.hat ?? ''
+        style.hat ?? '',
       ),
-    ])
+    ]),
   );
 }
 
@@ -346,7 +574,7 @@ function createBlockStyle(
   colourPrimary: string,
   colourSecondary: string,
   colourTertiary: string,
-  hat = ''
+  hat = '',
 ) {
   return {
     colourPrimary,
@@ -356,10 +584,31 @@ function createBlockStyle(
   };
 }
 
-function createBotLabToolbox(scratchBlocks: ScratchBlocksApi) {
+function createBotLabToolbox(
+  scratchBlocks: ScratchBlocksApi,
+  availableBlockTypes?: readonly string[],
+) {
   return {
     kind: 'categoryToolbox',
     contents: [
+      {
+        kind: 'category',
+        name: scratchBlocks.Msg['BOTLAB_STACKCHAN_MOVEMENT'],
+        categorystyle: 'motion_category',
+        contents: ['yaw', 'center'].map((type) => ({
+          kind: 'block',
+          type: `botlab_stackchan_${type}`,
+        })),
+      },
+      {
+        kind: 'category',
+        name: scratchBlocks.Msg['BOTLAB_STACKCHAN_LIGHTS'],
+        categorystyle: 'botlab_category',
+        contents: ['leds', 'leds_off'].map((type) => ({
+          kind: 'block',
+          type: `botlab_stackchan_${type}`,
+        })),
+      },
       {
         kind: 'category',
         name: scratchBlocks.Msg['CATEGORY_EVENTS'],
@@ -370,32 +619,55 @@ function createBotLabToolbox(scratchBlocks: ScratchBlocksApi) {
         kind: 'category',
         name: scratchBlocks.Msg['BOTLAB_MICRODUCK_MOVEMENT'],
         categorystyle: 'motion_category',
-        contents: ['walk_steps', 'back_steps', 'turn_left', 'turn_right', 'turn_around'].map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` })),
+        contents: [
+          'walk_steps',
+          'back_steps',
+          'turn_left',
+          'turn_right',
+          'turn_around',
+        ].map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` })),
       },
       {
         kind: 'category',
         name: scratchBlocks.Msg['BOTLAB_MICRODUCK_PRECISEMOVEMENT'],
         categorystyle: 'motion_category',
-        contents: ['walk_distance', 'back_distance', 'turn_degrees', 'sit', 'stand'].map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` })),
+        contents: [
+          'walk_distance',
+          'back_distance',
+          'turn_degrees',
+          'sit',
+          'stand',
+        ].map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` })),
       },
       {
-        kind: 'category', name: scratchBlocks.Msg['CATEGORY_SENSING'], categorystyle: 'sensing_category',
-        contents: ['sit', 'stand', 'transitioning'].map((posture) => ({ kind: 'block', type: `botlab_microduck_is_${posture}` })),
+        kind: 'category',
+        name: scratchBlocks.Msg['CATEGORY_SENSING'],
+        categorystyle: 'sensing_category',
+        contents: ['sit', 'stand', 'transitioning'].map((posture) => ({
+          kind: 'block',
+          type: `botlab_microduck_is_${posture}`,
+        })),
       },
       {
         kind: 'category',
         name: 'BotLab',
         categorystyle: 'botlab_category',
-        contents: [
-          { kind: 'block', type: 'botlab_microduck_set_leds' },
-        ],
+        contents: [{ kind: 'block', type: 'botlab_microduck_set_leds' }],
       },
       {
         kind: 'category',
         name: scratchBlocks.Msg['CATEGORY_CONTROL'],
         categorystyle: 'control_category',
         contents: [
-          { kind: 'block', type: 'control_repeat', inputs: { TIMES: { shadow: { type: 'math_whole_number', fields: { NUM: 10 } } } } },
+          {
+            kind: 'block',
+            type: 'control_repeat',
+            inputs: {
+              TIMES: {
+                shadow: { type: 'math_whole_number', fields: { NUM: 10 } },
+              },
+            },
+          },
           { kind: 'block', type: 'control_if' },
           { kind: 'block', type: 'control_if_else' },
           {
@@ -409,14 +681,23 @@ function createBotLabToolbox(scratchBlocks: ScratchBlocksApi) {
           },
         ],
       },
-    ],
+    ]
+      .map((category) => ({
+        ...category,
+        contents: category.contents.filter(
+          (block) =>
+            availableBlockTypes === undefined ||
+            availableBlockTypes.includes(block.type),
+        ),
+      }))
+      .filter((category) => category.contents.length > 0),
   };
 }
 
 function loadWorkspaceXml(
   content: string,
   workspace: ScratchBlocksWorkspace,
-  scratchBlocks: ScratchBlocksApi
+  scratchBlocks: ScratchBlocksApi,
 ) {
   const document = new DOMParser().parseFromString(content, 'text/xml');
   const xml = document.documentElement;
@@ -427,16 +708,17 @@ function loadWorkspaceXml(
 
   // Older toolbox entries created wait blocks without an editable number shadow.
   for (const block of Array.from(
-    xml.querySelectorAll('block[type="control_wait"]')
+    xml.querySelectorAll('block[type="control_wait"]'),
   )) {
     let duration = Array.from(block.children).find(
       (child) =>
-        child.localName === 'value' && child.getAttribute('name') === 'DURATION'
+        child.localName === 'value' &&
+        child.getAttribute('name') === 'DURATION',
     );
     if (
       duration &&
       Array.from(duration.children).some(
-        (child) => child.localName === 'shadow' || child.localName === 'block'
+        (child) => child.localName === 'shadow' || child.localName === 'block',
       )
     )
       continue;
@@ -460,9 +742,24 @@ function loadWorkspaceXml(
 
 function exportWorkspaceXml(
   workspace: ScratchBlocksWorkspace,
-  scratchBlocks: ScratchBlocksApi
+  scratchBlocks: ScratchBlocksApi,
 ) {
-  return scratchBlocks.Xml.domToText(
-    scratchBlocks.Xml.workspaceToDom(workspace)
-  );
+  // Target compatibility is derived UI state, never a persistent user disable.
+  const incompatible = workspace
+    .getAllBlocks(false)
+    .filter((block) => block.hasDisabledReason(incompatibleTargetReason));
+  scratchBlocks.Events.disable();
+  try {
+    incompatible.forEach((block) =>
+      block.setDisabledReason(false, incompatibleTargetReason),
+    );
+    return scratchBlocks.Xml.domToText(
+      scratchBlocks.Xml.workspaceToDom(workspace),
+    );
+  } finally {
+    incompatible.forEach((block) =>
+      block.setDisabledReason(true, incompatibleTargetReason),
+    );
+    scratchBlocks.Events.enable();
+  }
 }

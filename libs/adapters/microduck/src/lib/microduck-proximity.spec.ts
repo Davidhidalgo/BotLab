@@ -67,7 +67,7 @@ describe('native MicroDuck proximity subscription', () => {
     const trigger = create();
     expect(trigger.update({ ...frame(1), rows: 4 }).distanceM).toBeUndefined();
     expect(
-      trigger.update({ ...frame(2), distance_mm: [] }).distanceM
+      trigger.update({ ...frame(2), distance_mm: [] }).distanceM,
     ).toBeUndefined();
     const clear = frame(3, 100);
     for (const i of [27, 28, 35, 36]) {

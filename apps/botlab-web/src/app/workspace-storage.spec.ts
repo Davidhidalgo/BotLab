@@ -22,7 +22,7 @@ describe('versioned workspace storage', () => {
     const restored = readWorkspaceDocument();
     expect(restored.error).toBe(false);
     expect(restored.document?.workspace.content).toBe(
-      document.workspace.content
+      document.workspace.content,
     );
     expect(restored.document?.workspace.status).toBe('loaded');
     expect(restored.document?.locale).toBe('ca');
@@ -67,16 +67,16 @@ describe('versioned workspace storage', () => {
         JSON.stringify({
           ...document,
           workspace: { ...document.workspace, content: '<xml><broken>' },
-        })
-      )
+        }),
+      ),
     ).toThrow('Invalid workspace XML');
     expect(() =>
-      decodeWorkspaceDocument(' '.repeat(2 * 1024 * 1024 + 1))
+      decodeWorkspaceDocument(' '.repeat(2 * 1024 * 1024 + 1)),
     ).toThrow('too large');
     expect(() =>
       decodeWorkspaceDocument(
-        JSON.stringify({ ...document, lastExecution: { status: 'running' } })
-      )
+        JSON.stringify({ ...document, lastExecution: { status: 'running' } }),
+      ),
     ).toThrow('Invalid saved execution');
   });
 
@@ -86,10 +86,10 @@ describe('versioned workspace storage', () => {
       saveWorkspaceDocument({
         ...document,
         workspace: { ...document.workspace, content: '<broken>' },
-      })
+      }),
     ).toBe(false);
     expect(readWorkspaceDocument().document?.workspace.content).toBe(
-      document.workspace.content
+      document.workspace.content,
     );
   });
 

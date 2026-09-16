@@ -5,7 +5,14 @@
       "id": "microduck",
       "name": "MicroDuck",
       "executable": "native/venv/bin/python3.12",
-      "arguments": ["-m", "botlab_microduck_native.gateway", "--presentation", "external", "--parent-pid", "${parentPid}"],
+      "arguments": [
+        "-m",
+        "botlab_microduck_native.gateway",
+        "--presentation",
+        "external",
+        "--parent-pid",
+        "${parentPid}"
+      ],
       "environment": {
         "PYTHONHOME": "${resources}/native/venv",
         "PYTHONPATH": "${resources}/python",

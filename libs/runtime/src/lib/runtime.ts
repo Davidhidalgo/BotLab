@@ -1,3 +1,4 @@
+import { createExecutionLifecycle } from './execution';
 import type {
   Artifact,
   Behavior,
@@ -16,6 +17,12 @@ import type {
   ArbitrationStrategy,
 } from '@botlab/model';
 import {
+  identifyCompiledProgram,
+  sameProgram,
+  type ProgramIdentity,
+  type ExecutionResult,
+  type ExecutionStatus,
+  type ExecutionDiagnosticCode,
   validateBehaviorDefinition,
   validateCompiledBehaviorArtifact,
 } from '@botlab/model';
@@ -60,6 +67,7 @@ export type RuntimeErrorCode =
   | 'session-already-running'
   | 'queued-session-not-ready'
   | 'capability-lock-conflict'
+  | 'target-unavailable'
   | 'missing-dispatcher'
   | 'dispatcher-failed'
   | 'dispatcher-threw'
@@ -77,6 +85,7 @@ export interface RuntimeDiagnostic {
 }
 
 export interface RuntimeTraceEntry {
+  program?: ProgramIdentity;
   id: string;
   timestamp: string;
   category: RuntimeTraceCategory;
@@ -122,6 +131,7 @@ export interface RuntimeQueueSnapshot {
 }
 
 export interface RuntimeSessionSnapshot {
+  program?: ProgramIdentity;
   id: string;
   state: RuntimeSessionState;
   targetId?: string;
@@ -159,13 +169,18 @@ export interface RuntimeIntrospectionSnapshot {
   recentEvents: RuntimeEvent[];
 }
 
-export type RuntimeCommandDispatchStatus = 'dispatched' | 'failed';
+export type RuntimeCommandDispatchStatus =
+  | 'dispatched'
+  | 'completed'
+  | 'failed';
 
-export interface RuntimeCommandDispatchResult {
+export type RuntimeCommandDispatchResult = {
   commandId: string;
-  status: RuntimeCommandDispatchStatus;
   message: string;
-}
+} & (
+  | { status: 'dispatched' | 'failed'; evidence?: never }
+  | { status: 'completed'; evidence: 'simulator' | 'hardware' }
+);
 
 export interface RuntimeCommandDispatcher {
   targetId: string;
@@ -181,9 +196,18 @@ export interface RuntimeLoadResult {
 }
 
 export interface RuntimeRunResult {
+  outcome: ExecutionResult;
   snapshot: RuntimeSessionSnapshot;
   dispatchResults: RuntimeCommandDispatchResult[];
 }
+
+export type RuntimeQueueRunResult =
+  | RuntimeRunResult
+  | {
+      outcome: ExecutionResult & { status: 'no-work' };
+      snapshot?: never;
+      dispatchResults: [];
+    };
 
 export type RuntimeEventType =
   | 'session-created'
@@ -240,7 +264,7 @@ export interface BotLabRuntime {
     sessionId: string,
     options?: RuntimeQueueOptions,
   ): RuntimeQueueSnapshot;
-  runNextQueuedSession(): Promise<RuntimeRunResult | undefined>;
+  runNextQueuedSession(): Promise<RuntimeQueueRunResult>;
   startSession(sessionId: string): Promise<RuntimeRunResult>;
   pauseSession(sessionId: string): RuntimeSessionSnapshot;
   resumeSession(sessionId: string): RuntimeSessionSnapshot;
@@ -261,7 +285,8 @@ interface RuntimeSession {
   trace: RuntimeTraceEntry[];
   diagnostics: RuntimeDiagnostic[];
   policyEvaluation?: RuntimePolicyEvaluation;
-  policyConfirmed: boolean;
+  policyApproval?: ProgramIdentity;
+  program?: ProgramIdentity;
   messages: string[];
   activeRun?: RuntimeActiveRun;
 }
@@ -282,6 +307,11 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
   let eventCounter = 0;
   let diagnosticCounter = 0;
   let queueCounter = 0;
+  let runCounter = 0;
+  const runtimeId = Array.from(
+    globalThis.crypto.getRandomValues(new Uint32Array(4)),
+    (value) => value.toString(16),
+  ).join('-');
 
   function listTargets() {
     return config.adapters.flatMap((adapter) => adapter.targets);
@@ -308,6 +338,7 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
     commandId?: string,
   ) {
     const entry: RuntimeTraceEntry = {
+      program: session.program && { ...session.program },
       id: `${session.id}-trace-${session.trace.length + 1}`,
       timestamp: now(),
       category,
@@ -374,8 +405,12 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
       targetId: session.targetId,
       behaviorId: session.behaviorId,
       loadedArtifactId: session.loadedArtifact?.id,
+      program: session.program && { ...session.program },
       dispatchedCommandCount: session.dispatchedCommandCount,
-      trace: [...session.trace],
+      trace: session.trace.map((entry) => ({
+        ...entry,
+        program: entry.program && { ...entry.program },
+      })),
       diagnostics: [...session.diagnostics],
       policyEvaluation: session.policyEvaluation
         ? {
@@ -505,10 +540,10 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
       denyRules.length > 0
         ? 'deny'
         : confirmationRules.length > 0
-        ? 'require-confirmation'
-        : warningRules.length > 0
-        ? 'warn'
-        : 'allow';
+          ? 'require-confirmation'
+          : warningRules.length > 0
+            ? 'warn'
+            : 'allow';
 
     return {
       decision,
@@ -645,7 +680,8 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
     session.loadedArtifact = undefined;
     session.targetId = undefined;
     session.behaviorId = undefined;
-    session.policyConfirmed = false;
+    session.policyApproval = undefined;
+    session.program = undefined;
     session.policyEvaluation = undefined;
     session.dispatchedCommandCount = 0;
     return undefined;
@@ -717,7 +753,6 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
         dispatchedCommandCount: 0,
         trace: [],
         diagnostics: [],
-        policyConfirmed: false,
         messages: [],
       };
 
@@ -795,7 +830,9 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
         };
       }
 
-      session.loadedArtifact = artifact;
+      // Own the loaded plan: caller mutation must not change an approved run.
+      session.loadedArtifact = JSON.parse(JSON.stringify(artifact));
+      session.program = identifyCompiledProgram(artifact);
       session.targetId = artifact.targetId;
       session.behaviorId = artifact.behaviorId;
       session.state = 'ready';
@@ -819,7 +856,7 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
         return snapshot(session);
       }
 
-      session.policyConfirmed = true;
+      session.policyApproval = session.program && { ...session.program };
       session.state = 'ready';
       appendTrace(
         session,
@@ -912,7 +949,15 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
       }
 
       if (!entry) {
-        return undefined;
+        return {
+          outcome: {
+            executionId: `runtime-${runtimeId}-empty-${++runCounter}`,
+            status: 'no-work',
+            evidence: 'none',
+            diagnostic: { code: 'no-queued-work' },
+          },
+          dispatchResults: [],
+        };
       }
 
       const session = getSession(entry.sessionId);
@@ -932,6 +977,38 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
     },
     async startSession(sessionId) {
       const session = getSession(sessionId);
+      const lifecycle = createExecutionLifecycle(
+        `runtime-${runtimeId}-${session.id}-${++runCounter}`,
+        session.program,
+      );
+      const finish = (
+        status: ExecutionStatus,
+        dispatchResults: RuntimeCommandDispatchResult[] = [],
+        code?: ExecutionDiagnosticCode,
+      ): RuntimeRunResult => {
+        lifecycle.update({
+          ...lifecycle.snapshot(),
+          status,
+          evidence:
+            status === 'dispatched'
+              ? 'dispatch'
+              : status === 'completed'
+                ? dispatchResults.every(
+                    (result) =>
+                      result.status === 'completed' &&
+                      result.evidence === 'hardware',
+                  )
+                  ? 'hardware'
+                  : 'simulator'
+                : 'none',
+          diagnostic: code ? { code } : undefined,
+        });
+        return {
+          snapshot: snapshot(session),
+          dispatchResults,
+          outcome: lifecycle.snapshot(),
+        };
+      };
 
       if (
         session.activeRun ||
@@ -943,7 +1020,7 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
           'invalid-session-transition',
           `Session ${session.id} cannot start from ${session.state} or while dispatch is unsettled.`,
         );
-        return { snapshot: snapshot(session), dispatchResults: [] };
+        return finish('failed', [], 'invalid-session-transition');
       }
 
       if (!session.loadedArtifact) {
@@ -955,15 +1032,45 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
           `Runtime session ${session.id} has no loaded artifact.`,
         );
 
-        return {
-          snapshot: snapshot(session),
-          dispatchResults: [],
-        };
+        return finish('failed', [], 'missing-compiled-artifact');
       }
+
+      const target = listTargets().find(
+        (candidate) => candidate.id === session.loadedArtifact?.targetId,
+      );
+      if (target?.status !== 'available') {
+        session.state = 'error';
+        recordDiagnostic(
+          session,
+          'adapter',
+          'target-unavailable',
+          'The execution target is unavailable.',
+        );
+        return finish('failed', [], 'target-unavailable');
+      }
+      const currentValidation = validateCompiledBehaviorArtifact(
+        session.loadedArtifact,
+        {
+          behaviors: config.behaviors ?? [],
+          adapters: config.adapters,
+          policies: config.policies ?? [],
+        },
+      );
+      if (!currentValidation.valid) {
+        session.state = 'error';
+        recordDiagnostic(
+          session,
+          'validation',
+          'compiled-artifact-validation-failed',
+          currentValidation.errors.join(' '),
+        );
+        return finish('failed', [], 'compiled-artifact-validation-failed');
+      }
+      session.policyEvaluation = evaluatePolicies(session.loadedArtifact);
 
       if (
         session.policyEvaluation?.decision === 'require-confirmation' &&
-        !session.policyConfirmed
+        !sameProgram(session.policyApproval, session.program)
       ) {
         session.state = 'awaiting-confirmation';
         recordDiagnostic(
@@ -975,10 +1082,11 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
           'warning',
         );
 
-        return {
-          snapshot: snapshot(session),
-          dispatchResults: [],
-        };
+        return finish(
+          'confirmation-required',
+          [],
+          'policy-confirmation-required',
+        );
       }
 
       if (session.policyEvaluation?.decision === 'deny') {
@@ -990,17 +1098,16 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
           `Runtime session ${session.id} cannot start because policy denied it.`,
         );
 
-        return {
-          snapshot: snapshot(session),
-          dispatchResults: [],
-        };
+        return finish('failed', [], 'policy-denied');
+      }
+
+      if (session.loadedArtifact.commands.length === 0) {
+        session.state = 'stopped';
+        return finish('no-work');
       }
 
       if (!acquireCapabilityLocks(session, session.loadedArtifact)) {
-        return {
-          snapshot: snapshot(session),
-          dispatchResults: [],
-        };
+        return finish('failed', [], 'capability-lock-conflict');
       }
 
       removeQueuedSession(session);
@@ -1008,7 +1115,9 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
       const run: RuntimeActiveRun = { controller: new AbortController() };
       session.activeRun = run;
       session.state = 'running';
+      lifecycle.update({ ...lifecycle.snapshot(), status: 'running' });
       const dispatchResults: RuntimeCommandDispatchResult[] = [];
+      let failureCode: ExecutionDiagnosticCode | undefined;
 
       // Lifecycle methods may change the session while dispatch or listeners run.
       const isPaused = () => session.state === 'paused';
@@ -1036,11 +1145,25 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
           if (isPaused()) await waitForResume();
           if (run.controller.signal.aborted || session.state !== 'running')
             break;
+          if (
+            listTargets().find((target) => target.id === artifact.targetId)
+              ?.status !== 'available'
+          ) {
+            failureCode = 'target-unavailable';
+            recordDiagnostic(
+              session,
+              'adapter',
+              failureCode,
+              'Target became unavailable during execution.',
+            );
+            break;
+          }
           const dispatcher = config.dispatchers?.find(
             (candidate) => candidate.targetId === command.targetId,
           );
 
           if (!dispatcher) {
+            failureCode = 'missing-dispatcher';
             const result = {
               commandId: command.id,
               status: 'failed' as const,
@@ -1062,13 +1185,30 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
             const result = await dispatcher.dispatch(command, {
               signal: run.controller.signal,
             });
+            if (result.commandId !== command.id)
+              throw new Error(
+                'Dispatcher returned a different command identity.',
+              );
             dispatchResults.push(result);
 
-            if (result.status === 'dispatched') {
+            if (
+              result.status === 'completed' &&
+              result.evidence !==
+                (target.kind === 'robot' ? 'hardware' : 'simulator')
+            ) {
+              throw new Error(
+                'Completion requires evidence from the selected target kind.',
+              );
+            }
+            if (
+              result.status === 'dispatched' ||
+              result.status === 'completed'
+            ) {
               session.dispatchedCommandCount += 1;
               appendTrace(session, 'dispatch', result.message, command.id);
               emit('command-dispatched', result.message, session.id);
             } else {
+              failureCode = 'dispatcher-failed';
               recordDiagnostic(
                 session,
                 'transport',
@@ -1079,6 +1219,7 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
               break;
             }
           } catch (error) {
+            failureCode = 'dispatcher-threw';
             const result = {
               commandId: command.id,
               status: 'failed' as const,
@@ -1102,29 +1243,29 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
 
         if (
           isPaused() &&
-          dispatchResults.every((result) => result.status === 'dispatched')
+          dispatchResults.every((result) => result.status !== 'failed')
         ) {
           await waitForResume();
         }
         if (run.controller.signal.aborted) {
-          return { snapshot: snapshot(session), dispatchResults };
+          return finish('cancelled', dispatchResults, 'execution-cancelled');
         }
         session.state =
           dispatchResults.length === artifact.commands.length &&
-          dispatchResults.every((result) => result.status === 'dispatched')
+          dispatchResults.every((result) => result.status !== 'failed')
             ? 'stopped'
             : 'error';
         appendTrace(
           session,
           'lifecycle',
           `Runtime session ${session.id} ${
-            session.state === 'stopped' ? 'completed' : 'failed'
+            session.state === 'stopped' ? 'dispatch finished' : 'failed'
           }.`,
         );
         emit(
           session.state === 'stopped' ? 'session-stopped' : 'runtime-error',
           `Runtime session ${session.id} ${
-            session.state === 'stopped' ? 'completed' : 'failed'
+            session.state === 'stopped' ? 'dispatch finished' : 'failed'
           }.`,
           session.id,
         );
@@ -1133,10 +1274,17 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
         releaseCapabilityLocks(session);
       }
 
-      return {
-        snapshot: snapshot(session),
+      return finish(
+        session.state === 'stopped'
+          ? dispatchResults.every((result) => result.status === 'completed')
+            ? 'completed'
+            : 'dispatched'
+          : 'failed',
         dispatchResults,
-      };
+        session.state === 'stopped'
+          ? undefined
+          : (failureCode ?? 'dispatcher-failed'),
+      );
     },
     pauseSession(sessionId) {
       return transition(
@@ -1184,7 +1332,10 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
         sessionId: session.id,
         targetId: session.targetId,
         behaviorId: session.behaviorId,
-        entries: [...session.trace],
+        entries: session.trace.map((entry) => ({
+          ...entry,
+          program: entry.program && { ...entry.program },
+        })),
       };
     },
     subscribe(listener) {

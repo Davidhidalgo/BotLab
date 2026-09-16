@@ -1,5 +1,11 @@
 # blocks
 
+## Target-aware palette
+
+<!-- palette filtering from src/lib/blocks-contract.ts, blocks.tsx and scratch-blocks-local-bridge.ts -->
+
+`BlocksEditorShell.availableBlockTypes` limits the offered blocks. The mount request carries the initial list; `setAvailableBlockTypes` updates the toolbox without replacing the user's workspace or undo history. Empty categories are removed. Filtering survives locale changes and clears Scratch's cached flyout blocks. Existing incompatible blocks receive a dedicated disabled reason and a localized block warning; the app also prevents program execution. Changing target removes only that reason, preserving independent user disables. The derived compatibility reason is omitted from serialized XML and recalculated on mount, edits, and locale/target changes. Execution validation remains authoritative.
+
 This library was generated with [Nx](https://nx.dev).
 
 ## Wait Input
@@ -14,14 +20,14 @@ The `control_wait` toolbox entry includes an editable `math_positive_number` sha
 
 The directional movement blocks combine a bundled Lucide SVG with localized text. The two categories can be mixed in one script:
 
-| Category | Block type (prefix `botlab_microduck_`) | Input / meaning |
-| --- | --- | --- |
-| Movement | `walk_steps`, `back_steps` | `STEPS`, default 1, whole numbers 0–40; one BotLab step is 0.5 m |
-| Movement | `turn_left`, `turn_right` | Fixed -90 / +90 degrees |
-| Movement | `turn_around` | Fixed +180 degrees |
-| Precise movement | `walk_distance`, `back_distance` | `DISTANCE` in meters, 0–20; defaults 5 / 1 |
-| Precise movement | `turn_degrees` | `ANGLE`, default 90, range -360 to 360 |
-| Precise movement | `sit`, `stand` | Explicit posture; posture-capable native or iframe simulator required, no input |
+| Category         | Block type (prefix `botlab_microduck_`) | Input / meaning                                                                 |
+| ---------------- | --------------------------------------- | ------------------------------------------------------------------------------- |
+| Movement         | `walk_steps`, `back_steps`              | `STEPS`, default 1, whole numbers 0–40; one BotLab step is 0.5 m                |
+| Movement         | `turn_left`, `turn_right`               | Fixed -90 / +90 degrees                                                         |
+| Movement         | `turn_around`                           | Fixed +180 degrees                                                              |
+| Precise movement | `walk_distance`, `back_distance`        | `DISTANCE` in meters, 0–20; defaults 5 / 1                                      |
+| Precise movement | `turn_degrees`                          | `ANGLE`, default 90, range -360 to 360                                          |
+| Precise movement | `sit`, `stand`                          | Explicit posture; posture-capable native or iframe simulator required, no input |
 
 Negative angles turn left, positive angles turn right, relative to the robot heading. The variable turn's icon follows the sign and is not serialized. The existing `walk_distance` type, `DISTANCE` field and `walk` translation key remain compatible with saved programs and translation overlays. Numeric defaults supply Scratch's text-field configuration as well as Blockly's numeric configuration; Scratch's field limits primarily configure its keypad, so the compiler also validates all inputs.
 
@@ -65,7 +71,7 @@ An adapter must explicitly bind message keys to its block definitions. This cata
 
 <!-- test target from project.json -->
 
-Run `npm run nx -- test blocks --run` to execute the unit tests via Vitest.
+Run `pnpm nx test blocks --run` to execute the unit tests via Vitest.
 
 ## Program parsing
 
@@ -78,4 +84,13 @@ Run `npm run nx -- test blocks --run` to execute the unit tests via Vitest.
 Sensing offers Boolean `botlab_microduck_is_sit`, `botlab_microduck_is_stand` and `botlab_microduck_is_transitioning`. Control offers `control_if` and `control_if_else`; their `CONDITION` must contain one of these predicates, and their `SUBSTACK` / `SUBSTACK2` statement inputs may contain nested sequences or be empty. Both branches are validated before execution. The parser preserves predicate and statement IDs, limits nesting to 16 levels and action/control nodes to 256, and rejects missing or unsupported conditions. General Boolean expressions and loops are not implemented yet.
 
 <!-- repeat parsing and palette from src/lib/microduck-program.ts and scratch-blocks-local-bridge.ts -->
+
 `control_repeat` is available in Control with the standard localized Scratch labels (Catalan, Spanish and English). Its TIMES input accepts a literal integer from 0 to 100. The parser emits a typed `repeat` node, preserves SUBSTACK order and source IDs, validates zero-count bodies, and rejects expressions and invalid counts. Control nesting is limited to 16 levels.
+
+## StackChan
+
+<!-- StackChan palette, fields, locale and parser from src/lib/stackchan-blocks.ts and src/lib/stackchan-program.ts -->
+
+`botlab_stackchan_yaw`, `botlab_stackchan_center`, `botlab_stackchan_leds`, and `botlab_stackchan_leds_off` are localized in Catalan, Spanish, and English. Explicit field validators bound whole-degree yaw to ±20° and brightness to 0–25%; adapter preflight also validates imported/programmatic input. Side/color dropdowns select both/left/right and red/green/blue/amber/white.
+
+`readStackChanProgramFromWorkspace(artifact)` reads one enabled green-flag script into `StackChanProgramStep[]`, preserving block IDs. It supports literal waits and bounded repeat expansion (counts 0–10, four nested repeats, 40 expanded steps), skips explicitly disabled statements, and rejects incompatible blocks and computed inputs. It sends no commands; the adapter validates all physical limits before execution.

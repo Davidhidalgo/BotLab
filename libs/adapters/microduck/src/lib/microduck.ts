@@ -65,7 +65,8 @@ export function createMicroDuckAdapter(): BotLabAdapter {
             {
               id: 'set-led-pattern',
               name: 'Set LED pattern',
-              description: 'Render a named LED pattern with a brightness value.',
+              description:
+                'Render a named LED pattern with a brightness value.',
               confirmationRequired: true,
               inputs: [
                 {
@@ -91,7 +92,8 @@ export function createMicroDuckAdapter(): BotLabAdapter {
         id: 'microduck-motion',
         kind: 'motion',
         name: 'Differential movement',
-        description: 'Motion capability placeholder for future hardware integration.',
+        description:
+          'Motion capability placeholder for future hardware integration.',
         targetIds: ['microduck-usb', 'microduck-sim'],
         schema: {
           commands: [

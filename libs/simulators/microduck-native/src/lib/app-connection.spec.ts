@@ -23,7 +23,7 @@ describe('native app boundary', () => {
             inputs: { leftPower: 0, rightPower: 0, durationMs: 250 },
           },
         ],
-      })
+      }),
     ).toEqual([
       { kind: 'walk', value: -0.5, sourceBlockId: 'back' },
       { kind: 'turn', value: -90 },
@@ -34,7 +34,7 @@ describe('native app boundary', () => {
     expect(() =>
       createNativeProgram({
         commands: [{ commandId: 'set-led-pattern', inputs: {} }],
-      })
+      }),
     ).toThrow('LED');
     expect(() =>
       createNativeProgram({
@@ -44,7 +44,7 @@ describe('native app boundary', () => {
             inputs: { leftPower: 1, rightPower: 1, distanceMeters: Infinity },
           },
         ],
-      })
+      }),
     ).toThrow('limits');
   });
   it('numbers writes monotonically and releases the same token on disposal', async () => {
@@ -61,7 +61,7 @@ describe('native app boundary', () => {
     }) as unknown as typeof fetch;
     const connection = createNativeAppConnection(
       'http://127.0.0.1:4401',
-      fetcher
+      fetcher,
     );
     await connection.connect();
     await connection.run([{ kind: 'wait', value: 1 }]);
@@ -72,7 +72,7 @@ describe('native app boundary', () => {
     expect(new Set(requests.map((r) => r.body.token)).size).toBe(1);
     expect(requests[3].path).toMatch('/release');
     await expect(connection.run([{ kind: 'wait', value: 1 }])).rejects.toThrow(
-      'closed'
+      'closed',
     );
   });
   it('accepts external presentation and rejects incompatible gateways', async () => {
@@ -82,7 +82,7 @@ describe('native app boundary', () => {
       presentation: 'external',
       frameTime: 0,
       postureBusy: false,
-    capabilities: { skills: ['sit_toggle'], postures: ['sit', 'stand'] },
+      capabilities: { skills: ['sit_toggle'], postures: ['sit', 'stand'] },
     };
     const fetcher = vi.fn(async () => ({
       ok: true,
@@ -97,22 +97,75 @@ describe('native app boundary', () => {
     connection.dispose();
   });
   it('maps posture only when the connected target advertises it', () => {
-    const artifact = { commands: [{ commandId: 'set-posture', inputs: { posture: 'sit' }, sourceBlockId: 'sit-1' }] };
+    const artifact = {
+      commands: [
+        {
+          commandId: 'set-posture',
+          inputs: { posture: 'sit' },
+          sourceBlockId: 'sit-1',
+        },
+      ],
+    };
     expect(() => createNativeProgram(artifact)).toThrow('capability');
-    expect(createNativeProgram(artifact, { skills: ['sit_toggle'], postures: ['sit', 'stand'] })).toEqual([{ kind: 'posture', value: 'sit', sourceBlockId: 'sit-1' }]);
+    expect(
+      createNativeProgram(artifact, {
+        skills: ['sit_toggle'],
+        postures: ['sit', 'stand'],
+      }),
+    ).toEqual([{ kind: 'posture', value: 'sit', sourceBlockId: 'sit-1' }]);
   });
-
 });
 
 it('requires advertised conditions and validates even the unselected branch', () => {
-  const artifact = { commands: [{ commandId: 'if-posture', sourceBlockId: 'if', inputs: { condition: { type: 'posture', posture: 'sit', sourceBlockId: 'predicate' }, then: [{ commandId: 'set-posture', inputs: { posture: 'stand' } }], else: [] } }] };
-  const capabilities = { skills: ['sit_toggle'], postures: ['sit', 'stand'], postureConditions: ['sit', 'stand', 'transitioning'] };
+  const artifact = {
+    commands: [
+      {
+        commandId: 'if-posture',
+        sourceBlockId: 'if',
+        inputs: {
+          condition: {
+            type: 'posture',
+            posture: 'sit',
+            sourceBlockId: 'predicate',
+          },
+          then: [{ commandId: 'set-posture', inputs: { posture: 'stand' } }],
+          else: [],
+        },
+      },
+    ],
+  };
+  const capabilities = {
+    skills: ['sit_toggle'],
+    postures: ['sit', 'stand'],
+    postureConditions: ['sit', 'stand', 'transitioning'],
+  };
   expect(() => createNativeProgram(artifact)).toThrow('conditions unavailable');
-  expect(createNativeProgram(artifact, capabilities)).toMatchObject([{ kind: 'if', sourceBlockId: 'if', condition: { posture: 'sit', sourceBlockId: 'predicate' }, then: [{ kind: 'posture', value: 'stand' }], else: [] }]);
-  expect(() => createNativeProgram(artifact, { ...capabilities, postures: [] })).toThrow('capability');
+  expect(createNativeProgram(artifact, capabilities)).toMatchObject([
+    {
+      kind: 'if',
+      sourceBlockId: 'if',
+      condition: { posture: 'sit', sourceBlockId: 'predicate' },
+      then: [{ kind: 'posture', value: 'stand' }],
+      else: [],
+    },
+  ]);
+  expect(() =>
+    createNativeProgram(artifact, { ...capabilities, postures: [] }),
+  ).toThrow('capability');
 });
 
 it('preserves repeated command source and iteration metadata through native lowering', () => {
   const iterations = [{ sourceBlockId: 'loop', iteration: 2, count: 3 }];
-  expect(createNativeProgram({ commands: [{ commandId: 'drive-differential', sourceBlockId: 'wait', iterations, inputs: { leftPower: 0, rightPower: 0, durationMs: 100 } }] })).toEqual([{ kind: 'wait', value: .1, sourceBlockId: 'wait', iterations }]);
+  expect(
+    createNativeProgram({
+      commands: [
+        {
+          commandId: 'drive-differential',
+          sourceBlockId: 'wait',
+          iterations,
+          inputs: { leftPower: 0, rightPower: 0, durationMs: 100 },
+        },
+      ],
+    }),
+  ).toEqual([{ kind: 'wait', value: 0.1, sourceBlockId: 'wait', iterations }]);
 });

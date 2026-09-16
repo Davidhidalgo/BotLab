@@ -20,7 +20,12 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 function text(value: unknown): string {
-  if (typeof value !== 'string' || !value.trim() || value.length > 4096 || value.includes('%{')) {
+  if (
+    typeof value !== 'string' ||
+    !value.trim() ||
+    value.length > 4096 ||
+    value.includes('%{')
+  ) {
     throw new Error('Invalid block translation text.');
   }
   return value;
@@ -29,25 +34,37 @@ function text(value: unknown): string {
 function messages(value: unknown): Record<string, string> {
   const entries = Object.entries(record(value));
   if (entries.length > 1000) throw new Error('Too many block messages.');
-  return Object.fromEntries(entries.map(([key, value]) => [text(key), text(value)]));
+  return Object.fromEntries(
+    entries.map(([key, value]) => [text(key), text(value)]),
+  );
 }
 
-export function parseBlockTranslationOverlay(input: unknown): BlockTranslationOverlay {
+export function parseBlockTranslationOverlay(
+  input: unknown,
+): BlockTranslationOverlay {
   const data = record(input);
-  if (data.schemaVersion !== 1) throw new Error('Unsupported block translation schema.');
+  if (data.schemaVersion !== 1)
+    throw new Error('Unsupported block translation schema.');
   const entries = Object.entries(record(data.translations));
-  if (entries.length > 100) throw new Error('Too many block translation locales.');
+  if (entries.length > 100)
+    throw new Error('Too many block translation locales.');
   return {
     schemaVersion: 1,
     namespace: text(data.namespace),
     revision: text(data.revision),
-    translations: Object.fromEntries(entries.map(([locale, value]) => [text(locale), messages(value)])),
+    translations: Object.fromEntries(
+      entries.map(([locale, value]) => [text(locale), messages(value)]),
+    ),
   };
 }
 
 export function parseBlockMessageCatalog(input: unknown): BlockMessageCatalog {
   const data = record(input);
-  const catalog = { ...parseBlockTranslationOverlay(input), sourceLocale: text(data.sourceLocale), messages: messages(data.messages) };
+  const catalog = {
+    ...parseBlockTranslationOverlay(input),
+    sourceLocale: text(data.sourceLocale),
+    messages: messages(data.messages),
+  };
   validateTranslations(catalog, catalog);
   return catalog;
 }
@@ -60,13 +77,24 @@ function hasOwn(object: object, key: string) {
   return Object.prototype.hasOwnProperty.call(object, key);
 }
 
-function validateTranslations(catalog: BlockMessageCatalog, overlay: BlockTranslationOverlay) {
-  if (catalog.namespace !== overlay.namespace || catalog.revision !== overlay.revision) {
-    throw new Error('Block translations belong to a different integration or revision.');
+function validateTranslations(
+  catalog: BlockMessageCatalog,
+  overlay: BlockTranslationOverlay,
+) {
+  if (
+    catalog.namespace !== overlay.namespace ||
+    catalog.revision !== overlay.revision
+  ) {
+    throw new Error(
+      'Block translations belong to a different integration or revision.',
+    );
   }
   for (const entries of Object.values(overlay.translations)) {
     for (const [key, translation] of Object.entries(entries)) {
-      if (!hasOwn(catalog.messages, key) || placeholders(translation) !== placeholders(catalog.messages[key])) {
+      if (
+        !hasOwn(catalog.messages, key) ||
+        placeholders(translation) !== placeholders(catalog.messages[key])
+      ) {
         throw new Error(`Invalid block translation parameters: ${key}.`);
       }
     }
@@ -74,15 +102,26 @@ function validateTranslations(catalog: BlockMessageCatalog, overlay: BlockTransl
 }
 
 /** Resolves display text only; catalogs never define executable blocks or commands. */
-export function createBlockMessageResolver(input: BlockMessageCatalog, localTranslations?: BlockTranslationOverlay) {
+export function createBlockMessageResolver(
+  input: BlockMessageCatalog,
+  localTranslations?: BlockTranslationOverlay,
+) {
   const catalog = parseBlockMessageCatalog(input);
-  const overlay = localTranslations && parseBlockTranslationOverlay(localTranslations);
+  const overlay =
+    localTranslations && parseBlockTranslationOverlay(localTranslations);
   if (overlay) validateTranslations(catalog, overlay);
   return (key: string, locale: string): string => {
-    if (!hasOwn(catalog.messages, key)) throw new Error(`Unknown block message: ${key}.`);
+    if (!hasOwn(catalog.messages, key))
+      throw new Error(`Unknown block message: ${key}.`);
     for (const language of new Set([locale, 'en', catalog.sourceLocale])) {
-      for (const translations of [overlay?.translations, catalog.translations]) {
-        const entries = translations && hasOwn(translations, language) ? translations[language] : undefined;
+      for (const translations of [
+        overlay?.translations,
+        catalog.translations,
+      ]) {
+        const entries =
+          translations && hasOwn(translations, language)
+            ? translations[language]
+            : undefined;
         if (entries && hasOwn(entries, key)) return entries[key];
       }
     }

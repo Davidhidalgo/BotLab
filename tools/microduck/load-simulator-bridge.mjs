@@ -9,19 +9,33 @@ export async function loadSimulatorBridge() {
     configFile: false,
     root,
     logLevel: 'silent',
-    resolve: { alias: {
-      '@botlab/model': resolve(root, 'libs/botlab-model/src/index.ts'),
-      '@botlab/simulators-core': resolve(root, 'libs/simulators/core/src/index.ts'),
-    } },
+    resolve: {
+      alias: {
+        '@botlab/model': resolve(root, 'libs/botlab-model/src/index.ts'),
+        '@botlab/simulators-core': resolve(
+          root,
+          'libs/simulators/core/src/index.ts',
+        ),
+      },
+    },
     build: {
       write: false,
       minify: false,
       target: 'es2022',
-      lib: { entry: resolve(root, 'libs/simulators/microduck/src/lib/microduck-simulator.ts'), formats: ['es'] },
+      lib: {
+        entry: resolve(
+          root,
+          'libs/simulators/microduck/src/lib/microduck-simulator.ts',
+        ),
+        formats: ['es'],
+      },
     },
   });
   const output = (Array.isArray(result) ? result[0] : result).output;
-  const chunk = output.find(item => item.type === 'chunk' && item.isEntry);
-  if (!chunk || chunk.imports.length) throw new Error('Simulator bridge must be a self-contained bundle.');
-  return import(`data:text/javascript;base64,${Buffer.from(chunk.code).toString('base64')}`);
+  const chunk = output.find((item) => item.type === 'chunk' && item.isEntry);
+  if (!chunk || chunk.imports.length)
+    throw new Error('Simulator bridge must be a self-contained bundle.');
+  return import(
+    `data:text/javascript;base64,${Buffer.from(chunk.code).toString('base64')}`
+  );
 }

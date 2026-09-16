@@ -1,0 +1,7 @@
+# Integrated Nx workspace: dependencies are managed by the root manifest.
+packages:
+  - '.'
+onlyBuiltDependencies:
+  - '@swc/core'
+  - esbuild
+  - nx

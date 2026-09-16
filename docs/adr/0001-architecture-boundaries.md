@@ -22,7 +22,7 @@ BotLab keeps separate package boundaries for the major responsibilities:
 - `@botlab/simulators-*` packages own robot-specific simulator bridges, heavy dependencies, assets, and runtime adapters.
 - `apps/botlab-web` composes these packages but does not import robot transport, simulator internals, or block-engine globals directly.
 
-Nx project tags enforce these boundaries through `@nx/enforce-module-boundaries` in the root ESLint config. Blocks may compose UI primitives, while model/runtime stay independent of editor and UI packages. The app imports public package APIs and cannot import Scratch Blocks directly. Simulator core depends only on model/core contracts. `npm run test:architecture` verifies representative allowed and forbidden imports without modifying source files.
+Nx project tags enforce these boundaries through `@nx/enforce-module-boundaries` in the root Oxlint config (`.oxlintrc.json`). Blocks may compose UI primitives, while model/runtime stay independent of editor and UI packages. The app imports public package APIs and cannot import Scratch Blocks directly. Simulator core depends only on model/core contracts. `pnpm run test:architecture` verifies representative allowed and forbidden imports using temporary import probes that are removed after each check.
 
 ## Consequences
 

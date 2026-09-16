@@ -1,8 +1,9 @@
 /// <reference types='vitest' />
 import react from '@vitejs/plugin-react';
 import { createReadStream } from 'node:fs';
+import { createRequire } from 'node:module';
 import { cp, stat } from 'node:fs/promises';
-import { extname, resolve, sep } from 'node:path';
+import { dirname, extname, resolve, sep } from 'node:path';
 import {
   defineConfig,
   type Plugin,
@@ -11,17 +12,28 @@ import {
 } from 'vite';
 
 const scratchBlocksMediaPrefix = '/vendor/scratch-blocks/media/';
+const require = createRequire(import.meta.url);
+// Build tooling resolves package media; app source still cannot import Scratch Blocks.
+/* oxlint-disable @nx/enforce-module-boundaries */
+const scratchBlocksRoot = resolve(
+  dirname(require.resolve('scratch-blocks')),
+  '..',
+);
+const scratchBlocksRequire = createRequire(require.resolve('scratch-blocks'));
+/* oxlint-enable @nx/enforce-module-boundaries */
 const scratchBlocksMediaSourceDirs = [
-  resolve(__dirname, '../../node_modules/scratch-blocks/media'),
-  resolve(__dirname, '../../node_modules/blockly/media'),
+  resolve(scratchBlocksRoot, 'media'),
+  resolve(dirname(scratchBlocksRequire.resolve('blockly')), 'media'),
 ];
 
 export default defineConfig({
   root: __dirname,
   define: {
-    'process.env.BOTLAB_NATIVE_SIMULATOR_URL': JSON.stringify(process.env.BOTLAB_NATIVE_SIMULATOR_URL ?? 'http://127.0.0.1:4401'),
+    'process.env.BOTLAB_NATIVE_SIMULATOR_URL': JSON.stringify(
+      process.env.BOTLAB_NATIVE_SIMULATOR_URL ?? 'http://127.0.0.1:4401',
+    ),
     'process.env.BOTLAB_SIMULATOR_URL': JSON.stringify(
-      process.env.BOTLAB_SIMULATOR_URL ?? 'http://127.0.0.1:4300/?boot=1'
+      process.env.BOTLAB_SIMULATOR_URL ?? 'http://127.0.0.1:4300/?boot=1',
     ),
   },
   cacheDir: '../../node_modules/.vite/apps/botlab-web',
@@ -29,26 +41,29 @@ export default defineConfig({
     alias: {
       '@botlab/adapters-microduck': resolve(
         __dirname,
-        '../../libs/adapters/microduck/src/index.ts'
+        '../../libs/adapters/microduck/src/index.ts',
       ),
       '@botlab/adapters-stackchan': resolve(
         __dirname,
-        '../../libs/adapters/stackchan/src/index.ts'
+        '../../libs/adapters/stackchan/src/index.ts',
       ),
       '@botlab/blocks': resolve(__dirname, '../../libs/blocks/src/index.ts'),
       '@botlab/model': resolve(
         __dirname,
-        '../../libs/botlab-model/src/index.ts'
+        '../../libs/botlab-model/src/index.ts',
       ),
       '@botlab/runtime': resolve(__dirname, '../../libs/runtime/src/index.ts'),
       '@botlab/simulators-core': resolve(
         __dirname,
-        '../../libs/simulators/core/src/index.ts'
+        '../../libs/simulators/core/src/index.ts',
       ),
-      '@botlab/simulators-microduck-native': resolve(__dirname, '../../libs/simulators/microduck-native/src/index.ts'),
+      '@botlab/simulators-microduck-native': resolve(
+        __dirname,
+        '../../libs/simulators/microduck-native/src/index.ts',
+      ),
       '@botlab/simulators-microduck': resolve(
         __dirname,
-        '../../libs/simulators/microduck/src/index.ts'
+        '../../libs/simulators/microduck/src/index.ts',
       ),
       '@botlab/ui': resolve(__dirname, '../../libs/ui/src/index.ts'),
     },
@@ -91,7 +106,7 @@ function scratchBlocksMedia(): Plugin {
       const outputDir = resolve(
         resolvedConfig.root,
         resolvedConfig.build.outDir,
-        `.${scratchBlocksMediaPrefix}`
+        `.${scratchBlocksMediaPrefix}`,
       );
 
       for (const sourceDir of [...scratchBlocksMediaSourceDirs].reverse()) {

@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   displayName: 'botlab-web',
   preset: '../../jest.preset.js',
   transform: {

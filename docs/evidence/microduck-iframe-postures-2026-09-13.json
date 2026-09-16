@@ -1,13 +1,7 @@
 {
   "date": "2026-09-13",
   "checks": {
-    "decisions": [
-      true,
-      true,
-      true,
-      true,
-      false
-    ],
+    "decisions": [true, true, true, true, false],
     "finalPosture": {
       "mode": "sitstand",
       "sitFlag": 1,
@@ -17,11 +11,7 @@
     "cancelAndInspectTransition": {
       "mode": "sitstand",
       "sitFlag": 1,
-      "command": [
-        0,
-        0,
-        0
-      ]
+      "command": [0, 0, 0]
     }
   },
   "pageErrors": [],
@@ -31,9 +21,7 @@
       "posture": "sit",
       "height": 0.0594104718113922,
       "gyro": [
-        0.0008480934008890897,
-        -0.00037210204135743345,
-        -0.000735886993612485
+        0.0008480934008890897, -0.00037210204135743345, -0.000735886993612485
       ],
       "time": 6.859999999999876,
       "fallen": false

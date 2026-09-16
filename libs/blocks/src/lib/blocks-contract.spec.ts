@@ -64,7 +64,9 @@ describe('blocksContract', () => {
 
   it('loads Scratch Blocks workspaces through the Scratch Blocks provider', () => {
     const provider = createScratchBlocksEditorProvider();
-    const session = provider.loadWorkspace(sampleScratchBlocksWorkspaceArtifact);
+    const session = provider.loadWorkspace(
+      sampleScratchBlocksWorkspaceArtifact,
+    );
 
     expect(provider.name).toBe('Scratch Blocks');
     expect(provider.supportsNativeMount).toBe(false);

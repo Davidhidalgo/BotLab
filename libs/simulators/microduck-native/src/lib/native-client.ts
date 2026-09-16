@@ -43,7 +43,7 @@ function record(value: unknown): value is Record<string, unknown> {
  */
 export function createNativeMicroDuckClient(
   transport: NativeMicroDuckTransport,
-  { timeoutMs = 3000, onNotification }: NativeMicroDuckClientOptions = {}
+  { timeoutMs = 3000, onNotification }: NativeMicroDuckClientOptions = {},
 ) {
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
     throw new Error('Native RPC timeout must be positive.');
@@ -101,8 +101,8 @@ export function createNativeMicroDuckClient(
             new Error(
               record(error) && typeof error['message'] === 'string'
                 ? error['message']
-                : 'Native RPC failed.'
-            )
+                : 'Native RPC failed.',
+            ),
           );
         } else if ('result' in message) {
           request.resolve(message['result']);
@@ -127,7 +127,7 @@ export function createNativeMicroDuckClient(
 
   function call(
     method: string,
-    params: Record<string, unknown> = {}
+    params: Record<string, unknown> = {},
   ): Promise<unknown> {
     if (closed) return Promise.reject(new Error('Native transport closed.'));
     const id = ++sequence;
@@ -139,11 +139,11 @@ export function createNativeMicroDuckClient(
       pending.set(id, { resolve, reject, timer });
       try {
         transport.send(
-          JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n'
+          JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n',
         );
       } catch (error) {
         close(
-          error instanceof Error ? error : new Error('Native send failed.')
+          error instanceof Error ? error : new Error('Native send failed.'),
         );
       }
     });

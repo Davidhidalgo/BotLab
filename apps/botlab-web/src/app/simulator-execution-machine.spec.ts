@@ -25,7 +25,9 @@ describe('simulator execution lifecycle', () => {
               targetId: 'microduck-sim',
               leftPower: 0,
               rightPower: 0,
-              ...(angleDegrees === undefined ? { durationMs: 60000 } : { angleDegrees }),
+              ...(angleDegrees === undefined
+                ? { durationMs: 60000 }
+                : { angleDegrees }),
             },
           ],
         },
@@ -47,32 +49,97 @@ describe('simulator execution lifecycle', () => {
             frameIndex: 0,
             turnedDegrees,
           },
-        })
+        }),
       );
     }
     return { actor, postMessage, status };
   }
+
+  it.each(['completed', 'stopped', 'failed'])(
+    'invalidates a %s result when the source changes and ignores late updates',
+    (state) => {
+      const f = fixture();
+      f.status(state);
+      f.actor.send({ type: 'source.changed' });
+      expect(f.actor.getSnapshot().matches('idle')).toBe(true);
+      expect(f.actor.getSnapshot().context).toEqual({
+        request: undefined,
+        update: undefined,
+      });
+      f.postMessage.mockClear();
+      f.status('completed');
+      jest.advanceTimersByTime(65000);
+      expect(f.actor.getSnapshot().matches('idle')).toBe(true);
+      expect(f.postMessage).not.toHaveBeenCalled();
+      f.actor.stop();
+    },
+  );
+
+  it.each(['stopped', 'completed'])(
+    'waits for %s after editing a running source, preserving the old terminal trace',
+    (terminal) => {
+      const f = fixture();
+      f.status('running');
+      const request = f.actor.getSnapshot().context.request;
+      f.actor.send({ type: 'source.changed' });
+      expect(f.actor.getSnapshot().matches({ active: 'invalidating' })).toBe(
+        true,
+      );
+      expect(f.actor.getSnapshot().hasTag('busy')).toBe(true);
+      expect(f.postMessage.mock.calls.at(-1)?.[0].type).toBe(
+        'botlab.microduck.stop.v1',
+      );
+      f.status('running');
+      expect(f.actor.getSnapshot().matches({ active: 'invalidating' })).toBe(
+        true,
+      );
+      f.status(terminal);
+      expect(f.actor.getSnapshot().matches('idle')).toBe(true);
+      expect(f.actor.getSnapshot().context.request).toBe(request);
+      expect(f.actor.getSnapshot().context.update?.status).toBe(terminal);
+      f.status('running');
+      expect(f.actor.getSnapshot().matches('idle')).toBe(true);
+      f.actor.stop();
+    },
+  );
+
+  it('fails if edit cancellation is not acknowledged, without extending the deadline on more edits', () => {
+    const f = fixture();
+    f.status('running');
+    f.actor.send({ type: 'source.changed' });
+    jest.advanceTimersByTime(2500);
+    f.actor.send({ type: 'source.changed' });
+    f.actor.send({ type: 'stop' });
+    jest.advanceTimersByTime(500);
+    expect(f.actor.getSnapshot().matches('failed')).toBe(true);
+    f.actor.stop();
+  });
 
   it('requires measured angular arrival before accepting completion', () => {
     const f = fixture(-90);
     f.status('running', 89);
     f.status('completed');
     expect(f.actor.getSnapshot().matches('failed')).toBe(true);
-    expect(f.actor.getSnapshot().context.update?.errorCode).toBe('telemetry-unavailable');
+    expect(f.actor.getSnapshot().context.update?.errorCode).toBe(
+      'telemetry-unavailable',
+    );
     f.actor.stop();
   });
 
-  it.each([-180, -90, 0, 90, 180])('accepts measured arrival for a %s degree turn', angle => {
-    const f = fixture(angle);
-    f.status('running', NaN);
-    expect(f.actor.getSnapshot().matches({ active: 'awaiting' })).toBe(true);
-    f.status('running', -1);
-    expect(f.actor.getSnapshot().matches({ active: 'awaiting' })).toBe(true);
-    f.status('running', Math.abs(angle));
-    f.status('completed');
-    expect(f.actor.getSnapshot().matches('completed')).toBe(true);
-    f.actor.stop();
-  });
+  it.each([-180, -90, 0, 90, 180])(
+    'accepts measured arrival for a %s degree turn',
+    (angle) => {
+      const f = fixture(angle);
+      f.status('running', NaN);
+      expect(f.actor.getSnapshot().matches({ active: 'awaiting' })).toBe(true);
+      f.status('running', -1);
+      expect(f.actor.getSnapshot().matches({ active: 'awaiting' })).toBe(true);
+      f.status('running', Math.abs(angle));
+      f.status('completed');
+      expect(f.actor.getSnapshot().matches('completed')).toBe(true);
+      f.actor.stop();
+    },
+  );
 
   it('does not treat acceptance as completion and times out without engine progress', () => {
     const f = fixture();
@@ -82,7 +149,7 @@ describe('simulator execution lifecycle', () => {
     jest.advanceTimersByTime(1);
     expect(f.actor.getSnapshot().matches('failed')).toBe(true);
     expect(f.postMessage.mock.calls.at(-1)![0].type).toBe(
-      'botlab.microduck.stop.v1'
+      'botlab.microduck.stop.v1',
     );
     f.status('completed');
     expect(f.actor.getSnapshot().matches('failed')).toBe(true);
@@ -113,24 +180,34 @@ describe('simulator execution lifecycle', () => {
     f.actor.stop();
   });
 
-  it.each(['awaiting', 'running', 'stopping', 'completed', 'stopped', 'failed'])(
-    'clears %s execution on scene reset without replaying it', (state) => {
-      const f = fixture();
-      if (state === 'stopping') f.actor.send({ type: 'stop' });
-      else if (state !== 'awaiting') f.status(state);
-      f.actor.send({ type: 'scene.reset' });
-      expect(f.actor.getSnapshot().matches('idle')).toBe(true);
-      expect(f.actor.getSnapshot().context).toEqual({ request: undefined, update: undefined });
-      if (['awaiting', 'running', 'stopping'].includes(state)) {
-        expect(f.postMessage.mock.calls.at(-1)![0].type).toBe('botlab.microduck.stop.v1');
-      }
-      f.postMessage.mockClear();
-      f.status('running');
-      f.status('completed');
-      jest.advanceTimersByTime(65000);
-      expect(f.postMessage).not.toHaveBeenCalled();
-      expect(f.actor.getSnapshot().matches('idle')).toBe(true);
-      f.actor.stop();
+  it.each([
+    'awaiting',
+    'running',
+    'stopping',
+    'completed',
+    'stopped',
+    'failed',
+  ])('clears %s execution on scene reset without replaying it', (state) => {
+    const f = fixture();
+    if (state === 'stopping') f.actor.send({ type: 'stop' });
+    else if (state !== 'awaiting') f.status(state);
+    f.actor.send({ type: 'scene.reset' });
+    expect(f.actor.getSnapshot().matches('idle')).toBe(true);
+    expect(f.actor.getSnapshot().context).toEqual({
+      request: undefined,
+      update: undefined,
+    });
+    if (['awaiting', 'running', 'stopping'].includes(state)) {
+      expect(f.postMessage.mock.calls.at(-1)?.[0].type).toBe(
+        'botlab.microduck.stop.v1',
+      );
     }
-  );
+    f.postMessage.mockClear();
+    f.status('running');
+    f.status('completed');
+    jest.advanceTimersByTime(65000);
+    expect(f.postMessage).not.toHaveBeenCalled();
+    expect(f.actor.getSnapshot().matches('idle')).toBe(true);
+    f.actor.stop();
+  });
 });

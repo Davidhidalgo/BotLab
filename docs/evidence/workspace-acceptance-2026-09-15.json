@@ -1,0 +1,365 @@
+{
+  "passed": true,
+  "baseRevision": "99419f31f456b9aa9211d93347935b017804c842",
+  "testedWorkingTree": true,
+  "sourceSha256": {
+    "tools/microduck/verify-workspace.mjs": "854085c70a72d3d93c768340fc33ee8cf8c40e994ba9e4a9bedcf71ab64fc9b7",
+    "apps/botlab-web/src/app/app.tsx": "ea425a3a8a453ca5c13e9b8fd699016f5fe90d9c3c22798227dada1fcee7bcca",
+    "apps/botlab-web/src/app/simulator-execution-machine.ts": "08e21d033bcc1e91627053956073ff19b6da6e03ec43e453757b32fcff17bccb"
+  },
+  "upstreamRevision": "023172c8a7d629b5258d90364c13bafe013abbfa",
+  "backend": "official browser iframe, Feet mode",
+  "appUrl": "http://127.0.0.1:4200/",
+  "command": "npm run test:workspace",
+  "checks": {
+    "editAutosaveExportReload": true,
+    "measuredExecutionAndTrace": true,
+    "restoreTraceWithoutResuming": true,
+    "acknowledgedStopWithoutFollowingActions": true,
+    "editInvalidationAndFreshRerun": true,
+    "editDuringExecutionCancelsOldPlan": true,
+    "reloadDuringExecutionDoesNotResume": true
+  },
+  "errors": [],
+  "runs": [
+    {
+      "executionId": "efd65dd7-2d33a772-4850616d-4a4fe131",
+      "status": "completed",
+      "artifactId": "artifact-workspace-acceptance-microduck-sim-walk-0_25m-turn-90deg-wait-2s-plan",
+      "frames": [
+        {
+          "id": "command-microduck-walk-0",
+          "type": "differential-drive",
+          "sourceBlockId": "walk",
+          "targetId": "microduck-sim",
+          "leftPower": 1,
+          "rightPower": 1,
+          "distanceMeters": 0.25
+        },
+        {
+          "id": "command-microduck-turn-1",
+          "type": "differential-drive",
+          "sourceBlockId": "turn",
+          "targetId": "microduck-sim",
+          "leftPower": 1,
+          "rightPower": -1,
+          "angleDegrees": 90
+        },
+        {
+          "id": "command-microduck-wait-2",
+          "type": "differential-drive",
+          "sourceBlockId": "wait",
+          "targetId": "microduck-sim",
+          "leftPower": 0,
+          "rightPower": 0,
+          "durationMs": 2000
+        },
+        {
+          "id": "command-microduck-stop",
+          "type": "differential-drive",
+          "targetId": "microduck-sim",
+          "leftPower": 0,
+          "rightPower": 0,
+          "durationMs": 250
+        }
+      ],
+      "trace": [
+        {
+          "status": "accepted",
+          "at": "2026-09-15T21:57:20.090Z"
+        },
+        {
+          "status": "running",
+          "frameIndex": 0,
+          "at": "2026-09-15T21:57:23.515Z"
+        },
+        {
+          "status": "running",
+          "frameIndex": 1,
+          "at": "2026-09-15T21:57:27.498Z"
+        },
+        {
+          "status": "running",
+          "frameIndex": 2,
+          "at": "2026-09-15T21:57:30.015Z"
+        },
+        {
+          "status": "running",
+          "frameIndex": 3,
+          "at": "2026-09-15T21:57:32.016Z"
+        },
+        {
+          "status": "completed",
+          "at": "2026-09-15T21:57:32.267Z"
+        }
+      ],
+      "maxReportedDistanceMeters": 0.2577722578578403,
+      "maxReportedTurnedDegrees": 91.63496419729601
+    },
+    {
+      "executionId": "b25deadf-42efc417-b866143b-d97fbc24",
+      "status": "stopped",
+      "artifactId": "artifact-workspace-acceptance-microduck-sim-walk-0_5m-turn-90deg-wait-2s-plan",
+      "frames": [
+        {
+          "id": "command-microduck-walk-0",
+          "type": "differential-drive",
+          "sourceBlockId": "walk",
+          "targetId": "microduck-sim",
+          "leftPower": 1,
+          "rightPower": 1,
+          "distanceMeters": 0.5
+        },
+        {
+          "id": "command-microduck-turn-1",
+          "type": "differential-drive",
+          "sourceBlockId": "turn",
+          "targetId": "microduck-sim",
+          "leftPower": 1,
+          "rightPower": -1,
+          "angleDegrees": 90
+        },
+        {
+          "id": "command-microduck-wait-2",
+          "type": "differential-drive",
+          "sourceBlockId": "wait",
+          "targetId": "microduck-sim",
+          "leftPower": 0,
+          "rightPower": 0,
+          "durationMs": 2000
+        },
+        {
+          "id": "command-microduck-stop",
+          "type": "differential-drive",
+          "targetId": "microduck-sim",
+          "leftPower": 0,
+          "rightPower": 0,
+          "durationMs": 250
+        }
+      ],
+      "trace": [
+        {
+          "status": "accepted",
+          "at": "2026-09-15T21:57:34.005Z"
+        },
+        {
+          "status": "running",
+          "frameIndex": 0,
+          "at": "2026-09-15T21:57:37.772Z"
+        },
+        {
+          "status": "stopped",
+          "frameIndex": 0,
+          "at": "2026-09-15T21:57:38.602Z"
+        }
+      ],
+      "maxReportedDistanceMeters": 0.033862374840420276,
+      "maxReportedTurnedDegrees": 0
+    },
+    {
+      "executionId": "2678f52-8179a0fb-81f4eb1d-c36e2526",
+      "status": "completed",
+      "artifactId": "artifact-workspace-acceptance-microduck-sim-walk-0_15m-turn-90deg-wait-2s-plan",
+      "frames": [
+        {
+          "id": "command-microduck-walk-0",
+          "type": "differential-drive",
+          "sourceBlockId": "walk",
+          "targetId": "microduck-sim",
+          "leftPower": 1,
+          "rightPower": 1,
+          "distanceMeters": 0.15
+        },
+        {
+          "id": "command-microduck-turn-1",
+          "type": "differential-drive",
+          "sourceBlockId": "turn",
+          "targetId": "microduck-sim",
+          "leftPower": 1,
+          "rightPower": -1,
+          "angleDegrees": 90
+        },
+        {
+          "id": "command-microduck-wait-2",
+          "type": "differential-drive",
+          "sourceBlockId": "wait",
+          "targetId": "microduck-sim",
+          "leftPower": 0,
+          "rightPower": 0,
+          "durationMs": 2000
+        },
+        {
+          "id": "command-microduck-stop",
+          "type": "differential-drive",
+          "targetId": "microduck-sim",
+          "leftPower": 0,
+          "rightPower": 0,
+          "durationMs": 250
+        }
+      ],
+      "trace": [
+        {
+          "status": "accepted",
+          "at": "2026-09-15T21:57:42.442Z"
+        },
+        {
+          "status": "running",
+          "frameIndex": 0,
+          "at": "2026-09-15T21:57:42.455Z"
+        },
+        {
+          "status": "running",
+          "frameIndex": 1,
+          "at": "2026-09-15T21:57:45.359Z"
+        },
+        {
+          "status": "running",
+          "frameIndex": 2,
+          "at": "2026-09-15T21:57:47.718Z"
+        },
+        {
+          "status": "running",
+          "frameIndex": 3,
+          "at": "2026-09-15T21:57:49.722Z"
+        },
+        {
+          "status": "completed",
+          "at": "2026-09-15T21:57:49.968Z"
+        }
+      ],
+      "maxReportedDistanceMeters": 0.16054476653413438,
+      "maxReportedTurnedDegrees": 91.10078024888071
+    },
+    {
+      "executionId": "5ffd15f2-5260b53c-66bfddbe-728c25e6",
+      "status": "stopped",
+      "artifactId": "artifact-workspace-acceptance-microduck-sim-walk-0_5m-turn-90deg-wait-2s-plan",
+      "frames": [
+        {
+          "id": "command-microduck-walk-0",
+          "type": "differential-drive",
+          "sourceBlockId": "walk",
+          "targetId": "microduck-sim",
+          "leftPower": 1,
+          "rightPower": 1,
+          "distanceMeters": 0.5
+        },
+        {
+          "id": "command-microduck-turn-1",
+          "type": "differential-drive",
+          "sourceBlockId": "turn",
+          "targetId": "microduck-sim",
+          "leftPower": 1,
+          "rightPower": -1,
+          "angleDegrees": 90
+        },
+        {
+          "id": "command-microduck-wait-2",
+          "type": "differential-drive",
+          "sourceBlockId": "wait",
+          "targetId": "microduck-sim",
+          "leftPower": 0,
+          "rightPower": 0,
+          "durationMs": 2000
+        },
+        {
+          "id": "command-microduck-stop",
+          "type": "differential-drive",
+          "targetId": "microduck-sim",
+          "leftPower": 0,
+          "rightPower": 0,
+          "durationMs": 250
+        }
+      ],
+      "trace": [
+        {
+          "status": "accepted",
+          "at": "2026-09-15T21:57:50.508Z"
+        },
+        {
+          "status": "running",
+          "frameIndex": 0,
+          "at": "2026-09-15T21:57:50.527Z"
+        },
+        {
+          "status": "stopped",
+          "frameIndex": 0,
+          "at": "2026-09-15T21:57:51.465Z"
+        }
+      ],
+      "maxReportedDistanceMeters": 0.040720193059332443,
+      "maxReportedTurnedDegrees": 0
+    }
+  ],
+  "restoredInterruptedExecution": {
+    "source": {
+      "artifactId": "artifact-workspace-acceptance-microduck-sim-walk-0_5m-turn-90deg-wait-2s-plan",
+      "targetId": "microduck-sim",
+      "frames": [
+        {
+          "id": "command-microduck-walk-0",
+          "type": "differential-drive",
+          "sourceBlockId": "walk",
+          "targetId": "microduck-sim",
+          "leftPower": 1,
+          "rightPower": 1,
+          "distanceMeters": 0.5
+        },
+        {
+          "id": "command-microduck-turn-1",
+          "type": "differential-drive",
+          "sourceBlockId": "turn",
+          "targetId": "microduck-sim",
+          "leftPower": 1,
+          "rightPower": -1,
+          "angleDegrees": 90
+        },
+        {
+          "id": "command-microduck-wait-2",
+          "type": "differential-drive",
+          "sourceBlockId": "wait",
+          "targetId": "microduck-sim",
+          "leftPower": 0,
+          "rightPower": 0,
+          "durationMs": 2000
+        },
+        {
+          "id": "command-microduck-stop",
+          "type": "differential-drive",
+          "targetId": "microduck-sim",
+          "leftPower": 0,
+          "rightPower": 0,
+          "durationMs": 250
+        }
+      ],
+      "errors": [],
+      "messages": [
+        "differential-drive -> {\"leftPower\":1,\"rightPower\":1,\"distanceMeters\":0.5}",
+        "differential-drive -> {\"leftPower\":1,\"rightPower\":-1,\"angleDegrees\":90}",
+        "differential-drive -> {\"leftPower\":0,\"rightPower\":0,\"durationMs\":2000}",
+        "differential-drive -> {\"leftPower\":0,\"rightPower\":0,\"durationMs\":250}"
+      ]
+    },
+    "executionId": "23e0df4f-213a92e2-c8a37935-2bece3e0",
+    "events": [
+      {
+        "status": "accepted",
+        "at": "2026-09-15T21:57:54.737Z"
+      },
+      {
+        "status": "running",
+        "frameIndex": 0,
+        "at": "2026-09-15T21:57:54.752Z"
+      }
+    ],
+    "status": "interrupted"
+  },
+  "workspaceVerification": {
+    "command": "CI=true npm run verify",
+    "passed": true,
+    "tests": 387,
+    "architectureProbes": 8,
+    "notes": "Existing lint, Vite CJS deprecation and bundle-size warnings remain."
+  },
+  "scope": "Imports a connected fixture and edits real Scratch fields; real physics, no mocked transport. Fresh Playwright context. Native persistence and hosted CI are outside this acceptance."
+}

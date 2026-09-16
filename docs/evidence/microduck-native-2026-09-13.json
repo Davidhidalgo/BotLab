@@ -119,19 +119,9 @@
       "deadman_s": 0.5370010840706527,
       "applied_below_0_001_s": 0.57007204182446,
       "final_move": {
-        "applied": [
-          8.148143680392252e-11,
-          0.0,
-          0.0
-        ],
-        "limited_by": [
-          "deadman"
-        ],
-        "requested": [
-          0.0,
-          0.0,
-          0.0
-        ]
+        "applied": [8.148143680392252e-11, 0.0, 0.0],
+        "limited_by": ["deadman"],
+        "requested": [0.0, 0.0, 0.0]
       },
       "fallen": false
     },
@@ -140,19 +130,9 @@
       "deadman_s": 0.5289119589142501,
       "applied_below_0_001_s": 0.9474686668254435,
       "final_move": {
-        "applied": [
-          8.834235321080106e-09,
-          0.0,
-          0.0
-        ],
-        "limited_by": [
-          "deadman"
-        ],
-        "requested": [
-          0.4,
-          0.0,
-          0.0
-        ]
+        "applied": [8.834235321080106e-9, 0.0, 0.0],
+        "limited_by": ["deadman"],
+        "requested": [0.4, 0.0, 0.0]
       },
       "fallen": false
     },

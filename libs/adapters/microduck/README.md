@@ -18,7 +18,7 @@ The trigger uses the central 2×2 rays, requires at least three valid measuremen
 
 <!-- test commands from vite.config.ts and root package.json -->
 
-Run `npm run nx -- test microduck` or the workspace-wide `npm run test:all`. The eight tests cover confirmation, hysteresis, repeated/out-of-order frames, gaps, invalid sensor readings, cancellation and configuration. The [native experiment](../../../tools/microduck/native/README.md) also runs this exact TypeScript helper against frames from the real `tofd --sim` service.
+Run `pnpm nx test microduck` or the workspace-wide `pnpm run test:all`. The eight tests cover confirmation, hysteresis, repeated/out-of-order frames, gaps, invalid sensor readings, cancellation and configuration. The [native experiment](../../../tools/microduck/native/README.md) also runs this exact TypeScript helper against frames from the real `tofd --sim` service.
 
 ## Native posture and compilation
 
@@ -29,4 +29,5 @@ Run `npm run nx -- test microduck` or the workspace-wide `npm run test:all`. The
 `nativeMicroDuckCapabilities(discovery, targetId)` maps the connected gateway's executable posture discovery to model `Capability` contracts bound to that target. Unavailable posture support produces no capability. Loaded kick/roll skills are not exposed as executable blocks yet. Generic runtime target registration and broader capability discovery remain subsequent work.
 
 <!-- repeat lowering from src/lib/microduck-program.ts -->
+
 `compileMicroDuckProgram` validates repeat counts and control depth before expanding finite repeats. The 256-command budget includes every branch, iteration checkpoint and the final stop. Each iteration starts with a zero-duration wait checkpoint, so even empty bodies remain observable and cancellable. Commands carry `iterations` from outermost to innermost, with the repeat source ID, current iteration and count. Conditions remain runtime decisions on every iteration; no posture is corrected automatically. Both simulator transports consume this same compiled program.

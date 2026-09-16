@@ -1,7 +1,10 @@
 import type { ProgramIteration } from '@botlab/model';
 import { createNativeMicroDuckClient } from './native-client';
 
-export type NativeProgramStep = { sourceBlockId?: string; iterations?: ProgramIteration[] } & (
+export type NativeProgramStep = {
+  sourceBlockId?: string;
+  iterations?: ProgramIteration[];
+} & (
   | { kind: 'walk' | 'turn' | 'wait'; value: number }
   | { kind: 'posture'; value: 'sit' | 'stand' }
   | {
@@ -61,12 +64,12 @@ interface NativeCompiledCommand {
 
 export function createNativeProgram(
   artifact: { commands: readonly NativeCompiledCommand[] },
-  capabilities?: NativeCapabilities
+  capabilities?: NativeCapabilities,
 ): NativeProgramStep[] {
   let count = 0;
   function lower(
     commands: readonly NativeCompiledCommand[],
-    depth = 0
+    depth = 0,
   ): NativeProgramStep[] {
     if (!Array.isArray(commands) || depth > 16)
       throw new Error('Invalid native branch or nesting limit.');
@@ -88,17 +91,18 @@ export function createNativeProgram(
         if (
           condition?.type !== 'posture' ||
           !['sit', 'stand', 'transitioning'].includes(
-            condition.posture ?? ''
+            condition.posture ?? '',
           ) ||
           !capabilities?.postureConditions?.includes(condition.posture ?? '')
         ) {
           throw new Error(
-            'Native posture conditions unavailable. Update BotLab Simulator and reconnect.'
+            'Native posture conditions unavailable. Update BotLab Simulator and reconnect.',
           );
         }
         return {
           kind: 'if',
-          iterations: command.iterations, sourceBlockId: command.sourceBlockId,
+          iterations: command.iterations,
+          sourceBlockId: command.sourceBlockId,
           condition: {
             posture: condition.posture as 'sit' | 'stand' | 'transitioning',
             sourceBlockId: condition.sourceBlockId,
@@ -115,13 +119,18 @@ export function createNativeProgram(
           !capabilities.postures.includes(value)
         )
           throw new Error(
-            'Native posture capability is unavailable. Connect a compatible simulator.'
+            'Native posture capability is unavailable. Connect a compatible simulator.',
           );
-        return { kind: 'posture', value, iterations: command.iterations, sourceBlockId: command.sourceBlockId };
+        return {
+          kind: 'posture',
+          value,
+          iterations: command.iterations,
+          sourceBlockId: command.sourceBlockId,
+        };
       }
       if (command.commandId !== 'drive-differential') {
         throw new Error(
-          'MuJoCo native supports movement, posture, conditions and waits. Remove LED blocks before running.'
+          'MuJoCo native supports movement, posture, conditions and waits. Remove LED blocks before running.',
         );
       }
       const left = input['leftPower'];
@@ -154,10 +163,14 @@ export function createNativeProgram(
         (step.kind === 'wait' ? step.value < 0 : step.value === 0)
       ) {
         throw new Error(
-          'Native limits: 5 m per walk, 360° per turn and 60 s per wait.'
+          'Native limits: 5 m per walk, 360° per turn and 60 s per wait.',
         );
       }
-      return { ...step, iterations: command.iterations, sourceBlockId: command.sourceBlockId };
+      return {
+        ...step,
+        iterations: command.iterations,
+        sourceBlockId: command.sourceBlockId,
+      };
     });
   }
   return lower(artifact.commands);
@@ -166,7 +179,7 @@ export function createNativeProgram(
 /** Local gateway connection; monotonic operation numbers fence off late runs after stop. */
 export function createNativeAppConnection(
   baseUrl: string,
-  fetcher: typeof fetch = fetch
+  fetcher: typeof fetch = fetch,
 ) {
   const token = crypto.randomUUID();
   let sequence = 0;
@@ -174,14 +187,14 @@ export function createNativeAppConnection(
   async function post(
     path: string,
     body: object = {},
-    keepalive = false
+    keepalive = false,
   ): Promise<unknown> {
     if (disposed && path !== '/release')
       throw new Error('Native connection closed.');
     const controller = new AbortController();
     const timeout = setTimeout(
       () => controller.abort(),
-      path === '/reset' ? 20000 : 5000
+      path === '/reset' ? 20000 : 5000,
     );
     try {
       const response = await fetcher(`${baseUrl}${path}`, {
@@ -215,8 +228,8 @@ export function createNativeAppConnection(
         (reply) => callbacks?.data(JSON.stringify(reply) + '\n'),
         (error) =>
           callbacks?.closed(
-            error instanceof Error ? error : new Error(String(error))
-          )
+            error instanceof Error ? error : new Error(String(error)),
+          ),
       );
     },
     close: () => {
@@ -241,16 +254,16 @@ export function createNativeAppConnection(
         !result.capabilities.skills.every((s) => typeof s === 'string') ||
         !Array.isArray(result.capabilities?.postures) ||
         !result.capabilities.postures.every(
-          (s) => s === 'sit' || s === 'stand'
+          (s) => s === 'sit' || s === 'stand',
         ) ||
         (result.capabilities.postureConditions !== undefined &&
           (!Array.isArray(result.capabilities.postureConditions) ||
             !result.capabilities.postureConditions.every((s) =>
-              ['sit', 'stand', 'transitioning'].includes(s)
+              ['sit', 'stand', 'transitioning'].includes(s),
             )))
       ) {
         throw new Error(
-          'Incompatible native simulator. Update BotLab Simulator and reconnect.'
+          'Incompatible native simulator. Update BotLab Simulator and reconnect.',
         );
       }
       return result;

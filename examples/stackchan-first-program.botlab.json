@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "locale": "es",
+  "targetId": "stackchan-planned",
+  "workspace": {
+    "id": "stackchan-first-program",
+    "kind": "blocks",
+    "engine": "scratch-blocks",
+    "format": "scratch-xml",
+    "behaviorId": "stackchan-first-program",
+    "label": "StackChan: luz y saludo",
+    "content": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"32\" y=\"32\"><next><block type=\"botlab_stackchan_leds\" id=\"led\"><field name=\"SIDE\">both</field><field name=\"COLOR\">#0000ff</field><field name=\"BRIGHTNESS\">15</field><next><block type=\"botlab_stackchan_yaw\" id=\"head\"><field name=\"ANGLE\">10</field><next><block type=\"botlab_stackchan_center\" id=\"center\"><next><block type=\"botlab_stackchan_leds_off\" id=\"off\"></block></next></block></next></block></next></block></next></block></xml>"
+  }
+}

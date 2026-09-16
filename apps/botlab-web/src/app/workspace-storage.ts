@@ -1,3 +1,4 @@
+import { createProgramIdentity, type ExecutionResult } from '@botlab/model';
 import {
   importBlocksWorkspace,
   type BlocksWorkspaceArtifact,
@@ -12,6 +13,7 @@ import type { BotLabLocale } from './i18n';
 export const workspaceStorageKey = 'botlab.workspace.v1';
 export const maxWorkspaceFileBytes = 2 * 1024 * 1024;
 export interface SavedExecution {
+  outcome?: ExecutionResult;
   source: MicroDuckSimulatorControlSource;
   executionId: string;
   status: MicroDuckExecutionUpdate['status'] | 'interrupted';
@@ -25,6 +27,8 @@ export interface WorkspaceDocument {
   schemaVersion: 1;
   workspace: BlocksWorkspaceArtifact;
   locale: BotLabLocale;
+  targetId?: 'stackchan-planned' | 'microduck-sim' | 'microduck-usb';
+  simulatorBackend?: 'browser' | 'native';
   lastExecution?: SavedExecution;
 }
 
@@ -72,6 +76,23 @@ export function decodeWorkspaceDocument(text: string): WorkspaceDocument {
     }),
   };
   const run = data.lastExecution;
+  if (data.targetId !== undefined) {
+    if (
+      !['stackchan-planned', 'microduck-sim', 'microduck-usb'].includes(
+        String(data.targetId),
+      )
+    )
+      throw new Error('Invalid project target.');
+    result.targetId = data.targetId as WorkspaceDocument['targetId'];
+  }
+  if (data.simulatorBackend !== undefined) {
+    if (
+      data.simulatorBackend !== 'browser' &&
+      data.simulatorBackend !== 'native'
+    )
+      throw new Error('Invalid simulator.');
+    result.simulatorBackend = data.simulatorBackend;
+  }
   if (run !== undefined) {
     if (
       !record(run) ||
@@ -100,7 +121,7 @@ export function decodeWorkspaceDocument(text: string): WorkspaceDocument {
       if (
         !record(event) ||
         !['accepted', 'running', 'completed', 'stopped', 'failed'].includes(
-          String(event.status)
+          String(event.status),
         ) ||
         typeof event.at !== 'string' ||
         !Number.isFinite(Date.parse(event.at)) ||
@@ -117,8 +138,27 @@ export function decodeWorkspaceDocument(text: string): WorkspaceDocument {
         at: event.at,
       };
     });
+    const savedStatus =
+      run.status === 'running' || run.status === 'accepted'
+        ? 'interrupted'
+        : run.status;
     result.lastExecution = {
       source: message.source,
+      outcome: {
+        executionId: run.executionId,
+        program:
+          message.source.program ??
+          createProgramIdentity(
+            message.source.artifactId,
+            message.source.targetId,
+            message.source.frames,
+          ),
+        status:
+          savedStatus === 'interrupted' || savedStatus === 'stopped'
+            ? 'cancelled'
+            : (savedStatus as ExecutionResult['status']),
+        evidence: savedStatus === 'completed' ? 'simulator' : 'none',
+      },
       executionId: run.executionId,
       events,
       status:

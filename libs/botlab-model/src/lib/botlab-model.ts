@@ -82,8 +82,16 @@ export interface TargetProfile {
     integrationId?: string;
   };
   connection: {
-    modes: Array<'usb' | 'bluetooth' | 'wifi' | 'serial' | 'simulator' | 'manual'>;
-    defaultMode: 'usb' | 'bluetooth' | 'wifi' | 'serial' | 'simulator' | 'manual';
+    modes: Array<
+      'usb' | 'bluetooth' | 'wifi' | 'serial' | 'simulator' | 'manual'
+    >;
+    defaultMode:
+      | 'usb'
+      | 'bluetooth'
+      | 'wifi'
+      | 'serial'
+      | 'simulator'
+      | 'manual';
     discovery: 'automatic' | 'manual' | 'planned';
   };
 }
@@ -104,7 +112,11 @@ export type PolicyRuleCategory =
   | 'environment'
   | 'user-confirmation';
 
-export type PolicyRuleEffect = 'allow' | 'deny' | 'warn' | 'require-confirmation';
+export type PolicyRuleEffect =
+  | 'allow'
+  | 'deny'
+  | 'warn'
+  | 'require-confirmation';
 
 export interface PolicyRule {
   id: string;
@@ -318,17 +330,23 @@ export function validateBehaviorDefinition(
 ): ValidationResult {
   const errors: string[] = [];
   const skillIds = new Set(context.skills.map((skill) => skill.id));
-  const schedulerIds = new Set(context.schedulers.map((scheduler) => scheduler.id));
+  const schedulerIds = new Set(
+    context.schedulers.map((scheduler) => scheduler.id),
+  );
   const arbitrationIds = new Set(
     context.arbitrationStrategies.map((strategy) => strategy.id),
   );
-  const artifactIds = new Set((context.artifacts ?? []).map((artifact) => artifact.id));
+  const artifactIds = new Set(
+    (context.artifacts ?? []).map((artifact) => artifact.id),
+  );
   const nodeIds = new Set(behavior.graph.nodes.map((node) => node.id));
   const duplicatedNodeIds = findDuplicateIds(behavior.graph.nodes);
   const duplicatedStepIds = findDuplicateIds(behavior.ast.steps);
 
   if (!schedulerIds.has(behavior.schedulerId)) {
-    errors.push(`Behavior ${behavior.id} references unknown scheduler ${behavior.schedulerId}.`);
+    errors.push(
+      `Behavior ${behavior.id} references unknown scheduler ${behavior.schedulerId}.`,
+    );
   }
 
   if (!arbitrationIds.has(behavior.arbitrationId)) {
@@ -339,22 +357,31 @@ export function validateBehaviorDefinition(
 
   for (const skillId of behavior.skillIds) {
     if (!skillIds.has(skillId)) {
-      errors.push(`Behavior ${behavior.id} references unknown skill ${skillId}.`);
+      errors.push(
+        `Behavior ${behavior.id} references unknown skill ${skillId}.`,
+      );
     }
   }
 
   for (const node of behavior.graph.nodes) {
-    if (node.kind === 'skill' && (!node.skillId || !skillIds.has(node.skillId))) {
+    if (
+      node.kind === 'skill' &&
+      (!node.skillId || !skillIds.has(node.skillId))
+    ) {
       errors.push(`Behavior node ${node.id} references an unknown skill.`);
     }
   }
 
   for (const duplicatedNodeId of duplicatedNodeIds) {
-    errors.push(`Behavior ${behavior.id} has duplicate graph node ${duplicatedNodeId}.`);
+    errors.push(
+      `Behavior ${behavior.id} has duplicate graph node ${duplicatedNodeId}.`,
+    );
   }
 
   if (!nodeIds.has(behavior.graph.entryNodeId)) {
-    errors.push(`Behavior ${behavior.id} has an entry node that is not in its graph.`);
+    errors.push(
+      `Behavior ${behavior.id} has an entry node that is not in its graph.`,
+    );
   }
 
   for (const edge of behavior.graph.edges) {
@@ -365,20 +392,29 @@ export function validateBehaviorDefinition(
 
   for (const artifactId of behavior.artifactIds) {
     if (context.artifacts && !artifactIds.has(artifactId)) {
-      errors.push(`Behavior ${behavior.id} references unknown artifact ${artifactId}.`);
+      errors.push(
+        `Behavior ${behavior.id} references unknown artifact ${artifactId}.`,
+      );
     }
   }
 
   for (const duplicatedStepId of duplicatedStepIds) {
-    errors.push(`Behavior ${behavior.id} has duplicate AST step ${duplicatedStepId}.`);
+    errors.push(
+      `Behavior ${behavior.id} has duplicate AST step ${duplicatedStepId}.`,
+    );
   }
 
   for (const step of behavior.ast.steps) {
     if (!nodeIds.has(step.nodeId)) {
-      errors.push(`Behavior AST step ${step.id} references missing graph node ${step.nodeId}.`);
+      errors.push(
+        `Behavior AST step ${step.id} references missing graph node ${step.nodeId}.`,
+      );
     }
 
-    if (step.action === 'dispatch-skill' && (!step.skillId || !skillIds.has(step.skillId))) {
+    if (
+      step.action === 'dispatch-skill' &&
+      (!step.skillId || !skillIds.has(step.skillId))
+    ) {
       errors.push(`Behavior AST step ${step.id} references an unknown skill.`);
     }
   }
@@ -389,24 +425,32 @@ export function validateBehaviorDefinition(
   };
 }
 
-export function validateAdapterManifest(adapter: BotLabAdapter): ValidationResult {
+export function validateAdapterManifest(
+  adapter: BotLabAdapter,
+): ValidationResult {
   const errors: string[] = [];
   const targetIds = new Set(adapter.targets.map((target) => target.id));
 
   for (const target of adapter.targets) {
     if (target.adapterId !== adapter.id) {
-      errors.push(`Target ${target.id} is registered to ${target.adapterId}, not ${adapter.id}.`);
+      errors.push(
+        `Target ${target.id} is registered to ${target.adapterId}, not ${adapter.id}.`,
+      );
     }
   }
 
   for (const capability of adapter.capabilities) {
     if (capability.targetIds.length === 0) {
-      errors.push(`Capability ${capability.id} must target at least one robot or simulator.`);
+      errors.push(
+        `Capability ${capability.id} must target at least one robot or simulator.`,
+      );
     }
 
     for (const targetId of capability.targetIds) {
       if (!targetIds.has(targetId)) {
-        errors.push(`Capability ${capability.id} references unknown target ${targetId}.`);
+        errors.push(
+          `Capability ${capability.id} references unknown target ${targetId}.`,
+        );
       }
     }
 
@@ -421,7 +465,9 @@ export function validateAdapterManifest(adapter: BotLabAdapter): ValidationResul
   };
 }
 
-export function validateCapabilitySchema(capability: Capability): ValidationResult {
+export function validateCapabilitySchema(
+  capability: Capability,
+): ValidationResult {
   const errors: string[] = [];
 
   if (!capability.schema) {
@@ -432,11 +478,15 @@ export function validateCapabilitySchema(capability: Capability): ValidationResu
   }
 
   for (const commandId of findDuplicateIds(capability.schema.commands)) {
-    errors.push(`Capability ${capability.id} has duplicate command ${commandId}.`);
+    errors.push(
+      `Capability ${capability.id} has duplicate command ${commandId}.`,
+    );
   }
 
   for (const telemetryId of findDuplicateIds(capability.schema.telemetry)) {
-    errors.push(`Capability ${capability.id} has duplicate telemetry ${telemetryId}.`);
+    errors.push(
+      `Capability ${capability.id} has duplicate telemetry ${telemetryId}.`,
+    );
   }
 
   for (const command of capability.schema.commands) {
@@ -468,7 +518,9 @@ export function validatePolicy(
   context: PolicyValidationContext,
 ): ValidationResult {
   const errors: string[] = [];
-  const capabilityIds = new Set(context.capabilities.map((capability) => capability.id));
+  const capabilityIds = new Set(
+    context.capabilities.map((capability) => capability.id),
+  );
   const targetIds = new Set(context.targets.map((target) => target.id));
 
   for (const ruleId of findDuplicateIds(policy.rules)) {
@@ -477,10 +529,15 @@ export function validatePolicy(
 
   for (const rule of policy.rules) {
     if (rule.category === 'target' && !rule.targetIds?.length) {
-      errors.push(`Policy rule ${rule.id} must name targetIds for target rules.`);
+      errors.push(
+        `Policy rule ${rule.id} must name targetIds for target rules.`,
+      );
     }
 
-    if (rule.category === 'user-confirmation' && rule.effect !== 'require-confirmation') {
+    if (
+      rule.category === 'user-confirmation' &&
+      rule.effect !== 'require-confirmation'
+    ) {
       errors.push(
         `Policy rule ${rule.id} must require confirmation when category is user-confirmation.`,
       );
@@ -488,13 +545,17 @@ export function validatePolicy(
 
     for (const capabilityId of rule.capabilityIds ?? []) {
       if (!capabilityIds.has(capabilityId)) {
-        errors.push(`Policy rule ${rule.id} references unknown capability ${capabilityId}.`);
+        errors.push(
+          `Policy rule ${rule.id} references unknown capability ${capabilityId}.`,
+        );
       }
     }
 
     for (const targetId of rule.targetIds ?? []) {
       if (!targetIds.has(targetId)) {
-        errors.push(`Policy rule ${rule.id} references unknown target ${targetId}.`);
+        errors.push(
+          `Policy rule ${rule.id} references unknown target ${targetId}.`,
+        );
       }
     }
   }
@@ -513,23 +574,31 @@ export function validateCompiledBehaviorArtifact(
   const behaviorIds = new Set(context.behaviors.map((behavior) => behavior.id));
   const policyIds = new Set(context.policies.map((policy) => policy.id));
   const targets = context.adapters.flatMap((adapter) => adapter.targets);
-  const capabilities = context.adapters.flatMap((adapter) => adapter.capabilities);
+  const capabilities = context.adapters.flatMap(
+    (adapter) => adapter.capabilities,
+  );
   const targetIds = new Set(targets.map((target) => target.id));
   const capabilityById = new Map(
     capabilities.map((capability) => [capability.id, capability] as const),
   );
 
   if (!behaviorIds.has(artifact.behaviorId)) {
-    errors.push(`Compiled artifact ${artifact.id} references unknown behavior ${artifact.behaviorId}.`);
+    errors.push(
+      `Compiled artifact ${artifact.id} references unknown behavior ${artifact.behaviorId}.`,
+    );
   }
 
   if (!targetIds.has(artifact.targetId)) {
-    errors.push(`Compiled artifact ${artifact.id} references unknown target ${artifact.targetId}.`);
+    errors.push(
+      `Compiled artifact ${artifact.id} references unknown target ${artifact.targetId}.`,
+    );
   }
 
   for (const policyId of artifact.requiredPolicyIds) {
     if (!policyIds.has(policyId)) {
-      errors.push(`Compiled artifact ${artifact.id} references unknown policy ${policyId}.`);
+      errors.push(
+        `Compiled artifact ${artifact.id} references unknown policy ${policyId}.`,
+      );
     }
   }
 
@@ -541,7 +610,9 @@ export function validateCompiledBehaviorArtifact(
     }
 
     if (!targetIds.has(command.targetId)) {
-      errors.push(`Compiled command ${command.id} references unknown target ${command.targetId}.`);
+      errors.push(
+        `Compiled command ${command.id} references unknown target ${command.targetId}.`,
+      );
     }
 
     const capability = capabilityById.get(command.capabilityId);
@@ -602,7 +673,11 @@ function validateFieldSchemas(
       errors.push(`${scope} field ${field.name} must define enumValues.`);
     }
 
-    if (field.min !== undefined && field.max !== undefined && field.min > field.max) {
+    if (
+      field.min !== undefined &&
+      field.max !== undefined &&
+      field.min > field.max
+    ) {
       errors.push(`${scope} field ${field.name} has min greater than max.`);
     }
   }
@@ -616,7 +691,9 @@ function validateCommandInputs(
   scope: string,
 ): string[] {
   const errors: string[] = [];
-  const schemaByName = new Map(schemaFields.map((field) => [field.name, field] as const));
+  const schemaByName = new Map(
+    schemaFields.map((field) => [field.name, field] as const),
+  );
 
   for (const field of schemaFields) {
     const value = inputs[field.name];
@@ -681,7 +758,9 @@ function validateInputValue(
     }
 
     if (field.enumValues && !field.enumValues.includes(value)) {
-      errors.push(`${scope} input ${field.name} must be one of ${field.enumValues.join(', ')}.`);
+      errors.push(
+        `${scope} input ${field.name} must be one of ${field.enumValues.join(', ')}.`,
+      );
     }
   }
 
@@ -716,7 +795,8 @@ export const botLabConcepts: Array<{
 }> = [
   {
     concept: 'policy',
-    description: 'Guardrails and constraints applied before behavior execution.',
+    description:
+      'Guardrails and constraints applied before behavior execution.',
   },
   {
     concept: 'skill',
@@ -724,7 +804,8 @@ export const botLabConcepts: Array<{
   },
   {
     concept: 'behavior',
-    description: 'Visual programs and reactive logic created in the block editor.',
+    description:
+      'Visual programs and reactive logic created in the block editor.',
   },
   {
     concept: 'capability',
@@ -736,7 +817,8 @@ export const botLabConcepts: Array<{
   },
   {
     concept: 'artifact',
-    description: 'Generated blocks, compiled plans, logs, traces, or simulator output.',
+    description:
+      'Generated blocks, compiled plans, logs, traces, or simulator output.',
   },
   {
     concept: 'introspection',
@@ -744,7 +826,8 @@ export const botLabConcepts: Array<{
   },
   {
     concept: 'scheduler',
-    description: 'Timing model for running behaviors manually, by event, or on a clock.',
+    description:
+      'Timing model for running behaviors manually, by event, or on a clock.',
   },
   {
     concept: 'arbitration',
@@ -777,7 +860,8 @@ export const samplePolicies: Policy[] = [
         id: 'confirm-led-output',
         category: 'user-confirmation',
         effect: 'require-confirmation',
-        description: 'Ask before sending visible light commands to a physical robot.',
+        description:
+          'Ask before sending visible light commands to a physical robot.',
         capabilityIds: ['microduck-leds'],
       },
     ],
@@ -790,7 +874,8 @@ export const samplePolicies: Policy[] = [
         id: 'deny-planned-target',
         category: 'target',
         effect: 'deny',
-        description: 'Do not execute behavior plans against targets that are not implemented.',
+        description:
+          'Do not execute behavior plans against targets that are not implemented.',
         targetIds: ['stackchan-planned'],
       },
     ],
@@ -865,27 +950,28 @@ export const sampleMicroDuckLedBehaviorArtifact: BehaviorArtifact = {
   content: '{"blocks":[{"type":"microduck_set_leds"}]}',
 };
 
-export const sampleMicroDuckCompiledBehaviorArtifact: CompiledBehaviorArtifact = {
-  id: 'artifact-microduck-leds-plan',
-  kind: 'compiled-plan',
-  label: 'MicroDuck LED compiled plan',
-  createdAt: '2026-09-10T00:00:00.000Z',
-  behaviorId: 'microduck-led-demo',
-  targetId: 'microduck-usb',
-  requiredPolicyIds: ['confirm-visible-output'],
-  commands: [
-    {
-      id: 'command-microduck-leds-smile',
-      capabilityId: 'microduck-leds',
-      commandId: 'set-led-pattern',
-      targetId: 'microduck-usb',
-      inputs: {
-        pattern: 'smile',
-        brightness: 50,
+export const sampleMicroDuckCompiledBehaviorArtifact: CompiledBehaviorArtifact =
+  {
+    id: 'artifact-microduck-leds-plan',
+    kind: 'compiled-plan',
+    label: 'MicroDuck LED compiled plan',
+    createdAt: '2026-09-10T00:00:00.000Z',
+    behaviorId: 'microduck-led-demo',
+    targetId: 'microduck-usb',
+    requiredPolicyIds: ['confirm-visible-output'],
+    commands: [
+      {
+        id: 'command-microduck-leds-smile',
+        capabilityId: 'microduck-leds',
+        commandId: 'set-led-pattern',
+        targetId: 'microduck-usb',
+        inputs: {
+          pattern: 'smile',
+          brightness: 50,
+        },
       },
-    },
-  ],
-};
+    ],
+  };
 
 export const sampleMicroDuckLedBehavior: Behavior = {
   id: 'microduck-led-demo',
@@ -894,7 +980,10 @@ export const sampleMicroDuckLedBehavior: Behavior = {
   skillIds: ['set-microduck-leds'],
   schedulerId: 'manual',
   arbitrationId: 'exclusive-led-lock',
-  artifactIds: ['artifact-microduck-leds-blocks', 'artifact-microduck-leds-plan'],
+  artifactIds: [
+    'artifact-microduck-leds-blocks',
+    'artifact-microduck-leds-plan',
+  ],
   graph: {
     entryNodeId: 'on-start',
     nodes: [

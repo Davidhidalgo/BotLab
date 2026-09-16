@@ -1,4 +1,7 @@
-import { createMicroDuckAdapter, compileMicroDuckProgram } from '@botlab/adapters-microduck';
+import {
+  createMicroDuckAdapter,
+  compileMicroDuckProgram,
+} from '@botlab/adapters-microduck';
 import { createStackChanAdapter } from '@botlab/adapters-stackchan';
 import {
   createBlocksEditorProvider,
@@ -10,7 +13,8 @@ import {
 import {
   type CompiledBehaviorArtifact,
   sampleArbitrationStrategies,
-  sampleMicroDuckCompiledBehaviorArtifact,
+  type ExecutionResult,
+  identifyCompiledProgram,
   sampleMicroDuckLedBehavior,
   samplePolicies,
   sampleSchedulers,
@@ -22,7 +26,7 @@ import {
   createBotLabRuntime,
   type BotLabRuntime,
   type RuntimeIntrospectionSnapshot,
-  type RuntimeRunResult,
+  type RuntimeQueueRunResult,
 } from '@botlab/runtime';
 import {
   createMicroDuckSimulatorBridge,
@@ -42,6 +46,10 @@ export type BotLabExecutionState =
   | 'queueing'
   | 'running'
   | 'completed'
+  | 'dispatched'
+  | 'cancelled'
+  | 'confirmation-required'
+  | 'no-work'
   | 'failed';
 
 export type BotLabBuildState =
@@ -59,6 +67,8 @@ export type BotLabSimulationState =
   | 'failed';
 
 export interface BotLabSimulationResult {
+  purpose: 'command-validation';
+  program: ReturnType<typeof identifyCompiledProgram>;
   simulatorId: string;
   artifactId: string;
   status: 'passed' | 'failed';
@@ -88,6 +98,7 @@ export interface BotLabFlowContext {
   compiledArtifact?: CompiledBehaviorArtifact;
   simulationResult?: BotLabSimulationResult;
   runtimeSnapshot: RuntimeIntrospectionSnapshot;
+  executionResult?: ExecutionResult;
   workspaceMessage: string;
   buildMessage: string;
   simulationMessage: string;
@@ -111,6 +122,7 @@ interface RunQueuedDemoInput {
 }
 
 interface RunQueuedDemoOutput {
+  outcome: ExecutionResult;
   runtimeSnapshot: RuntimeIntrospectionSnapshot;
   runMessage: string;
 }
@@ -150,7 +162,9 @@ interface SimulatePlanOutput {
 export const botLabFlowMachine = setup({
   types: {} as {
     context: BotLabFlowContext;
-    input: { workspace?: BlocksWorkspaceArtifact } | undefined;
+    input:
+      | { workspace?: BlocksWorkspaceArtifact; targetId?: string }
+      | undefined;
     events:
       | { type: 'target.selected'; targetId: string }
       | { type: 'workspace.changed'; artifact: BlocksWorkspaceArtifact }
@@ -161,9 +175,13 @@ export const botLabFlowMachine = setup({
   },
   actors: {
     validateWorkspace: fromPromise(
-      async ({ input }: { input: ValidateWorkspaceInput }): Promise<ValidateWorkspaceOutput> => {
+      async ({
+        input,
+      }: {
+        input: ValidateWorkspaceInput;
+      }): Promise<ValidateWorkspaceOutput> => {
         const validation = createBlocksEditorProvider(
-          input.artifact.engine
+          input.artifact.engine,
         ).validateWorkspace(input.artifact);
 
         return {
@@ -174,12 +192,14 @@ export const botLabFlowMachine = setup({
             validationErrors: validation.errors,
           },
         };
-      }
+      },
     ),
     compileWorkspace: fromPromise(
       async ({ input }: { input: CompileWorkspaceInput }) => {
         if (input.artifact.status === 'invalid') {
-          throw new Error('Workspace is invalid. Validate or fix it before compiling.');
+          throw new Error(
+            'Workspace is invalid. Validate or fix it before compiling.',
+          );
         }
 
         const target = input.runtime
@@ -192,21 +212,20 @@ export const botLabFlowMachine = setup({
 
         const compiledArtifact = compileMicroDuckWorkspaceArtifact(
           input.artifact,
-          input.targetId
+          input.targetId,
         );
 
         input.runtime.loadCompiledBehavior(
           input.demoSessionId,
-          compiledArtifact
+          compiledArtifact,
         );
-        input.runtime.confirmPolicy(input.demoSessionId);
 
         return {
           compiledArtifact,
           runtimeSnapshot: input.runtime.inspectRuntime(),
           buildMessage: `Plan ${compiledArtifact.id} compiled from Scratch Blocks for ${target.name}.`,
         };
-      }
+      },
     ),
     simulatePlan: fromPromise(
       async ({ input }: { input: SimulatePlanInput }) => {
@@ -238,15 +257,17 @@ export const botLabFlowMachine = setup({
 
         return {
           simulationResult: {
+            purpose: 'command-validation' as const,
+            program: identifyCompiledProgram(input.artifact),
             simulatorId: simulation.simulatorId,
             artifactId: outputArtifact.id,
             status: simulation.status,
             commandCount: simulation.commandCount,
             outputArtifact,
           },
-          simulationMessage: `Simulation complete: ${simulation.commandCount} command(s) verified for ${input.target.name}.`,
+          simulationMessage: `Command validation complete: ${simulation.commandCount} command(s) verified for ${input.target.name}.`,
         };
-      }
+      },
     ),
     queueDemo: fromPromise(async ({ input }: { input: QueueDemoInput }) => {
       input.runtime.queueSession(input.demoSessionId, { priority: 5 });
@@ -262,19 +283,27 @@ export const botLabFlowMachine = setup({
         return {
           runtimeSnapshot: input.runtime.inspectRuntime(),
           runMessage: formatRunMessage(result),
+          outcome: result.outcome,
         };
-      }
+      },
     ),
   },
   actions: {
+    invalidateRun: assign(({ context }) => {
+      context.runtime.stopSession(context.demoSessionId);
+      return {
+        executionResult: undefined,
+        runtimeSnapshot: context.runtime.inspectRuntime(),
+        runMessage: 'Compile and simulate before running the selected target.',
+      };
+    }),
     selectTarget: assign({
       selectedTargetId: (_, params: { targetId: string }) => params.targetId,
       compiledArtifact: () => undefined,
       simulationResult: () => undefined,
       buildMessage: ({ context }, params: { targetId: string }) =>
         createTargetMessage(context.runtime, params.targetId),
-      simulationMessage: () =>
-        'Simulation pending for the selected target.',
+      simulationMessage: () => 'Simulation pending for the selected target.',
       runMessage: () =>
         'Compile and simulate before running the selected target.',
       errorMessage: () => undefined,
@@ -283,7 +312,7 @@ export const botLabFlowMachine = setup({
       flowLogCounter: ({ context }) => context.flowLogCounter + 1,
       flowLog: (
         { context },
-        params: { category: BotLabFlowLogCategory; message: string }
+        params: { category: BotLabFlowLogCategory; message: string },
       ) =>
         [
           {
@@ -303,8 +332,7 @@ export const botLabFlowMachine = setup({
     }),
     clearCompiledArtifact: assign({
       compiledArtifact: () => undefined,
-      buildMessage: () =>
-        'Workspace edited. Compile again before running.',
+      buildMessage: () => 'Workspace edited. Compile again before running.',
     }),
     clearSimulationResult: assign({
       simulationResult: () => undefined,
@@ -351,10 +379,12 @@ export const botLabFlowMachine = setup({
       errorMessage: () => undefined,
     }),
     setRunResult: assign({
+      executionResult: (_, params: RunQueuedDemoOutput) => params.outcome,
       runtimeSnapshot: (_, params: RunQueuedDemoOutput) =>
         params.runtimeSnapshot,
       runMessage: (_, params: RunQueuedDemoOutput) => params.runMessage,
-      errorMessage: () => undefined,
+      errorMessage: (_, params: RunQueuedDemoOutput) =>
+        params.outcome.status === 'failed' ? params.runMessage : undefined,
     }),
     setError: assign({
       errorMessage: (_, params: { message: string }) => params.message,
@@ -375,7 +405,8 @@ export const botLabFlowMachine = setup({
   },
 }).createMachine({
   id: 'botlabFlow',
-  context: ({ input }) => createBotLabFlowContext(input?.workspace),
+  context: ({ input }) =>
+    createBotLabFlowContext(input?.workspace, input?.targetId),
   type: 'parallel',
   states: {
     workspace: {
@@ -749,8 +780,11 @@ export const botLabFlowMachine = setup({
     execution: {
       initial: 'ready',
       on: {
+        'workspace.changed': { target: '.ready', actions: 'invalidateRun' },
+        'build.compile': { target: '.ready', actions: 'invalidateRun' },
         'target.selected': {
           target: '.ready',
+          actions: 'invalidateRun',
         },
       },
       states: {
@@ -814,22 +848,59 @@ export const botLabFlowMachine = setup({
             input: ({ context }) => ({
               runtime: context.runtime,
             }),
-            onDone: {
-              target: 'completed',
-              actions: [
-                {
+            onDone: [
+              {
+                guard: ({ event }) =>
+                  event.output.outcome.status === 'completed',
+                target: 'completed',
+                actions: {
                   type: 'setRunResult',
                   params: ({ event }) => event.output,
                 },
-                {
-                  type: 'appendFlowLog',
-                  params: {
-                    category: 'execution',
-                    message: 'Demo execution completed.',
-                  },
+              },
+              {
+                guard: ({ event }) =>
+                  event.output.outcome.status === 'dispatched',
+                target: 'dispatched',
+                actions: {
+                  type: 'setRunResult',
+                  params: ({ event }) => event.output,
                 },
-              ],
-            },
+              },
+              {
+                guard: ({ event }) =>
+                  event.output.outcome.status === 'cancelled',
+                target: 'cancelled',
+                actions: {
+                  type: 'setRunResult',
+                  params: ({ event }) => event.output,
+                },
+              },
+              {
+                guard: ({ event }) =>
+                  event.output.outcome.status === 'confirmation-required',
+                target: 'confirmation-required',
+                actions: {
+                  type: 'setRunResult',
+                  params: ({ event }) => event.output,
+                },
+              },
+              {
+                guard: ({ event }) => event.output.outcome.status === 'no-work',
+                target: 'no-work',
+                actions: {
+                  type: 'setRunResult',
+                  params: ({ event }) => event.output,
+                },
+              },
+              {
+                target: 'failed',
+                actions: {
+                  type: 'setRunResult',
+                  params: ({ event }) => event.output,
+                },
+              },
+            ],
             onError: {
               target: 'failed',
               actions: [
@@ -850,6 +921,10 @@ export const botLabFlowMachine = setup({
             },
           },
         },
+        dispatched: {},
+        cancelled: {},
+        'confirmation-required': {},
+        'no-work': {},
         completed: {
           tags: ['completed'],
           on: {
@@ -951,10 +1026,17 @@ export const botLabExecutionStateLabels: Record<BotLabExecutionState, string> =
     queueing: 'Queueing',
     running: 'Running',
     completed: 'Completed',
+    dispatched: 'Dispatched',
+    cancelled: 'Cancelled',
+    'confirmation-required': 'Confirmation required',
+    'no-work': 'No work',
     failed: 'Error',
   };
 
-function createBotLabFlowContext(workspace?: BlocksWorkspaceArtifact): BotLabFlowContext {
+function createBotLabFlowContext(
+  workspace?: BlocksWorkspaceArtifact,
+  targetId?: string,
+): BotLabFlowContext {
   const runtime = createBotLabRuntime({
     adapters: [createMicroDuckAdapter(), createStackChanAdapter()],
     simulators: microDuckSimulatorIntegrations,
@@ -962,22 +1044,15 @@ function createBotLabFlowContext(workspace?: BlocksWorkspaceArtifact): BotLabFlo
     skills: sampleSkills,
     schedulers: sampleSchedulers,
     arbitrationStrategies: sampleArbitrationStrategies,
-    policies: samplePolicies,
+    policies: samplePolicies.map((policy) => ({
+      ...policy,
+      rules: policy.rules.map((rule) =>
+        rule.effect === 'require-confirmation'
+          ? { ...rule, targetIds: ['microduck-usb'] }
+          : rule,
+      ),
+    })),
     dispatchers: [
-      {
-        targetId: 'microduck-usb',
-        async dispatch(command) {
-          await new Promise((resolve) => {
-            globalThis.setTimeout(resolve, 250);
-          });
-
-          return {
-            commandId: command.id,
-            status: 'dispatched',
-            message: `Demo dispatch ${command.commandId}.`,
-          };
-        },
-      },
       {
         targetId: 'microduck-sim',
         async dispatch(command) {
@@ -995,7 +1070,11 @@ function createBotLabFlowContext(workspace?: BlocksWorkspaceArtifact): BotLabFlo
     ],
   });
   const session = runtime.createSession({ id: 'demo-microduck-leds' });
-  const selectedTargetId = 'microduck-sim';
+  const selectedTargetId = runtime
+    .listTargets()
+    .some((target) => target.id === targetId)
+    ? targetId!
+    : 'stackchan-planned';
 
   return {
     runtime,
@@ -1006,7 +1085,7 @@ function createBotLabFlowContext(workspace?: BlocksWorkspaceArtifact): BotLabFlo
     workspaceMessage: 'Workspace loaded from sample.',
     buildMessage: createTargetMessage(runtime, selectedTargetId),
     simulationMessage: 'Simulate the compiled plan before running.',
-    runMessage: 'Demo ready for MicroDuck Simulator',
+    runMessage: 'StackChan selected; connection integration pending.',
     flowLog: [
       {
         id: 'flow-log-0',
@@ -1018,8 +1097,15 @@ function createBotLabFlowContext(workspace?: BlocksWorkspaceArtifact): BotLabFlo
   };
 }
 
-export function compileMicroDuckWorkspaceArtifact(artifact: BlocksWorkspaceArtifact, targetId: string): CompiledBehaviorArtifact {
-  return compileMicroDuckProgram(artifact, readMicroDuckProgramFromWorkspace(artifact), targetId);
+export function compileMicroDuckWorkspaceArtifact(
+  artifact: BlocksWorkspaceArtifact,
+  targetId: string,
+): CompiledBehaviorArtifact {
+  return compileMicroDuckProgram(
+    artifact,
+    readMicroDuckProgramFromWorkspace(artifact),
+    targetId,
+  );
 }
 
 function targetCanRunMicroDuckDemo(runtime: BotLabRuntime, targetId: string) {
@@ -1035,8 +1121,8 @@ function targetCanRunMicroDuckDemo(runtime: BotLabRuntime, targetId: string) {
 
   return Boolean(
     target?.status === 'available' &&
-      ledCapability?.targetIds.includes(targetId) &&
-      motionCapability?.targetIds.includes(targetId)
+    ledCapability?.targetIds.includes(targetId) &&
+    motionCapability?.targetIds.includes(targetId),
   );
 }
 
@@ -1056,14 +1142,14 @@ function createTargetMessage(runtime: BotLabRuntime, targetId: string) {
   return `Target ${target.name} selected. Compile the workspace to generate an executable plan.`;
 }
 
-function formatRunMessage(result: RuntimeRunResult | undefined) {
-  if (!result) {
+function formatRunMessage(result: RuntimeQueueRunResult) {
+  if (result.outcome.status === 'no-work' || !result.snapshot) {
     return 'There were no pending sessions in the queue.';
   }
 
   return `${
     result.snapshot.dispatchedCommandCount
-  } command(s) sent. State: ${runtimeStateLabels[result.snapshot.state]}.`;
+  } command(s) sent. Result: ${result.outcome.status}.`;
 }
 
 function formatErrorMessage(error: unknown) {
@@ -1071,18 +1157,6 @@ function formatErrorMessage(error: unknown) {
     ? error.message
     : 'Unknown error in the demo flow.';
 }
-
-const runtimeStateLabels = {
-  created: 'Created',
-  queued: 'Queued',
-  ready: 'Ready',
-  'awaiting-confirmation': 'Pending',
-  running: 'Running',
-  paused: 'Paused',
-  stopped: 'Completed',
-  error: 'Error',
-  disposed: 'Closed',
-};
 
 const workspaceStatusLabels = {
   empty: 'empty',

@@ -46,3 +46,9 @@ vite.config.*.timestamp*
 # Local ChatGPT/Codex project context
 AGENTS.md
 sources/
+
+.claude/worktrees
+.claude/settings.local.json
+.nx/polygraph
+.nx/self-healing
+.nx/migrate-runs

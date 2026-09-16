@@ -60,12 +60,17 @@ if (!options.noLfsHydrate) {
 
 writeGeneratedFile(
   resolve(checkoutDir, MODULE_PATH),
-  createBotLabSourceModule({ allowedOrigins: allowedOrigin.split(',').map(origin => origin.trim()) })
+  createBotLabSourceModule({
+    allowedOrigins: allowedOrigin.split(',').map((origin) => origin.trim()),
+  }),
 );
 
 patchOfficialGame(resolve(checkoutDir, GAME_PATH));
 const arenaPath = resolve(checkoutDir, 'app/src/game/constants.js');
-writeGeneratedFile(arenaPath, patchBotLabArena(readFileSync(arenaPath, 'utf8')));
+writeGeneratedFile(
+  arenaPath,
+  patchBotLabArena(readFileSync(arenaPath, 'utf8')),
+);
 
 if (!options.noInstall && !existsSync(resolve(appDir, 'node_modules'))) {
   run('npm', ['install'], { cwd: appDir });
@@ -86,9 +91,9 @@ if (options.start) {
   console.log('');
   console.log('Start it with:');
   console.log(
-    `  npm run microduck:sim -- --checkout ${relativeFromRoot(
-      checkoutDir
-    )} --start --port ${port}`
+    `  pnpm run microduck:sim --checkout ${relativeFromRoot(
+      checkoutDir,
+    )} --start --port ${port}`,
   );
 }
 
@@ -117,9 +122,9 @@ function parseArgs(args) {
       throw new Error(`Unknown argument: ${arg}`);
     }
 
-    const key = arg.slice(2).replace(/-([a-z])/g, (_, char) =>
-      char.toUpperCase()
-    );
+    const key = arg
+      .slice(2)
+      .replace(/-([a-z])/g, (_, char) => char.toUpperCase());
     const value = args[index + 1];
 
     if (!value || value.startsWith('--')) {
@@ -160,7 +165,7 @@ function ensureCheckout(checkoutDir, { origin, revision }) {
 
   if (status.length > 0) {
     console.warn(
-      'Existing simulator checkout has local changes; keeping current revision.'
+      'Existing simulator checkout has local changes; keeping current revision.',
     );
     return;
   }
@@ -173,7 +178,7 @@ function ensureCheckout(checkoutDir, { origin, revision }) {
 
   if (remote.status !== 0) {
     console.warn(
-      'Existing simulator checkout has no origin remote; keeping current revision.'
+      'Existing simulator checkout has no origin remote; keeping current revision.',
     );
     return;
   }
@@ -183,7 +188,7 @@ function ensureCheckout(checkoutDir, { origin, revision }) {
     [...LFS_DISABLED_GIT_CONFIG, 'fetch', '--depth', '1', 'origin', revision],
     {
       cwd: checkoutDir,
-    }
+    },
   );
   run('git', [...LFS_DISABLED_GIT_CONFIG, 'checkout', 'FETCH_HEAD'], {
     cwd: checkoutDir,
@@ -197,7 +202,9 @@ async function hydrateLfsPointers(checkoutDir, { origin, revision }) {
     return;
   }
 
-  console.log(`Hydrating ${pointerFiles.length} Git LFS asset(s) from upstream.`);
+  console.log(
+    `Hydrating ${pointerFiles.length} Git LFS asset(s) from upstream.`,
+  );
 
   for (const path of pointerFiles) {
     const relativePath = relative(checkoutDir, path)
@@ -267,7 +274,7 @@ function createResolveUrl(origin, revision, relativePath) {
 
   if (!base.startsWith('https://huggingface.co/')) {
     throw new Error(
-      'Automatic LFS hydration currently supports Hugging Face Space origins only.'
+      'Automatic LFS hydration currently supports Hugging Face Space origins only.',
     );
   }
 

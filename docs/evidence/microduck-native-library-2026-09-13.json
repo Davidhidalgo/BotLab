@@ -6,11 +6,7 @@
       "accepted": true,
       "ground_pick": "alpha_ground_pick.onnx",
       "sitstand": "alpha_sitstand.onnx",
-      "skills": [
-        "roulade",
-        "kick_left",
-        "kick_right"
-      ],
+      "skills": ["roulade", "kick_left", "kick_right"],
       "stand": "alpha_stand.onnx",
       "walk": "alpha_walking.onnx"
     },

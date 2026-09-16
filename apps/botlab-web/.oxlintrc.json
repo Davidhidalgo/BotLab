@@ -1,0 +1,9 @@
+{
+  "extends": ["../../.oxlintrc.json"],
+  "plugins": ["react", "jsx-a11y"],
+  "rules": {
+    "react-hooks/exhaustive-deps": "warn",
+    "react/set-state-in-effect": "warn",
+    "jsx-a11y/prefer-tag-over-role": "warn"
+  }
+}

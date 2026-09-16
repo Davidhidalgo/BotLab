@@ -1,5 +1,8 @@
-# Add files here to ignore them from prettier formatting
+# Shared ignore file read by Nx and Oxfmt.
 /dist
 /coverage
 /.nx/cache
 /.nx/workspace-data
+.nx/self-healing
+/sources
+/tmp

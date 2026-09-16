@@ -7,7 +7,7 @@ interface LaunchRequest {
   flow: ActorRefFrom<typeof botLabFlowMachine>;
   launch: (
     artifact: CompiledBehaviorArtifact,
-    signal: AbortSignal
+    signal: AbortSignal,
   ) => Promise<void>;
 }
 
@@ -30,13 +30,20 @@ export const simulatorLaunchMachine = setup({
         const stages = [
           { event: 'build.compile', region: 'build', success: 'compiled' },
           { event: 'simulation.run', region: 'simulation', success: 'passed' },
-          { event: 'demo.run', region: 'execution', success: 'completed' },
         ] as const;
 
+        if (
+          !initial.runtime
+            .listTargets()
+            .some(
+              (target) =>
+                target.id === initial.selectedTargetId &&
+                target.kind === 'simulator',
+            )
+        ) {
+          throw new Error('This launch route requires a simulator target.');
+        }
         for (const stage of stages) {
-          if (stage.event === 'demo.run' && initial.runtime.listTargets().some(
-            target => target.id === initial.selectedTargetId && target.kind === 'simulator'
-          )) continue;
           if (signal.aborted) throw new Error('Launch cancelled.');
           if (!flow.getSnapshot().can({ type: stage.event })) {
             throw new Error(`Cannot start ${stage.event}.`);
@@ -49,7 +56,7 @@ export const simulatorLaunchMachine = setup({
               state.matches({ [stage.region]: 'failed' }) ||
               state.context.workspaceArtifact !== initial.workspaceArtifact ||
               state.context.selectedTargetId !== initial.selectedTargetId,
-            { signal, timeout: 30000 }
+            { signal, timeout: 30000 },
           );
           if (
             snapshot.context.workspaceArtifact !== initial.workspaceArtifact ||
@@ -59,7 +66,7 @@ export const simulatorLaunchMachine = setup({
           }
           if (!snapshot.matches({ [stage.region]: stage.success })) {
             throw new Error(
-              snapshot.context.errorMessage ?? `${stage.event} failed.`
+              snapshot.context.errorMessage ?? `${stage.event} failed.`,
             );
           }
         }
@@ -68,7 +75,7 @@ export const simulatorLaunchMachine = setup({
         const artifact = flow.getSnapshot().context.compiledArtifact;
         if (!artifact) throw new Error('No compiled program to launch.');
         await input.launch(artifact, signal);
-      }
+      },
     ),
   },
 }).createMachine({

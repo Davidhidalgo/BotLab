@@ -15,6 +15,7 @@ export interface BlocksEditorMountHandle {
   highlightBlock?(blockId?: string): void;
   togglePalette?(): void;
   setLocale?(locale: BlocksLocale): void;
+  setAvailableBlockTypes?(types: readonly string[]): void;
   dispose(): void;
 }
 
@@ -22,6 +23,7 @@ export interface BlocksEditorMountRequest {
   element: HTMLElement;
   artifact: BlocksWorkspaceArtifact;
   locale?: BlocksLocale;
+  availableBlockTypes?: readonly string[];
   onArtifactChange?: (artifact: BlocksWorkspaceArtifact) => void;
 }
 
@@ -62,7 +64,7 @@ export interface BlocksEditorProvider {
   loadWorkspace(artifact: BlocksWorkspaceArtifact): BlocksWorkspaceSession;
   exportWorkspace(session: BlocksWorkspaceSession): BlocksWorkspaceArtifact;
   validateWorkspace(
-    artifact: BlocksWorkspaceArtifact
+    artifact: BlocksWorkspaceArtifact,
   ): BlocksWorkspaceValidationResult;
   mountWorkspace(request: BlocksEditorMountRequest): BlocksEditorMountResponse;
 }
@@ -74,7 +76,7 @@ export function createBlocksWorkspaceArtifact(
   > & {
     createdAt?: string;
     validationErrors?: string[];
-  }
+  },
 ): BlocksWorkspaceArtifact {
   return {
     ...artifact,
@@ -85,7 +87,7 @@ export function createBlocksWorkspaceArtifact(
 }
 
 export function exportBlocksWorkspace(
-  artifact: BlocksWorkspaceArtifact
+  artifact: BlocksWorkspaceArtifact,
 ): string {
   if (
     artifact.format === 'botlab-json' ||
@@ -100,7 +102,7 @@ export function exportBlocksWorkspace(
         content: safeJsonParse(artifact.content),
       },
       null,
-      2
+      2,
     );
   }
 
@@ -195,7 +197,7 @@ export interface ScratchBlocksEditorBridge {
 }
 
 export function createScratchBlocksEditorProvider(
-  bridge?: ScratchBlocksEditorBridge
+  bridge?: ScratchBlocksEditorBridge,
 ): BlocksEditorProvider {
   return {
     id: 'scratch-blocks',
@@ -264,7 +266,7 @@ export function createScratchBlocksEditorProvider(
 }
 
 export function createBlocksEditorProvider(
-  engine: BlocksEditorEngine
+  engine: BlocksEditorEngine,
 ): BlocksEditorProvider {
   if (engine === 'scratch-blocks') {
     return createScratchBlocksEditorProvider();
@@ -291,7 +293,7 @@ export const sampleScratchBlocksWorkspaceArtifact = importBlocksWorkspace({
 });
 
 function detectWorkspaceFormat(
-  content: string
+  content: string,
 ): BlocksWorkspaceArtifact['format'] {
   const trimmed = content.trim();
 
@@ -303,7 +305,7 @@ function detectWorkspaceFormat(
 }
 
 function validateWorkspaceContent(
-  artifact: BlocksWorkspaceArtifact
+  artifact: BlocksWorkspaceArtifact,
 ): BlocksWorkspaceValidationResult {
   if (!artifact.content.trim()) {
     return {

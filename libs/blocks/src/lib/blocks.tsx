@@ -29,6 +29,7 @@ export interface BlocksEditorShellProps {
   activeBlockId?: string;
   workbench?: boolean;
   locale?: BlocksLocale;
+  availableBlockTypes?: readonly string[];
 }
 
 export interface BlocksEditorShellLabels {
@@ -59,20 +60,21 @@ export function BlocksEditorShell({
   activeBlockId,
   workbench = false,
   locale = 'ca',
+  availableBlockTypes,
 }: BlocksEditorShellProps) {
   const copy = useMemo(
     () => ({ ...defaultBlocksEditorShellLabels, ...labels }),
-    [labels]
+    [labels],
   );
   const resolvedProvider = useMemo(
     () =>
       provider ??
       (artifact.engine === 'scratch-blocks'
         ? createScratchBlocksEditorProvider(
-            createLocalScratchBlocksEditorBridge()
+            createLocalScratchBlocksEditorBridge(),
           )
         : createBlocksEditorProvider(artifact.engine)),
-    [artifact.engine, provider]
+    [artifact.engine, provider],
   );
   const badgeVariant = workspaceStatus === 'invalid' ? 'outline' : 'secondary';
   const statusLabel = status ?? workspaceStatusLabels[workspaceStatus];
@@ -84,7 +86,7 @@ export function BlocksEditorShell({
   const [mountMessage, setMountMessage] = useState(
     resolvedProvider.supportsNativeMount
       ? copy.readyToMount
-      : copy.bridgePending
+      : copy.bridgePending,
   );
   const showPreviewSidebar = !resolvedProvider.supportsNativeMount;
   const editorGridClassName = showPreviewSidebar
@@ -117,6 +119,7 @@ export function BlocksEditorShell({
         element: mountElementRef.current,
         artifact,
         locale,
+        availableBlockTypes,
         onArtifactChange,
       });
 
@@ -133,7 +136,14 @@ export function BlocksEditorShell({
     } finally {
       setIsMounting(false);
     }
-  }, [artifact, copy.mounted, locale, onArtifactChange, resolvedProvider]);
+  }, [
+    artifact,
+    copy.mounted,
+    locale,
+    availableBlockTypes,
+    onArtifactChange,
+    resolvedProvider,
+  ]);
 
   useEffect(() => {
     if (
@@ -157,6 +167,11 @@ export function BlocksEditorShell({
   }, [locale, isNativeMounted]);
 
   useEffect(() => {
+    if (availableBlockTypes)
+      mountHandleRef.current?.setAvailableBlockTypes?.(availableBlockTypes);
+  }, [availableBlockTypes, isNativeMounted]);
+
+  useEffect(() => {
     mountHandleRef.current?.highlightBlock?.(activeBlockId);
   }, [activeBlockId, isNativeMounted]);
 
@@ -167,18 +182,38 @@ export function BlocksEditorShell({
   }, []);
 
   return (
-    <section className={workbench ? styles.workbench : 'min-h-[420px] rounded-lg border bg-card'}>
-      <header className={workbench ? styles.toolbar : 'flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between'}>
+    <section
+      className={
+        workbench ? styles.workbench : 'min-h-[420px] rounded-lg border bg-card'
+      }
+    >
+      <header
+        className={
+          workbench
+            ? styles.toolbar
+            : 'flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between'
+        }
+      >
         <div>
-          {!workbench && <p className="text-sm text-muted-foreground">{copy.visualEditor}</p>}
-          <h2 className="text-sm font-semibold">{workbench ? copy.visualEditor : workspaceName}</h2>
+          {!workbench && (
+            <p className="text-sm text-muted-foreground">{copy.visualEditor}</p>
+          )}
+          <h2 className="text-sm font-semibold">
+            {workbench ? copy.visualEditor : workspaceName}
+          </h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {workbench && <button type="button" className={styles.paletteButton}
-            title={copy.togglePalette} aria-label={copy.togglePalette}
-            onClick={() => mountHandleRef.current?.togglePalette?.()}>
-            <Blocks size={18} />
-          </button>}
+          {workbench && (
+            <button
+              type="button"
+              className={styles.paletteButton}
+              title={copy.togglePalette}
+              aria-label={copy.togglePalette}
+              onClick={() => mountHandleRef.current?.togglePalette?.()}
+            >
+              <Blocks size={18} />
+            </button>
+          )}
           {!workbench && <Badge>{resolvedProvider.name}</Badge>}
           <Badge variant={badgeVariant}>{statusLabel}</Badge>
           {!workbench && <Badge variant="outline">{artifact.format}</Badge>}
@@ -202,21 +237,29 @@ export function BlocksEditorShell({
           </aside>
         ) : null}
 
-        <div className={workbench ? styles.editorCanvas : 'flex min-h-[380px] flex-col rounded-md border border-dashed bg-background p-4'}>
+        <div
+          className={
+            workbench
+              ? styles.editorCanvas
+              : 'flex min-h-[380px] flex-col rounded-md border border-dashed bg-background p-4'
+          }
+        >
           <div
             ref={mountElementRef}
             className={`${styles.workspace} ${workbench ? styles.workbenchWorkspace : 'relative h-[420px] min-h-[360px] overflow-hidden rounded-md bg-muted/40'}`}
           >
             <div className="flex h-full items-center justify-center text-center">
               <p className="text-base font-medium">{copy.workspaceArea}</p>
-              {!workbench && <>
-              <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-                {artifact.label}
-              </p>
-              <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
-                {mountMessage}
-              </p>
-              </>}
+              {!workbench && (
+                <>
+                  <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+                    {artifact.label}
+                  </p>
+                  <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+                    {mountMessage}
+                  </p>
+                </>
+              )}
               {resolvedProvider.supportsNativeMount ? null : (
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
                   {blocks.map((block) => (
@@ -238,26 +281,34 @@ export function BlocksEditorShell({
             </div>
           ) : null}
 
-          {(!workbench || !isNativeMounted) && <div className={workbench ? styles.recovery : 'mt-4 flex flex-wrap gap-2'}>
-            <button
-              type="button"
-              className="rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
-              disabled={readOnly || isMounting}
-              onClick={openNativeEditor}
+          {(!workbench || !isNativeMounted) && (
+            <div
+              className={
+                workbench ? styles.recovery : 'mt-4 flex flex-wrap gap-2'
+              }
             >
-              {isNativeMounted
-                ? copy.resetNativeEditor
-                : `${copy.open} ${resolvedProvider.name}`}
-            </button>
-            {!workbench && <button
-              type="button"
-              className="rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
-              disabled={readOnly}
-              onClick={markDirty}
-            >
-              {copy.markDirty}
-            </button>}
-          </div>}
+              <button
+                type="button"
+                className="rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+                disabled={readOnly || isMounting}
+                onClick={openNativeEditor}
+              >
+                {isNativeMounted
+                  ? copy.resetNativeEditor
+                  : `${copy.open} ${resolvedProvider.name}`}
+              </button>
+              {!workbench && (
+                <button
+                  type="button"
+                  className="rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+                  disabled={readOnly}
+                  onClick={markDirty}
+                >
+                  {copy.markDirty}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </section>

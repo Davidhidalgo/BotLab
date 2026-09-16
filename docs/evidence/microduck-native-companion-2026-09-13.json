@@ -3,9 +3,7 @@
   "platform": "macOS arm64",
   "artifact": "dist/apps/simulator-macos/BotLab Simulator.app",
   "relocationTest": "/tmp/botlab-multisim-qa/BotLab Simulator.app",
-  "bundledSimulators": [
-    "microduck"
-  ],
+  "bundledSimulators": ["microduck"],
   "catalogVersion": 1,
   "bundleBytes": 332485659,
   "browser": {
@@ -20,11 +18,7 @@
     "connectionLoss": {
       "status": "failed",
       "error": "Browser connection lost.",
-      "applied": [
-        8.627182931767318e-09,
-        0,
-        -4.3052999894618566e-66
-      ]
+      "applied": [8.627182931767318e-9, 0, -4.3052999894618566e-66]
     }
   },
   "browserErrors": [],

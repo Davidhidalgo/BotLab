@@ -33,7 +33,7 @@ const client = createNativeMicroDuckClient(
     onNotification: ({ method }) => {
       if (method === 'robot.state') stateCount++;
     },
-  }
+  },
 );
 
 try {
@@ -46,7 +46,11 @@ try {
     if (health.healthy) break;
     await new Promise((resolve) => setTimeout(resolve, 100));
   } while (Date.now() < deadline);
-  assert.equal(health.healthy, true, 'native control loop did not become healthy');
+  assert.equal(
+    health.healthy,
+    true,
+    'native control loop did not become healthy',
+  );
   const stopped = await client.stop();
   await new Promise((resolve) => setTimeout(resolve, 200));
   assert.ok(stateCount > 0, 'expected native telemetry');

@@ -11,10 +11,7 @@
         "roulade",
         "sit_toggle"
       ],
-      "postures": [
-        "sit",
-        "stand"
-      ]
+      "postures": ["sit", "stand"]
     },
     "idempotent": true,
     "stop": {

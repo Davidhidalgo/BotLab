@@ -20,14 +20,74 @@ export function createStackChanAdapter(): BotLabAdapter {
             supported: false,
           },
           connection: {
-            modes: ['wifi', 'manual'],
-            defaultMode: 'manual',
-            discovery: 'planned',
+            modes: ['bluetooth'],
+            defaultMode: 'bluetooth',
+            discovery: 'manual',
           },
         },
       },
     ],
     capabilities: [
+      {
+        id: 'stackchan-yaw',
+        kind: 'motion',
+        name: 'Limited horizontal head movement',
+        description:
+          'DANCE Bluetooth: absolute yaw ±20°, low speed, changes up to 10°.',
+        targetIds: ['stackchan-planned'],
+        schema: {
+          commands: [
+            {
+              id: 'yaw',
+              name: 'Horizontal position',
+              description: 'Absolute yaw, changes up to 10°, at low speed.',
+              inputs: [
+                {
+                  name: 'degrees',
+                  type: 'number',
+                  required: true,
+                  min: -20,
+                  max: 20,
+                },
+              ],
+            },
+          ],
+          telemetry: [],
+        },
+      },
+      {
+        id: 'stackchan-leds',
+        kind: 'light',
+        name: 'Side LEDs',
+        description: 'DANCE Bluetooth: left/right/both, brightness up to 25%.',
+        targetIds: ['stackchan-planned'],
+        schema: {
+          commands: [
+            {
+              id: 'leds',
+              name: 'Set LEDs',
+              description: 'Side LED color and bounded brightness.',
+              inputs: [
+                { name: 'color', type: 'color', required: true },
+                {
+                  name: 'side',
+                  type: 'enum',
+                  required: true,
+                  enumValues: ['both', 'left', 'right'],
+                },
+                {
+                  name: 'brightness',
+                  type: 'number',
+                  required: true,
+                  min: 0,
+                  max: 25,
+                },
+              ],
+            },
+          ],
+          telemetry: [],
+        },
+      },
       {
         id: 'stackchan-expression',
         kind: 'expression',

@@ -5,11 +5,11 @@ export function nativeMicroDuckCapabilities(
   discovery:
     | { skills: readonly string[]; postures: readonly string[] }
     | undefined,
-  targetId: string
+  targetId: string,
 ): Capability[] {
   if (!discovery?.skills.includes('sit_toggle')) return [];
   const postures = ['sit', 'stand'].filter((p) =>
-    discovery.postures.includes(p)
+    discovery.postures.includes(p),
   );
   if (!postures.length) return [];
   return [

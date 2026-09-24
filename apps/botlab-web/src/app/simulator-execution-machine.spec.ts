@@ -2,10 +2,10 @@ import { createActor } from 'xstate';
 import { simulatorExecutionMachine } from './simulator-execution-machine';
 
 describe('simulator execution lifecycle', () => {
-  afterEach(() => jest.useRealTimers());
+  afterEach(() => vi.useRealTimers());
   function fixture(angleDegrees?: number) {
-    jest.useFakeTimers();
-    const postMessage = jest.fn();
+    vi.useFakeTimers();
+    const postMessage = vi.fn();
     const targetWindow = { postMessage } as unknown as Window;
     const actor = createActor(simulatorExecutionMachine).start();
     actor.send({
@@ -68,7 +68,7 @@ describe('simulator execution lifecycle', () => {
       });
       f.postMessage.mockClear();
       f.status('completed');
-      jest.advanceTimersByTime(65000);
+      vi.advanceTimersByTime(65000);
       expect(f.actor.getSnapshot().matches('idle')).toBe(true);
       expect(f.postMessage).not.toHaveBeenCalled();
       f.actor.stop();
@@ -107,10 +107,10 @@ describe('simulator execution lifecycle', () => {
     const f = fixture();
     f.status('running');
     f.actor.send({ type: 'source.changed' });
-    jest.advanceTimersByTime(2500);
+    vi.advanceTimersByTime(2500);
     f.actor.send({ type: 'source.changed' });
     f.actor.send({ type: 'stop' });
-    jest.advanceTimersByTime(500);
+    vi.advanceTimersByTime(500);
     expect(f.actor.getSnapshot().matches('failed')).toBe(true);
     f.actor.stop();
   });
@@ -144,9 +144,9 @@ describe('simulator execution lifecycle', () => {
   it('does not treat acceptance as completion and times out without engine progress', () => {
     const f = fixture();
     f.status('accepted');
-    jest.advanceTimersByTime(59999);
+    vi.advanceTimersByTime(59999);
     expect(f.actor.getSnapshot().matches({ active: 'awaiting' })).toBe(true);
-    jest.advanceTimersByTime(1);
+    vi.advanceTimersByTime(1);
     expect(f.actor.getSnapshot().matches('failed')).toBe(true);
     expect(f.postMessage.mock.calls.at(-1)![0].type).toBe(
       'botlab.microduck.stop.v1',
@@ -160,10 +160,10 @@ describe('simulator execution lifecycle', () => {
     const f = fixture();
     for (let i = 0; i < 10; i++) {
       f.status('running');
-      jest.advanceTimersByTime(10000);
+      vi.advanceTimersByTime(10000);
     }
     expect(f.actor.getSnapshot().matches({ active: 'running' })).toBe(true);
-    jest.advanceTimersByTime(5000);
+    vi.advanceTimersByTime(5000);
     expect(f.actor.getSnapshot().matches('failed')).toBe(true);
     f.actor.stop();
   });
@@ -173,7 +173,7 @@ describe('simulator execution lifecycle', () => {
     f.actor.send({ type: 'detach' });
     expect(f.actor.getSnapshot().matches('stopped')).toBe(true);
     f.postMessage.mockClear();
-    jest.advanceTimersByTime(60000);
+    vi.advanceTimersByTime(60000);
     f.status('completed');
     expect(f.postMessage).not.toHaveBeenCalled();
     expect(f.actor.getSnapshot().matches('stopped')).toBe(true);
@@ -205,7 +205,7 @@ describe('simulator execution lifecycle', () => {
     f.postMessage.mockClear();
     f.status('running');
     f.status('completed');
-    jest.advanceTimersByTime(65000);
+    vi.advanceTimersByTime(65000);
     expect(f.postMessage).not.toHaveBeenCalled();
     expect(f.actor.getSnapshot().matches('idle')).toBe(true);
     f.actor.stop();

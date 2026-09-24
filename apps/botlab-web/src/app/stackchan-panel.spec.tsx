@@ -2,14 +2,14 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import { connectStackChanBluetooth } from '@botlab/adapters-stackchan';
 import { StackChanPanel } from './stackchan-panel';
 
-jest.mock('@botlab/adapters-stackchan', () => ({
-  ...jest.requireActual('@botlab/adapters-stackchan'),
-  connectStackChanBluetooth: jest.fn(),
+vi.mock('@botlab/adapters-stackchan', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@botlab/adapters-stackchan')>()),
+  connectStackChanBluetooth: vi.fn(),
 }));
 
 describe('StackChan manual trial', () => {
   afterEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     Object.defineProperty(navigator, 'bluetooth', {
       configurable: true,
       value: undefined,
@@ -20,20 +20,20 @@ describe('StackChan manual trial', () => {
       configurable: true,
       value: {},
     });
-    const sendYaw = jest.fn(async () => ({
+    const sendYaw = vi.fn(async () => ({
       status: 'dispatched' as const,
       evidence: 'dispatch' as const,
     }));
-    const disconnect = jest.fn();
-    jest.mocked(connectStackChanBluetooth).mockResolvedValue({
+    const disconnect = vi.fn();
+    vi.mocked(connectStackChanBluetooth).mockResolvedValue({
       motionState: { yaw: 0, moves: 0 },
       deviceId: 'selected',
       deviceName: 'My StackChan',
       sendYaw,
-      sendLeds: jest.fn(),
+      sendLeds: vi.fn(),
       disconnect,
     });
-    const view = render(<StackChanPanel locale="es" onBusy={jest.fn()} />);
+    const view = render(<StackChanPanel locale="es" onBusy={vi.fn()} />);
     expect(connectStackChanBluetooth).not.toHaveBeenCalled();
     fireEvent.click(view.getByRole('button', { name: 'Conectar Bluetooth' }));
     await waitFor(() => expect(view.getByText(/My StackChan/)).toBeTruthy());
@@ -47,7 +47,7 @@ describe('StackChan manual trial', () => {
     await waitFor(() => expect(view.getByText(/Orden enviada/)).toBeTruthy());
     expect(sendYaw).toHaveBeenCalledTimes(1);
     expect(sendYaw).toHaveBeenCalledWith(10);
-    act(() => jest.mocked(connectStackChanBluetooth).mock.calls[0][2]());
+    act(() => vi.mocked(connectStackChanBluetooth).mock.calls[0][2]());
     expect(view.getByRole('button', { name: 'Ir a 0°' })).toHaveProperty(
       'disabled',
       true,
@@ -59,17 +59,17 @@ describe('StackChan manual trial', () => {
       configurable: true,
       value: {},
     });
-    const disconnect = jest.fn();
-    const sendYaw = jest.fn();
-    jest.mocked(connectStackChanBluetooth).mockResolvedValue({
+    const disconnect = vi.fn();
+    const sendYaw = vi.fn();
+    vi.mocked(connectStackChanBluetooth).mockResolvedValue({
       motionState: { yaw: 0, moves: 12, waitBeforeMotionMs: 8000 },
       deviceId: 'd',
       deviceName: 'Resting StackChan',
       sendYaw,
-      sendLeds: jest.fn(),
+      sendLeds: vi.fn(),
       disconnect,
     });
-    const view = render(<StackChanPanel locale="es" onBusy={jest.fn()} />);
+    const view = render(<StackChanPanel locale="es" onBusy={vi.fn()} />);
     fireEvent.click(view.getByRole('button', { name: 'Conectar Bluetooth' }));
     await waitFor(() =>
       expect(view.getByText(/Resting StackChan/)).toBeTruthy(),
@@ -85,12 +85,12 @@ describe('StackChan manual trial', () => {
       configurable: true,
       value: {},
     });
-    jest
-      .mocked(connectStackChanBluetooth)
-      .mockImplementation(() => new Promise(() => undefined));
-    const view = render(<StackChanPanel locale="es" onBusy={jest.fn()} />);
+    vi.mocked(connectStackChanBluetooth).mockImplementation(
+      () => new Promise(() => undefined),
+    );
+    const view = render(<StackChanPanel locale="es" onBusy={vi.fn()} />);
     fireEvent.click(view.getByRole('button', { name: 'Conectar Bluetooth' }));
-    const signal = jest.mocked(connectStackChanBluetooth).mock.calls[0][1];
+    const signal = vi.mocked(connectStackChanBluetooth).mock.calls[0][1];
     view.unmount();
     expect(signal.aborted).toBe(true);
   });

@@ -2,8 +2,8 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import type { BlocksEditorShellProps } from '@botlab/blocks';
 import App from './app';
 
-jest.mock('@botlab/blocks', () => ({
-  ...jest.requireActual('@botlab/blocks'),
+vi.mock('@botlab/blocks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@botlab/blocks')>()),
   BlocksEditorShell: ({
     artifact,
     onArtifactChange,
@@ -30,8 +30,8 @@ jest.mock('@botlab/blocks', () => ({
 describe('One-click simulator execution', () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => {
-    jest.useRealTimers();
-    jest.restoreAllMocks();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('keeps separate local projects and reopens the last one with its robot and simulator', () => {
@@ -109,7 +109,7 @@ describe('One-click simulator execution', () => {
     const frame = (await view.findByTitle(
       'MicroDuck official simulator preview',
     )) as HTMLIFrameElement;
-    const post = jest.spyOn(frame.contentWindow!, 'postMessage');
+    const post = vi.spyOn(frame.contentWindow!, 'postMessage');
     fireEvent.load(frame);
     await waitFor(() => expect(post).toHaveBeenCalled());
     const request = post.mock.calls[0][0];
@@ -149,7 +149,7 @@ describe('One-click simulator execution', () => {
   });
 
   it('requires simulator confirmation, stops pending retries, and runs the edited plan', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     const view = render(<App />);
     fireEvent.click(view.getByRole('button', { name: /MicroDuck Simulator/ }));
     const run = () => view.getByRole('button', { name: 'Executar' });
@@ -157,7 +157,7 @@ describe('One-click simulator execution', () => {
     const frame = (await view.findByTitle(
       'MicroDuck official simulator preview',
     )) as HTMLIFrameElement;
-    const postMessage = jest.spyOn(frame.contentWindow!, 'postMessage');
+    const postMessage = vi.spyOn(frame.contentWindow!, 'postMessage');
     fireEvent.load(frame);
     await waitFor(() => expect(postMessage).toHaveBeenCalled());
     const first = postMessage.mock.calls[0][0];
@@ -211,7 +211,7 @@ describe('One-click simulator execution', () => {
     status('completed', first, 'https://untrusted.example');
     status('completed', first, undefined, window);
     expect(run()).toHaveProperty('disabled', true);
-    act(() => jest.advanceTimersByTime(15000));
+    act(() => vi.advanceTimersByTime(15000));
     expect(postMessage).toHaveBeenCalledTimes(5);
     status('running');
     expect(view.getByLabelText('Execució del simulador').textContent).toBe(
@@ -229,7 +229,7 @@ describe('One-click simulator execution', () => {
     status('stopped');
     await waitFor(() => expect(run()).toHaveProperty('disabled', false));
     postMessage.mockClear();
-    act(() => jest.advanceTimersByTime(15000));
+    act(() => vi.advanceTimersByTime(15000));
     expect(postMessage).not.toHaveBeenCalled();
 
     const editor = view.getByLabelText('Test workspace') as HTMLTextAreaElement;
@@ -274,7 +274,7 @@ describe('One-click simulator execution', () => {
   });
 
   it('closes the iframe if stopping is not acknowledged', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     const view = render(<App />);
     fireEvent.click(view.getByRole('button', { name: /MicroDuck Simulator/ }));
     fireEvent.click(view.getByRole('button', { name: 'Executar' }));
@@ -283,7 +283,7 @@ describe('One-click simulator execution', () => {
     );
     fireEvent.load(frame);
     fireEvent.click(view.getByRole('button', { name: 'Aturar' }));
-    act(() => jest.advanceTimersByTime(3000));
+    act(() => vi.advanceTimersByTime(3000));
     expect(
       view.queryByTitle('MicroDuck official simulator preview'),
     ).toBeNull();
@@ -299,7 +299,7 @@ describe('One-click simulator execution', () => {
     const frame = (await view.findByTitle(
       'MicroDuck official simulator preview',
     )) as HTMLIFrameElement;
-    const post = jest.spyOn(frame.contentWindow!, 'postMessage');
+    const post = vi.spyOn(frame.contentWindow!, 'postMessage');
     fireEvent.load(frame);
     await waitFor(() => expect(post).toHaveBeenCalled());
     const message = post.mock.calls[0][0];
@@ -345,7 +345,7 @@ describe('One-click simulator execution', () => {
     const frame = (await view.findByTitle(
       'MicroDuck official simulator preview',
     )) as HTMLIFrameElement;
-    const post = jest.spyOn(frame.contentWindow!, 'postMessage');
+    const post = vi.spyOn(frame.contentWindow!, 'postMessage');
     fireEvent.load(frame);
     await waitFor(() => expect(post).toHaveBeenCalled());
     const message = post.mock.calls[0][0];
@@ -439,7 +439,7 @@ describe('One-click simulator execution', () => {
       const frame = (await view.findByTitle(
         'MicroDuck official simulator preview',
       )) as HTMLIFrameElement;
-      const post = jest.spyOn(frame.contentWindow!, 'postMessage');
+      const post = vi.spyOn(frame.contentWindow!, 'postMessage');
       fireEvent.load(frame);
       await waitFor(() => expect(post).toHaveBeenCalled());
       const message = post.mock.calls[0][0];
@@ -563,7 +563,7 @@ describe('One-click simulator execution', () => {
     expect(await view.findByRole('alert')).toBeTruthy();
     expect(editor.value).toBe(original);
     const { sampleScratchBlocksWorkspaceArtifact } =
-      jest.requireActual('@botlab/blocks');
+      await vi.importActual<typeof import('@botlab/blocks')>('@botlab/blocks');
     const json = JSON.stringify({
       schemaVersion: 1,
       locale: 'es',

@@ -25,7 +25,7 @@ describe('local project library', () => {
     ],
   };
   beforeEach(() => localStorage.clear());
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => vi.restoreAllMocks());
   it('restores active project and target selection', () => {
     expect(saveProjectLibrary(library)).toBe(true);
     expect(readProjectLibrary().library).toMatchObject(library);
@@ -43,7 +43,7 @@ describe('local project library', () => {
     expect(readProjectLibrary().error).toBe(true);
   });
   it('reports storage exhaustion without claiming success', () => {
-    jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('Quota exceeded');
     });
     expect(saveProjectLibrary(library)).toBe(false);

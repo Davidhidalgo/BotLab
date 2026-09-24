@@ -6,7 +6,7 @@ it('prepares the current program before requesting a simulator launch', async ()
   const flow = createActor(botLabFlowMachine, { input: {} }).start();
   flow.send({ type: 'target.selected', targetId: 'microduck-sim' });
   const launcher = createActor(simulatorLaunchMachine).start();
-  const launch = jest.fn(async () => {
+  const launch = vi.fn(async () => {
     /* Test double intentionally does nothing. */
   });
   try {

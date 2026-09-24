@@ -15,7 +15,7 @@ describe('versioned workspace storage', () => {
     locale: 'ca',
   };
   beforeEach(() => localStorage.clear());
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => vi.restoreAllMocks());
 
   it('round-trips the workspace without restoring executable state', () => {
     expect(saveWorkspaceDocument(document)).toBe(true);
@@ -94,11 +94,11 @@ describe('versioned workspace storage', () => {
   });
 
   it('reports storage access and quota failures', () => {
-    jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('Quota');
     });
     expect(saveWorkspaceDocument(document)).toBe(false);
-    jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('Denied');
     });
     expect(readWorkspaceDocument().error).toBe(true);

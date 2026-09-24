@@ -19,13 +19,13 @@ function fixture() {
   };
   const connection: NativeAppConnection = {
     videoUrl: 'http://local/video?token=test',
-    connect: jest.fn(async () => undefined),
-    snapshot: jest.fn(async () => data),
-    run: jest.fn(async () => '00000000-0000-4000-8000-000000000001'),
-    stop: jest.fn(async () => undefined),
-    reset: jest.fn(async () => undefined),
-    togglePosture: jest.fn(async () => undefined),
-    dispose: jest.fn(),
+    connect: vi.fn(async () => undefined),
+    snapshot: vi.fn(async () => data),
+    run: vi.fn(async () => '00000000-0000-4000-8000-000000000001' as const),
+    stop: vi.fn(async () => undefined),
+    reset: vi.fn(async () => undefined),
+    togglePosture: vi.fn(async () => undefined),
+    dispose: vi.fn(),
   };
   const actor = createActor(nativeSimulatorMachine, {
     input: { url: 'http://local', factory: () => connection },

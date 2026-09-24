@@ -1,15 +1,10 @@
-/// <reference types='vitest' />
 import react from '@vitejs/plugin-react';
 import { createReadStream } from 'node:fs';
 import { createRequire } from 'node:module';
 import { cp, stat } from 'node:fs/promises';
 import { dirname, extname, resolve, sep } from 'node:path';
-import {
-  defineConfig,
-  type Plugin,
-  type ResolvedConfig,
-  type ViteDevServer,
-} from 'vite';
+import type { Plugin, ResolvedConfig, ViteDevServer } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 const scratchBlocksMediaPrefix = '/vendor/scratch-blocks/media/';
 const require = createRequire(import.meta.url);
@@ -77,6 +72,18 @@ export default defineConfig({
     host: '127.0.0.1',
   },
   plugins: [react(), scratchBlocksMedia()],
+  test: {
+    watch: false,
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['src/test-setup.ts'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    reporters: ['default'],
+    coverage: {
+      reportsDirectory: '../../coverage/apps/botlab-web',
+      provider: 'v8',
+    },
+  },
   build: {
     outDir: '../../dist/apps/botlab-web',
     emptyOutDir: true,

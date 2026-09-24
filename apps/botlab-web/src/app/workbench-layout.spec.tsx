@@ -8,7 +8,7 @@ describe('WorkbenchLayout', () => {
     simulator: 'Simulator',
     views: 'Workspace views',
   };
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => vi.restoreAllMocks());
 
   it('switches accessible mobile panels without unmounting the editor or simulator', () => {
     let resize: () => void = () => {
@@ -16,18 +16,18 @@ describe('WorkbenchLayout', () => {
     };
     const media = {
       matches: true,
-      addEventListener: jest.fn((_, callback) => {
+      addEventListener: vi.fn((_, callback) => {
         resize = callback;
       }),
-      removeEventListener: jest.fn(),
+      removeEventListener: vi.fn(),
     };
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       writable: true,
-      value: jest.fn(() => media),
+      value: vi.fn(() => media),
     });
-    const mounted = jest.fn();
-    const disposed = jest.fn();
+    const mounted = vi.fn();
+    const disposed = vi.fn();
     function Surface() {
       useEffect(() => {
         mounted();

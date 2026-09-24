@@ -14,13 +14,13 @@ import {
 describe('App', () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => {
-    jest.useRealTimers();
-    jest.restoreAllMocks();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('schedules retries with one execution ID and the expected origin', () => {
-    jest.useFakeTimers();
-    const targetWindow = { postMessage: jest.fn() };
+    vi.useFakeTimers();
+    const targetWindow = { postMessage: vi.fn() };
     const source = {
       artifactId: 'walk-plan',
       targetId: 'microduck-sim',
@@ -41,7 +41,7 @@ describe('App', () => {
       source,
       'http://127.0.0.1:4300',
     );
-    act(() => jest.advanceTimersByTime(15000));
+    act(() => vi.advanceTimersByTime(15000));
     expect(targetWindow.postMessage).toHaveBeenCalledTimes(5);
     expect(targetWindow.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -148,7 +148,7 @@ describe('App', () => {
   });
 
   it('shows a timeout and retries the full launch with the same button', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     const view = render(<App />);
     fireEvent.click(view.getByRole('button', { name: /MicroDuck Simulator/ }));
     fireEvent.click(view.getByRole('button', { name: 'Executar' }));
@@ -159,7 +159,7 @@ describe('App', () => {
       'disabled',
       true,
     );
-    act(() => jest.advanceTimersByTime(microDuckSimulatorPreviewLoadTimeoutMs));
+    act(() => vi.advanceTimersByTime(microDuckSimulatorPreviewLoadTimeoutMs));
     expect(
       await view.findByText('Runtime oficial amb error de carrega'),
     ).toBeTruthy();
@@ -204,7 +204,7 @@ describe('App', () => {
       'MicroDuck official simulator preview',
     )) as HTMLIFrameElement;
     const oldWindow = first.contentWindow!;
-    const oldPost = jest.spyOn(oldWindow, 'postMessage');
+    const oldPost = vi.spyOn(oldWindow, 'postMessage');
     fireEvent.load(first);
     await waitFor(() => expect(oldPost).toHaveBeenCalled());
     const command = oldPost.mock.calls[0][0];
@@ -243,7 +243,7 @@ describe('App', () => {
     expect(
       view.getByRole('button', { name: 'Reiniciar escena' }),
     ).toHaveProperty('disabled', true);
-    const newPost = jest.spyOn(second.contentWindow!, 'postMessage');
+    const newPost = vi.spyOn(second.contentWindow!, 'postMessage');
     fireEvent.load(second);
     expect(view.getByLabelText('Execució del simulador').textContent).toBe(
       'Sense executar',
@@ -252,10 +252,10 @@ describe('App', () => {
     expect(saved.workspace).toEqual(savedWorkspace);
     expect(saved.lastExecution.status).toBe('stopped');
     expect(saved.lastExecution.events.at(-1).status).toBe('stopped');
-    jest.useFakeTimers();
-    act(() => jest.advanceTimersByTime(65000));
+    vi.useFakeTimers();
+    act(() => vi.advanceTimersByTime(65000));
     expect(newPost).not.toHaveBeenCalled();
-    jest.useRealTimers();
+    vi.useRealTimers();
     fireEvent.click(view.getByRole('button', { name: 'Executar' }));
     await waitFor(() => expect(newPost).toHaveBeenCalled());
     expect(view.getByTitle('MicroDuck official simulator preview')).toBe(
@@ -282,7 +282,7 @@ describe('App', () => {
     const second = view.getByTitle(
       'MicroDuck official simulator preview',
     ) as HTMLIFrameElement;
-    const post = jest.spyOn(second.contentWindow!, 'postMessage');
+    const post = vi.spyOn(second.contentWindow!, 'postMessage');
     fireEvent.load(second);
     expect(post).not.toHaveBeenCalled();
     expect(view.getByLabelText('Execució del simulador').textContent).toBe(

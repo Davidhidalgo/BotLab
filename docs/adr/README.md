@@ -6,6 +6,7 @@ This folder records BotLab architecture decisions that should remain easy to fin
 
 - [0001: Keep editor, runtime, adapter, and simulator boundaries separate](0001-architecture-boundaries.md)
 - [0002: Integrate MicroDuck simulator through a pinned upstream bridge](0002-microduck-simulator-upstream-bridge.md)
+- [0003: Move robot knowledge into robot modules and keep the app shell thin](0003-robot-modules-and-thin-app-shell.md)
 
 ## Template
 

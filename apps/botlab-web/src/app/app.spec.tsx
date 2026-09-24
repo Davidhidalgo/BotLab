@@ -5,10 +5,11 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import App, {
+import App from './app';
+import {
   microDuckSimulatorPreviewLoadTimeoutMs,
   scheduleMicroDuckSimulatorControlSourceDelivery,
-} from './app';
+} from './microduck-simulator-host';
 
 describe('App', () => {
   beforeEach(() => localStorage.clear());

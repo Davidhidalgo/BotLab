@@ -902,3 +902,5 @@ export const botLabTranslations = {
     },
   },
 } as const;
+
+export type BotLabCopy = (typeof botLabTranslations)[BotLabLocale];

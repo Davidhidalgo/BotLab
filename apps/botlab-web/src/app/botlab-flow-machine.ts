@@ -1,8 +1,4 @@
-import {
-  createMicroDuckAdapter,
-  compileMicroDuckProgram,
-} from '@botlab/adapters-microduck';
-import { createStackChanAdapter } from '@botlab/adapters-stackchan';
+import { compileMicroDuckProgram } from '@botlab/adapters-microduck';
 import {
   createBlocksEditorProvider,
   readMicroDuckProgramFromWorkspace,
@@ -12,27 +8,19 @@ import {
 } from '@botlab/blocks';
 import {
   type CompiledBehaviorArtifact,
-  sampleArbitrationStrategies,
   type ExecutionResult,
   identifyCompiledProgram,
-  sampleMicroDuckLedBehavior,
-  samplePolicies,
-  sampleSchedulers,
-  sampleSkills,
   type SimulatorOutputArtifact,
   type Target,
 } from '@botlab/model';
 import {
-  createBotLabRuntime,
   type BotLabRuntime,
   type RuntimeIntrospectionSnapshot,
   type RuntimeQueueRunResult,
 } from '@botlab/runtime';
-import {
-  createMicroDuckSimulatorBridge,
-  microDuckSimulatorIntegrations,
-} from '@botlab/simulators-microduck';
+import { createMicroDuckSimulatorBridge } from '@botlab/simulators-microduck';
 import { assign, fromPromise, setup } from 'xstate';
+import { createBotLabWorkbenchRuntime } from './botlab-runtime';
 
 export type BotLabWorkspaceState =
   | 'loaded'
@@ -163,7 +151,12 @@ export const botLabFlowMachine = setup({
   types: {} as {
     context: BotLabFlowContext;
     input:
-      | { workspace?: BlocksWorkspaceArtifact; targetId?: string }
+      | {
+          workspace?: BlocksWorkspaceArtifact;
+          targetId?: string;
+          /** Injected composition root; defaults to the workbench runtime. */
+          runtime?: BotLabRuntime;
+        }
       | undefined;
     events:
       | { type: 'target.selected'; targetId: string }
@@ -406,7 +399,7 @@ export const botLabFlowMachine = setup({
 }).createMachine({
   id: 'botlabFlow',
   context: ({ input }) =>
-    createBotLabFlowContext(input?.workspace, input?.targetId),
+    createBotLabFlowContext(input?.workspace, input?.targetId, input?.runtime),
   type: 'parallel',
   states: {
     workspace: {
@@ -1036,39 +1029,8 @@ export const botLabExecutionStateLabels: Record<BotLabExecutionState, string> =
 function createBotLabFlowContext(
   workspace?: BlocksWorkspaceArtifact,
   targetId?: string,
+  runtime: BotLabRuntime = createBotLabWorkbenchRuntime(),
 ): BotLabFlowContext {
-  const runtime = createBotLabRuntime({
-    adapters: [createMicroDuckAdapter(), createStackChanAdapter()],
-    simulators: microDuckSimulatorIntegrations,
-    behaviors: [sampleMicroDuckLedBehavior],
-    skills: sampleSkills,
-    schedulers: sampleSchedulers,
-    arbitrationStrategies: sampleArbitrationStrategies,
-    policies: samplePolicies.map((policy) => ({
-      ...policy,
-      rules: policy.rules.map((rule) =>
-        rule.effect === 'require-confirmation'
-          ? { ...rule, targetIds: ['microduck-usb'] }
-          : rule,
-      ),
-    })),
-    dispatchers: [
-      {
-        targetId: 'microduck-sim',
-        async dispatch(command) {
-          await new Promise((resolve) => {
-            globalThis.setTimeout(resolve, 120);
-          });
-
-          return {
-            commandId: command.id,
-            status: 'dispatched',
-            message: `Simulated dispatch ${command.commandId}.`,
-          };
-        },
-      },
-    ],
-  });
   const session = runtime.createSession({ id: 'demo-microduck-leds' });
   const selectedTargetId = runtime
     .listTargets()

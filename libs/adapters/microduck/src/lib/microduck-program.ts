@@ -1,9 +1,11 @@
-import {
-  sampleMicroDuckCompiledBehaviorArtifact,
-  type CompiledBehaviorArtifact,
-  type MicroDuckProgramStep,
-  type ProgramIteration,
+import type {
+  CompiledBehaviorArtifact,
+  MicroDuckProgramStep,
+  ProgramIteration,
 } from '@botlab/model';
+
+/** Visible robot output always requires the operator-confirmation policy. */
+export const microDuckRequiredPolicyIds = ['confirm-visible-output'];
 
 export function compileMicroDuckProgram(
   artifact: { behaviorId: string },
@@ -160,7 +162,10 @@ export function compileMicroDuckProgram(
   });
 
   return {
-    ...sampleMicroDuckCompiledBehaviorArtifact,
+    kind: 'compiled-plan',
+    // Fixed timestamp keeps recompiling the same program byte-for-byte stable.
+    createdAt: '2026-09-10T00:00:00.000Z',
+    requiredPolicyIds: [...microDuckRequiredPolicyIds],
     id: `artifact-${artifact.behaviorId}-${targetId}-${planParts.join(
       '-',
     )}-plan`,

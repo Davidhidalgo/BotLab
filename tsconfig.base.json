@@ -29,7 +29,7 @@
         "libs/simulators/microduck-native/src/index.ts"
       ]
     },
-    "strict": false,
+    "strict": true,
     "noUncheckedSideEffectImports": false,
     "types": ["*"],
     "esModuleInterop": false,

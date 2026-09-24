@@ -1,9 +1,11 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { readStackChanProgramFromWorkspace } from './stackchan-program';
-import { sampleScratchBlocksWorkspaceArtifact } from './blocks-contract';
+import { readStackChanProgramFromWorkspace } from './stackchan-workspace';
+
+const scratchWorkspace = { format: 'scratch-xml' as const, content: '' };
 const parse = (body: string) =>
   readStackChanProgramFromWorkspace({
-    ...sampleScratchBlocksWorkspaceArtifact,
+    ...scratchWorkspace,
     content: `<xml><block type="event_whenflagclicked" id="start"><next>${body}</next></block></xml>`,
   });
 const yaw =
@@ -51,7 +53,7 @@ describe('StackChan Scratch programs', () => {
     expect(() => parse('<bad')).toThrow();
     expect(() =>
       readStackChanProgramFromWorkspace({
-        ...sampleScratchBlocksWorkspaceArtifact,
+        ...scratchWorkspace,
         content:
           '<xml><block type="event_whenflagclicked"/><block type="event_whenflagclicked"/></xml>',
       }),

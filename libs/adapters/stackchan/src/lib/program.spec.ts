@@ -19,8 +19,14 @@ const connection = (): StackChanBleConnection => ({
   motionState: { yaw: 0, moves: 0 },
   deviceId: 'chosen',
   deviceName: 'StackChan',
-  sendYaw: vi.fn(async () => ({ status: 'dispatched', evidence: 'dispatch' })),
-  sendLeds: vi.fn(async () => ({ status: 'dispatched', evidence: 'dispatch' })),
+  sendYaw: vi.fn(async () => ({
+    status: 'dispatched' as const,
+    evidence: 'dispatch' as const,
+  })),
+  sendLeds: vi.fn(async () => ({
+    status: 'dispatched' as const,
+    evidence: 'dispatch' as const,
+  })),
   disconnect: vi.fn(),
 });
 afterEach(() => vi.useRealTimers());

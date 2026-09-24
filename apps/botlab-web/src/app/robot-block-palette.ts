@@ -1,4 +1,5 @@
 import { microDuckRobotModule } from '@botlab/adapters-microduck';
+import { stackChanRobotModule } from '@botlab/adapters-stackchan';
 
 /** Blocks with implemented simulator execution, plus robot-independent program structure.
  * Planned capabilities do not expose executable robot blocks.
@@ -8,17 +9,8 @@ export function robotBlockPalette(
   capabilityIds: readonly string[],
 ): string[] {
   const common = ['event_whenflagclicked', 'control_wait', 'control_repeat'];
-  if (!simulator)
-    return [
-      ...common,
-      ...(capabilityIds.includes('stackchan-yaw')
-        ? ['botlab_stackchan_yaw', 'botlab_stackchan_center']
-        : []),
-      ...(capabilityIds.includes('stackchan-leds')
-        ? ['botlab_stackchan_leds', 'botlab_stackchan_leds_off']
-        : []),
-    ];
-  return [...common, ...microDuckRobotModule.blockTypes(capabilityIds)];
+  const module = simulator ? microDuckRobotModule : stackChanRobotModule;
+  return [...common, ...module.blockTypes(capabilityIds)];
 }
 
 export function hasUnavailableBlocks(

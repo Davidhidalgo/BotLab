@@ -1,5 +1,5 @@
 import { microDuckRobotModule } from '@botlab/adapters-microduck';
-import { createStackChanAdapter } from '@botlab/adapters-stackchan';
+import { stackChanRobotModule } from '@botlab/adapters-stackchan';
 import {
   compileRobotWorkspace,
   sampleArbitrationStrategies,
@@ -8,16 +8,16 @@ import {
   sampleSchedulers,
   sampleSkills,
   type CompiledBehaviorArtifact,
-  type RobotModule,
   type RobotProgramSource,
 } from '@botlab/model';
 import { createBotLabRuntime, type BotLabRuntime } from '@botlab/runtime';
 import { microDuckSimulatorIntegrations } from '@botlab/simulators-microduck';
 
-/** Robot modules the workbench compiles for; StackChan still uses its panel-specific path. */
-export const workbenchRobotModules: readonly RobotModule[] = [
-  microDuckRobotModule as RobotModule,
-];
+/** Robot modules registered in the workbench; order sets the adapter order. */
+export const workbenchRobotModules = [
+  microDuckRobotModule,
+  stackChanRobotModule,
+] as const;
 
 export function compileMicroDuckWorkspaceArtifact(
   source: RobotProgramSource,
@@ -32,10 +32,7 @@ export function compileMicroDuckWorkspaceArtifact(
  */
 export function createBotLabWorkbenchRuntime(): BotLabRuntime {
   return createBotLabRuntime({
-    adapters: [
-      ...workbenchRobotModules.map((module) => module.createAdapter()),
-      createStackChanAdapter(),
-    ],
+    adapters: workbenchRobotModules.map((module) => module.createAdapter()),
     simulators: microDuckSimulatorIntegrations,
     behaviors: [sampleMicroDuckLedBehavior],
     skills: sampleSkills,

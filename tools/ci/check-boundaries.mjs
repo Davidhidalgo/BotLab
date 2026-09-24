@@ -24,6 +24,7 @@ const cases = [
   ['libs/simulators/core/src/probe.ts', '@botlab/simulators-microduck', true],
   ['libs/adapters/microduck/src/probe.ts', '@botlab/blocks', true],
   ['libs/adapters/microduck/src/probe.ts', '@botlab/runtime', true],
+  ['libs/adapters/stackchan/src/probe.ts', '@botlab/blocks', true],
   ['libs/botlab-model/src/probe.ts', '@botlab/adapters-microduck', true],
   ['libs/runtime/src/probe.ts', '@botlab/model', false],
   ['libs/adapters/microduck/src/probe.ts', '@botlab/model', false],

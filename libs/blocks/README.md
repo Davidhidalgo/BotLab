@@ -79,8 +79,8 @@ MicroDuck workspace parsing moved to its robot module: see `readMicroDuckProgram
 
 ## StackChan
 
-<!-- StackChan palette, fields, locale and parser from src/lib/stackchan-blocks.ts and src/lib/stackchan-program.ts -->
+<!-- StackChan palette, fields and locale from src/lib/stackchan-blocks.ts -->
 
 `botlab_stackchan_yaw`, `botlab_stackchan_center`, `botlab_stackchan_leds`, and `botlab_stackchan_leds_off` are localized in Catalan, Spanish, and English. Explicit field validators bound whole-degree yaw to ±20° and brightness to 0–25%; adapter preflight also validates imported/programmatic input. Side/color dropdowns select both/left/right and red/green/blue/amber/white.
 
-`readStackChanProgramFromWorkspace(artifact)` reads one enabled green-flag script into `StackChanProgramStep[]`, preserving block IDs. It supports literal waits and bounded repeat expansion (counts 0–10, four nested repeats, 40 expanded steps), skips explicitly disabled statements, and rejects incompatible blocks and computed inputs. It sends no commands; the adapter validates all physical limits before execution.
+Workspace parsing lives in the StackChan robot module: see `readStackChanProgramFromWorkspace` and `stackChanRobotModule` in [`@botlab/adapters-stackchan`](../adapters/stackchan/README.md).

@@ -1,5 +1,8 @@
-import type { StackChanProgramStep, StackChanLedSide } from '@botlab/model';
-import type { BlocksWorkspaceArtifact } from './blocks-contract';
+import type {
+  RobotProgramSource,
+  StackChanLedSide,
+  StackChanProgramStep,
+} from '@botlab/model';
 
 const child = (element: Element, tag: string, name?: string) =>
   Array.from(element.children).find(
@@ -10,8 +13,9 @@ const child = (element: Element, tag: string, name?: string) =>
 const field = (block: Element, name: string) =>
   child(block, 'field', name)?.textContent?.trim() ?? '';
 
+/** Reads the green-flag script of a Scratch XML workspace into expanded StackChan steps. */
 export function readStackChanProgramFromWorkspace(
-  artifact: BlocksWorkspaceArtifact,
+  artifact: Pick<RobotProgramSource, 'format' | 'content'>,
 ): StackChanProgramStep[] {
   const document = new DOMParser().parseFromString(
     artifact.content,

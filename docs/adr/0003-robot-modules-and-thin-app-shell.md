@@ -6,7 +6,7 @@ Proposed
 
 First step implemented 2026-09-24: the web app now has an explicit composition root and `app.tsx` is split by responsibility. The robot-module contract below is the proposed next step.
 
-Robot-module contract implemented for MicroDuck 2026-09-24: `RobotModule` and `compileRobotWorkspace` live in `@botlab/model`, `microDuckRobotModule` in `@botlab/adapters-microduck` owns the Scratch XML reader (moved out of `@botlab/blocks`), compiler and executable block list, and the workbench builds its adapters and MicroDuck palette from registered modules. StackChan and block-definition registration remain open.
+Robot-module contract implemented for MicroDuck 2026-09-24: `RobotModule` and `compileRobotWorkspace` live in `@botlab/model`, `microDuckRobotModule` in `@botlab/adapters-microduck` owns the Scratch XML reader (moved out of `@botlab/blocks`), compiler and executable block list, and the workbench builds its adapters and MicroDuck palette from registered modules. StackChan migrated the same day as a module without `compile` (it executes typed steps over Bluetooth); `compile` is optional and `CompilingRobotModule` marks modules that produce runtime plans. `@botlab/blocks` no longer parses robot programs. Block-definition registration remains open.
 
 ## Context
 
@@ -42,14 +42,14 @@ Each robot added today touches model, blocks, adapters, simulators and the app t
      createAdapter(): BotLabAdapter;
      blockTypes(capabilityIds: readonly string[]): string[];
      readProgram(source: RobotProgramSource): Step[];
-     compile(
+     compile?(
        source,
        program: readonly Step[],
        targetId: string,
      ): CompiledBehaviorArtifact;
    }
    ```
-   `RobotProgramSource` is `Pick<BehaviorArtifact, 'behaviorId' | 'format' | 'content'>`, so adapters read workspaces without importing `@botlab/blocks`. MicroDuck is migrated. Remaining: migrate StackChan (`readStackChanProgramFromWorkspace` and its palette), then let robot packages contribute block definitions and message catalogs through a small `BlockDefinitionSet` contract that `blocks` consumes as data.
+   `RobotProgramSource` is `Pick<BehaviorArtifact, 'behaviorId' | 'format' | 'content'>`, so adapters read workspaces without importing `@botlab/blocks`. MicroDuck and StackChan are migrated; `compile?` is optional for robots that execute typed steps directly. Remaining: let robot packages contribute block definitions and message catalogs through a small `BlockDefinitionSet` contract that `blocks` consumes as data.
 2. **Move robot step types and samples out of the model.** After step 1, move `MicroDuckProgramStep`/`StackChanProgramStep` to their adapters, and move the `sample*` fixtures to a `@botlab/model/testing` entry point or a `fixtures` library tagged `type:fixture` that only apps and specs may import. Add that rule to `.oxlintrc.json`.
 3. **Structured messages instead of English sentences.** Replace free-text `buildMessage`/`simulationMessage`/`runMessage` with `{ code, params }` values. Put translations in `i18n.ts` keyed by `code`, and delete `translateFlowMessage`. This removes the regex coupling between the flow machine and the UI.
 4. **Split the flow machine by region.** `botLabFlowMachine` has four parallel regions: workspace, build, simulation and execution. Extracting each region's actors and messages into its own module would bring the machine file under ~400 lines without changing its behavior.

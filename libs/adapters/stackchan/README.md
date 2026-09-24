@@ -16,6 +16,11 @@ The generic runtime target remains `planned`. A separate DANCE Bluetooth executo
 - `validateStackChanProgram(steps, session?)` validates the entire sequence before sending: literal yaw/wait/LED steps, maximum 40 actions, 90 seconds scheduled time including rests, without session move or cumulative travel caps. It checks against the session's last commanded yaw, which is not measured feedback.
 - `runStackChanProgram(input, signal)` snapshots the plan, validates against connection state, tracks source blocks and sends sequentially with distance-based 1–3-second motion/1-second LED pauses and 10-second rests every 12 moves. Aborting or a write failure disconnects and prevents later commands. Success reports `dispatched`, never hardware completion.
 
+<!-- robot module and workspace parser from src/lib/stackchan-module.ts and src/lib/stackchan-workspace.ts -->
+
+- `stackChanRobotModule` implements the model's `RobotModule` contract with `createAdapter`, `blockTypes(capabilityIds)` (yaw/center with `stackchan-yaw`, LED on/off with `stackchan-leds`) and `readProgram`. It has no `compile`: StackChan programs run as typed steps through `runStackChanProgram`, not as runtime plans.
+- `readStackChanProgramFromWorkspace(artifact)` reads one enabled green-flag script into `StackChanProgramStep[]`, preserving block IDs. It supports literal waits and bounded repeat expansion (counts 0–10, four nested repeats, 40 expanded steps), skips explicitly disabled statements, and rejects incompatible blocks and computed inputs. It sends no commands; the adapter validates all physical limits before execution.
+
 The planned capability enum is broader than this initial verified encoder. Unsupported trial expressions throw; they are not silently substituted.
 
 See [firmware compatibility and physical trial](../../../docs/stackchan-1.5.1.md).

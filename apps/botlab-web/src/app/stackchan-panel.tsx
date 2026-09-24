@@ -1,13 +1,11 @@
 import { useMachine } from '@xstate/react';
-import {
-  readStackChanProgramFromWorkspace,
-  type BlocksWorkspaceArtifact,
-} from '@botlab/blocks';
+import type { BlocksWorkspaceArtifact } from '@botlab/blocks';
 import { stackChanExecutionMachine } from './stackchan-execution-machine';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@botlab/ui';
 import {
   connectStackChanBluetooth,
+  stackChanRobotModule,
   validateStackChanProgram,
   type StackChanBleConnection,
   type StackChanBluetooth,
@@ -212,7 +210,7 @@ export function StackChanPanel({
     if (!workspace || !connection.current || busy || executionBlocked) return;
     setProgramError(undefined);
     try {
-      const steps = readStackChanProgramFromWorkspace(workspace);
+      const steps = stackChanRobotModule.readProgram(workspace);
       validateStackChanProgram(steps, connection.current.motionState);
       if (steps.some((step) => step.type === 'yaw') && !poseChecked)
         throw new Error(copy.needPose);

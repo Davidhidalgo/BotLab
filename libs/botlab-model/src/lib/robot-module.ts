@@ -22,16 +22,24 @@ export interface RobotModule<Step = unknown> {
   /** Robot block types executable with the given capabilities, excluding generic control blocks. */
   blockTypes(capabilityIds: readonly string[]): string[];
   readProgram(source: RobotProgramSource): Step[];
-  compile(
+  /**
+   * Lowers typed steps to a runtime plan. Omitted by robots that execute typed
+   * steps directly on the device (for example over Bluetooth).
+   */
+  compile?(
     source: Pick<RobotProgramSource, 'behaviorId'>,
     program: readonly Step[],
     targetId: string,
   ): CompiledBehaviorArtifact;
 }
 
+/** Robot module whose programs compile to runtime plans. */
+export type CompilingRobotModule<Step = unknown> = RobotModule<Step> &
+  Required<Pick<RobotModule<Step>, 'compile'>>;
+
 /** Reads and compiles a workspace for one target through its robot module. */
 export function compileRobotWorkspace<Step>(
-  module: RobotModule<Step>,
+  module: CompilingRobotModule<Step>,
   source: RobotProgramSource,
   targetId: string,
 ): CompiledBehaviorArtifact {

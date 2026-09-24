@@ -1,9 +1,6 @@
 import { motionPauseMs } from './motion-timing';
-import {
-  createProgramIdentity,
-  type ExecutionResult,
-  type StackChanProgramStep,
-} from '@botlab/model';
+import { createProgramIdentity, type ExecutionResult } from '@botlab/model';
+import type { StackChanProgramStep } from './stackchan-steps';
 import type { StackChanBleConnection } from './bluetooth';
 import {
   createStackChanLedPayload,

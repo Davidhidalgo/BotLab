@@ -27,7 +27,8 @@
       "@botlab/ui": ["libs/ui/src/index.ts"],
       "@botlab/simulators-microduck-native": [
         "libs/simulators/microduck-native/src/index.ts"
-      ]
+      ],
+      "@botlab/model/testing": ["libs/botlab-model/src/testing.ts"]
     },
     "strict": true,
     "noUncheckedSideEffectImports": false,

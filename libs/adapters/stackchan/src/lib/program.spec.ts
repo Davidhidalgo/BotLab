@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { runStackChanProgram, validateStackChanProgram } from './program';
 import { createStackChanLedPayload } from './factory-protocol';
 import type { StackChanBleConnection } from './bluetooth';
-import type { StackChanProgramStep } from '@botlab/model';
+import type { StackChanProgramStep } from './stackchan-steps';
 const yaw = (degrees: number): StackChanProgramStep => ({
   type: 'yaw',
   degrees,

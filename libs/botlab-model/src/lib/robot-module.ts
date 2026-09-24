@@ -1,7 +1,10 @@
 import type {
+  Behavior,
   BehaviorArtifact,
   BotLabAdapter,
   CompiledBehaviorArtifact,
+  Policy,
+  Skill,
 } from './botlab-model';
 
 /** Serialized editor workspace a robot module reads; editor-engine neutral. */
@@ -9,6 +12,13 @@ export type RobotProgramSource = Pick<
   BehaviorArtifact,
   'behaviorId' | 'format' | 'content'
 >;
+
+/** Skills, policies and behaviors a robot contributes to a host runtime. */
+export interface RobotCatalog {
+  skills: readonly Skill[];
+  policies: readonly Policy[];
+  behaviors: readonly Behavior[];
+}
 
 /**
  * Everything BotLab needs to know about one robot family: its adapter, the
@@ -19,6 +29,7 @@ export interface RobotModule<Step = unknown> {
   /** Adapter ID the module's targets belong to. */
   id: string;
   createAdapter(): BotLabAdapter;
+  catalog: RobotCatalog;
   /** Robot block types executable with the given capabilities, excluding generic control blocks. */
   blockTypes(capabilityIds: readonly string[]): string[];
   readProgram(source: RobotProgramSource): Step[];

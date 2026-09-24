@@ -1,3 +1,4 @@
+/** Typed StackChan head and LED actions; the adapter enforces physical limits. */
 export type StackChanLedSide = 'both' | 'left' | 'right';
 export type StackChanProgramStep = (
   | { type: 'yaw'; degrees: number }

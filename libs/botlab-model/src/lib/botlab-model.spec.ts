@@ -1,12 +1,5 @@
 import {
   botLabConcepts,
-  sampleArbitrationStrategies,
-  sampleMicroDuckCompiledBehaviorArtifact,
-  sampleMicroDuckLedBehavior,
-  sampleMicroDuckLedBehaviorArtifact,
-  sampleSchedulers,
-  sampleSkills,
-  sampleStackChanExpressionBehavior,
   validateAdapterManifest,
   validateBehaviorDefinition,
   validateCapabilitySchema,
@@ -15,6 +8,15 @@ import {
   type BotLabAdapter,
   type Capability,
 } from './botlab-model';
+import {
+  sampleArbitrationStrategies,
+  sampleMicroDuckCompiledBehaviorArtifact,
+  sampleMicroDuckLedBehavior,
+  sampleMicroDuckLedBehaviorArtifact,
+  sampleSchedulers,
+  sampleSkills,
+  sampleStackChanExpressionBehavior,
+} from '../testing';
 
 describe('botlabModel', () => {
   it('models the main BotLab concepts', () => {

@@ -80,7 +80,18 @@
         ]
       }
     ],
-    "unicorn/no-thenable": "off"
+    "unicorn/no-thenable": "off",
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "@botlab/model/testing",
+            "message": "Test fixtures are for *.spec files; production code gets robot data from RobotModule.catalog."
+          }
+        ]
+      }
+    ]
   },
   "env": {
     "builtin": true
@@ -99,6 +110,12 @@
       "files": ["**/bluetooth.spec.ts"],
       "rules": {
         "unicorn/no-useless-spread": "off"
+      }
+    },
+    {
+      "files": ["**/*.spec.ts", "**/*.spec.tsx"],
+      "rules": {
+        "no-restricted-imports": "off"
       }
     }
   ]

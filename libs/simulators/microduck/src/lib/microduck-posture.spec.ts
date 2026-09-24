@@ -1,4 +1,4 @@
-import { sampleMicroDuckCompiledBehaviorArtifact } from '@botlab/model';
+import { sampleMicroDuckCompiledBehaviorArtifact } from '@botlab/model/testing';
 import { createMicroDuckPostureObserver } from './microduck-posture';
 import {
   createMicroDuckSimulatorControlSource,

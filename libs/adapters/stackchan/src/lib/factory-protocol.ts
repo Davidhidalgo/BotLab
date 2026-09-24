@@ -1,5 +1,5 @@
 /** Factory firmware 1.5.1 protocol; source revision recorded in docs/stackchan-1.5.1.md. */
-import type { StackChanLedSide } from '@botlab/model';
+import type { StackChanLedSide } from './stackchan-steps';
 export type StackChanTrialExpression = 'happy' | 'neutral';
 
 export function createStackChanLedPayload(

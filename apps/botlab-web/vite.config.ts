@@ -43,6 +43,11 @@ export default defineConfig({
         '../../libs/adapters/stackchan/src/index.ts',
       ),
       '@botlab/blocks': resolve(__dirname, '../../libs/blocks/src/index.ts'),
+      // Must precede '@botlab/model', which would otherwise match as a prefix.
+      '@botlab/model/testing': resolve(
+        __dirname,
+        '../../libs/botlab-model/src/testing.ts',
+      ),
       '@botlab/model': resolve(
         __dirname,
         '../../libs/botlab-model/src/index.ts',

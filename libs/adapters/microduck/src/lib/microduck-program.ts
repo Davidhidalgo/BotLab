@@ -1,8 +1,5 @@
-import type {
-  CompiledBehaviorArtifact,
-  MicroDuckProgramStep,
-  ProgramIteration,
-} from '@botlab/model';
+import type { CompiledBehaviorArtifact, ProgramIteration } from '@botlab/model';
+import type { MicroDuckProgramStep } from './microduck-steps';
 
 /** Visible robot output always requires the operator-confirmation policy. */
 export const microDuckRequiredPolicyIds = ['confirm-visible-output'];

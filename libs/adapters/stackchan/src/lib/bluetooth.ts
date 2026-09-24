@@ -1,5 +1,5 @@
 import { motionPauseMs } from './motion-timing';
-import type { StackChanLedSide } from '@botlab/model';
+import type { StackChanLedSide } from './stackchan-steps';
 import {
   createStackChanYawPayload,
   createStackChanLedPayload,

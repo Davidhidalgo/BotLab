@@ -3,16 +3,15 @@ import type {
   RuntimeCommandDispatchResult,
 } from './runtime';
 import { createBotLabRuntime } from './runtime';
+import type { BotLabAdapter, CompiledCommand } from '@botlab/model';
 import {
+  sampleArbitrationStrategies,
   sampleMicroDuckCompiledBehaviorArtifact,
   sampleMicroDuckLedBehavior,
-  sampleArbitrationStrategies,
   samplePolicies,
   sampleSchedulers,
   sampleSkills,
-  type BotLabAdapter,
-  type CompiledCommand,
-} from '@botlab/model';
+} from '@botlab/model/testing';
 
 describe('runtime', () => {
   it('keeps the existing target and capability registry facade', () => {

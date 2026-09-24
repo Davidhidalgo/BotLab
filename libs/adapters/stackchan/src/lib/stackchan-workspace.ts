@@ -1,9 +1,5 @@
-import {
-  BotLabError,
-  type RobotProgramSource,
-  type StackChanLedSide,
-  type StackChanProgramStep,
-} from '@botlab/model';
+import { BotLabError, type RobotProgramSource } from '@botlab/model';
+import type { StackChanLedSide, StackChanProgramStep } from './stackchan-steps';
 
 const child = (element: Element, tag: string, name?: string) =>
   Array.from(element.children).find(

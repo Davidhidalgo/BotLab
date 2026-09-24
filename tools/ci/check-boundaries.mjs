@@ -29,11 +29,14 @@ const cases = [
   ['libs/runtime/src/probe.ts', '@botlab/model', false],
   ['libs/adapters/microduck/src/probe.ts', '@botlab/model', false],
   ['apps/botlab-web/src/app/probe.ts', '@botlab/simulators-microduck', false],
+  ['apps/botlab-web/src/app/probe.ts', '@botlab/model/testing', true],
+  ['libs/runtime/src/probe.spec.ts', '@botlab/model/testing', false],
 ];
+const ruleCodes = ['enforce-module-boundaries', 'no-restricted-imports'];
 for (const [file, dependency, forbidden] of cases) {
   const probe = resolve(
     root,
-    file.replace('probe.ts', `architecture-probe-${process.pid}.ts`),
+    file.replace('probe', `architecture-probe-${process.pid}`),
   );
   // Oxlint's CLI reads real files; use exclusive creation and always clean up.
   writeFileSync(probe, `import '${dependency}';\n`, { flag: 'wx' });
@@ -49,7 +52,7 @@ for (const [file, dependency, forbidden] of cases) {
     );
     const { diagnostics } = JSON.parse(result.stdout);
     const violations = diagnostics.filter((message) =>
-      message.code?.includes('enforce-module-boundaries'),
+      ruleCodes.some((code) => message.code?.includes(code)),
     );
     assert.equal(
       violations.length > 0,

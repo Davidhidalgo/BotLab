@@ -2,13 +2,10 @@ import { microDuckRobotModule } from '@botlab/adapters-microduck';
 import { stackChanRobotModule } from '@botlab/adapters-stackchan';
 import {
   compileRobotWorkspace,
-  sampleArbitrationStrategies,
-  sampleMicroDuckLedBehavior,
-  samplePolicies,
-  sampleSchedulers,
-  sampleSkills,
+  type ArbitrationStrategy,
   type CompiledBehaviorArtifact,
   type RobotProgramSource,
+  type SchedulerProfile,
 } from '@botlab/model';
 import { createBotLabRuntime, type BotLabRuntime } from '@botlab/runtime';
 import { microDuckSimulatorIntegrations } from '@botlab/simulators-microduck';
@@ -18,6 +15,18 @@ export const workbenchRobotModules = [
   microDuckRobotModule,
   stackChanRobotModule,
 ] as const;
+
+const workbenchSchedulers: SchedulerProfile[] = [
+  { id: 'manual', name: 'Manual start', mode: 'manual' },
+];
+
+const workbenchArbitrationStrategies: ArbitrationStrategy[] = [
+  {
+    id: 'exclusive-led-lock',
+    name: 'Exclusive capability lock',
+    strategy: 'exclusive-lock',
+  },
+];
 
 export function compileMicroDuckWorkspaceArtifact(
   source: RobotProgramSource,
@@ -34,18 +43,17 @@ export function createBotLabWorkbenchRuntime(): BotLabRuntime {
   return createBotLabRuntime({
     adapters: workbenchRobotModules.map((module) => module.createAdapter()),
     simulators: microDuckSimulatorIntegrations,
-    behaviors: [sampleMicroDuckLedBehavior],
-    skills: sampleSkills,
-    schedulers: sampleSchedulers,
-    arbitrationStrategies: sampleArbitrationStrategies,
-    policies: samplePolicies.map((policy) => ({
-      ...policy,
-      rules: policy.rules.map((rule) =>
-        rule.effect === 'require-confirmation'
-          ? { ...rule, targetIds: ['microduck-usb'] }
-          : rule,
-      ),
-    })),
+    behaviors: workbenchRobotModules.flatMap((module) => [
+      ...module.catalog.behaviors,
+    ]),
+    skills: workbenchRobotModules.flatMap((module) => [
+      ...module.catalog.skills,
+    ]),
+    policies: workbenchRobotModules.flatMap((module) => [
+      ...module.catalog.policies,
+    ]),
+    schedulers: workbenchSchedulers,
+    arbitrationStrategies: workbenchArbitrationStrategies,
     dispatchers: [
       {
         targetId: 'microduck-sim',

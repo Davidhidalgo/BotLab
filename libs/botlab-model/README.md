@@ -14,9 +14,9 @@ Run `nx test botlab-model` to execute the unit tests via [Vitest](https://vitest
 
 `ExecutionResult` carries a unique execution ID, optional program identity for preflight/empty-queue failures, status, evidence, diagnostic code and active source-block ID. Statuses distinguish validation, acceptance, running, dispatch-only acknowledgement, completion, cancellation, failure, required confirmation and no work. Evidence distinguishes no physical proof, dispatch acknowledgement, simulator completion and hardware completion.
 
-<!-- StackChan program types exported from src/lib/stackchan-program.ts -->
+<!-- robot-specific data and fixtures: src/lib/robot-module.ts and src/testing.ts -->
 
-`StackChanProgramStep` describes yaw degrees, side LED color/brightness, or wait seconds with a `sourceBlockId`. `StackChanLedSide` is `both | left | right`. These are data contracts; the StackChan adapter enforces physical command restrictions.
+Robot-specific program steps (`MicroDuckProgramStep`, `StackChanProgramStep`, …) live in their adapter packages, and each `RobotModule` contributes its skills, policies and behaviors through `catalog`. Shared spec fixtures (`sampleSkills`, `samplePolicies`, `sampleMicroDuckLedBehavior`, `sampleMicroDuckCompiledBehaviorArtifact`, …) are exported from `@botlab/model/testing`; Oxlint rejects that import outside `*.spec.ts(x)` files.
 
 ## Messages
 

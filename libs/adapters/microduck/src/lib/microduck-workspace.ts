@@ -1,8 +1,5 @@
-import {
-  BotLabError,
-  type MicroDuckProgramStep,
-  type RobotProgramSource,
-} from '@botlab/model';
+import { BotLabError, type RobotProgramSource } from '@botlab/model';
+import type { MicroDuckProgramStep } from './microduck-steps';
 
 const motionFieldCodes: Record<string, string> = {
   STEPS: 'program.invalid-steps',

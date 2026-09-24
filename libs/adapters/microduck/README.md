@@ -21,7 +21,7 @@ The trigger uses the central 2×2 rays, requires at least three valid measuremen
 
 <!-- robot module from src/lib/microduck-module.ts and contract from ../../botlab-model/src/lib/robot-module.ts -->
 
-`microDuckRobotModule` implements the model's `RobotModule` contract: `createAdapter`, `blockTypes(capabilityIds)` (motion and posture blocks plus `control_if`/`control_if_else` with `microduck-motion`; `botlab_microduck_set_leds` with `microduck-leds`), `readProgram` and `compile`. Hosts compile a workspace with `compileRobotWorkspace(microDuckRobotModule, source, targetId)`.
+`microDuckRobotModule` implements the model's `RobotModule` contract: `createAdapter`, `blockTypes(capabilityIds)` (motion, posture and posture-condition blocks with `microduck-motion`; `botlab_microduck_set_leds` with `microduck-leds`; the posture conditions make editors offer `control_if`/`control_if_else`), `readProgram` and `compile`. Hosts compile a workspace with `compileRobotWorkspace(microDuckRobotModule, source, targetId)`.
 
 <!-- parser API from src/lib/microduck-workspace.ts and typed steps from ../../botlab-model/src/lib/program.ts -->
 

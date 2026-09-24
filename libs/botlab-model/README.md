@@ -16,6 +16,8 @@ Run `nx test botlab-model` to execute the unit tests via [Vitest](https://vitest
 
 <!-- robot-specific data and fixtures: src/lib/robot-module.ts and src/testing.ts -->
 
+`robotPaletteBlockTypes(module, capabilityIds)` returns the blocks an editor should offer: the shared structure (green flag, wait, repeat), the robot's executable blocks and, whenever one of those is a condition (Boolean block), `control_if`/`control_if_else`. Conditionals are therefore common control, available to any robot that exposes a condition.
+
 Robot-specific program steps (`MicroDuckProgramStep`, `StackChanProgramStep`, …) live in their adapter packages, and each `RobotModule` contributes its skills, policies and behaviors through `catalog`. Shared spec fixtures (`sampleSkills`, `samplePolicies`, `sampleMicroDuckLedBehavior`, `sampleMicroDuckCompiledBehaviorArtifact`, …) are exported from `@botlab/model/testing`; Oxlint rejects that import outside `*.spec.ts(x)` files.
 
 ## Messages

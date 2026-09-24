@@ -32,8 +32,7 @@ export const microDuckRobotModule: CompilingRobotModule<MicroDuckProgramStep> =
     blockTypes(capabilityIds) {
       const blocks: string[] = [];
       if (capabilityIds.includes('microduck-motion'))
-        // Posture conditions make branching meaningful only with motion.
-        blocks.push(...motionBlockTypes, 'control_if', 'control_if_else');
+        blocks.push(...motionBlockTypes);
       if (capabilityIds.includes('microduck-leds'))
         blocks.push('botlab_microduck_set_leds');
       return blocks;

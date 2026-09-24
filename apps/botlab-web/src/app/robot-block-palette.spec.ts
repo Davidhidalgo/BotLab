@@ -20,6 +20,21 @@ describe('robot block palette', () => {
       'botlab_microduck_walk_distance',
     );
   });
+  it('offers conditionals only while a condition block is available', () => {
+    expect(robotBlockPalette(true, ['microduck-motion'])).toEqual(
+      expect.arrayContaining([
+        'botlab_microduck_is_sit',
+        'control_if',
+        'control_if_else',
+      ]),
+    );
+    expect(robotBlockPalette(true, ['microduck-leds'])).not.toContain(
+      'control_if',
+    );
+    expect(
+      robotBlockPalette(false, ['stackchan-yaw', 'stackchan-leds']),
+    ).not.toContain('control_if');
+  });
   it('detects preserved incompatible blocks, including nested ones, without treating numeric shadows as commands', () => {
     const allowed = robotBlockPalette(false, []);
     expect(

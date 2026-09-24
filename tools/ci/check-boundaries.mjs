@@ -31,6 +31,8 @@ const cases = [
   ['apps/botlab-web/src/app/probe.ts', '@botlab/simulators-microduck', false],
   ['apps/botlab-web/src/app/probe.ts', '@botlab/model/testing', true],
   ['libs/runtime/src/probe.spec.ts', '@botlab/model/testing', false],
+  ['libs/blocks/src/probe.ts', '@botlab/adapters-microduck', true],
+  ['libs/blocks/src/probe.spec.ts', '@botlab/adapters-microduck', false],
 ];
 const ruleCodes = ['enforce-module-boundaries', 'no-restricted-imports'];
 for (const [file, dependency, forbidden] of cases) {

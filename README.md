@@ -73,6 +73,12 @@ BotLab starts with these concepts in the model:
 
 The runtime pauses between commands, cancels queued work on stop/dispose, and supplies dispatchers with a cooperative abort signal. Locks remain held until any in-flight dispatch settles. This is not a hardware emergency-stop guarantee; see the [runtime lifecycle contract](libs/runtime/README.md).
 
+### Robots are modules
+
+<!-- robot module contract from libs/botlab-model/src/lib/robot-module.ts and registration in apps/botlab-web/src/app/botlab-runtime.ts -->
+
+Each robot adapter exports a `RobotModule`: its adapter metadata, a catalog of skills/policies/behaviors, its editor blocks as engine-neutral data (`RobotBlockSet`), the list of executable block types, a workspace reader and, for robots that run runtime plans, a compiler. The web app registers modules in `botlab-runtime.ts`; the model, runtime and editor stay robot-agnostic. User-facing messages carry stable codes (`BotLabMessage`) and are localized by code in the app. See [ADR 0003](docs/adr/0003-robot-modules-and-thin-app-shell.md).
+
 ### Simulators are dependencies where possible
 
 `@botlab/simulators-core` owns the lightweight simulator contracts. Robot-specific packages such as `@botlab/simulators-microduck` own heavy simulator dependencies, assets, and bridges. The preferred path is to depend on official simulator packages or processes instead of copying simulator code into BotLab.
@@ -117,7 +123,7 @@ pnpm nx show projects
 
 Use the affected scripts for everyday validation when only part of the workspace changed. Use `build:libs` when you want a full library contract check. `pnpm run verify` checks formatting and runs all app/library and configured test typechecks, configured test suites, lint, architecture regression checks and library/app builds. It requires Node 22.22+ (or Node 24+), pnpm 10.34.5 and Python 3.11 or newer; native unit tests use only the Python standard library.
 
-`pnpm test` runs only the web app's Jest suite. `pnpm run test:all` runs every configured test target: the app plus the model, runtime, blocks, simulator core, MicroDuck browser simulator, MicroDuck native simulator, MicroDuck adapter and StackChan adapter libraries. The libraries use Vitest, including controlled bridge/receiver integration tests and native proximity-trigger tests. StackChan tests cover firmware payloads, BLE limits, and bounded sequences; the UI library does not yet have a dedicated test suite. These tests do not run the official physics engine. `pnpm run test:simulator-turns` and `pnpm run test:simulator-postures` provide separate browser-engine regressions; see the MicroDuck simulator README for its setup. The [native MicroDuck experiment](tools/microduck/native/README.md) separately exercises the real robot services against MuJoCo.
+`pnpm test` runs only the web app's Vitest suite. `pnpm run test:all` runs every configured test target: the app plus the model, runtime, blocks, simulator core, MicroDuck browser simulator, MicroDuck native simulator, MicroDuck adapter and StackChan adapter libraries. The app and libraries all use Vitest, including controlled bridge/receiver integration tests and native proximity-trigger tests. StackChan tests cover firmware payloads, BLE limits, and bounded sequences; the UI library does not yet have a dedicated test suite. These tests do not run the official physics engine. `pnpm run test:simulator-turns` and `pnpm run test:simulator-postures` provide separate browser-engine regressions; see the MicroDuck simulator README for its setup. The [native MicroDuck experiment](tools/microduck/native/README.md) separately exercises the real robot services against MuJoCo.
 
 `pnpm run test:simulator-native` builds the [native simulator library](libs/simulators/microduck-native/README.md) and checks its client against real local services; first run the native preparer documented in the experiment README. It is separate from the unit suites and stops its owned processes afterwards. The app now offers both the iframe and an experimental native MuJoCo view.
 
@@ -151,7 +157,7 @@ MicroDuck walk blocks now finish on measured horizontal displacement from each b
 
 A failure reported by the simulator stops the program but keeps the scene open, including its current robot configuration. The failing block stays highlighted; editing and running again reuses the loaded runtime. Missing communication or unconfirmed execution still closes the iframe as a stop fallback.
 
-<!-- visual movement palette from libs/blocks/src/lib/scratch-blocks-local-bridge.ts and measured turns from libs/simulators/microduck/src/lib/microduck-turn.ts -->
+<!-- visual movement palette from libs/adapters/microduck/src/lib/microduck-blocks.ts and measured turns from libs/simulators/microduck/src/lib/microduck-turn.ts -->
 
 The Movement category offers forward/backward BotLab steps (0.5 m each), left/right quarter turns, and a half turn. Precise movement offers forward/backward meters and signed degrees. Negative angles turn left; positive angles turn right. Each block has a bundled SVG icon and Catalan, Spanish and English labels. Turns finish on measured yaw and report progress in degrees; regenerate the simulator receiver with `pnpm run microduck:sim --no-install --no-lfs-hydrate` when updating an existing local checkout. Old meter-based programs remain compatible.
 
@@ -248,7 +254,7 @@ The project toolbar creates blank projects, edits their names, and switches betw
 
 ## StackChan blocks
 
-<!-- StackChan blocks and execution from libs/blocks/src/lib/stackchan-blocks.ts, libs/adapters/stackchan/src/lib/program.ts, bluetooth.ts and apps/botlab-web/src/app/stackchan-panel.tsx -->
+<!-- StackChan blocks and execution from libs/adapters/stackchan/src/lib/stackchan-blocks.ts, libs/adapters/stackchan/src/lib/program.ts, bluetooth.ts and apps/botlab-web/src/app/stackchan-panel.tsx -->
 
 Open DANCE, connect Bluetooth, and run a single green-flag script. Horizontal destinations are limited to ±20° at fixed speed 100/1000, changes to 10°, and movement pauses scale from 1–3 seconds with commanded distance. Every 12th movement adds a 10-second rest; reconnecting is unnecessary. Whole-program validation checks the last commanded position and scheduled duration before sending anything: 90 seconds scheduled time per program (including rests), without a session move limit or cumulative travel cap, 40 expanded actions, repeat counts 0–10 and nesting up to four levels. LED blocks select left/right/both, a color, brightness 0–25%, or both off, with a 0.5-second transition and 1-second pause. No vertical motion or continuous rotation is exposed.
 
@@ -262,7 +268,7 @@ Import [StackChan: luz y saludo](examples/stackchan-first-program.botlab.json) f
 
 ## Toolchain
 
-BotLab uses Nx 23.2.1, pnpm 10.34.5, TypeScript 6.0.3, Oxlint 1.83.0 and Oxfmt 0.68.0. React remains on 18.3.1; the web app uses Vite 7 and Jest 30, and library suites use Vitest 4. Dependencies stay in the root manifest of this integrated Nx workspace. `pnpm-lock.yaml` is the authoritative lockfile; CI installs with `--frozen-lockfile`.
+BotLab uses Nx 23.2.1, pnpm 10.34.5, TypeScript 6.0.3, Oxlint 1.83.0 and Oxfmt 0.68.0. React remains on 18.3.1; the web app uses Vite 7, and the app and library suites use Vitest 4. Dependencies stay in the root manifest of this integrated Nx workspace. `pnpm-lock.yaml` is the authoritative lockfile; CI installs with `--frozen-lockfile`.
 
 `pnpm run lint:all` uses the official `@nx/oxlint` inferred targets, including the same Nx module-boundary constraints as before. React hook dependency checks remain warnings; newly introduced React effect and semantic-tag recommendations are also warnings. `unicorn/no-thenable` is disabled because robot condition instructions use a data field named `then`; the Bluetooth tests disable `no-useless-spread` because they intentionally convert typed arrays to ordinary arrays.
 

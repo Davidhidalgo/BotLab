@@ -53,6 +53,7 @@ import {
 } from './microduck-simulator-host';
 import { simulatorLaunchMachine } from './simulator-launch-machine';
 import { simulatorExecutionMachine } from './simulator-execution-machine';
+import { workbenchBlockSets } from './botlab-runtime';
 import { WorkbenchLayout } from './workbench-layout';
 import {
   getArtifactKindLabel,
@@ -918,6 +919,7 @@ export function App() {
               workbench
               blocks={[]}
               availableBlockTypes={availableBlockTypes}
+              blockSets={workbenchBlockSets}
               onArtifactChange={(artifact) =>
                 sendFlow({ type: 'workspace.changed', artifact })
               }

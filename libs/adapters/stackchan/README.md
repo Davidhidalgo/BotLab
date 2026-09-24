@@ -18,6 +18,7 @@ The generic runtime target remains `planned`. A separate DANCE Bluetooth executo
 
 <!-- robot module and workspace parser from src/lib/stackchan-module.ts and src/lib/stackchan-workspace.ts -->
 
+- `stackChanBlockSet` (`src/lib/stackchan-blocks.ts`) describes the StackChan head and LED blocks, their clamped fields and `stackChanBlockMessages` as editor-neutral data; it is exposed as `stackChanRobotModule.blocks`.
 - `stackChanCatalog` (skill `set-stackchan-expression` and the `planned-targets-disabled` policy) is exposed as `stackChanRobotModule.catalog`. `StackChanProgramStep` and `StackChanLedSide` are exported from `src/lib/stackchan-steps.ts`.
 - `stackChanRobotModule` implements the model's `RobotModule` contract with `createAdapter`, `blockTypes(capabilityIds)` (yaw/center with `stackchan-yaw`, LED on/off with `stackchan-leds`) and `readProgram`. It has no `compile`: StackChan programs run as typed steps through `runStackChanProgram`, not as runtime plans.
 - `readStackChanProgramFromWorkspace(artifact)` reads one enabled green-flag script into `StackChanProgramStep[]`, preserving block IDs. It supports literal waits and bounded repeat expansion (counts 0–10, four nested repeats, 40 expanded steps), skips explicitly disabled statements, and rejects incompatible blocks and computed inputs. It sends no commands; the adapter validates all physical limits before execution.

@@ -1,5 +1,10 @@
 import { sampleScratchBlocksWorkspaceArtifact } from './blocks-contract';
+import { microDuckBlockSet } from '@botlab/adapters-microduck';
+import { stackChanBlockSet } from '@botlab/adapters-stackchan';
 import { createLocalScratchBlocksEditorBridge } from './scratch-blocks-local-bridge';
+
+// Exercise the editor translation with the real robot block sets.
+const blockSets = [stackChanBlockSet, microDuckBlockSet];
 
 describe('createLocalScratchBlocksEditorBridge', () => {
   afterEach(() => {
@@ -20,7 +25,7 @@ describe('createLocalScratchBlocksEditorBridge', () => {
   it('mounts the official Scratch Blocks workspace locally', async () => {
     const onArtifactChange = vi.fn();
     const element = document.createElement('div');
-    const bridge = createLocalScratchBlocksEditorBridge();
+    const bridge = createLocalScratchBlocksEditorBridge({ blockSets });
 
     const result = await bridge.mount({
       element,
@@ -56,7 +61,9 @@ describe('createLocalScratchBlocksEditorBridge', () => {
       'botlab_stackchan_leds',
       'botlab_stackchan_leds_off',
     ];
-    const result = await createLocalScratchBlocksEditorBridge().mount({
+    const result = await createLocalScratchBlocksEditorBridge({
+      blockSets,
+    }).mount({
       element: document.createElement('div'),
       artifact: sampleScratchBlocksWorkspaceArtifact,
       availableBlockTypes: allowed,
@@ -97,7 +104,9 @@ describe('createLocalScratchBlocksEditorBridge', () => {
 
   it('updates the available palette without deleting existing blocks and preserves filtering across locales', async () => {
     const element = document.createElement('div');
-    const result = await createLocalScratchBlocksEditorBridge().mount({
+    const result = await createLocalScratchBlocksEditorBridge({
+      blockSets,
+    }).mount({
       element,
       artifact: sampleScratchBlocksWorkspaceArtifact,
     });
@@ -143,7 +152,9 @@ describe('createLocalScratchBlocksEditorBridge', () => {
   });
 
   it('does not persist target disabling and preserves an independent user disable', async () => {
-    const result = await createLocalScratchBlocksEditorBridge().mount({
+    const result = await createLocalScratchBlocksEditorBridge({
+      blockSets,
+    }).mount({
       element: document.createElement('div'),
       artifact: sampleScratchBlocksWorkspaceArtifact,
       availableBlockTypes: ['event_whenflagclicked'],
@@ -171,7 +182,9 @@ describe('createLocalScratchBlocksEditorBridge', () => {
 
   it('offers eight visual movement blocks and preserves signed turns across languages', async () => {
     const element = document.createElement('div');
-    const result = await createLocalScratchBlocksEditorBridge().mount({
+    const result = await createLocalScratchBlocksEditorBridge({
+      blockSets,
+    }).mount({
       element,
       artifact: sampleScratchBlocksWorkspaceArtifact,
     });
@@ -248,7 +261,7 @@ describe('createLocalScratchBlocksEditorBridge', () => {
   });
 
   it('reports invalid XML without mounting an iframe or external editor', async () => {
-    const bridge = createLocalScratchBlocksEditorBridge();
+    const bridge = createLocalScratchBlocksEditorBridge({ blockSets });
     const result = await bridge.mount({
       element: document.createElement('div'),
       artifact: {
@@ -275,7 +288,9 @@ describe('createLocalScratchBlocksEditorBridge', () => {
       },
     );
     const element = document.createElement('div');
-    const result = await createLocalScratchBlocksEditorBridge().mount({
+    const result = await createLocalScratchBlocksEditorBridge({
+      blockSets,
+    }).mount({
       element,
       artifact: sampleScratchBlocksWorkspaceArtifact,
     });
@@ -306,7 +321,9 @@ describe('createLocalScratchBlocksEditorBridge', () => {
     );
     const element = document.createElement('div');
     Object.defineProperty(element, 'clientWidth', { get: () => width });
-    const result = await createLocalScratchBlocksEditorBridge().mount({
+    const result = await createLocalScratchBlocksEditorBridge({
+      blockSets,
+    }).mount({
       element,
       artifact: sampleScratchBlocksWorkspaceArtifact,
     });
@@ -337,7 +354,9 @@ describe('createLocalScratchBlocksEditorBridge', () => {
 
   it('highlights the active block without changing the workspace', async () => {
     const onArtifactChange = vi.fn();
-    const result = await createLocalScratchBlocksEditorBridge().mount({
+    const result = await createLocalScratchBlocksEditorBridge({
+      blockSets,
+    }).mount({
       element: document.createElement('div'),
       artifact: sampleScratchBlocksWorkspaceArtifact,
       onArtifactChange,
@@ -372,7 +391,9 @@ describe('createLocalScratchBlocksEditorBridge', () => {
         '<block type="control_wait" id="wait" x="600" y="300"><value name="DURATION"><shadow type="math_positive_number"><field name="NUM">2.5</field></shadow></value></block></xml>',
       ),
     };
-    const result = await createLocalScratchBlocksEditorBridge().mount({
+    const result = await createLocalScratchBlocksEditorBridge({
+      blockSets,
+    }).mount({
       element,
       artifact,
       onArtifactChange,
@@ -447,10 +468,15 @@ describe('createLocalScratchBlocksEditorBridge', () => {
 
   it('uses local translation overlays for the built-in integration', async () => {
     const result = await createLocalScratchBlocksEditorBridge({
-      schemaVersion: 1,
-      namespace: 'botlab.microduck',
-      revision: '1',
-      translations: { ca: { walk: 'avança %1 m' } },
+      blockSets,
+      translations: [
+        {
+          schemaVersion: 1,
+          namespace: 'botlab.microduck',
+          revision: '1',
+          translations: { ca: { walk: 'avança %1 m' } },
+        },
+      ],
     }).mount({
       element: document.createElement('div'),
       artifact: sampleScratchBlocksWorkspaceArtifact,
@@ -472,7 +498,9 @@ describe('createLocalScratchBlocksEditorBridge', () => {
   });
 
   it('translates read-only workspaces and ignores locale changes after disposal', async () => {
-    const result = await createLocalScratchBlocksEditorBridge().mount({
+    const result = await createLocalScratchBlocksEditorBridge({
+      blockSets,
+    }).mount({
       element: document.createElement('div'),
       artifact: {
         ...sampleScratchBlocksWorkspaceArtifact,
@@ -494,7 +522,9 @@ describe('createLocalScratchBlocksEditorBridge', () => {
   });
 
   it('provides an editable default number in the wait toolbox entry', async () => {
-    const result = await createLocalScratchBlocksEditorBridge().mount({
+    const result = await createLocalScratchBlocksEditorBridge({
+      blockSets,
+    }).mount({
       element: document.createElement('div'),
       artifact: sampleScratchBlocksWorkspaceArtifact,
     });
@@ -521,7 +551,7 @@ describe('createLocalScratchBlocksEditorBridge', () => {
   it.each(['', '<value name="DURATION"></value>'])(
     'repairs a missing wait number, persists decimals, and reloads them: %s',
     async (duration) => {
-      const bridge = createLocalScratchBlocksEditorBridge();
+      const bridge = createLocalScratchBlocksEditorBridge({ blockSets });
       const result = await bridge.mount({
         element: document.createElement('div'),
         artifact: {
@@ -562,7 +592,9 @@ describe('createLocalScratchBlocksEditorBridge', () => {
   it.each(['shadow', 'block'])(
     'preserves an existing duration %s, including zero',
     async (tag) => {
-      const result = await createLocalScratchBlocksEditorBridge().mount({
+      const result = await createLocalScratchBlocksEditorBridge({
+        blockSets,
+      }).mount({
         element: document.createElement('div'),
         artifact: {
           ...sampleScratchBlocksWorkspaceArtifact,

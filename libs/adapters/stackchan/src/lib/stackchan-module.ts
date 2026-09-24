@@ -1,5 +1,6 @@
 import type { RobotModule } from '@botlab/model';
 import type { StackChanProgramStep } from './stackchan-steps';
+import { stackChanBlockSet } from './stackchan-blocks';
 import { createStackChanAdapter } from './stackchan';
 import { readStackChanProgramFromWorkspace } from './stackchan-workspace';
 import { stackChanCatalog } from './stackchan-catalog';
@@ -12,6 +13,7 @@ export const stackChanRobotModule: RobotModule<StackChanProgramStep> = {
   id: 'stackchan',
   createAdapter: createStackChanAdapter,
   catalog: stackChanCatalog,
+  blocks: stackChanBlockSet,
   blockTypes(capabilityIds) {
     return [
       ...(capabilityIds.includes('stackchan-yaw')

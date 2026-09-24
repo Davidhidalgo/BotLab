@@ -1,5 +1,6 @@
 import type { CompilingRobotModule } from '@botlab/model';
 import type { MicroDuckProgramStep } from './microduck-steps';
+import { microDuckBlockSet } from './microduck-blocks';
 import { createMicroDuckAdapter } from './microduck';
 import { compileMicroDuckProgram } from './microduck-program';
 import { readMicroDuckProgramFromWorkspace } from './microduck-workspace';
@@ -27,6 +28,7 @@ export const microDuckRobotModule: CompilingRobotModule<MicroDuckProgramStep> =
     id: 'microduck',
     createAdapter: createMicroDuckAdapter,
     catalog: microDuckCatalog,
+    blocks: microDuckBlockSet,
     blockTypes(capabilityIds) {
       const blocks: string[] = [];
       if (capabilityIds.includes('microduck-motion'))

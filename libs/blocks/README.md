@@ -16,7 +16,7 @@ The `control_wait` toolbox entry includes an editable `math_positive_number` sha
 
 ## Movement Blocks
 
-<!-- movement palette and fields from src/lib/scratch-blocks-local-bridge.ts and src/lib/microduck-block-messages.ts; execution units from ../adapters/microduck/src/lib/microduck-workspace.ts and ../adapters/microduck/src/lib/microduck-program.ts -->
+<!-- movement palette and fields from ../adapters/microduck/src/lib/microduck-blocks.ts, rendered by src/lib/scratch-blocks-local-bridge.ts; execution units from ../adapters/microduck/src/lib/microduck-workspace.ts and ../adapters/microduck/src/lib/microduck-program.ts -->
 
 The directional movement blocks combine a bundled Lucide SVG with localized text. The two categories can be mixed in one script:
 
@@ -43,11 +43,17 @@ Negative angles turn left, positive angles turn right, relative to the robot hea
 
 `BlocksEditorShell` accepts `workbench` (default `false`) for a full-height editor with a compact toolbar and no development controls after mounting. `labels.togglePalette` names the palette icon. Mount handles can implement `togglePalette()`. The local Scratch bridge observes container resizing and, at widths up to 600 px, uses standard Blockly metrics and an initially closed overlay flyout. Wider editors retain Scratch's continuous toolbox. Resizing and toggling the palette preserve the serialized program; disposal disconnects the resize observer.
 
+## Robot block sets
+
+<!-- block set contract from ../botlab-model/src/lib/robot-blocks.ts; translation to Scratch from src/lib/scratch-blocks-local-bridge.ts -->
+
+Robots describe their editor blocks as data (`RobotBlockSet` in `@botlab/model`): a versioned message catalog, block definitions (statement or Boolean shape, number/dropdown/icon arguments, optional integer clamping and sign-dependent icons) and toolbox categories. `createLocalScratchBlocksEditorBridge({ blockSets, translations })` and `BlocksEditorShell`'s `blockSets` prop register those sets with Scratch Blocks: messages become `BKY_<NAMESPACE>_<KEY>` entries (for example `botlab.microduck` → `BOTLAB_MICRODUCK_WALK`), icons are rendered from Lucide glyphs, and categories are placed before or after the shared Events category, followed by Control. Translation overlays apply to the set with the same namespace. The editor ships no robot blocks of its own; the web app passes the sets of its registered robot modules. Specs in this library may import the real sets from `@botlab/adapters-*`, which production code here cannot.
+
 ## Localization
 
-<!-- localization API from src/lib/block-messages.ts, src/lib/microduck-block-messages.ts, src/lib/blocks-contract.ts, and src/lib/scratch-blocks-local-bridge.ts -->
+<!-- localization API from src/lib/block-messages.ts, ../botlab-model/src/lib/robot-blocks.ts, src/lib/blocks-contract.ts, and src/lib/scratch-blocks-local-bridge.ts -->
 
-`BlocksEditorShell` and mount requests accept `locale` (`ca`, `es`, `en`; default `ca`). Mount handles can implement `setLocale(locale)`. The local bridge uses Scratch's bundled messages for standard blocks, categories and context menus, plus `microDuckBlockMessages` for BotLab labels, dropdown display names and tooltips. Switching locale rebuilds display fields in the existing workspace while preserving serialized IDs, input values, connections, zoom, scroll, highlight and undo/redo stacks. It does not emit workspace edits or send simulator commands. Scratch's message registry is global: use one active editor locale per page.
+`BlocksEditorShell` and mount requests accept `locale` (`ca`, `es`, `en`; default `ca`). Mount handles can implement `setLocale(locale)`. The local bridge uses Scratch's bundled messages for standard blocks, categories and context menus, plus each robot block set's message catalog for BotLab labels, dropdown display names and tooltips. Switching locale rebuilds display fields in the existing workspace while preserving serialized IDs, input values, connections, zoom, scroll, highlight and undo/redo stacks. It does not emit workspace edits or send simulator commands. Scratch's message registry is global: use one active editor locale per page.
 
 External integrations can use `parseBlockMessageCatalog(unknown)` and `createBlockMessageResolver(catalog, localTranslations?)`. Catalogs contain display text only, with a namespace and an exact revision (package version or pinned commit). A `BlockTranslationOverlay` adds local translations without modifying the upstream catalog. Mismatched revisions/namespaces, unknown message keys and changed `%1`/`%2` parameter sets are rejected. Resolution is per message: selected locale, English, source locale, then original text; local translations take precedence within each language. Text is not evaluated as code or HTML, and nested Blockly message references are rejected.
 
@@ -79,7 +85,7 @@ MicroDuck workspace parsing moved to its robot module: see `readMicroDuckProgram
 
 ## StackChan
 
-<!-- StackChan palette, fields and locale from src/lib/stackchan-blocks.ts -->
+<!-- StackChan palette, fields and locale from ../adapters/stackchan/src/lib/stackchan-blocks.ts -->
 
 `botlab_stackchan_yaw`, `botlab_stackchan_center`, `botlab_stackchan_leds`, and `botlab_stackchan_leds_off` are localized in Catalan, Spanish, and English. Explicit field validators bound whole-degree yaw to ±20° and brightness to 0–25%; adapter preflight also validates imported/programmatic input. Side/color dropdowns select both/left/right and red/green/blue/amber/white.
 

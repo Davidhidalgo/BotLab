@@ -1,4 +1,8 @@
-import type { BlockMessageCatalog } from './block-messages';
+import type {
+  BlockMessageCatalog,
+  RobotBlockDefinition,
+  RobotBlockSet,
+} from '@botlab/model';
 
 export const microDuckBlockMessages: BlockMessageCatalog = {
   schemaVersion: 1,
@@ -115,4 +119,160 @@ export const microDuckBlockMessages: BlockMessageCatalog = {
       off: 'apagado',
     },
   },
+};
+
+const movementBlocks: RobotBlockDefinition[] = (
+  [
+    [
+      'walk_steps',
+      'forwardSteps',
+      'stepsTooltip',
+      'forward',
+      ['STEPS', 1, 0, 40, 1],
+    ],
+    [
+      'back_steps',
+      'backwardSteps',
+      'stepsTooltip',
+      'backward',
+      ['STEPS', 1, 0, 40, 1],
+    ],
+    ['turn_left', 'turnLeft', 'turnLeftTooltip', 'left'],
+    ['turn_right', 'turnRight', 'turnRightTooltip', 'right'],
+    ['turn_around', 'turnAround', 'turnAroundTooltip', 'around'],
+    [
+      'walk_distance',
+      'walk',
+      'walkTooltip',
+      'forward',
+      ['DISTANCE', 5, 0, 20, 0.1],
+    ],
+    [
+      'back_distance',
+      'backwardMeters',
+      'backwardTooltip',
+      'backward',
+      ['DISTANCE', 1, 0, 20, 0.1],
+    ],
+    [
+      'turn_degrees',
+      'turnDegrees',
+      'turnTooltip',
+      'right',
+      ['ANGLE', 90, -360, 360, 1],
+    ],
+  ] as const
+).map(([type, message, tooltip, icon, field]) => ({
+  type: `botlab_microduck_${type}`,
+  message,
+  tooltip,
+  shape: 'statement',
+  style: 'motion',
+  args: [
+    ...(field
+      ? [
+          {
+            kind: 'number' as const,
+            name: field[0],
+            value: field[1],
+            min: field[2],
+            max: field[3],
+            precision: field[4],
+          },
+        ]
+      : []),
+    {
+      kind: 'icon' as const,
+      name: 'DIRECTION',
+      icon,
+      alt: tooltip,
+      // Signed turns point left for negative angles.
+      ...(type === 'turn_degrees'
+        ? {
+            signOf: {
+              field: 'ANGLE',
+              negative: 'left' as const,
+              positive: 'right' as const,
+            },
+          }
+        : {}),
+    },
+  ],
+}));
+
+/** MicroDuck editor blocks: movement, posture, posture conditions and LEDs. */
+export const microDuckBlockSet: RobotBlockSet = {
+  messages: microDuckBlockMessages,
+  blocks: [
+    ...(['sit', 'stand', 'transitioning'] as const).map((posture) => ({
+      type: `botlab_microduck_is_${posture}`,
+      message: `is_${posture}`,
+      tooltip: 'conditionTooltip',
+      shape: 'boolean' as const,
+      style: 'sensing' as const,
+    })),
+    ...(['sit', 'stand'] as const).map((posture) => ({
+      type: `botlab_microduck_${posture}`,
+      message: posture,
+      tooltip: 'postureTooltip',
+      shape: 'statement' as const,
+      style: 'motion' as const,
+    })),
+    ...movementBlocks,
+    {
+      type: 'botlab_microduck_set_leds',
+      message: 'leds',
+      tooltip: 'ledsTooltip',
+      shape: 'statement',
+      style: 'more',
+      args: [
+        {
+          kind: 'dropdown',
+          name: 'PATTERN',
+          options: [
+            ['smile', 'smile'],
+            ['blink', 'blink'],
+            ['solid', 'solid'],
+            ['off', 'off'],
+          ],
+        },
+      ],
+    },
+  ],
+  categories: [
+    {
+      name: { message: 'movement' },
+      style: 'motion',
+      blockTypes: [
+        'walk_steps',
+        'back_steps',
+        'turn_left',
+        'turn_right',
+        'turn_around',
+      ].map((type) => `botlab_microduck_${type}`),
+    },
+    {
+      name: { message: 'preciseMovement' },
+      style: 'motion',
+      blockTypes: [
+        'walk_distance',
+        'back_distance',
+        'turn_degrees',
+        'sit',
+        'stand',
+      ].map((type) => `botlab_microduck_${type}`),
+    },
+    {
+      name: { builtin: 'sensing' },
+      style: 'sensing',
+      blockTypes: ['sit', 'stand', 'transitioning'].map(
+        (posture) => `botlab_microduck_is_${posture}`,
+      ),
+    },
+    {
+      name: { text: 'BotLab' },
+      style: 'botlab',
+      blockTypes: ['botlab_microduck_set_leds'],
+    },
+  ],
 };

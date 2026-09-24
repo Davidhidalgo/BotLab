@@ -6,6 +6,7 @@ import type {
   Policy,
   Skill,
 } from './botlab-model';
+import type { RobotBlockSet } from './robot-blocks';
 
 /** Serialized editor workspace a robot module reads; editor-engine neutral. */
 export type RobotProgramSource = Pick<
@@ -30,6 +31,8 @@ export interface RobotModule<Step = unknown> {
   id: string;
   createAdapter(): BotLabAdapter;
   catalog: RobotCatalog;
+  /** Editor blocks for this robot; `blockTypes` selects which are executable. */
+  blocks: RobotBlockSet;
   /** Robot block types executable with the given capabilities, excluding generic control blocks. */
   blockTypes(capabilityIds: readonly string[]): string[];
   readProgram(source: RobotProgramSource): Step[];

@@ -2,11 +2,7 @@
 
 ## Status
 
-Proposed
-
-First step implemented 2026-09-24: the web app now has an explicit composition root and `app.tsx` is split by responsibility. The robot-module contract below is the proposed next step.
-
-Robot-module contract implemented for MicroDuck 2026-09-24: `RobotModule` and `compileRobotWorkspace` live in `@botlab/model`, `microDuckRobotModule` in `@botlab/adapters-microduck` owns the Scratch XML reader (moved out of `@botlab/blocks`), compiler and executable block list, and the workbench builds its adapters and MicroDuck palette from registered modules. StackChan migrated the same day as a module without `compile` (it executes typed steps over Bluetooth); `compile` is optional and `CompilingRobotModule` marks modules that produce runtime plans. `@botlab/blocks` no longer parses robot programs. Block-definition registration remains open.
+Accepted. Every step below was implemented on 2026-09-24, each behind a green `pnpm run verify`.
 
 ## Context
 
@@ -16,13 +12,13 @@ ADR 0001 separated editor, model, runtime, adapters and simulators, and the Nx b
 - **Editor.** `@botlab/blocks` contains `readMicroDuckProgramFromWorkspace`, `readStackChanProgramFromWorkspace`, the StackChan block definitions and the MicroDuck message catalog. The editor boundary knows every robot.
 - **App.** `apps/botlab-web` chose which robot compiler to call, built the runtime inside the flow machine, and held a 2,400-line `app.tsx` that mixed state wiring, the MicroDuck simulator host, presentational panels and i18n label mapping.
 - **Adapter.** `compileMicroDuckProgram` built its output by spreading `sampleMicroDuckCompiledBehaviorArtifact`, so production code depended on a demo fixture for `kind`, `createdAt` and `requiredPolicyIds`.
-- **i18n (resolved in step 3).** The flow machine and simulator produce English sentences, and `translateFlowMessage` matches them back with exact strings and regular expressions. Rewording a message silently disables its translation.
+- **i18n.** The flow machine and simulator produce English sentences, and `translateFlowMessage` matches them back with exact strings and regular expressions. Rewording a message silently disables its translation.
 
 Each robot added today touches model, blocks, adapters, simulators and the app together.
 
 ## Decision
 
-### Implemented now
+### App shell and composition root
 
 1. **Composition root.** `apps/botlab-web/src/app/botlab-runtime.ts` (`createBotLabWorkbenchRuntime`) is the one place that picks adapters, simulator integrations, policies and dispatchers. `botLabFlowMachine` accepts an optional `runtime` input and uses the workbench runtime when none is given, so tests and other hosts can inject their own.
 2. **App shell split.** `app.tsx` keeps state wiring and layout. The rest moved out:
@@ -33,13 +29,15 @@ Each robot added today touches model, blocks, adapters, simulators and the app t
 3. **No fixtures in production paths.** `compileMicroDuckProgram` now sets its artifact fields explicitly. Visible-output policy IDs are exported as `microDuckRequiredPolicyIds`.
 4. **Strict by default.** `tsconfig.base.json` now sets `strict: true`, the same as every project already did, so a newly generated project cannot start non-strict.
 
-### Proposed next steps
+### Robot modules and follow-up steps
 
-1. **Robot module contract.** Implemented in `libs/botlab-model/src/lib/robot-module.ts`:
+1. **Robot module contract.** In `libs/botlab-model/src/lib/robot-module.ts`:
    ```ts
    interface RobotModule<Step> {
      id: string; // adapter ID
      createAdapter(): BotLabAdapter;
+     catalog: RobotCatalog; // skills, policies, behaviors
+     blocks: RobotBlockSet; // editor blocks as data
      blockTypes(capabilityIds: readonly string[]): string[];
      readProgram(source: RobotProgramSource): Step[];
      compile?(
@@ -49,15 +47,17 @@ Each robot added today touches model, blocks, adapters, simulators and the app t
      ): CompiledBehaviorArtifact;
    }
    ```
-   `RobotProgramSource` is `Pick<BehaviorArtifact, 'behaviorId' | 'format' | 'content'>`, so adapters read workspaces without importing `@botlab/blocks`. MicroDuck and StackChan are migrated; `compile?` is optional for robots that execute typed steps directly. Remaining: let robot packages contribute block definitions and message catalogs through a small `BlockDefinitionSet` contract that `blocks` consumes as data.
-2. **Move robot step types and samples out of the model.** Implemented 2026-09-24. Step types live in `microduck-steps.ts` and `stackchan-steps.ts` in their adapters; the model keeps only the generic `ProgramIteration`. `RobotModule.catalog` carries each robot's skills, policies and behaviors, and `botlab-runtime.ts` builds the runtime from the registered catalogs plus workbench-owned scheduler and arbitration profiles. The MicroDuck confirmation policy is scoped to `microduck-usb` in its catalog, replacing the app-side rewrite. Spec fixtures moved to `@botlab/model/testing` (`libs/botlab-model/src/testing.ts`, excluded from the library build), and an Oxlint `no-restricted-imports` rule rejects that entry point outside spec files.
-3. **Structured messages instead of English sentences.** Implemented 2026-09-24. `@botlab/model` exports `BotLabMessage` (`{ code, params?, text }`, with `text` as the English fallback), `BotLabError` and `toBotLabMessage`. The MicroDuck reader throws coded `program.*` errors, and every flow-machine message is a coded `flow.*` message. The web app renders them with `formatBotLabMessage`, a code-keyed catalog of formatters over the existing locale strings, and `translateFlowMessage` is gone. Codes without a catalog entry show their English text, as they did before. Runtime events, traces, diagnostics and simulator-host messages are technical logs and are shown untranslated; this drops the one simulator line that used to be translated by regex ("Loaded N control frame(s)…"). StackChan reader errors are coded as well, and the StackChan panel renders them through the same catalog.
-4. **Split the flow machine by region.** Implemented 2026-09-24. `botlab-flow-types.ts` holds the context and actor contracts, `botlab-flow-setup.ts` the shared `setup()` (actors, actions, guards and message helpers), and `botlab-flow-{workspace,build,simulation,execution}.ts` each export one region built with `botLabFlowSetup.createStateConfig`, so regions keep full XState typing. `botlab-flow-machine.ts` only assembles the parallel machine and its initial context; its public exports are unchanged.
-5. **One test runner.** Implemented 2026-09-24. `botlab-web` runs on Vitest (jsdom) like the libraries, configured in its `vite.config.ts`. `jest.config.ts`, `jest.preset.js`, the `@nx/jest` plugin and the Jest, Babel-Jest and ts-jest dependencies are gone. `src/test-setup.ts` exposes `vi.advanceTimersByTime` as a `jest` global only because Testing Library looks for that name to advance fake timers inside `waitFor`.
-6. **Tighter boundaries.** `tools/ci/check-boundaries.mjs` checks that adapters cannot import blocks or runtime, that the model cannot import adapters, and that `@botlab/model/testing` is importable from specs but not from production code.
+   `RobotProgramSource` is `Pick<BehaviorArtifact, 'behaviorId' | 'format' | 'content'>`, so adapters read workspaces without importing `@botlab/blocks`. MicroDuck and StackChan are migrated; `compile?` is optional for robots that execute typed steps directly. Robot packages also contribute their editor blocks as data: `RobotModule.blocks` is a `RobotBlockSet` (message catalog, block definitions, toolbox categories, validated by `validateRobotBlockSet`), and `@botlab/blocks` translates registered sets into Scratch Blocks definitions, messages and toolbox categories. `@botlab/blocks` no longer contains robot-specific blocks or messages.
+2. **Move robot step types and samples out of the model.** Step types live in `microduck-steps.ts` and `stackchan-steps.ts` in their adapters; the model keeps only the generic `ProgramIteration`. `RobotModule.catalog` carries each robot's skills, policies and behaviors, and `botlab-runtime.ts` builds the runtime from the registered catalogs plus workbench-owned scheduler and arbitration profiles. The MicroDuck confirmation policy is scoped to `microduck-usb` in its catalog, replacing the app-side rewrite. Spec fixtures moved to `@botlab/model/testing` (`libs/botlab-model/src/testing.ts`, excluded from the library build), and an Oxlint `no-restricted-imports` rule rejects that entry point outside spec files.
+3. **Structured messages instead of English sentences.** `@botlab/model` exports `BotLabMessage` (`{ code, params?, text }`, with `text` as the English fallback), `BotLabError` and `toBotLabMessage`. The MicroDuck reader throws coded `program.*` errors, and every flow-machine message is a coded `flow.*` message. The web app renders them with `formatBotLabMessage`, a code-keyed catalog of formatters over the existing locale strings, and `translateFlowMessage` is gone. Codes without a catalog entry show their English text, as they did before. Runtime events, traces, diagnostics and simulator-host messages are technical logs and are shown untranslated; this drops the one simulator line that used to be translated by regex ("Loaded N control frame(s)…"). StackChan reader errors are coded as well, and the StackChan panel renders them through the same catalog.
+4. **Split the flow machine by region.** `botlab-flow-types.ts` holds the context and actor contracts, `botlab-flow-setup.ts` the shared `setup()` (actors, actions, guards and message helpers), and `botlab-flow-{workspace,build,simulation,execution}.ts` each export one region built with `botLabFlowSetup.createStateConfig`, so regions keep full XState typing. `botlab-flow-machine.ts` only assembles the parallel machine and its initial context; its public exports are unchanged.
+5. **One test runner.** `botlab-web` runs on Vitest (jsdom) like the libraries, configured in its `vite.config.ts`. `jest.config.ts`, `jest.preset.js`, the `@nx/jest` plugin and the Jest, Babel-Jest and ts-jest dependencies are gone. `src/test-setup.ts` exposes `vi.advanceTimersByTime` as a `jest` global only because Testing Library looks for that name to advance fake timers inside `waitFor`.
+6. **Tighter boundaries.** `tools/ci/check-boundaries.mjs` checks that adapters cannot import blocks or runtime, that the model cannot import adapters, that `@botlab/model/testing` is importable from specs but not from production code, and that `@botlab/blocks` specs (only) may import robot adapters to exercise the real block sets.
 
 ## Consequences
 
-- Adding a robot should become "add one adapter package that exports a `RobotModule`, and register it in `botlab-runtime.ts`", with no edits to model or blocks.
-- The app shell becomes easier to review and test. The simulator host and label mapping can change without touching workbench state wiring.
-- The proposed steps move public exports (step types, `read*ProgramFromWorkspace`, samples). Each needs a coordinated change across blocks, adapters and the app, and should land one robot at a time behind the existing `pnpm run verify` gate.
+- Adding a robot means adding one adapter package that exports a `RobotModule` (adapter, catalog, block set, reader and optional compiler) and registering it in `botlab-runtime.ts`, with no edits to the model or `@botlab/blocks`.
+- The app shell is easier to review and test: the simulator host, label mapping and each flow region change independently of workbench state wiring.
+- Messages are localized by code, so rewording English text no longer breaks translations silently; untranslated codes still show their English text.
+- Public exports moved (robot step types, `read*ProgramFromWorkspace`, block message catalogs, `sample*` fixtures), and `createLocalScratchBlocksEditorBridge` now takes `{ blockSets, translations }`. External callers need to follow those moves.
+- Editor block sets are plain data. Behaviour that Scratch needs as code (integer clamping, sign-dependent icons) is declared as options that `@botlab/blocks` implements, so new kinds of field behaviour need a contract change rather than robot-side code.

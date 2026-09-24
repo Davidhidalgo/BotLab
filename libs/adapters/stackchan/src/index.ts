@@ -6,3 +6,4 @@ export * from './lib/stackchan-workspace';
 export * from './lib/stackchan-module';
 export * from './lib/stackchan-steps';
 export * from './lib/stackchan-catalog';
+export * from './lib/stackchan-blocks';

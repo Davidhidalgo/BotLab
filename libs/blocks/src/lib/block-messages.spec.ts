@@ -3,7 +3,7 @@ import {
   parseBlockMessageCatalog,
   type BlockMessageCatalog,
 } from './block-messages';
-import { microDuckBlockMessages } from './microduck-block-messages';
+import { microDuckBlockMessages } from '@botlab/adapters-microduck';
 
 describe('block message catalogs', () => {
   const external: BlockMessageCatalog = {

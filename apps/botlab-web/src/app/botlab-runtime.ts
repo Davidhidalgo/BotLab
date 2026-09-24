@@ -16,6 +16,11 @@ export const workbenchRobotModules = [
   stackChanRobotModule,
 ] as const;
 
+/** Editor blocks of every registered robot, in toolbox order. */
+export const workbenchBlockSets = workbenchRobotModules.map(
+  (module) => module.blocks,
+);
+
 const workbenchSchedulers: SchedulerProfile[] = [
   { id: 'manual', name: 'Manual start', mode: 'manual' },
 ];

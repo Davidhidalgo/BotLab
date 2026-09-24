@@ -1,7 +1,6 @@
-import type * as ScratchBlocks from 'scratch-blocks';
-import type { BlocksLocale } from './block-messages';
+import type { BlockMessageCatalog, RobotBlockSet } from '@botlab/model';
 
-const messages = {
+const translations = {
   en: {
     movement: 'StackChan head',
     lights: 'StackChan LEDs',
@@ -63,52 +62,66 @@ const messages = {
       'Brillantor 0–25%. Transició de color de 0,5 s; espera 1 s abans del bloc següent.',
   },
 };
-export function applyStackChanLocale(
-  api: typeof ScratchBlocks,
-  locale: BlocksLocale,
-) {
-  for (const [key, value] of Object.entries(messages[locale]))
-    api.Msg[`BOTLAB_STACKCHAN_${key.toUpperCase()}`] = value;
-}
-export function registerStackChanBlocks(api: typeof ScratchBlocks) {
-  if (api.Blocks.botlab_stackchan_yaw) return;
-  const msg = (key: string) => `%{BKY_BOTLAB_STACKCHAN_${key.toUpperCase()}}`;
-  api.defineBlocksWithJsonArray([
+
+export const stackChanBlockMessages: BlockMessageCatalog = {
+  schemaVersion: 1,
+  namespace: 'botlab.stackchan',
+  revision: '1',
+  sourceLocale: 'en',
+  messages: translations.en,
+  translations: { es: translations.es, ca: translations.ca },
+};
+
+const motionHelp = 'motionHelp';
+const ledHelp = 'ledHelp';
+
+/** StackChan editor blocks: bounded head yaw and side LEDs. */
+export const stackChanBlockSet: RobotBlockSet = {
+  messages: stackChanBlockMessages,
+  blocks: [
     {
       type: 'botlab_stackchan_yaw',
-      message0: msg('yaw'),
-      args0: [
+      message: 'yaw',
+      tooltip: motionHelp,
+      shape: 'statement',
+      style: 'motion',
+      args: [
         {
-          type: 'field_number',
+          kind: 'number',
           name: 'ANGLE',
           value: 10,
           min: -20,
           max: 20,
           precision: 1,
+          clampToInteger: true,
         },
       ],
-      style: 'motion',
-      extensions: ['shape_statement'],
-      tooltip: msg('motionHelp'),
     },
     {
       type: 'botlab_stackchan_center',
-      message0: msg('center'),
+      message: 'center',
+      tooltip: motionHelp,
+      shape: 'statement',
       style: 'motion',
-      extensions: ['shape_statement'],
-      tooltip: msg('motionHelp'),
     },
     {
       type: 'botlab_stackchan_leds',
-      message0: msg('leds'),
-      args0: [
+      message: 'leds',
+      tooltip: ledHelp,
+      shape: 'statement',
+      style: 'more',
+      args: [
         {
-          type: 'field_dropdown',
+          kind: 'dropdown',
           name: 'SIDE',
-          options: ['both', 'left', 'right'].map((side) => [msg(side), side]),
+          options: [
+            ['both', 'both'],
+            ['left', 'left'],
+            ['right', 'right'],
+          ],
         },
         {
-          type: 'field_dropdown',
+          kind: 'dropdown',
           name: 'COLOR',
           options: [
             ['red', '#ff0000'],
@@ -116,46 +129,39 @@ export function registerStackChanBlocks(api: typeof ScratchBlocks) {
             ['blue', '#0000ff'],
             ['amber', '#ff8000'],
             ['white', '#ffffff'],
-          ].map(([label, value]) => [msg(label), value]),
+          ],
         },
         {
-          type: 'field_number',
+          kind: 'number',
           name: 'BRIGHTNESS',
           value: 15,
           min: 0,
           max: 25,
           precision: 1,
+          clampToInteger: true,
         },
       ],
-      style: 'more',
-      extensions: ['shape_statement'],
-      tooltip: msg('ledHelp'),
     },
     {
       type: 'botlab_stackchan_leds_off',
-      message0: msg('off'),
+      message: 'off',
+      tooltip: ledHelp,
+      shape: 'statement',
       style: 'more',
-      extensions: ['shape_statement'],
-      tooltip: msg('ledHelp'),
     },
-  ]);
-  // Scratch's field_number implementation does not enforce JSON min/max/precision.
-  for (const [type, field, min, max, fallback] of [
-    ['botlab_stackchan_yaw', 'ANGLE', -20, 20, 10],
-    ['botlab_stackchan_leds', 'BRIGHTNESS', 0, 25, 15],
-  ] as const) {
-    const definition = api.Blocks[type];
-    const init = definition.init;
-    definition.init = function () {
-      init.call(this);
-      const bounded = this.getField(field);
-      bounded.setValidator((value: string) => {
-        const numeric = Number(value);
-        return Number.isFinite(numeric)
-          ? String(Math.max(min, Math.min(max, Math.round(numeric))))
-          : null;
-      });
-      bounded.setValue(String(fallback));
-    };
-  }
-}
+  ],
+  categories: [
+    {
+      name: { message: 'movement' },
+      style: 'motion',
+      blockTypes: ['botlab_stackchan_yaw', 'botlab_stackchan_center'],
+      placement: 'before-events',
+    },
+    {
+      name: { message: 'lights' },
+      style: 'botlab',
+      blockTypes: ['botlab_stackchan_leds', 'botlab_stackchan_leds_off'],
+      placement: 'before-events',
+    },
+  ],
+};

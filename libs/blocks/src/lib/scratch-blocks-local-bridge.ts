@@ -1,7 +1,10 @@
-import {
-  applyStackChanLocale,
-  registerStackChanBlocks,
-} from './stackchan-blocks';
+import type {
+  BlockTranslationOverlay,
+  RobotBlockArgument,
+  RobotBlockCategory,
+  RobotBlockIcon,
+  RobotBlockSet,
+} from '@botlab/model';
 import type * as ScratchBlocksModule from 'scratch-blocks';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -15,9 +18,7 @@ import {
 import {
   createBlockMessageResolver,
   type BlocksLocale,
-  type BlockTranslationOverlay,
 } from './block-messages';
-import { microDuckBlockMessages } from './microduck-block-messages';
 import type {
   BlocksEditorMountRequest,
   BlocksEditorMountResult,
@@ -28,7 +29,6 @@ type ScratchBlocksApi = typeof ScratchBlocksModule;
 type ScratchBlocksWorkspace = ReturnType<ScratchBlocksApi['inject']>;
 type ScratchBlockStyle = ScratchBlocksModule.Theme.BlockStyle;
 
-let botLabBlocksRegistered = false;
 let scratchBlocksPromise: Promise<ScratchBlocksApi> | undefined;
 let botLabScratchBlocksTheme:
   | ReturnType<ScratchBlocksApi['Theme']['defineTheme']>
@@ -37,22 +37,48 @@ let botLabScratchBlocksTheme:
 const SCRATCH_BLOCKS_MEDIA_PATH = '/vendor/scratch-blocks/media/';
 const incompatibleTargetReason = 'botlab-incompatible-target';
 
-export function createLocalScratchBlocksEditorBridge(
-  translations?: BlockTranslationOverlay,
-): ScratchBlocksEditorBridge {
-  const translate = createBlockMessageResolver(
-    microDuckBlockMessages,
-    translations,
-  );
+export interface LocalScratchBlocksEditorBridgeOptions {
+  /** Robot block sets to register, in toolbox order. */
+  blockSets?: readonly RobotBlockSet[];
+  /** Local translation overlays, matched to block sets by namespace. */
+  translations?: readonly BlockTranslationOverlay[];
+}
+
+/** Resolved display text for one block set, keyed by Scratch `Msg` prefix. */
+interface LocalizedBlockSet {
+  set: RobotBlockSet;
+  prefix: string;
+  translate: ReturnType<typeof createBlockMessageResolver>;
+}
+
+export function createLocalScratchBlocksEditorBridge({
+  blockSets = [],
+  translations = [],
+}: LocalScratchBlocksEditorBridgeOptions = {}): ScratchBlocksEditorBridge {
+  const localized = blockSets.map((set) => ({
+    set,
+    prefix: messagePrefix(set.messages.namespace),
+    translate: createBlockMessageResolver(
+      set.messages,
+      translations.find(
+        (overlay) => overlay.namespace === set.messages.namespace,
+      ),
+    ),
+  }));
   return {
     async mount(request) {
       return mountLocalScratchBlocksWorkspace(
         request,
         await loadScratchBlocks(),
-        translate,
+        localized,
       );
     },
   };
+}
+
+/** `botlab.microduck` → `BOTLAB_MICRODUCK`, the Scratch `Msg` key prefix. */
+function messagePrefix(namespace: string) {
+  return namespace.replace(/[^A-Za-z0-9]+/g, '_').toUpperCase();
 }
 
 function loadScratchBlocks() {
@@ -63,7 +89,7 @@ function loadScratchBlocks() {
 function mountLocalScratchBlocksWorkspace(
   request: BlocksEditorMountRequest,
   scratchBlocks: ScratchBlocksApi,
-  translate: ReturnType<typeof createBlockMessageResolver>,
+  blockSets: readonly LocalizedBlockSet[],
 ): BlocksEditorMountResult {
   let locale = request.locale ?? 'ca';
   let availableBlockTypes = request.availableBlockTypes;
@@ -72,17 +98,17 @@ function mountLocalScratchBlocksWorkspace(
   function applyLocale(value: BlocksLocale) {
     scratchBlocks.ScratchMsgs.setLocale('en');
     scratchBlocks.ScratchMsgs.setLocale(value);
-    applyStackChanLocale(scratchBlocks, value);
-    for (const key of Object.keys(microDuckBlockMessages.messages)) {
-      scratchBlocks.Msg[`BOTLAB_MICRODUCK_${key.toUpperCase()}`] = translate(
-        key,
-        value,
-      );
+    for (const { set, prefix, translate } of blockSets) {
+      for (const key of Object.keys(set.messages.messages)) {
+        scratchBlocks.Msg[`${prefix}_${key.toUpperCase()}`] = translate(
+          key,
+          value,
+        );
+      }
     }
   }
   applyLocale(locale);
-  registerBotLabBlocks(scratchBlocks);
-  registerStackChanBlocks(scratchBlocks);
+  for (const blockSet of blockSets) registerBlockSet(scratchBlocks, blockSet);
 
   request.element.replaceChildren();
   request.element.classList.add('botlab-scratch-blocks-workspace');
@@ -95,7 +121,11 @@ function mountLocalScratchBlocksWorkspace(
       readOnly: request.artifact.status === 'read-only',
       scrollbars: true,
       theme: getBotLabScratchBlocksTheme(scratchBlocks),
-      toolbox: createBotLabToolbox(scratchBlocks, availableBlockTypes),
+      toolbox: createBotLabToolbox(
+        scratchBlocks,
+        blockSets,
+        availableBlockTypes,
+      ),
       zoom: {
         controls: true,
         startScale: 0.85,
@@ -198,7 +228,11 @@ function mountLocalScratchBlocksWorkspace(
           try {
             recycling?.(false);
             workspace.updateToolbox(
-              createBotLabToolbox(scratchBlocks, availableBlockTypes),
+              createBotLabToolbox(
+                scratchBlocks,
+                blockSets,
+                availableBlockTypes,
+              ),
             );
             const toolbox = workspace.getToolbox();
             if (
@@ -240,7 +274,11 @@ function mountLocalScratchBlocksWorkspace(
             try {
               if (toolbox) {
                 workspace.updateToolbox(
-                  createBotLabToolbox(scratchBlocks, availableBlockTypes),
+                  createBotLabToolbox(
+                    scratchBlocks,
+                    blockSets,
+                    availableBlockTypes,
+                  ),
                 );
                 if (
                   'forceRerender' in toolbox &&
@@ -307,17 +345,19 @@ function mountLocalScratchBlocksWorkspace(
   }
 }
 
-function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
-  if (
-    botLabBlocksRegistered ||
-    scratchBlocks.Blocks.botlab_microduck_set_leds
-  ) {
-    botLabBlocksRegistered = true;
-    return;
-  }
+const iconComponents: Record<RobotBlockIcon, typeof ArrowUp> = {
+  forward: ArrowUp,
+  backward: ArrowDown,
+  left: CornerUpLeft,
+  right: CornerUpRight,
+  around: Undo2,
+};
+const iconSources = new Map<RobotBlockIcon, string>();
 
-  const icon = (component: typeof ArrowUp) =>
-    `data:image/svg+xml,${encodeURIComponent(
+function iconSource(icon: RobotBlockIcon) {
+  let source = iconSources.get(icon);
+  if (!source) {
+    source = `data:image/svg+xml,${encodeURIComponent(
       renderToStaticMarkup(
         createElement(
           'svg',
@@ -327,7 +367,7 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
             height: 28,
             viewBox: '0 0 33 28',
           },
-          createElement(component, {
+          createElement(iconComponents[icon], {
             x: 9.5,
             y: 4.5,
             color: 'white',
@@ -337,166 +377,116 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
         ),
       ),
     )}`;
-  const icons = {
-    forward: icon(ArrowUp),
-    backward: icon(ArrowDown),
-    left: icon(CornerUpLeft),
-    right: icon(CornerUpRight),
-    around: icon(Undo2),
-  };
-  const message = (key: string) =>
-    `%{BKY_BOTLAB_MICRODUCK_${key.toUpperCase()}}`;
-  const movementBlocks = [
-    {
-      type: 'walk_steps',
-      key: 'forwardSteps',
-      tooltip: 'stepsTooltip',
-      icon: icons.forward,
-      field: 'STEPS',
-      value: 1,
-      min: 0,
-      max: 40,
-      precision: 1,
-    },
-    {
-      type: 'back_steps',
-      key: 'backwardSteps',
-      tooltip: 'stepsTooltip',
-      icon: icons.backward,
-      field: 'STEPS',
-      value: 1,
-      min: 0,
-      max: 40,
-      precision: 1,
-    },
-    {
-      type: 'turn_left',
-      key: 'turnLeft',
-      tooltip: 'turnLeftTooltip',
-      icon: icons.left,
-    },
-    {
-      type: 'turn_right',
-      key: 'turnRight',
-      tooltip: 'turnRightTooltip',
-      icon: icons.right,
-    },
-    {
-      type: 'turn_around',
-      key: 'turnAround',
-      tooltip: 'turnAroundTooltip',
-      icon: icons.around,
-    },
-    {
-      type: 'walk_distance',
-      key: 'walk',
-      tooltip: 'walkTooltip',
-      icon: icons.forward,
-      field: 'DISTANCE',
-      value: 5,
-      min: 0,
-      max: 20,
-      precision: 0.1,
-    },
-    {
-      type: 'back_distance',
-      key: 'backwardMeters',
-      tooltip: 'backwardTooltip',
-      icon: icons.backward,
-      field: 'DISTANCE',
-      value: 1,
-      min: 0,
-      max: 20,
-      precision: 0.1,
-    },
-    {
-      type: 'turn_degrees',
-      key: 'turnDegrees',
-      tooltip: 'turnTooltip',
-      icon: icons.right,
-      field: 'ANGLE',
-      value: 90,
-      min: -360,
-      max: 360,
-      precision: 1,
-    },
-  ];
-  scratchBlocks.defineBlocksWithJsonArray([
-    ...['sit', 'stand', 'transitioning'].map((posture) => ({
-      type: `botlab_microduck_is_${posture}`,
-      message0: message(`is_${posture}`),
-      style: 'sensing',
-      extensions: ['output_boolean'],
-      tooltip: message('conditionTooltip'),
-    })),
-    ...['sit', 'stand'].map((posture) => ({
-      type: `botlab_microduck_${posture}`,
-      message0: message(posture),
-      style: 'motion',
-      extensions: ['shape_statement'],
-      tooltip: message('postureTooltip'),
-    })),
-    ...movementBlocks.map((block) => ({
-      type: `botlab_microduck_${block.type}`,
-      message0: `%${block.field ? 2 : 1} ${message(block.key)}`,
-      args0: [
-        ...(block.field
-          ? [
-              {
-                type: 'field_number',
-                name: block.field,
-                value: block.value,
-                text: String(block.value),
-                min: block.min,
-                max: block.max,
-                precision: block.precision,
-              },
-            ]
-          : []),
-        {
-          type: 'field_image',
-          name: 'DIRECTION',
-          src: block.icon,
-          width: 33,
-          height: 28,
-          alt: message(block.tooltip),
-        },
-      ],
-      style: 'motion',
-      extensions: ['shape_statement'],
-      tooltip: message(block.tooltip),
-    })),
-    {
-      type: 'botlab_microduck_set_leds',
-      message0: '%{BKY_BOTLAB_MICRODUCK_LEDS}',
-      args0: [
-        {
-          type: 'field_dropdown',
-          name: 'PATTERN',
-          options: [
-            ['%{BKY_BOTLAB_MICRODUCK_SMILE}', 'smile'],
-            ['%{BKY_BOTLAB_MICRODUCK_BLINK}', 'blink'],
-            ['%{BKY_BOTLAB_MICRODUCK_SOLID}', 'solid'],
-            ['%{BKY_BOTLAB_MICRODUCK_OFF}', 'off'],
-          ],
-        },
-      ],
-      style: 'more',
-      extensions: ['shape_statement'],
-      tooltip: '%{BKY_BOTLAB_MICRODUCK_LEDSTOOLTIP}',
-    },
-  ]);
-  const turnDefinition = scratchBlocks.Blocks.botlab_microduck_turn_degrees;
-  const initializeTurn = turnDefinition.init;
-  turnDefinition.init = function () {
-    initializeTurn.call(this);
-    this.getField('ANGLE').setValidator((value: number) => {
-      this.getField('DIRECTION').setValue(value < 0 ? icons.left : icons.right);
-      return value;
-    });
-  };
+    iconSources.set(icon, source);
+  }
+  return source;
+}
 
-  botLabBlocksRegistered = true;
+/** Defines each block of a set once per Scratch Blocks instance. */
+function registerBlockSet(
+  scratchBlocks: ScratchBlocksApi,
+  { set, prefix }: LocalizedBlockSet,
+) {
+  const pending = set.blocks.filter(
+    (block) => !scratchBlocks.Blocks[block.type],
+  );
+  if (pending.length === 0) return;
+  const message = (key: string) => `%{BKY_${prefix}_${key.toUpperCase()}}`;
+  scratchBlocks.defineBlocksWithJsonArray(
+    pending.map((block) => {
+      const args = block.args ?? [];
+      const inline = args.filter((arg) => arg.kind !== 'icon');
+      const icons = args.filter((arg) => arg.kind === 'icon');
+      // Icons render before the text; message placeholders refer to the other arguments.
+      const iconPlaceholders = icons.map(
+        (_, index) => `%${inline.length + index + 1} `,
+      );
+      return {
+        type: block.type,
+        message0: `${iconPlaceholders.join('')}${message(block.message)}`,
+        ...(args.length
+          ? {
+              args0: [...inline, ...icons].map((arg) =>
+                toScratchArgument(arg, message),
+              ),
+            }
+          : {}),
+        style: block.style,
+        extensions: [
+          block.shape === 'boolean' ? 'output_boolean' : 'shape_statement',
+        ],
+        tooltip: message(block.tooltip),
+      };
+    }),
+  );
+  for (const block of pending) {
+    const definition = scratchBlocks.Blocks[block.type];
+    const initialize = definition.init;
+    const clamped = (block.args ?? []).filter(
+      (arg) => arg.kind === 'number' && arg.clampToInteger,
+    ) as Extract<RobotBlockArgument, { kind: 'number' }>[];
+    const signed = (block.args ?? []).filter(
+      (arg) => arg.kind === 'icon' && arg.signOf,
+    ) as Extract<RobotBlockArgument, { kind: 'icon' }>[];
+    if (clamped.length === 0 && signed.length === 0) continue;
+    definition.init = function () {
+      initialize.call(this);
+      // Scratch's field_number implementation does not enforce JSON min/max/precision.
+      for (const arg of clamped) {
+        const field = this.getField(arg.name);
+        field.setValidator((value: string) => {
+          const numeric = Number(value);
+          return Number.isFinite(numeric)
+            ? String(Math.max(arg.min, Math.min(arg.max, Math.round(numeric))))
+            : null;
+        });
+        field.setValue(String(arg.value));
+      }
+      for (const arg of signed) {
+        const { field, negative, positive } = arg.signOf!;
+        this.getField(field).setValidator((value: number) => {
+          this.getField(arg.name).setValue(
+            iconSource(value < 0 ? negative : positive),
+          );
+          return value;
+        });
+      }
+    };
+  }
+}
+
+function toScratchArgument(
+  arg: RobotBlockArgument,
+  message: (key: string) => string,
+) {
+  switch (arg.kind) {
+    case 'number':
+      return {
+        type: 'field_number',
+        name: arg.name,
+        value: arg.value,
+        // Scratch's field_number reads its initial display value from `text`.
+        text: String(arg.value),
+        min: arg.min,
+        max: arg.max,
+        precision: arg.precision,
+      };
+    case 'dropdown':
+      return {
+        type: 'field_dropdown',
+        name: arg.name,
+        options: arg.options.map(([label, value]) => [message(label), value]),
+      };
+    case 'icon':
+      return {
+        type: 'field_image',
+        name: arg.name,
+        src: iconSource(arg.icon),
+        width: 33,
+        height: 28,
+        alt: message(arg.alt),
+      };
+  }
 }
 
 function getBotLabScratchBlocksTheme(scratchBlocks: ScratchBlocksApi) {
@@ -584,104 +574,85 @@ function createBlockStyle(
   };
 }
 
+const categoryStyles: Record<RobotBlockCategory['style'], string> = {
+  motion: 'motion_category',
+  sensing: 'sensing_category',
+  botlab: 'botlab_category',
+};
+
 function createBotLabToolbox(
   scratchBlocks: ScratchBlocksApi,
+  blockSets: readonly LocalizedBlockSet[],
   availableBlockTypes?: readonly string[],
 ) {
+  const robotCategories = (placement: 'before-events' | 'after-events') =>
+    blockSets.flatMap(({ set, prefix }) =>
+      set.categories
+        .filter(
+          (category) => (category.placement ?? 'after-events') === placement,
+        )
+        .map((category) => ({
+          kind: 'category',
+          name:
+            'message' in category.name
+              ? scratchBlocks.Msg[
+                  `${prefix}_${category.name.message.toUpperCase()}`
+                ]
+              : 'text' in category.name
+                ? category.name.text
+                : scratchBlocks.Msg['CATEGORY_SENSING'],
+          categorystyle: categoryStyles[category.style],
+          contents: category.blockTypes.map((type): ToolboxBlock => ({
+            kind: 'block',
+            type,
+          })),
+        })),
+    );
+  const categories: Array<{
+    kind: string;
+    name: string;
+    categorystyle: string;
+    contents: ToolboxBlock[];
+  }> = [
+    ...robotCategories('before-events'),
+    {
+      kind: 'category',
+      name: scratchBlocks.Msg['CATEGORY_EVENTS'],
+      categorystyle: 'event_category',
+      contents: [{ kind: 'block', type: 'event_whenflagclicked' }],
+    },
+    ...robotCategories('after-events'),
+    {
+      kind: 'category',
+      name: scratchBlocks.Msg['CATEGORY_CONTROL'],
+      categorystyle: 'control_category',
+      contents: [
+        {
+          kind: 'block',
+          type: 'control_repeat',
+          inputs: {
+            TIMES: {
+              shadow: { type: 'math_whole_number', fields: { NUM: 10 } },
+            },
+          },
+        },
+        { kind: 'block', type: 'control_if' },
+        { kind: 'block', type: 'control_if_else' },
+        {
+          kind: 'block',
+          type: 'control_wait',
+          inputs: {
+            DURATION: {
+              shadow: { type: 'math_positive_number', fields: { NUM: 1 } },
+            },
+          },
+        },
+      ],
+    },
+  ];
   return {
     kind: 'categoryToolbox',
-    contents: [
-      {
-        kind: 'category',
-        name: scratchBlocks.Msg['BOTLAB_STACKCHAN_MOVEMENT'],
-        categorystyle: 'motion_category',
-        contents: ['yaw', 'center'].map((type) => ({
-          kind: 'block',
-          type: `botlab_stackchan_${type}`,
-        })),
-      },
-      {
-        kind: 'category',
-        name: scratchBlocks.Msg['BOTLAB_STACKCHAN_LIGHTS'],
-        categorystyle: 'botlab_category',
-        contents: ['leds', 'leds_off'].map((type) => ({
-          kind: 'block',
-          type: `botlab_stackchan_${type}`,
-        })),
-      },
-      {
-        kind: 'category',
-        name: scratchBlocks.Msg['CATEGORY_EVENTS'],
-        categorystyle: 'event_category',
-        contents: [{ kind: 'block', type: 'event_whenflagclicked' }],
-      },
-      {
-        kind: 'category',
-        name: scratchBlocks.Msg['BOTLAB_MICRODUCK_MOVEMENT'],
-        categorystyle: 'motion_category',
-        contents: [
-          'walk_steps',
-          'back_steps',
-          'turn_left',
-          'turn_right',
-          'turn_around',
-        ].map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` })),
-      },
-      {
-        kind: 'category',
-        name: scratchBlocks.Msg['BOTLAB_MICRODUCK_PRECISEMOVEMENT'],
-        categorystyle: 'motion_category',
-        contents: [
-          'walk_distance',
-          'back_distance',
-          'turn_degrees',
-          'sit',
-          'stand',
-        ].map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` })),
-      },
-      {
-        kind: 'category',
-        name: scratchBlocks.Msg['CATEGORY_SENSING'],
-        categorystyle: 'sensing_category',
-        contents: ['sit', 'stand', 'transitioning'].map((posture) => ({
-          kind: 'block',
-          type: `botlab_microduck_is_${posture}`,
-        })),
-      },
-      {
-        kind: 'category',
-        name: 'BotLab',
-        categorystyle: 'botlab_category',
-        contents: [{ kind: 'block', type: 'botlab_microduck_set_leds' }],
-      },
-      {
-        kind: 'category',
-        name: scratchBlocks.Msg['CATEGORY_CONTROL'],
-        categorystyle: 'control_category',
-        contents: [
-          {
-            kind: 'block',
-            type: 'control_repeat',
-            inputs: {
-              TIMES: {
-                shadow: { type: 'math_whole_number', fields: { NUM: 10 } },
-              },
-            },
-          },
-          { kind: 'block', type: 'control_if' },
-          { kind: 'block', type: 'control_if_else' },
-          {
-            kind: 'block',
-            type: 'control_wait',
-            inputs: {
-              DURATION: {
-                shadow: { type: 'math_positive_number', fields: { NUM: 1 } },
-              },
-            },
-          },
-        ],
-      },
-    ]
+    contents: categories
       .map((category) => ({
         ...category,
         contents: category.contents.filter(
@@ -692,6 +663,12 @@ function createBotLabToolbox(
       }))
       .filter((category) => category.contents.length > 0),
   };
+}
+
+interface ToolboxBlock {
+  kind: 'block';
+  type: string;
+  inputs?: Record<string, unknown>;
 }
 
 function loadWorkspaceXml(

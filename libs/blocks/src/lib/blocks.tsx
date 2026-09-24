@@ -1,3 +1,4 @@
+import type { RobotBlockSet } from '@botlab/model';
 import { Badge } from '@botlab/ui';
 import { Blocks } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -30,6 +31,8 @@ export interface BlocksEditorShellProps {
   workbench?: boolean;
   locale?: BlocksLocale;
   availableBlockTypes?: readonly string[];
+  /** Robot block sets offered by the built-in Scratch Blocks editor. */
+  blockSets?: readonly RobotBlockSet[];
 }
 
 export interface BlocksEditorShellLabels {
@@ -61,6 +64,7 @@ export function BlocksEditorShell({
   workbench = false,
   locale = 'ca',
   availableBlockTypes,
+  blockSets,
 }: BlocksEditorShellProps) {
   const copy = useMemo(
     () => ({ ...defaultBlocksEditorShellLabels, ...labels }),
@@ -71,10 +75,10 @@ export function BlocksEditorShell({
       provider ??
       (artifact.engine === 'scratch-blocks'
         ? createScratchBlocksEditorProvider(
-            createLocalScratchBlocksEditorBridge(),
+            createLocalScratchBlocksEditorBridge({ blockSets }),
           )
         : createBlocksEditorProvider(artifact.engine)),
-    [artifact.engine, provider],
+    [artifact.engine, blockSets, provider],
   );
   const badgeVariant = workspaceStatus === 'invalid' ? 'outline' : 'secondary';
   const statusLabel = status ?? workspaceStatusLabels[workspaceStatus];

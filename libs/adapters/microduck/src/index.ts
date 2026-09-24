@@ -6,3 +6,4 @@ export * from './lib/microduck-workspace';
 export * from './lib/microduck-module';
 export * from './lib/microduck-steps';
 export * from './lib/microduck-catalog';
+export * from './lib/microduck-blocks';

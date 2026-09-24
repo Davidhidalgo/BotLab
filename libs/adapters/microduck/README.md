@@ -16,6 +16,7 @@ The trigger uses the central 2×2 rays, requires at least three valid measuremen
 
 ## Robot module and workspace parsing
 
+- `microDuckBlockSet` (`src/lib/microduck-blocks.ts`) describes the MicroDuck editor blocks, categories and `microDuckBlockMessages` catalog as editor-neutral data; it is exposed as `microDuckRobotModule.blocks`.
 - `microDuckCatalog` (skill `set-microduck-leds`, policy `confirm-visible-output` scoped to `microduck-usb`, and the `microduck-led-demo` behavior) is exposed as `microDuckRobotModule.catalog`. `MicroDuckProgramStep`, `PostureCondition` and `RobotPosture` are exported from `src/lib/microduck-steps.ts`.
 
 <!-- robot module from src/lib/microduck-module.ts and contract from ../../botlab-model/src/lib/robot-module.ts -->
@@ -26,11 +27,11 @@ The trigger uses the central 2×2 rays, requires at least three valid measuremen
 
 `readMicroDuckProgramFromWorkspace(artifact)` parses the single enabled green-flag script, including nested `control_if` and `control_if_else` branches, into typed `MicroDuckProgramStep[]`, retaining source block IDs. It validates numeric fields and rejects unsupported connected blocks/expressions; detached blocks remain ignored. It does not dispatch robot commands. `compileMicroDuckProgram` in the MicroDuck adapter lowers these steps to target-specific commands; `microDuckRobotModule` composes the two functions. Posture blocks stay explicit (`sit`/`stand`) rather than becoming toggles at compile time.
 
-<!-- posture predicates and control palette from ../../blocks/src/lib/scratch-blocks-local-bridge.ts; validation from src/lib/microduck-workspace.ts -->
+<!-- posture predicates from src/lib/microduck-blocks.ts; validation from src/lib/microduck-workspace.ts -->
 
 Sensing offers Boolean `botlab_microduck_is_sit`, `botlab_microduck_is_stand` and `botlab_microduck_is_transitioning`. Control offers `control_if` and `control_if_else`; their `CONDITION` must contain one of these predicates, and their `SUBSTACK` / `SUBSTACK2` statement inputs may contain nested sequences or be empty. Both branches are validated before execution. The parser preserves predicate and statement IDs, limits nesting to 16 levels and action/control nodes to 256, and rejects missing or unsupported conditions. General Boolean expressions and loops are not implemented yet.
 
-<!-- repeat parsing from src/lib/microduck-workspace.ts; palette from ../../blocks/src/lib/scratch-blocks-local-bridge.ts -->
+<!-- repeat parsing from src/lib/microduck-workspace.ts; palette from src/lib/microduck-blocks.ts -->
 
 `control_repeat` is available in Control with the standard localized Scratch labels (Catalan, Spanish and English). Its TIMES input accepts a literal integer from 0 to 100. The parser emits a typed `repeat` node, preserves SUBSTACK order and source IDs, validates zero-count bodies, and rejects expressions and invalid counts. Control nesting is limited to 16 levels.
 

@@ -1,16 +1,11 @@
+import type {
+  BlockMessageCatalog,
+  BlockTranslationOverlay,
+} from '@botlab/model';
+
+export type { BlockMessageCatalog, BlockTranslationOverlay };
+
 export type BlocksLocale = 'ca' | 'es' | 'en';
-
-export interface BlockTranslationOverlay {
-  schemaVersion: 1;
-  namespace: string;
-  revision: string;
-  translations: Record<string, Record<string, string>>;
-}
-
-export interface BlockMessageCatalog extends BlockTranslationOverlay {
-  sourceLocale: string;
-  messages: Record<string, string>;
-}
 
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {

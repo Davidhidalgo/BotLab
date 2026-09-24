@@ -1,7 +1,8 @@
-import type {
-  RobotProgramSource,
-  StackChanLedSide,
-  StackChanProgramStep,
+import {
+  BotLabError,
+  type RobotProgramSource,
+  type StackChanLedSide,
+  type StackChanProgramStep,
 } from '@botlab/model';
 
 const child = (element: Element, tag: string, name?: string) =>
@@ -27,7 +28,7 @@ export function readStackChanProgramFromWorkspace(
     document.doctype ||
     document.documentElement.localName !== 'xml'
   )
-    throw new Error('Invalid Scratch XML');
+    throw new BotLabError('program.invalid-xml', 'Invalid Scratch XML');
   const allowed = [
     'event_whenflagclicked',
     'control_wait',
@@ -39,7 +40,10 @@ export function readStackChanProgramFromWorkspace(
   ];
   for (const block of Array.from(document.querySelectorAll('block'))) {
     if (!allowed.includes(block.getAttribute('type') ?? ''))
-      throw new Error('Project contains blocks incompatible with StackChan');
+      throw new BotLabError(
+        'program.incompatible-blocks',
+        'Project contains blocks incompatible with StackChan',
+      );
   }
   const starts = Array.from(document.documentElement.children).filter(
     (block) =>
@@ -47,7 +51,11 @@ export function readStackChanProgramFromWorkspace(
       block.getAttribute('type') === 'event_whenflagclicked' &&
       block.getAttribute('disabled') !== 'true',
   );
-  if (starts.length !== 1) throw new Error('Use exactly one green flag script');
+  if (starts.length !== 1)
+    throw new BotLabError(
+      'program.single-script',
+      'Use exactly one green flag script',
+    );
   let visited = 0;
   function numberInput(block: Element, name: string) {
     const value = child(block, 'value', name);
@@ -62,28 +70,35 @@ export function readStackChanProgramFromWorkspace(
       ].includes(literal.getAttribute('type') ?? '') ||
       (value && child(value, 'block'))
     )
-      throw new Error('Only literal numbers are supported');
+      throw new BotLabError(
+        'program.literal-number-required',
+        'Only literal numbers are supported',
+      );
     const text = field(literal, 'NUM');
     if (!text || !Number.isFinite(Number(text)))
-      throw new Error('Invalid number');
+      throw new BotLabError('program.invalid-number', 'Invalid number');
     return Number(text);
   }
   function sequence(
     container: Element | undefined,
     depth: number,
   ): StackChanProgramStep[] {
-    if (depth > 4) throw new Error('Maximum four nested repeats');
+    if (depth > 4)
+      throw new BotLabError('program.too-deep', 'Maximum four nested repeats');
     const steps: StackChanProgramStep[] = [];
     let current = container && child(container, 'block');
     while (current) {
-      if (++visited > 80) throw new Error('Program too large');
+      if (++visited > 80)
+        throw new BotLabError('program.too-large', 'Program too large');
       const sourceBlockId = current.getAttribute('id');
-      if (!sourceBlockId) throw new Error('Missing block ID');
+      if (!sourceBlockId)
+        throw new BotLabError('program.missing-block-id', 'Missing block ID');
       if (current.getAttribute('disabled') !== 'true') {
         switch (current.getAttribute('type')) {
           case 'botlab_stackchan_yaw': {
             const degrees = field(current, 'ANGLE');
-            if (!degrees) throw new Error('Missing angle');
+            if (!degrees)
+              throw new BotLabError('program.missing-angle', 'Missing angle');
             steps.push({
               type: 'yaw',
               degrees: Number(degrees),
@@ -96,7 +111,11 @@ export function readStackChanProgramFromWorkspace(
             break;
           case 'botlab_stackchan_leds': {
             const brightness = field(current, 'BRIGHTNESS');
-            if (!brightness) throw new Error('Missing brightness');
+            if (!brightness)
+              throw new BotLabError(
+                'program.missing-brightness',
+                'Missing brightness',
+              );
             steps.push({
               type: 'led',
               side: field(current, 'SIDE') as StackChanLedSide,
@@ -125,7 +144,10 @@ export function readStackChanProgramFromWorkspace(
           case 'control_repeat': {
             const count = numberInput(current, 'TIMES');
             if (!Number.isInteger(count) || count < 0 || count > 10)
-              throw new Error('Repeat count must be 0–10');
+              throw new BotLabError(
+                'program.invalid-repeat',
+                'Repeat count must be 0–10',
+              );
             const body = sequence(
               child(current, 'statement', 'SUBSTACK'),
               depth + 1,
@@ -134,10 +156,18 @@ export function readStackChanProgramFromWorkspace(
             break;
           }
           default:
-            throw new Error('Unsupported script block');
+            throw new BotLabError(
+              'program.unsupported-block',
+              'Unsupported script block',
+              { block: current.getAttribute('type') ?? 'unknown' },
+            );
         }
       }
-      if (steps.length > 40) throw new Error('Maximum 40 expanded commands');
+      if (steps.length > 40)
+        throw new BotLabError(
+          'program.too-many-commands',
+          'Maximum 40 expanded commands',
+        );
       const next = child(current, 'next');
       current = next && child(next, 'block');
     }

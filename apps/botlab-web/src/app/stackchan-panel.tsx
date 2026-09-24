@@ -2,6 +2,7 @@ import { useMachine } from '@xstate/react';
 import type { BlocksWorkspaceArtifact } from '@botlab/blocks';
 import { stackChanExecutionMachine } from './stackchan-execution-machine';
 import { useEffect, useRef, useState } from 'react';
+import { toBotLabMessage } from '@botlab/model';
 import { Button } from '@botlab/ui';
 import {
   connectStackChanBluetooth,
@@ -10,7 +11,8 @@ import {
   type StackChanBleConnection,
   type StackChanBluetooth,
 } from '@botlab/adapters-stackchan';
-import type { BotLabLocale } from './i18n';
+import { botLabTranslations, type BotLabLocale } from './i18n';
+import { formatBotLabMessage } from './workbench-labels';
 
 const labels = {
   es: {
@@ -224,7 +226,10 @@ export function StackChanPanel({
         },
       });
     } catch (error) {
-      setProgramError(error instanceof Error ? error.message : String(error));
+      // Reader errors carry codes; validation and pose errors keep their text.
+      setProgramError(
+        formatBotLabMessage(toBotLabMessage(error), botLabTranslations[locale]),
+      );
     }
   }
   return (

@@ -60,3 +60,11 @@ describe('StackChan Scratch programs', () => {
     ).toThrow('exactly one');
   });
 });
+
+describe('coded StackChan workspace errors', () => {
+  it('identifies rejected programs by code', () => {
+    expect(() =>
+      parse('<block type="botlab_microduck_walk_steps" id="walk"/>'),
+    ).toThrow(expect.objectContaining({ code: 'program.incompatible-blocks' }));
+  });
+});

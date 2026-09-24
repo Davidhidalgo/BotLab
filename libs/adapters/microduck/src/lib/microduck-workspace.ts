@@ -1,4 +1,14 @@
-import type { MicroDuckProgramStep, RobotProgramSource } from '@botlab/model';
+import {
+  BotLabError,
+  type MicroDuckProgramStep,
+  type RobotProgramSource,
+} from '@botlab/model';
+
+const motionFieldCodes: Record<string, string> = {
+  STEPS: 'program.invalid-steps',
+  ANGLE: 'program.invalid-angle',
+  DISTANCE: 'program.invalid-distance',
+};
 
 function directXmlChild(element: Element, tag: string, name?: string) {
   return Array.from(element.children).find(
@@ -13,7 +23,10 @@ export function readMicroDuckProgramFromWorkspace(
   artifact: Pick<RobotProgramSource, 'format' | 'content'>,
 ): MicroDuckProgramStep[] {
   if (artifact.format !== 'scratch-xml') {
-    throw new Error('Only Scratch XML can be compiled in this demo.');
+    throw new BotLabError(
+      'program.unsupported-format',
+      'Only Scratch XML can be compiled in this demo.',
+    );
   }
 
   const xmlDocument = new DOMParser().parseFromString(
@@ -23,13 +36,19 @@ export function readMicroDuckProgramFromWorkspace(
   const parserError = xmlDocument.querySelector('parsererror');
 
   if (parserError) {
-    throw new Error('The Scratch XML workspace cannot be read.');
+    throw new BotLabError(
+      'program.unreadable-xml',
+      'The Scratch XML workspace cannot be read.',
+    );
   }
 
   const root = xmlDocument.documentElement;
 
   if (root.nodeName.toLowerCase() !== 'xml') {
-    throw new Error('The workspace does not contain valid Scratch XML.');
+    throw new BotLabError(
+      'program.invalid-xml',
+      'The workspace does not contain valid Scratch XML.',
+    );
   }
 
   const starts = Array.from(root.children).filter(
@@ -41,11 +60,15 @@ export function readMicroDuckProgramFromWorkspace(
   const startBlock = starts[0];
 
   if (!startBlock) {
-    throw new Error('Add a green flag start block before compiling.');
+    throw new BotLabError(
+      'program.missing-start',
+      'Add a green flag start block before compiling.',
+    );
   }
 
   if (starts.length !== 1) {
-    throw new Error(
+    throw new BotLabError(
+      'program.single-script',
       'Use one green flag script. Parallel scripts are not supported yet.',
     );
   }
@@ -55,7 +78,11 @@ export function readMicroDuckProgramFromWorkspace(
     depth = 0,
   ): MicroDuckProgramStep[] {
     if (depth > 16)
-      throw new Error('Programs support at most 16 nested control blocks.');
+      throw new BotLabError(
+        'program.too-deep',
+        'Programs support at most 16 nested control blocks.',
+        { max: 16 },
+      );
     const steps: MicroDuckProgramStep[] = [];
     let next = container;
     while (next) {
@@ -64,7 +91,11 @@ export function readMicroDuckProgramFromWorkspace(
       next = directXmlChild(block, 'next');
       if (block.getAttribute('disabled') === 'true') continue;
       if (++count > 256)
-        throw new Error('Programs support at most 256 blocks.');
+        throw new BotLabError(
+          'program.too-large',
+          'Programs support at most 256 blocks.',
+          { max: 256 },
+        );
       const type = block.getAttribute('type');
       switch (type) {
         case 'control_repeat': {
@@ -88,7 +119,8 @@ export function readMicroDuckProgramFromWorkspace(
             repeats < 0 ||
             repeats > 100
           ) {
-            throw new Error(
+            throw new BotLabError(
+              'program.invalid-repeat',
               'Repeat requires a whole number from 0 to 100. Expressions are not supported yet.',
             );
           }
@@ -115,7 +147,10 @@ export function readMicroDuckProgramFromWorkspace(
             !['sit', 'stand', 'transitioning'].includes(posture ?? '') ||
             predicateType !== `botlab_microduck_is_${posture}`
           ) {
-            throw new Error('If requires a connected posture condition.');
+            throw new BotLabError(
+              'program.missing-condition',
+              'If requires a connected posture condition.',
+            );
           }
           steps.push({
             type: 'if',
@@ -174,7 +209,10 @@ export function readMicroDuckProgramFromWorkspace(
         case 'botlab_microduck_back_steps': {
           const count = readMotionNumber(block, 'STEPS', 1, 0, 40);
           if (!Number.isInteger(count))
-            throw new Error('Steps must be a whole number.');
+            throw new BotLabError(
+              'program.invalid-steps',
+              'Steps must be a whole number.',
+            );
           steps.push({
             type: 'walk',
             backward: type === 'botlab_microduck_back_steps',
@@ -214,7 +252,8 @@ export function readMicroDuckProgramFromWorkspace(
               'math_integer',
             ].includes(value.getAttribute('type') ?? '')
           ) {
-            throw new Error(
+            throw new BotLabError(
+              'program.numeric-wait',
               'Wait requires a numeric duration. Expressions are not supported yet.',
             );
           }
@@ -229,7 +268,8 @@ export function readMicroDuckProgramFromWorkspace(
             seconds < 0 ||
             !Number.isFinite(seconds * 1000)
           ) {
-            throw new Error(
+            throw new BotLabError(
+              'program.invalid-wait',
               'Wait duration must be a finite, non-negative number of seconds.',
             );
           }
@@ -241,14 +281,21 @@ export function readMicroDuckProgramFromWorkspace(
           break;
         }
         default:
-          throw new Error(`Unsupported connected block: ${type ?? 'unknown'}.`);
+          throw new BotLabError(
+            'program.unsupported-block',
+            `Unsupported connected block: ${type ?? 'unknown'}.`,
+            { block: type ?? 'unknown' },
+          );
       }
     }
     return steps;
   }
   const steps = readSequence(directXmlChild(startBlock, 'next'));
   if (steps.length === 0)
-    throw new Error('Connect at least one block to the green flag.');
+    throw new BotLabError(
+      'program.empty-script',
+      'Connect at least one block to the green flag.',
+    );
   return steps;
 }
 
@@ -267,14 +314,21 @@ function normalizeMicroDuckLedPattern(value: string | null | undefined) {
     return pattern;
   }
 
-  throw new Error(`Unsupported LED pattern: ${pattern}.`);
+  throw new BotLabError(
+    'program.unsupported-led-pattern',
+    `Unsupported LED pattern: ${pattern}.`,
+    { pattern },
+  );
 }
 
 function normalizeMicroDuckWalkDistance(value: string | null | undefined) {
   const distance = value == null ? 5 : Number(value.trim() || NaN);
 
   if (!Number.isFinite(distance) || distance < 0 || distance > 20) {
-    throw new Error(`Unsupported walk distance: ${value ?? ''}.`);
+    throw new BotLabError(
+      'program.invalid-distance',
+      `Unsupported walk distance: ${value ?? ''}.`,
+    );
   }
 
   return distance;
@@ -290,8 +344,10 @@ function readMotionNumber(
   const text = directXmlChild(block, 'field', name)?.textContent;
   const value = text == null ? fallback : Number(text.trim() || NaN);
   if (!Number.isFinite(value) || value < min || value > max) {
-    throw new Error(
+    throw new BotLabError(
+      motionFieldCodes[name] ?? 'program.invalid-number',
       `Invalid motion ${name}: expected a number from ${min} to ${max}.`,
+      { field: name, min, max },
     );
   }
   return value;

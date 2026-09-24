@@ -17,3 +17,9 @@ Run `nx test botlab-model` to execute the unit tests via [Vitest](https://vitest
 <!-- StackChan program types exported from src/lib/stackchan-program.ts -->
 
 `StackChanProgramStep` describes yaw degrees, side LED color/brightness, or wait seconds with a `sourceBlockId`. `StackChanLedSide` is `both | left | right`. These are data contracts; the StackChan adapter enforces physical command restrictions.
+
+## Messages
+
+<!-- message contracts exported from src/lib/message.ts -->
+
+`BotLabMessage` is a user-facing message with a stable `code`, optional `params` and an English `text` fallback. Libraries throw `BotLabError(code, text, params)` for failures that hosts should be able to localize, and hosts convert any thrown value with `toBotLabMessage(error, fallback)`; errors that are not `BotLabError`s become `error.unknown` with their original text. Translation catalogs live in the host (for the web app, `formatBotLabMessage` in `apps/botlab-web/src/app/workbench-labels.ts`).

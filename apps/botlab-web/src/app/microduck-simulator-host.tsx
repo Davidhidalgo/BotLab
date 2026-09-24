@@ -25,7 +25,6 @@ import type { BotLabCopy } from './i18n';
 import {
   getAssetCacheStatusLabel,
   getOfficialSimulatorHostStateLabel,
-  translateFlowMessage,
 } from './workbench-labels';
 import { CommandFact } from './workbench-panels';
 
@@ -365,7 +364,7 @@ export function MicroDuckSimulatorHost({
                     key={message}
                     className="rounded-md bg-muted px-3 py-2 text-sm leading-6 text-muted-foreground"
                   >
-                    {translateFlowMessage(message, copy)}
+                    {message}
                   </p>
                 ))}
               </div>

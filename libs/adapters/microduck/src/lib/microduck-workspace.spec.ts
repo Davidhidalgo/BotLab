@@ -118,3 +118,35 @@ describe('repeat parsing', () => {
       'Unsupported connected block',
     ));
 });
+
+describe('coded workspace errors', () => {
+  const failure = (body: string) => {
+    try {
+      readMicroDuckProgramFromWorkspace({
+        ...scratchWorkspace,
+        content: `<xml><block type="event_whenflagclicked"><next>${body}</next></block></xml>`,
+      });
+    } catch (error) {
+      return error;
+    }
+    throw new Error('Expected the workspace to be rejected.');
+  };
+
+  it('identifies unsupported blocks by code and block type', () => {
+    expect(failure('<block type="botlab_microduck_kick"/>')).toMatchObject({
+      code: 'program.unsupported-block',
+      params: { block: 'botlab_microduck_kick' },
+    });
+  });
+
+  it('maps invalid motion fields to field-specific codes', () => {
+    expect(
+      failure(
+        '<block type="botlab_microduck_turn_degrees"><field name="ANGLE">900</field></block>',
+      ),
+    ).toMatchObject({
+      code: 'program.invalid-angle',
+      params: { field: 'ANGLE', min: -360, max: 360 },
+    });
+  });
+});

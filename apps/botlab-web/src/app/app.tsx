@@ -70,7 +70,7 @@ import {
   formatLedPattern,
   runtimeDiagnosticLabels,
   runtimeTraceLabels,
-  translateFlowMessage,
+  formatBotLabMessage,
 } from './workbench-labels';
 import {
   ArtifactCard,
@@ -1010,10 +1010,7 @@ export function App() {
                   flowState.simulation,
                   copy,
                 )}
-                simulationMessage={translateFlowMessage(
-                  simulationMessage,
-                  copy,
-                )}
+                simulationMessage={formatBotLabMessage(simulationMessage, copy)}
                 copy={copy}
               />
             )
@@ -1077,7 +1074,7 @@ export function App() {
                 value={workspaceArtifact.format}
               />
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                {translateFlowMessage(workspaceMessage, copy)}
+                {formatBotLabMessage(workspaceMessage, copy)}
               </p>
             </Panel>
 
@@ -1098,7 +1095,7 @@ export function App() {
                 brightness={compiledBrightness}
               />
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                {translateFlowMessage(buildMessage, copy)}
+                {formatBotLabMessage(buildMessage, copy)}
               </p>
             </Panel>
 
@@ -1146,7 +1143,7 @@ export function App() {
                 )}`}
               />
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                {translateFlowMessage(simulationMessage, copy)}
+                {formatBotLabMessage(simulationMessage, copy)}
               </p>
             </Panel>
 
@@ -1194,7 +1191,7 @@ export function App() {
                     key={message}
                     className="rounded-md border bg-background p-3 text-sm leading-6 text-muted-foreground"
                   >
-                    {translateFlowMessage(message, copy)}
+                    {message}
                   </p>
                 ))}
               </div>
@@ -1234,7 +1231,7 @@ export function App() {
                   </Badge>
                 </div>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {translateFlowMessage(runMessage, copy)}
+                  {formatBotLabMessage(runMessage, copy)}
                 </p>
               </div>
               <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
@@ -1410,7 +1407,7 @@ export function App() {
                 items={recentEvents.map((event) => ({
                   id: event.id,
                   label: getRuntimeEventLabel(event.type, copy),
-                  detail: translateFlowMessage(event.message, copy),
+                  detail: event.message,
                 }))}
               />
               <RuntimeLogSection
@@ -1419,7 +1416,7 @@ export function App() {
                 items={recentTrace.map((entry) => ({
                   id: entry.id,
                   label: runtimeTraceLabels[entry.category],
-                  detail: translateFlowMessage(entry.message, copy),
+                  detail: entry.message,
                 }))}
               />
               <RuntimeLogSection
@@ -1428,7 +1425,7 @@ export function App() {
                 items={diagnostics.map((diagnostic) => ({
                   id: diagnostic.id,
                   label: runtimeDiagnosticLabels[diagnostic.category],
-                  detail: translateFlowMessage(diagnostic.message, copy),
+                  detail: diagnostic.message,
                 }))}
               />
             </Panel>
@@ -1453,7 +1450,7 @@ export function App() {
                       </Badge>
                     </div>
                     <p className="text-sm leading-6 text-muted-foreground">
-                      {translateFlowMessage(entry.message, copy)}
+                      {formatBotLabMessage(entry.message, copy)}
                     </p>
                   </div>
                 ))}

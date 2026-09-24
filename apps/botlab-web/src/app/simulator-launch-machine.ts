@@ -66,7 +66,7 @@ export const simulatorLaunchMachine = setup({
           }
           if (!snapshot.matches({ [stage.region]: stage.success })) {
             throw new Error(
-              snapshot.context.errorMessage ?? `${stage.event} failed.`,
+              snapshot.context.errorMessage?.text ?? `${stage.event} failed.`,
             );
           }
         }

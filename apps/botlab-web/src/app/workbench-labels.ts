@@ -1,3 +1,4 @@
+import type { BotLabMessage, BotLabMessageParams } from '@botlab/model';
 import type { MicroDuckOfficialSimulatorHostState } from '@botlab/simulators-microduck';
 import {
   botLabExecutionSteps,
@@ -203,100 +204,52 @@ export function getRuntimeEventLabel(type: string, copy: BotLabCopy) {
   return labels[type] ?? type;
 }
 
-export function translateFlowMessage(message: string, copy: BotLabCopy) {
-  const exactMessages: Record<string, string> = {
-    'Use one green flag script. Parallel scripts are not supported yet.':
-      copy.messages.singleScript,
-    'Wait requires a numeric duration. Expressions are not supported yet.':
-      copy.messages.numericWait,
-    'Wait duration must be a finite, non-negative number of seconds.':
-      copy.messages.invalidWait,
-    'Steps must be a whole number.': copy.messages.invalidSteps,
-    'Connect at least one block to the green flag.': copy.messages.emptyScript,
-    'Compile the demo to evaluate policies.': copy.messages.compilePolicies,
-    'Workspace loaded from sample.': copy.messages.workspaceLoaded,
-    'Sample workspace loaded.': copy.messages.sampleWorkspaceLoaded,
-    'Simulate the compiled plan before running.':
-      copy.messages.simulationBeforeRun,
-    'Demo ready for MicroDuck Simulator': copy.messages.demoReady,
-    'Demo queued for MicroDuck.': copy.messages.demoQueued,
-    'Demo execution completed.': copy.messages.demoExecutionCompleted,
-    'Workspace edited.': copy.status.dirty,
-    'Workspace validated successfully.': copy.status.ready,
-    'Plan compiled for MicroDuck.': copy.messages.planCompiled,
-    'Simulation completed successfully.': copy.status.completed,
-  };
+type MessageFormatter = (
+  params: BotLabMessageParams,
+  copy: BotLabCopy,
+) => string;
 
-  if (exactMessages[message]) {
-    return exactMessages[message];
-  }
-  if (message.startsWith('Invalid motion STEPS:'))
-    return copy.messages.invalidSteps;
-  if (message.startsWith('Invalid motion ANGLE:'))
-    return copy.messages.invalidAngle;
-  if (
-    message.startsWith('Invalid motion DISTANCE:') ||
-    message.startsWith('Unsupported walk distance:')
-  )
-    return copy.messages.invalidDistance;
+/** Localized renderings by message code; codes without an entry show their English text. */
+const messageCatalog: Record<string, MessageFormatter> = {
+  'program.single-script': (_, copy) => copy.messages.singleScript,
+  'program.numeric-wait': (_, copy) => copy.messages.numericWait,
+  'program.invalid-wait': (_, copy) => copy.messages.invalidWait,
+  'program.invalid-steps': (_, copy) => copy.messages.invalidSteps,
+  'program.invalid-angle': (_, copy) => copy.messages.invalidAngle,
+  'program.invalid-distance': (_, copy) => copy.messages.invalidDistance,
+  'program.empty-script': (_, copy) => copy.messages.emptyScript,
+  'program.unsupported-block': ({ block }, copy) =>
+    `${copy.messages.unsupportedBlock} ${block}.`,
+  'flow.workspace-loaded': (_, copy) => copy.messages.workspaceLoaded,
+  'flow.workspace-status': ({ status }, copy) =>
+    getWorkspaceArtifactStatusLabel(String(status), copy),
+  'flow.target-selected': ({ target }, copy) =>
+    `${copy.messages.targetSelectedPrefix} ${target}. ${copy.messages.targetSelectedSuffix}`,
+  'flow.plan-compiled': ({ plan, target }, copy) =>
+    `${copy.messages.planCompiled} ${plan} · ${target}.`,
+  'flow.simulation-before-run': (_, copy) => copy.messages.simulationBeforeRun,
+  'flow.simulation-complete': ({ count, target }, copy) =>
+    `${copy.messages.simulationCompletePrefix} ${count} ${copy.messages.simulationCompleteSuffix} ${target}.`,
+  'flow.demo-queued': (_, copy) => copy.messages.demoQueued,
+  'flow.commands-sent': ({ count, status }, copy) =>
+    `${count} ${copy.messages.commandSentSuffix} ${formatExecutionStatus(String(status), copy)}.`,
+  'flow.log.sample-workspace-loaded': (_, copy) =>
+    copy.messages.sampleWorkspaceLoaded,
+  'flow.log.workspace-edited': (_, copy) => copy.status.dirty,
+  'flow.log.workspace-validated': (_, copy) => copy.status.ready,
+  'flow.log.plan-compiled': (_, copy) => copy.messages.planCompiled,
+  'flow.log.simulation-completed': (_, copy) => copy.status.completed,
+};
 
-  const unsupportedBlock = message.match(
-    /^Unsupported connected block: (.+)\.$/,
-  );
-  if (unsupportedBlock) {
-    return `${copy.messages.unsupportedBlock} ${unsupportedBlock[1]}.`;
-  }
+export function formatBotLabMessage(message: BotLabMessage, copy: BotLabCopy) {
+  const format = messageCatalog[message.code];
+  return format ? format(message.params ?? {}, copy) : message.text;
+}
 
-  const targetSelected = message.match(
-    /^Target (.+) selected\. Compile the workspace to generate an executable plan\.$/,
-  );
-  if (targetSelected) {
-    return `${copy.messages.targetSelectedPrefix} ${targetSelected[1]}. ${copy.messages.targetSelectedSuffix}`;
-  }
-
-  const compiledPlan = message.match(
-    /^Plan (.+) compiled from Scratch Blocks for (.+)\.$/,
-  );
-  if (compiledPlan) {
-    return `${copy.messages.planCompiled} ${compiledPlan[1]} · ${compiledPlan[2]}.`;
-  }
-
-  const simulationComplete = message.match(
-    /^(?:Simulation|Command validation) complete: (\d+) command\(s\) verified for (.+)\.$/,
-  );
-  if (simulationComplete) {
-    return `${copy.messages.simulationCompletePrefix} ${simulationComplete[1]} ${copy.messages.simulationCompleteSuffix} ${simulationComplete[2]}.`;
-  }
-
-  const commandsSent = message.match(
-    /^(\d+) command\(s\) sent\. (?:State|Result): (.+)\.$/,
-  );
-  if (commandsSent) {
-    const resultLabel = botLabExecutionSteps.some(
-      (step) => step.state === commandsSent[2],
-    )
-      ? getExecutionStateLabel(commandsSent[2] as BotLabExecutionState, copy)
-      : commandsSent[2] === 'dispatched'
-        ? copy.status.dispatched
-        : commandsSent[2];
-    return `${commandsSent[1]} ${copy.messages.commandSentSuffix} ${resultLabel}.`;
-  }
-
-  const loadedFrames = message.match(
-    /^Loaded (\d+) BotLab control frame\(s\) into the official simulator source\.$/,
-  );
-  if (loadedFrames) {
-    return `${copy.messages.loadedFramesPrefix} ${loadedFrames[1]} ${copy.messages.loadedFramesSuffix}`;
-  }
-
-  const sentFrames = message.match(
-    /^Sent (\d+) BotLab control frame\(s\) to the BotLab-enabled simulator host\.$/,
-  );
-  if (sentFrames) {
-    return `${copy.messages.sentFramesPrefix} ${sentFrames[1]} ${copy.messages.sentFramesSuffix}`;
-  }
-
-  return message;
+function formatExecutionStatus(status: string, copy: BotLabCopy) {
+  if (botLabExecutionSteps.some((step) => step.state === status))
+    return getExecutionStateLabel(status as BotLabExecutionState, copy);
+  return status === 'dispatched' ? copy.status.dispatched : status;
 }
 
 export const runtimeTraceLabels = {

@@ -287,9 +287,7 @@ export const botLabTranslations = {
       simulationCompletePrefix: 'Validació completada:',
       simulationCompleteSuffix: 'comanda(es) verificades per a',
       commandSentSuffix: 'comanda(es) enviades. Estat:',
-      demoReady: 'Demo preparada per a MicroDuck Simulator',
       demoQueued: 'Demo en cua per a MicroDuck.',
-      demoExecutionCompleted: 'Execucio demo completada.',
       planCompiled: 'Pla compilat',
       outputSimulation: 'Sortida simulador',
       compileArtifact: 'Compila la demo per generar aquest artifact.',
@@ -297,12 +295,6 @@ export const botLabTranslations = {
       targetCanRunDemo: 'capabilities per a la demo.',
       targetNotCompatible:
         'Planificat o no compatible amb la demo MicroDuck actual.',
-      loadedFramesPrefix: 'BotLab ha carregat',
-      loadedFramesSuffix:
-        'frame(s) de control a la source del simulador oficial.',
-      sentFramesPrefix: 'BotLab ha enviat',
-      sentFramesSuffix:
-        'frame(s) de control al host del simulador BotLab-enabled.',
     },
   },
   es: {
@@ -585,9 +577,7 @@ export const botLabTranslations = {
       simulationCompletePrefix: 'Validación completada:',
       simulationCompleteSuffix: 'comando(s) verificados para',
       commandSentSuffix: 'comando(s) enviados. Estado:',
-      demoReady: 'Demo preparada para MicroDuck Simulator',
       demoQueued: 'Demo en cola para MicroDuck.',
-      demoExecutionCompleted: 'Ejecucion demo completada.',
       planCompiled: 'Plan compilado',
       outputSimulation: 'Salida simulacion',
       compileArtifact: 'Compila la demo para generar este artifact.',
@@ -595,12 +585,6 @@ export const botLabTranslations = {
       targetCanRunDemo: 'capacidad(es) listas para la demo.',
       targetNotCompatible:
         'Planificado o no compatible con la demo MicroDuck actual.',
-      loadedFramesPrefix: 'BotLab ha cargado',
-      loadedFramesSuffix:
-        'frame(s) de control en la source del simulador oficial.',
-      sentFramesPrefix: 'BotLab ha enviado',
-      sentFramesSuffix:
-        'frame(s) de control al host del simulador BotLab-enabled.',
     },
   },
   en: {
@@ -883,9 +867,7 @@ export const botLabTranslations = {
       simulationCompletePrefix: 'Validation complete:',
       simulationCompleteSuffix: 'command(s) verified for',
       commandSentSuffix: 'command(s) sent. State:',
-      demoReady: 'Demo ready for MicroDuck Simulator',
       demoQueued: 'Demo queued for MicroDuck.',
-      demoExecutionCompleted: 'Demo execution completed.',
       planCompiled: 'Compiled plan',
       outputSimulation: 'Simulation output',
       compileArtifact: 'Compile the demo to generate this artifact.',
@@ -893,12 +875,6 @@ export const botLabTranslations = {
       targetCanRunDemo: 'capability/capabilities ready for the demo.',
       targetNotCompatible:
         'Planned or not compatible with the current MicroDuck demo.',
-      loadedFramesPrefix: 'BotLab loaded',
-      loadedFramesSuffix:
-        'control frame(s) into the official simulator source.',
-      sentFramesPrefix: 'BotLab sent',
-      sentFramesSuffix:
-        'control frame(s) to the BotLab-enabled simulator host.',
     },
   },
 } as const;

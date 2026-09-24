@@ -1,6 +1,10 @@
 import { createActor, fromPromise, waitFor } from 'xstate';
 import type { BotLabRuntime } from '@botlab/runtime';
-import type { ExecutionResult } from '@botlab/model';
+import {
+  createBotLabMessage,
+  type BotLabMessage,
+  type ExecutionResult,
+} from '@botlab/model';
 import { botLabFlowMachine } from './botlab-flow-machine';
 
 describe('botLabFlowMachine', () => {
@@ -151,7 +155,11 @@ describe('botLabFlowMachine', () => {
     expect(
       actor.getSnapshot().context.flowLog.map((entry) => entry.category),
     ).toEqual(expect.arrayContaining(['build', 'simulation', 'execution']));
-    expect(actor.getSnapshot().context.runMessage).toContain(
+    expect(actor.getSnapshot().context.runMessage).toMatchObject({
+      code: 'flow.commands-sent',
+      params: { count: 3 },
+    });
+    expect(actor.getSnapshot().context.runMessage.text).toContain(
       '3 command(s) sent',
     );
   });
@@ -165,13 +173,13 @@ describe('botLabFlowMachine', () => {
             runQueuedDemo: fromPromise<
               {
                 runtimeSnapshot: ReturnType<BotLabRuntime['inspectRuntime']>;
-                runMessage: string;
+                runMessage: BotLabMessage;
                 outcome: ExecutionResult;
               },
               { runtime: BotLabRuntime }
             >(async ({ input }: { input: { runtime: BotLabRuntime } }) => ({
               runtimeSnapshot: input.runtime.inspectRuntime(),
-              runMessage: status,
+              runMessage: createBotLabMessage('test.status', status),
               outcome: {
                 executionId: 'test-run',
                 status,

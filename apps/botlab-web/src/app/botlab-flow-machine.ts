@@ -1,7 +1,5 @@
-import { compileMicroDuckProgram } from '@botlab/adapters-microduck';
 import {
   createBlocksEditorProvider,
-  readMicroDuckProgramFromWorkspace,
   sampleScratchBlocksWorkspaceArtifact,
   type BlocksWorkspaceArtifact,
   type BlocksWorkspaceValidationResult,
@@ -20,7 +18,10 @@ import {
 } from '@botlab/runtime';
 import { createMicroDuckSimulatorBridge } from '@botlab/simulators-microduck';
 import { assign, fromPromise, setup } from 'xstate';
-import { createBotLabWorkbenchRuntime } from './botlab-runtime';
+import {
+  compileMicroDuckWorkspaceArtifact,
+  createBotLabWorkbenchRuntime,
+} from './botlab-runtime';
 
 export type BotLabWorkspaceState =
   | 'loaded'
@@ -1057,17 +1058,6 @@ function createBotLabFlowContext(
     ],
     flowLogCounter: 0,
   };
-}
-
-export function compileMicroDuckWorkspaceArtifact(
-  artifact: BlocksWorkspaceArtifact,
-  targetId: string,
-): CompiledBehaviorArtifact {
-  return compileMicroDuckProgram(
-    artifact,
-    readMicroDuckProgramFromWorkspace(artifact),
-    targetId,
-  );
 }
 
 function targetCanRunMicroDuckDemo(runtime: BotLabRuntime, targetId: string) {

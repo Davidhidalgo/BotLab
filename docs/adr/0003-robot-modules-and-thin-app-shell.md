@@ -6,6 +6,8 @@ Proposed
 
 First step implemented 2026-09-24: the web app now has an explicit composition root and `app.tsx` is split by responsibility. The robot-module contract below is the proposed next step.
 
+Robot-module contract implemented for MicroDuck 2026-09-24: `RobotModule` and `compileRobotWorkspace` live in `@botlab/model`, `microDuckRobotModule` in `@botlab/adapters-microduck` owns the Scratch XML reader (moved out of `@botlab/blocks`), compiler and executable block list, and the workbench builds its adapters and MicroDuck palette from registered modules. StackChan and block-definition registration remain open.
+
 ## Context
 
 ADR 0001 separated editor, model, runtime, adapters and simulators, and the Nx boundary rules keep those packages from importing each other in the wrong direction. A review of the current code found that the package boundaries hold, but robot-specific knowledge is spread across layers that are meant to be generic:
@@ -33,26 +35,26 @@ Each robot added today touches model, blocks, adapters, simulators and the app t
 
 ### Proposed next steps
 
-1. **Robot module contract.** Define a `RobotModule` in `@botlab/model` (no React, no Scratch):
+1. **Robot module contract.** Implemented in `libs/botlab-model/src/lib/robot-module.ts`:
    ```ts
    interface RobotModule<Step> {
-     id: string;
-     adapter: () => BotLabAdapter;
-     blockTypes: readonly string[]; // palette the editor may offer
-     readProgram(workspace: WorkspaceDocument): Step[];
+     id: string; // adapter ID
+     createAdapter(): BotLabAdapter;
+     blockTypes(capabilityIds: readonly string[]): string[];
+     readProgram(source: RobotProgramSource): Step[];
      compile(
-       behaviorId: string,
+       source,
        program: readonly Step[],
        targetId: string,
      ): CompiledBehaviorArtifact;
    }
    ```
-   Each `@botlab/adapters-<robot>` package would own its step types, workspace reader and compiler. `@botlab/blocks` would keep only engine concerns (Scratch XML parsing helpers, mounting, generic control blocks). Robot block definitions would be registered from the robot package through a small `BlockDefinitionSet` contract that `blocks` consumes as data.
+   `RobotProgramSource` is `Pick<BehaviorArtifact, 'behaviorId' | 'format' | 'content'>`, so adapters read workspaces without importing `@botlab/blocks`. MicroDuck is migrated. Remaining: migrate StackChan (`readStackChanProgramFromWorkspace` and its palette), then let robot packages contribute block definitions and message catalogs through a small `BlockDefinitionSet` contract that `blocks` consumes as data.
 2. **Move robot step types and samples out of the model.** After step 1, move `MicroDuckProgramStep`/`StackChanProgramStep` to their adapters, and move the `sample*` fixtures to a `@botlab/model/testing` entry point or a `fixtures` library tagged `type:fixture` that only apps and specs may import. Add that rule to `.oxlintrc.json`.
 3. **Structured messages instead of English sentences.** Replace free-text `buildMessage`/`simulationMessage`/`runMessage` with `{ code, params }` values. Put translations in `i18n.ts` keyed by `code`, and delete `translateFlowMessage`. This removes the regex coupling between the flow machine and the UI.
 4. **Split the flow machine by region.** `botLabFlowMachine` has four parallel regions: workspace, build, simulation and execution. Extracting each region's actors and messages into its own module would bring the machine file under ~400 lines without changing its behavior.
 5. **One test runner.** Libraries use Vitest while `botlab-web` uses Jest with Babel. Moving the app to Vitest would remove `jest.config.ts`, `jest.preset.js`, `babel-jest`, `ts-jest` and `@nx/jest`.
-6. **Tighter boundaries.** Add cases to `tools/ci/check-boundaries.mjs` for adapters importing runtime or simulators, and for production code importing fixtures once step 2 lands.
+6. **Tighter boundaries.** `tools/ci/check-boundaries.mjs` now checks that adapters cannot import blocks or runtime and that the model cannot import adapters. Add a fixture rule once step 2 lands.
 
 ## Consequences
 

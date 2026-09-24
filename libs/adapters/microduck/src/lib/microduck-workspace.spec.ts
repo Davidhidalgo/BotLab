@@ -1,10 +1,15 @@
-import { readMicroDuckProgramFromWorkspace } from './microduck-program';
-import { sampleScratchBlocksWorkspaceArtifact } from './blocks-contract';
+// @vitest-environment jsdom
+import { readMicroDuckProgramFromWorkspace } from './microduck-workspace';
+
+const scratchWorkspace = {
+  format: 'scratch-xml' as const,
+  content: '<xml></xml>',
+};
 
 describe('MicroDuck posture parsing', () => {
   it('preserves explicit repeated postures and source IDs in connection order', () => {
     const steps = readMicroDuckProgramFromWorkspace({
-      ...sampleScratchBlocksWorkspaceArtifact,
+      ...scratchWorkspace,
       content:
         '<xml><block type="event_whenflagclicked"><next><block type="botlab_microduck_stand" id="a"><next><block type="botlab_microduck_stand" id="b"><next><block type="botlab_microduck_sit" id="c"/></next></block></next></block></next></block><block type="botlab_microduck_sit" id="detached"/></xml>',
     });
@@ -17,7 +22,7 @@ describe('MicroDuck posture parsing', () => {
   it('rejects unsupported connected skills instead of silently skipping them', () => {
     expect(() =>
       readMicroDuckProgramFromWorkspace({
-        ...sampleScratchBlocksWorkspaceArtifact,
+        ...scratchWorkspace,
         content:
           '<xml><block type="event_whenflagclicked"><next><block type="botlab_microduck_kick"/></next></block></xml>',
       }),
@@ -28,7 +33,7 @@ describe('MicroDuck posture parsing', () => {
 describe('posture control flow', () => {
   const read = (body: string) =>
     readMicroDuckProgramFromWorkspace({
-      ...sampleScratchBlocksWorkspaceArtifact,
+      ...scratchWorkspace,
       content: `<xml><block type="event_whenflagclicked"><next>${body}</next></block></xml>`,
     });
   it('preserves nested branches and subsequent blocks without flattening them', () => {
@@ -77,7 +82,7 @@ describe('posture control flow', () => {
 describe('repeat parsing', () => {
   const read = (value: string, body = '') =>
     readMicroDuckProgramFromWorkspace({
-      ...sampleScratchBlocksWorkspaceArtifact,
+      ...scratchWorkspace,
       content: `<xml><block type="event_whenflagclicked"><next><block type="control_repeat" id="repeat"><value name="TIMES">${value}</value><statement name="SUBSTACK">${body}</statement></block></next></block></xml>`,
     });
   const number = (text: string) =>

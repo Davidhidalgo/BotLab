@@ -5,7 +5,7 @@ import {
   createMicroDuckBotLabPostMessageSourceModule,
   createMicroDuckSimulatorControlSource,
 } from '@botlab/simulators-microduck';
-import { compileMicroDuckWorkspaceArtifact } from './botlab-flow-machine';
+import { compileMicroDuckWorkspaceArtifact } from './botlab-runtime';
 
 const walk = (distance: number) =>
   `<block type="botlab_microduck_walk_distance"><field name="DISTANCE">${distance}</field></block>`;

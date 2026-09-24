@@ -1,5 +1,4 @@
-import type { MicroDuckProgramStep } from '@botlab/model';
-import type { BlocksWorkspaceArtifact } from './blocks-contract';
+import type { MicroDuckProgramStep, RobotProgramSource } from '@botlab/model';
 
 function directXmlChild(element: Element, tag: string, name?: string) {
   return Array.from(element.children).find(
@@ -9,9 +8,10 @@ function directXmlChild(element: Element, tag: string, name?: string) {
   );
 }
 
+/** Reads the green-flag script of a Scratch XML workspace into typed MicroDuck steps. */
 export function readMicroDuckProgramFromWorkspace(
-  artifact: BlocksWorkspaceArtifact,
-) {
+  artifact: Pick<RobotProgramSource, 'format' | 'content'>,
+): MicroDuckProgramStep[] {
   if (artifact.format !== 'scratch-xml') {
     throw new Error('Only Scratch XML can be compiled in this demo.');
   }

@@ -5,7 +5,7 @@ import type { BlocksWorkspaceArtifact } from '@botlab/blocks';
 import { createNativeProgram } from '@botlab/simulators-microduck-native';
 import { nativeMicroDuckCapabilities } from '@botlab/adapters-microduck';
 import { Button } from '@botlab/ui';
-import { compileMicroDuckWorkspaceArtifact } from './botlab-flow-machine';
+import { compileMicroDuckWorkspaceArtifact } from './botlab-runtime';
 import { nativeSimulatorMachine } from './native-simulator-machine';
 import type { BotLabLocale } from './i18n';
 

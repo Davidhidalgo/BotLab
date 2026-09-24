@@ -1,3 +1,5 @@
+import { microDuckRobotModule } from '@botlab/adapters-microduck';
+
 /** Blocks with implemented simulator execution, plus robot-independent program structure.
  * Planned capabilities do not expose executable robot blocks.
  */
@@ -16,31 +18,7 @@ export function robotBlockPalette(
         ? ['botlab_stackchan_leds', 'botlab_stackchan_leds_off']
         : []),
     ];
-  const blocks = [...common];
-  if (capabilityIds.includes('microduck-motion')) {
-    blocks.push(
-      ...[
-        'walk_steps',
-        'back_steps',
-        'turn_left',
-        'turn_right',
-        'turn_around',
-        'walk_distance',
-        'back_distance',
-        'turn_degrees',
-        'sit',
-        'stand',
-        'is_sit',
-        'is_stand',
-        'is_transitioning',
-      ].map((type) => `botlab_microduck_${type}`),
-      'control_if',
-      'control_if_else',
-    );
-  }
-  if (capabilityIds.includes('microduck-leds'))
-    blocks.push('botlab_microduck_set_leds');
-  return blocks;
+  return [...common, ...microDuckRobotModule.blockTypes(capabilityIds)];
 }
 
 export function hasUnavailableBlocks(

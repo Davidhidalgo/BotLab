@@ -1,8 +1,8 @@
-# ADR 0003: Optional shared MuJoCo browser backend
+# ADR 0003: Preferred shared MuJoCo browser backend
 
 ## Status
 
-Proposed as the preferred backend; implemented as an optional destination in the main editor on 2026-10-12. ADR 0002 and the existing native MicroDuck target remain available.
+Accepted as the preferred direction on 2026-10-13 by the user. Implemented as an optional destination on 2026-10-12; making it the default and retiring the MicroDuck iframe remain implementation work. ADR 0002 records the historical bridge. The native target remains a reference; its removal was not requested.
 
 ## Context
 
@@ -23,4 +23,4 @@ Jumper and MicroDuck need a common physics/session/renderer implementation while
 
 The optional integration supports Jumper's contact-free fixed-base joint experiment, Jumper's forward walking controller and MicroDuck's free-base flat-ground walker. It does not imply hardware support, broad Scratch compatibility, or parity with the iframe/native feature catalogs. Jumper's forward locomotion passed its own native and browser gates; untested modes stay unavailable.
 
-Chrome validation and measured limitations are recorded in [the implementation report](../mujoco-validation.md). Firefox, Safari, mobile devices, persistent memory profiling, full frame-by-frame telemetry persistence and broader learned skills remain separate validation work. This ADR proposes adoption; the optional integration does not replace an existing target.
+Chrome validation and measured limitations are recorded in [the implementation report](../mujoco-validation.md). Real Safari, physical mobile devices, persistent memory profiling, full frame-by-frame telemetry persistence and broader learned skills remain separate validation work. The adoption decision is accepted; iframe retirement is tracked separately and is not yet implemented. Existing saved programs must remain recoverable, with unsupported actions reported explicitly rather than silently converted. ToF is feasible through MuJoCo geometry queries; the browser sensor path and performance still need validation.

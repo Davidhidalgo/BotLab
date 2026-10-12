@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted as the preferred direction on 2026-10-13 by the user. Implemented as an optional destination on 2026-10-12; making it the default and retiring the MicroDuck iframe remain implementation work. ADR 0002 records the historical bridge. The native target remains a reference; its removal was not requested.
+Accepted as the preferred direction on 2026-10-13 by the user. Implemented as an optional destination on 2026-10-12; making it the default and retiring the MicroDuck iframe remain implementation work. ADR 0002 records the historical bridge. The user subsequently approved MuJoCo web as the only visible simulation destination for Jumper and MicroDuck. Retain native MicroDuck temporarily as an internal validation and migration reference, outside the product destination selector. This UI change remains pending.
 
 ## Context
 

@@ -2,7 +2,6 @@
 from io import BytesIO
 import mujoco
 from PIL import Image
-from .session import RL
 
 JOINTS = ('left_hip_yaw', 'left_hip_roll', 'left_hip_pitch', 'left_knee', 'left_ankle',
           'neck_pitch', 'head_pitch', 'head_yaw', 'head_roll', 'mouth',
@@ -10,12 +9,12 @@ JOINTS = ('left_hip_yaw', 'left_hip_roll', 'left_hip_pitch', 'left_knee', 'left_
 
 
 class Renderer:
-    def __init__(self):
-        self.model = mujoco.MjModel.from_xml_path(str(RL / 'src/mjlab_microduck/robot/microduck/scene.xml'))
+    def __init__(self, scene):
+        self.model = mujoco.MjModel.from_xml_path(str(scene))
         self.data = mujoco.MjData(self.model)
         self.renderer = mujoco.Renderer(self.model, height=480, width=640)
         self.camera = mujoco.MjvCamera()
-        self.camera.distance = 0.8
+        self.camera.distance = 2.1
         self.camera.azimuth = 135
         self.camera.elevation = -20
         self.joints = []

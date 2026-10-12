@@ -1,13 +1,20 @@
 import { identifyCompiledProgram, sameProgram } from '@botlab/model';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMachine } from '@xstate/react';
 import type { BlocksWorkspaceArtifact } from '@botlab/blocks';
-import { createNativeProgram } from '@botlab/simulators-microduck-native';
+import {
+  createNativeAppConnection,
+  createNativeProgram,
+} from '@botlab/simulators-microduck-native';
 import { nativeMicroDuckCapabilities } from '@botlab/adapters-microduck';
 import { Button } from '@botlab/ui';
 import { compileMicroDuckWorkspaceArtifact } from './botlab-flow-machine';
 import { nativeSimulatorMachine } from './native-simulator-machine';
 import type { BotLabLocale } from './i18n';
+import {
+  usedImportedSkillNames,
+  type HuggingFaceModel,
+} from './huggingface-models';
 
 const labels = {
   es: {
@@ -51,6 +58,10 @@ const labels = {
     backend: 'Simulador',
     browser: 'Navegador (iframe)',
     native: 'MuJoCo nativo (experimental)',
+    loadingModels: 'Cargando los modelos del programa…',
+    missingModel:
+      'Añade el modelo seleccionado desde «Añadir modelo de Hugging Face».',
+    imported: 'Habilidad importada',
   },
   ca: {
     connect: 'Connectar',
@@ -93,6 +104,10 @@ const labels = {
     backend: 'Simulador',
     browser: 'Navegador (iframe)',
     native: 'MuJoCo natiu (experimental)',
+    loadingModels: 'Carregant els models del programa…',
+    missingModel:
+      'Afegeix el model seleccionat des de «Afegeix un model de Hugging Face».',
+    imported: 'Habilitat importada',
   },
   en: {
     connect: 'Connect',
@@ -135,18 +150,25 @@ const labels = {
     backend: 'Simulator',
     browser: 'Browser (iframe)',
     native: 'Native MuJoCo (experimental)',
+    loadingModels: 'Loading models used by this program…',
+    missingModel: 'Add the selected model with “Add Hugging Face model”.',
+    imported: 'Imported skill',
   },
 };
 export const nativeSimulatorLabels = labels;
 
 export function NativeSimulatorPanel({
   workspace,
+  models,
+  connectionFactory,
   locale,
   onActiveBlock,
   onBusy,
   executionBlocked = false,
 }: {
   workspace: BlocksWorkspaceArtifact;
+  models: readonly HuggingFaceModel[];
+  connectionFactory?: typeof createNativeAppConnection;
   locale: BotLabLocale;
   onActiveBlock: (id: string | undefined) => void;
   onBusy: (busy: boolean) => void;
@@ -155,9 +177,11 @@ export function NativeSimulatorPanel({
   const [snapshot, send, actor] = useMachine(nativeSimulatorMachine, {
     input: {
       url: process.env.BOTLAB_NATIVE_SIMULATOR_URL ?? 'http://127.0.0.1:4401',
+      factory: connectionFactory,
     },
   });
   const [compileError, setCompileError] = useState<string>();
+  const importAttempts = useRef(new Set<string>());
   const copy = labels[locale];
   const data = snapshot.context.snapshot;
   const currentIdentity = useMemo(() => {
@@ -174,17 +198,34 @@ export function NativeSimulatorPanel({
     data?.program?.runId === snapshot.context.runId
       ? data?.program
       : undefined;
-  const supportsPosture =
-    nativeMicroDuckCapabilities(data?.capabilities, 'microduck-native').length >
-    0;
+  const supportsPosture = nativeMicroDuckCapabilities(
+    data?.capabilities,
+    'microduck-native',
+  ).some((capability) => capability.id === 'microduck-posture');
   const online = snapshot.matches('online');
   const busy = snapshot.hasTag('busy');
+  const usedNames = useMemo(
+    () => usedImportedSkillNames(workspace),
+    [workspace.content],
+  );
+  const missing = [...usedNames].filter(
+    (name) => !models.some((model) => model.name === name),
+  );
+  const pending = models.filter(
+    (model) =>
+      usedNames.has(model.name) &&
+      !data?.importedSkills?.some((skill) => skill.name === model.name),
+  );
   const running = snapshot.matches({ online: 'active' });
   const canReset = snapshot.matches({ online: 'ready' }) && !!data?.state;
   const ready =
     snapshot.matches({ online: 'ready' }) && !!data?.state && !data.postureBusy;
   const canRun =
-    canReset && (data.observedPosture === 'transitioning' || !data.postureBusy);
+    canReset &&
+    !busy &&
+    !missing.length &&
+    !pending.length &&
+    (data.observedPosture === 'transitioning' || !data.postureBusy);
   const postureError =
     program?.errorCode === 'posture-already-sit'
       ? `${copy.already} ${copy.sit}. ${copy.checkFirst}`
@@ -195,6 +236,33 @@ export function NativeSimulatorPanel({
           : undefined;
   const error =
     compileError ?? snapshot.context.error ?? postureError ?? program?.error;
+  useEffect(() => {
+    importAttempts.current.clear();
+  }, [snapshot.context.connection]);
+  useEffect(() => {
+    if (
+      !snapshot.matches({ online: 'ready' }) ||
+      !data?.state ||
+      snapshot.context.error ||
+      missing.length ||
+      !pending.length
+    )
+      return;
+    const model = pending[0];
+    if (importAttempts.current.has(model.name)) return;
+    importAttempts.current.add(model.name);
+    send({
+      type: 'operate',
+      operation: {
+        kind: 'import-skill',
+        repo: model.repo,
+        revision: model.revision,
+        filename: model.filename,
+        name: model.name,
+        duration: model.duration,
+      },
+    });
+  }, [data, missing.length, pending, send, snapshot]);
   useEffect(() => {
     onBusy(busy);
     return () => onBusy(false);
@@ -323,9 +391,11 @@ export function NativeSimulatorPanel({
         {running && program ? (
           <span className="text-xs">
             {program.index + 1}/{program.count} · {program.progress.toFixed(2)}{' '}
-            {program.step.kind === 'walk'
+            {program.step.kind === 'walk' ||
+            program.step.kind === 'walk-until-obstacle'
               ? 'm'
-              : program.step.kind === 'turn'
+              : program.step.kind === 'turn' ||
+                  program.step.kind === 'turn-until-clear'
                 ? '°'
                 : 's'}
           </span>
@@ -335,6 +405,16 @@ export function NativeSimulatorPanel({
             {error}
           </p>
         ) : null}
+        {missing.length > 0 && (
+          <p role="alert" className="text-sm text-destructive">
+            {copy.missingModel} ({missing.join(', ')})
+          </p>
+        )}
+        {online && pending.length > 0 && !error && !missing.length && (
+          <p role="status" className="text-xs">
+            {copy.loadingModels} {pending.map((model) => model.name).join(', ')}
+          </p>
+        )}
         <span className="text-xs text-muted-foreground">{copy.note}</span>
       </div>
       <div className="simulator-scene">
@@ -357,6 +437,14 @@ export function NativeSimulatorPanel({
           </div>
         )}
       </div>
+      <div className="border-t p-4">
+        {data?.importedSkills?.map((skill) => (
+          <p key={skill.name} role="status" className="mt-2 text-xs">
+            {copy.imported}: <strong>{skill.name}</strong> · {skill.repo} ·{' '}
+            {skill.revision.slice(0, 10)}
+          </p>
+        ))}
+      </div>
       <div className="simulator-toolbar">
         <div className="flex flex-wrap gap-2">
           <Button
@@ -371,9 +459,10 @@ export function NativeSimulatorPanel({
           <Button
             variant="secondary"
             disabled={!canReset}
-            onClick={() =>
-              send({ type: 'operate', operation: { kind: 'reset' } })
-            }
+            onClick={() => {
+              importAttempts.current.clear();
+              send({ type: 'operate', operation: { kind: 'reset' } });
+            }}
           >
             {copy.reset}
           </Button>

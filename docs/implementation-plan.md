@@ -1,14 +1,26 @@
 # BotLab Implementation Plan
 
-This document is the working implementation plan for BotLab. It keeps the roadmap, architecture decisions, and acceptance criteria in the repository so the project can grow without losing context.
+This document keeps BotLab's detailed roadmap, architecture criteria and implementation history. For the current delivery order, open work, ideas and session resume point, use [the task register](next-steps.md), maintained with [the session workflow](session-workflow.md). Dated delivery orders and unchecked items below are historical context and must be reconciled with current implementation evidence before new work.
 
 ## Product Goal
 
-BotLab should let a user build robot behaviors visually, test them safely in a simulator when available, inspect what the runtime is doing, and deploy the behavior to supported robot targets through adapters.
+BotLab is an educational robotics project. It should help learners understand programming and robot behavior by creating visual programs, predicting their effects, testing them in a simulator when available, observing the results, and improving their programs. Deployment to supported robot targets goes through adapters.
 
 The first supported target is MicroDuck. StackChan is planned as the next robot family. The visual editor should use the official Scratch Blocks package first, while keeping TurboWarp or raw Blockly as future swappable options behind an internal BotLab boundary.
 
 Product focus (agreed 2026-09-13): refine the product against the MicroDuck simulator before further hardware work. Prioritize the reported turn regression, reliable execution, package-level verification, architecture consolidation, and new executable blocks. A program/example library is outside the next product increment; preserve existing local save/import/export. StackChan, already available to the project owner, will be the first physical target when that experience is ready. Hardware policy and transport tasks below remain requirements before hardware enablement, not blockers for simulator product development.
+
+## Educational Product Criteria — 2026-10-12
+
+The user reaffirmed that the educational purpose must guide every product increment, including the shared MuJoCo integration. These criteria govern upcoming work; they do not imply that the current experimental palette already meets them.
+
+- Start with understandable actions and familiar units, such as advancing a distance, turning in degrees and waiting. Introduce repetition and conditions progressively as execution support is validated. A beginner should not need to configure controllers or angular velocities to run a first program.
+- Keep technical movement controls such as the current timed `marchar` block, joint probes and detailed telemetry available through advanced options when they support further learning.
+- Make cause and effect visible: identify the executing block, show observable movement and explain the outcome or limitation in plain language. Support a predict → run → observe → adjust learning cycle.
+- Preserve familiar block meanings and project continuity across robots and simulators. Enable only validated capabilities and explain differences without silently replacing an action with another behavior.
+- Evaluate each learner-facing increment with a small learning task as well as technical checks: can a learner express the intended behavior, see what happened and make a meaningful adjustment? Reliable physics and performance support this experience.
+
+The learner-facing MuJoCo increment now connects simplified advance/wait blocks to measured motion and places the technical timed-velocity block in Advanced. MicroDuck additionally offers a measured left turn; right turns from rest and reverse remain withheld, as do Jumper turns. Requested speed multiplied by time is not sufficient evidence that a distance or angle was achieved. The panel compares observed movement with the goal; see [the validation record](mujoco-validation.md) for tested cases and remaining limits. Bounded repetition and the first predict/run/compare activity are now implemented for both MuJoCo walking targets: counts 0–100, nested iteration progress, bounded expansion, cancellation and persisted per-iteration measurements. See [repetition acceptance](mujoco-validation.md#bounded-repetition-and-first-activity--2026-10-12) and the [activity instructions](../README.md#actividad-repite-avanza-y-observa). Current priorities remain in the task register.
 
 ## Architecture Principles
 
@@ -104,7 +116,9 @@ Native experiment completed after user authorization: [MicroDuck simulator evalu
 
 ### Recommended next increment: native MicroDuck skills
 
-After the Mac companion, prioritize useful native blocks over package downloads. The first increment (capability discovery and native posture blocks) is implemented; posture conditions with if/if-else are also implemented; additional skills remain planned. The pinned daemon exposes `robot.do`, `robot.skills` and loaded-policy information; the current gateway only permits `sit_toggle`, through the shared posture execution path for the toolbar and explicit blocks. The prepared configuration loads `kick_left`, `kick_right`, `roulade`, `ground_pick` and the posture policy. Loading a policy does not establish editor support or verified physical completion.
+After the Mac companion, prioritize useful native blocks over package downloads. Capability discovery, native posture blocks, posture conditions with if/if-else, and native left/right kick blocks are implemented. The pinned daemon exposes `robot.do`, `robot.skills` and loaded-policy information; the gateway permits `sit_toggle` for posture, the two kick policies, and explicitly imported community skills for program steps. The prepared configuration also loads `roulade` and `ground_pick`, which remain unavailable as program blocks. Loading a policy does not establish verified physical completion.
+
+Kick verification on 2026-09-22: both bundled policies showed `stand → kick → stand` without a fall in direct physics probes. A headless gateway program executed left then right kick and completed only after observed standing recovery; source block IDs and connected capability checks are covered by library tests. Browser editor acceptance and interruption during each kick remain open. A community `polite-bow` model downloaded from Hugging Face registered and ran in an isolated simulator, but the simulated body ended fallen. An experimental imported-skill block and in-app import panel now let the owner reproduce that trial; the model is not validated as a successful motion. See [the import probe](community-skills-evaluation.md).
 
 Verification of the first increment: [native posture evidence](evidence/microduck-native-posture-2026-09-13.json) records actual repeated posture actions, a walk between posture transitions, stable final sitting, and cancellation during rising with no subsequent movement. The existing movement/turn/wait/posture/fallback/connection-loss acceptance also passes. All 319 configured tests pass across 27 test files; app/Mac builds and changed-module checks pass. Runtime target registration remains separate from the implemented native capability-to-adapter mapping.
 
@@ -679,13 +693,7 @@ Acceptance criteria:
 
 ## Near-Term Backlog
 
-Execution follows the [agreed delivery order](#agreed-delivery-order--2026-09-13):
-
-1. Completed for the recorded Feet configuration: reproduce and fix the turn regression, with library and browser/physics coverage. Extend the mode/scene matrix as needed.
-2. Verify the saved-program execution/stop flow and complete app/library/browser verification coverage.
-3. Deliver architecture changes A1–A7 in bounded increments, with hardware-specific guarantees required before hardware enablement.
-4. Expand executable blocks, beginning with finite repetition and then expressions and conditions. A library of programs/examples is deferred.
-5. Resume physical StackChan support and broader scheduler/arbitration work after the simulator experience is reliable.
+The current backlog is maintained only in [docs/next-steps.md](next-steps.md). It links these detailed milestones to current evidence and retains deferred ideas across sessions. Update that register when priorities, scope or implementation status change; do not add a second ordered task list here.
 
 ## Technical Risks
 
@@ -697,6 +705,7 @@ Execution follows the [agreed delivery order](#agreed-delivery-order--2026-09-13
 
 ## Working Rules
 
+- Follow [the session workflow](session-workflow.md): read the current task register on resume, capture relevant ideas and decisions during work, and update the resume point before closing a work session.
 - Prefer Nx generators for new projects and library structure.
 - Keep implementation commits scoped by milestone or package.
 - Keep robot hardware code behind adapters.

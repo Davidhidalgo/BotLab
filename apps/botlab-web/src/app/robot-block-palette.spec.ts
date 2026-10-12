@@ -19,6 +19,18 @@ describe('robot block palette', () => {
     expect(robotBlockPalette(false, ['microduck-motion'])).not.toContain(
       'botlab_microduck_walk_distance',
     );
+    expect(robotBlockPalette(true, ['microduck-motion'], true)).toContain(
+      'botlab_microduck_community_skill',
+    );
+    expect(robotBlockPalette(true, ['microduck-motion'], true)).toContain(
+      'botlab_microduck_walk_until_obstacle',
+    );
+    expect(robotBlockPalette(true, ['microduck-motion'])).not.toContain(
+      'botlab_microduck_walk_until_obstacle',
+    );
+    expect(robotBlockPalette(true, ['microduck-motion'])).not.toContain(
+      'botlab_microduck_community_skill',
+    );
   });
   it('detects preserved incompatible blocks, including nested ones, without treating numeric shadows as commands', () => {
     const allowed = robotBlockPalette(false, []);

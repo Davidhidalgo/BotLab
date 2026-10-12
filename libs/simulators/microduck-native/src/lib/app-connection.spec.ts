@@ -5,6 +5,96 @@ import {
 import { describe, it, expect, vi } from 'vitest';
 
 describe('native app boundary', () => {
+  it('preserves sensor navigation intents and source blocks', () => {
+    expect(
+      createNativeProgram({
+        commands: [
+          {
+            commandId: 'navigate-by-depth',
+            sourceBlockId: 'wall',
+            inputs: { action: 'walk-until-obstacle' },
+          },
+          {
+            commandId: 'navigate-by-depth',
+            sourceBlockId: 'turn',
+            inputs: { action: 'turn-until-clear', direction: 'left' },
+          },
+        ],
+      }),
+    ).toEqual([
+      { kind: 'walk-until-obstacle', value: 1, sourceBlockId: 'wall' },
+      { kind: 'turn-until-clear', value: -1, sourceBlockId: 'turn' },
+    ]);
+  });
+  it('keeps the last snapshot during a skill download instead of filling the gateway queue', async () => {
+    const payload = {
+      protocolVersion: 1,
+      simulatorId: 'microduck',
+      presentation: 'embedded',
+      frameTime: 0,
+      postureBusy: false,
+      capabilities: { skills: [], postures: [] },
+    };
+    let finishImport: ((value: Response) => void) | undefined;
+    const paths: string[] = [];
+    const fetcher = vi.fn(async (url) => {
+      const path = String(url);
+      paths.push(path);
+      if (path.endsWith('/import-skill'))
+        return new Promise<Response>((resolve) => {
+          finishImport = resolve;
+        });
+      return { ok: true, json: async () => payload } as Response;
+    }) as unknown as typeof fetch;
+    const connection = createNativeAppConnection('http://local', fetcher);
+    await connection.snapshot();
+    const importing = connection.importSkill({
+      repo: 'owner/model',
+      name: 'bow',
+      duration: 4,
+    });
+    await connection.snapshot();
+    expect(paths).toEqual(['http://local/state', 'http://local/import-skill']);
+    finishImport?.({ ok: true, json: async () => payload } as Response);
+    await importing;
+    connection.dispose();
+  });
+  it('runs only discovered kicks and retains the source block', () => {
+    const artifact = {
+      commands: [
+        {
+          commandId: 'run-skill',
+          sourceBlockId: 'kick',
+          inputs: { skill: 'kick_left' },
+        },
+      ],
+    };
+    expect(
+      createNativeProgram(artifact, { skills: ['kick_left'], postures: [] }),
+    ).toEqual([{ kind: 'skill', value: 'kick_left', sourceBlockId: 'kick' }]);
+    expect(() =>
+      createNativeProgram(artifact, { skills: [], postures: [] }),
+    ).toThrow('unavailable');
+  });
+  it('accepts an imported skill only when the gateway marks it executable', () => {
+    const artifact = {
+      commands: [{ commandId: 'run-skill', inputs: { skill: 'polite-bow' } }],
+    };
+    expect(() =>
+      createNativeProgram(artifact, {
+        skills: ['polite-bow'],
+        executableSkills: [],
+        postures: [],
+      }),
+    ).toThrow('unavailable');
+    expect(
+      createNativeProgram(artifact, {
+        skills: ['polite-bow'],
+        executableSkills: ['polite-bow'],
+        postures: [],
+      }),
+    ).toMatchObject([{ kind: 'skill', value: 'polite-bow' }]);
+  });
   it('maps signed distance, degrees and wait while retaining block IDs', () => {
     expect(
       createNativeProgram({

@@ -33,7 +33,13 @@
               "react-dom/*",
               "scratch-blocks",
               "blockly",
-              "blockly/*"
+              "blockly/*",
+              "@mujoco/mujoco",
+              "@mujoco/mujoco/*",
+              "onnxruntime-web",
+              "onnxruntime-web/*",
+              "three",
+              "three/*"
             ]
           },
           {
@@ -46,7 +52,13 @@
               "react-dom/*",
               "scratch-blocks",
               "blockly",
-              "blockly/*"
+              "blockly/*",
+              "@mujoco/mujoco",
+              "@mujoco/mujoco/*",
+              "onnxruntime-web",
+              "onnxruntime-web/*",
+              "three",
+              "three/*"
             ]
           },
           {
@@ -59,7 +71,15 @@
           },
           {
             "sourceTag": "scope:adapter",
-            "onlyDependOnLibsWithTags": ["scope:model", "scope:adapter"]
+            "onlyDependOnLibsWithTags": ["scope:model", "scope:adapter"],
+            "bannedExternalImports": [
+              "@mujoco/mujoco",
+              "@mujoco/mujoco/*",
+              "onnxruntime-web",
+              "onnxruntime-web/*",
+              "three",
+              "three/*"
+            ]
           },
           {
             "sourceTag": "scope:simulator",
@@ -71,7 +91,15 @@
           },
           {
             "allSourceTags": ["scope:simulator", "type:core"],
-            "onlyDependOnLibsWithTags": ["scope:model", "type:core"]
+            "onlyDependOnLibsWithTags": ["scope:model", "type:core"],
+            "bannedExternalImports": [
+              "@mujoco/mujoco",
+              "@mujoco/mujoco/*",
+              "onnxruntime-web",
+              "onnxruntime-web/*",
+              "three",
+              "three/*"
+            ]
           },
           {
             "sourceTag": "scope:ui",

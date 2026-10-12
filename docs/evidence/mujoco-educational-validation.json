@@ -1,0 +1,456 @@
+{
+  "executedAt": "2026-10-12T17:48:36.514Z",
+  "browser": "154.0.8037.98",
+  "robots": [
+    {
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.5,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 4.239999999999751,
+            "displacementMeters": 0.4890323564133108,
+            "yawRadians": -0.01871943401826624,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.48898883507686536
+          },
+          "duration": 4.239999999999751,
+          "end": [
+            0.49187974807422435,
+            -0.004151518768983883,
+            0.10219770103059578
+          ],
+          "quaternion": [
+            0.99993226604915,
+            0.006007450635641016,
+            0.004811856941101678,
+            -0.008730399959472583
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 1,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 10.858999999999421,
+            "displacementMeters": 1.0015503157219185,
+            "yawRadians": 0.01724954844261285,
+            "targetDistanceMeters": 1,
+            "forwardDisplacementMeters": 1.0015223787139542
+          },
+          "duration": 6.61899999999967,
+          "end": [
+            1.4928787508378518,
+            -0.015939754277111855,
+            0.10303358285060553
+          ],
+          "quaternion": [
+            0.9999659708425706,
+            0.006023441535599911,
+            -0.005585672741474438,
+            -0.0007586626185520763
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.1,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 13.208999999998118,
+            "displacementMeters": 0.09323013086333161,
+            "yawRadians": -0.030890707347383577,
+            "targetDistanceMeters": 0.1,
+            "forwardDisplacementMeters": 0.09315433748132297
+          },
+          "duration": 2.3499999999986976,
+          "end": [
+            1.5862588371674033,
+            -0.012262659423182633,
+            0.10233213366606145
+          ],
+          "quaternion": [
+            0.9998281010946707,
+            0.007165548846649081,
+            0.0023036047551563583,
+            -0.016944514637005446
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 15.01099999999712,
+            "displacementMeters": 0.0001551423631264665,
+            "yawRadians": 0.00004992387344070204,
+            "targetDistanceMeters": 0,
+            "forwardDisplacementMeters": -0.000058869456286387215
+          },
+          "duration": 1.8019999999990013,
+          "end": [
+            1.5863304359180208,
+            -0.012493925963181031,
+            0.10289942694248014
+          ],
+          "quaternion": [
+            0.9998003937550982,
+            0.007921654153200319,
+            -0.000320410289884368,
+            -0.0183389579822083
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        }
+      ]
+    },
+    {
+      "robot": "microduck",
+      "manifestId": "microduck-flat-ground",
+      "results": [
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.5,
+            "speed": 0.25,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 6.904999999999875,
+            "displacementMeters": 0.5062662099303772,
+            "yawRadians": -0.2593351495126903,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.5014161212420438
+          },
+          "duration": 6.904999999999875,
+          "end": [
+            0.5025851900679138,
+            -0.07180788267523666,
+            0.11676002301040134
+          ],
+          "quaternion": [
+            0.991322133086139,
+            -0.002179576019897576,
+            0.0018581557421101422,
+            -0.13142383786497422
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 14.100000000000804,
+            "displacementMeters": 0.034061993010233584,
+            "yawRadians": 1.5110079588329859,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 7.195000000000929,
+          "end": [
+            0.5206517299567448,
+            -0.04291748715238498,
+            0.11699524235323029
+          ],
+          "quaternion": [
+            0.8153063301630655,
+            -0.0023709939275929305,
+            0.001211573483556177,
+            0.5790237460359678
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.5,
+            "speed": 0.25,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 20.83500000000014,
+            "displacementMeters": 0.4976492221512444,
+            "yawRadians": -0.10148046389030352,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.49625574217936724
+          },
+          "duration": 6.734999999999335,
+          "end": [
+            0.722135004032353,
+            0.41218272346193197,
+            0.11698054001655303
+          ],
+          "quaternion": [
+            0.8454110553278037,
+            -0.002563944927738272,
+            -0.00048606771073273955,
+            0.5341098552302858
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 27.979999999998718,
+            "displacementMeters": 0.027012026963716317,
+            "yawRadians": 1.5395018885897551,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 7.1449999999985785,
+          "end": [
+            0.6991561294870515,
+            0.4265758600761469,
+            0.11702077951790846
+          ],
+          "quaternion": [
+            0.23305442717842453,
+            -0.005108325188664349,
+            -0.00040267475478802906,
+            0.9724501924722649
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 3.141592653589793,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 39.735000000001875,
+            "displacementMeters": 0.03398772741268164,
+            "yawRadians": 3.138313677972156,
+            "targetYawRadians": 3.141592653589793
+          },
+          "duration": 11.755000000003157,
+          "end": [
+            0.6926300487003291,
+            0.39288011235866604,
+            0.11699121209554922
+          ],
+          "quaternion": [
+            -0.971040559592154,
+            0.00031346217372645377,
+            -0.0035509121578119742,
+            0.23888810014580078
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 0.7853981633974483,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 44.23500000000418,
+            "displacementMeters": 0.010418936192376617,
+            "yawRadians": 0.7089327239903764,
+            "targetYawRadians": 0.7853981633974483
+          },
+          "duration": 4.500000000002302,
+          "end": [
+            0.7006503270850037,
+            0.3998914039612436,
+            0.11691935081279245
+          ],
+          "quaternion": [
+            -0.9937870672849561,
+            0.0014870497975116382,
+            -0.002280713448136772,
+            -0.1112647829559436
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 6.283185307179586,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 64.33500000001398,
+            "displacementMeters": 0.009898517504826471,
+            "yawRadians": 6.322206810725815,
+            "targetYawRadians": 6.283185307179586
+          },
+          "duration": 20.1000000000098,
+          "end": [
+            0.6913290859497236,
+            0.39672409817034576,
+            0.11668675500284384
+          ],
+          "quaternion": [
+            0.9919078852641343,
+            -0.0032335381276016816,
+            0.001186773708778789,
+            0.12691289512959247
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.1,
+            "speed": 0.25,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 67.35500000001123,
+            "displacementMeters": 0.09832016253403882,
+            "yawRadians": -0.0585109547098244,
+            "targetDistanceMeters": 0.1,
+            "forwardDisplacementMeters": 0.09787979649272793
+          },
+          "duration": 3.0199999999972533,
+          "end": [
+            0.7886979705811671,
+            0.4130701146448149,
+            0.1170744742587984
+          ],
+          "quaternion": [
+            0.9948540386714365,
+            -0.0021782474053965977,
+            0.0017346271527254173,
+            0.1012802450925795
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0,
+            "speed": 0.25,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 69.16500000000958,
+            "displacementMeters": 0.00005212265979898921,
+            "yawRadians": 0.0022493694569048206,
+            "targetDistanceMeters": 0,
+            "forwardDisplacementMeters": -0.000041915782189260744
+          },
+          "duration": 1.8099999999983538,
+          "end": [
+            0.788693597452878,
+            0.41323627943636637,
+            0.11645620420541111
+          ],
+          "quaternion": [
+            0.9943523964986635,
+            -0.0028270177928287382,
+            0.00288224323974807,
+            0.10605193172059989
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        }
+      ]
+    }
+  ],
+  "passed": true
+}

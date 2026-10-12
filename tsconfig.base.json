@@ -27,6 +27,15 @@
       "@botlab/ui": ["libs/ui/src/index.ts"],
       "@botlab/simulators-microduck-native": [
         "libs/simulators/microduck-native/src/index.ts"
+      ],
+      "@botlab/simulators-mujoco": ["./libs/simulators/mujoco/src/index.ts"],
+      "@botlab/adapters-jumper": ["./libs/adapters/jumper/src/index.ts"],
+      "@botlab/simulators-jumper": ["./libs/simulators/jumper/src/index.ts"],
+      "@botlab/simulators-microduck-mujoco": [
+        "./libs/simulators/microduck-mujoco/src/index.ts"
+      ],
+      "@botlab/simulators-mujoco/worker": [
+        "libs/simulators/mujoco/src/worker.ts"
       ]
     },
     "strict": false,

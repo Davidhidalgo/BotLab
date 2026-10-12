@@ -65,18 +65,41 @@ export default defineConfig({
         __dirname,
         '../../libs/simulators/microduck/src/index.ts',
       ),
+      '@botlab/simulators-mujoco/worker': resolve(
+        __dirname,
+        '../../libs/simulators/mujoco/src/worker.ts',
+      ),
+      '@botlab/simulators-microduck-mujoco': resolve(
+        __dirname,
+        '../../libs/simulators/microduck-mujoco/src/index.ts',
+      ),
+      '@botlab/simulators-mujoco': resolve(
+        __dirname,
+        '../../libs/simulators/mujoco/src/index.ts',
+      ),
+      '@botlab/simulators-jumper': resolve(
+        __dirname,
+        '../../libs/simulators/jumper/src/index.ts',
+      ),
+      '@botlab/adapters-jumper': resolve(
+        __dirname,
+        '../../libs/adapters/jumper/src/index.ts',
+      ),
       '@botlab/ui': resolve(__dirname, '../../libs/ui/src/index.ts'),
     },
   },
   server: {
-    port: 4200,
+    // Respect Portless also when Vite is launched through Nx or a wrapper.
+    port: Number(process.env.PORT ?? 4200),
+    strictPort: !!process.env.PORT,
     host: '127.0.0.1',
   },
   preview: {
     port: 4300,
     host: '127.0.0.1',
   },
-  plugins: [react(), scratchBlocksMedia()],
+  plugins: [react(), scratchBlocksMedia(), simulationAssets()],
+  worker: { format: 'es' },
   build: {
     outDir: '../../dist/apps/botlab-web',
     emptyOutDir: true,
@@ -189,4 +212,75 @@ function getMediaContentType(filePath: string) {
     default:
       return 'application/octet-stream';
   }
+}
+
+// Prepared, verified resources stay in ignored tmp; deployments include that exact cache.
+function simulationAssets(): Plugin {
+  const directory = resolve(__dirname, '../../tmp/mujoco-web');
+  let config: ResolvedConfig;
+  return {
+    name: 'botlab-simulation-assets',
+    configResolved(value) {
+      config = value;
+    },
+    configureServer(server) {
+      server.middlewares.use(async (request, response, next) => {
+        let pathname: string;
+        try {
+          pathname = decodeURIComponent(
+            new URL(request.url ?? '/', 'http://localhost').pathname,
+          );
+        } catch {
+          response.statusCode = 400;
+          response.end();
+          return;
+        }
+        if (!pathname.startsWith('/simulation-assets/')) {
+          next();
+          return;
+        }
+        const file = resolve(
+          directory,
+          pathname.slice('/simulation-assets/'.length),
+        );
+        if (!isInsideDirectory(file, directory)) {
+          response.statusCode = 403;
+          response.end();
+          return;
+        }
+        try {
+          if (!(await stat(file)).isFile()) throw new Error('Not a file');
+          response.setHeader(
+            'Content-Type',
+            extname(file) === '.json'
+              ? 'application/json'
+              : extname(file) === '.wasm'
+                ? 'application/wasm'
+                : extname(file) === '.js'
+                  ? 'text/javascript'
+                  : 'application/octet-stream',
+          );
+          createReadStream(file)
+            .on('error', () => response.destroy())
+            .pipe(response);
+        } catch {
+          response.statusCode = 404;
+          response.end('Run tools/mujoco/prepare.py first.');
+        }
+      });
+    },
+    async closeBundle() {
+      if (config.command !== 'build') return;
+      try {
+        await stat(directory);
+      } catch {
+        return;
+      }
+      await cp(
+        directory,
+        resolve(config.root, config.build.outDir, 'simulation-assets'),
+        { recursive: true },
+      );
+    },
+  };
 }

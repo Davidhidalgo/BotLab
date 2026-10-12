@@ -7,13 +7,13 @@ export function nativeMicroDuckCapabilities(
     | undefined,
   targetId: string,
 ): Capability[] {
-  if (!discovery?.skills.includes('sit_toggle')) return [];
+  if (!discovery) return [];
+  const capabilities: Capability[] = [];
   const postures = ['sit', 'stand'].filter((p) =>
     discovery.postures.includes(p),
   );
-  if (!postures.length) return [];
-  return [
-    {
+  if (discovery.skills.includes('sit_toggle') && postures.length) {
+    capabilities.push({
       id: 'microduck-posture',
       kind: 'motion',
       name: 'Posture',
@@ -37,6 +37,38 @@ export function nativeMicroDuckCapabilities(
         ],
         telemetry: [],
       },
-    },
-  ];
+    });
+  }
+  const skills = ['kick_left', 'kick_right'].filter((name) =>
+    discovery.skills.includes(name),
+  );
+  if (skills.length)
+    capabilities.push({
+      id: 'microduck-native-skills',
+      kind: 'motion',
+      name: 'Native skills',
+      description:
+        'Observed one-shot actions on the connected native simulator.',
+      targetIds: [targetId],
+      schema: {
+        commands: [
+          {
+            id: 'run-skill',
+            name: 'Run skill',
+            description:
+              'Run one available native skill and wait for recovery.',
+            inputs: [
+              {
+                name: 'skill',
+                type: 'enum',
+                required: true,
+                enumValues: skills,
+              },
+            ],
+          },
+        ],
+        telemetry: [],
+      },
+    });
+  return capabilities;
 }

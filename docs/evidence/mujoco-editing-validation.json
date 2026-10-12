@@ -1,0 +1,7 @@
+{
+  "executedAt": "2026-10-12T17:51:59.473Z",
+  "browser": "154.0.8037.98",
+  "afterCompletion": "editing invalidates previous result",
+  "duringExecution": "editing cancels and awaits stop before re-enabling Run",
+  "rerun": "edited program completed"
+}

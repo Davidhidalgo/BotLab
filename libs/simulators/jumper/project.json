@@ -1,0 +1,16 @@
+{
+  "name": "simulators-jumper",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/simulators/jumper/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/dist/libs/simulators/jumper"],
+      "options": {
+        "command": "tsc -p libs/simulators/jumper/tsconfig.lib.json --outDir dist/libs/simulators/jumper"
+      }
+    }
+  },
+  "tags": ["scope:simulator", "target:jumper"]
+}

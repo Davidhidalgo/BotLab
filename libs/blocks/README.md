@@ -20,14 +20,18 @@ The `control_wait` toolbox entry includes an editable `math_positive_number` sha
 
 The directional movement blocks combine a bundled Lucide SVG with localized text. The two categories can be mixed in one script:
 
-| Category         | Block type (prefix `botlab_microduck_`) | Input / meaning                                                                 |
-| ---------------- | --------------------------------------- | ------------------------------------------------------------------------------- |
-| Movement         | `walk_steps`, `back_steps`              | `STEPS`, default 1, whole numbers 0–40; one BotLab step is 0.5 m                |
-| Movement         | `turn_left`, `turn_right`               | Fixed -90 / +90 degrees                                                         |
-| Movement         | `turn_around`                           | Fixed +180 degrees                                                              |
-| Precise movement | `walk_distance`, `back_distance`        | `DISTANCE` in meters, 0–20; defaults 5 / 1                                      |
-| Precise movement | `turn_degrees`                          | `ANGLE`, default 90, range -360 to 360                                          |
-| Precise movement | `sit`, `stand`                          | Explicit posture; posture-capable native or iframe simulator required, no input |
+| Category         | Block type (prefix `botlab_microduck_`)           | Input / meaning                                                                 |
+| ---------------- | ------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Movement         | `walk_steps`, `back_steps`                        | `STEPS`, default 1, whole numbers 0–40; one BotLab step is 0.5 m                |
+| Movement         | `turn_left`, `turn_right`                         | Fixed -90 / +90 degrees                                                         |
+| Movement         | `turn_around`                                     | Fixed +180 degrees                                                              |
+| Navigation       | `walk_until_obstacle`                             | Native sensor-guided advance, ending before a detected obstacle                 |
+| Navigation       | `turn_left_until_clear`, `turn_right_until_clear` | Native sensor-guided turn until the front path is clear                         |
+| Precise movement | `walk_distance`, `back_distance`                  | `DISTANCE` in meters, 0–20; defaults 5 / 1                                      |
+| Precise movement | `turn_degrees`                                    | `ANGLE`, default 90, range -360 to 360                                          |
+| Precise movement | `sit`, `stand`                                    | Explicit posture; posture-capable native or iframe simulator required, no input |
+| Precise movement | `kick_left`, `kick_right`                         | Native simulator skill; observed start and standing recovery required           |
+| Precise movement | `community_skill`                                 | Native simulator skill; dropdown lists models saved in the current project      |
 
 Negative angles turn left, positive angles turn right, relative to the robot heading. The variable turn's icon follows the sign and is not serialized. The existing `walk_distance` type, `DISTANCE` field and `walk` translation key remain compatible with saved programs and translation overlays. Numeric defaults supply Scratch's text-field configuration as well as Blockly's numeric configuration; Scratch's field limits primarily configure its keypad, so the compiler also validates all inputs.
 
@@ -77,7 +81,9 @@ Run `pnpm nx test blocks --run` to execute the unit tests via Vitest.
 
 <!-- parser API from src/lib/microduck-program.ts and typed steps from ../botlab-model/src/lib/program.ts -->
 
-`readMicroDuckProgramFromWorkspace(artifact)` parses the single enabled green-flag script, including nested `control_if` and `control_if_else` branches, into typed `MicroDuckProgramStep[]`, retaining source block IDs. It validates numeric fields and rejects unsupported connected blocks/expressions; detached blocks remain ignored. It does not dispatch robot commands. `compileMicroDuckProgram` in the MicroDuck adapter lowers these steps to target-specific commands; the app composes the two functions. Posture blocks stay explicit (`sit`/`stand`) rather than becoming toggles at compile time.
+`readMicroDuckProgramFromWorkspace(artifact)` parses the single enabled green-flag script, including nested `control_if` and `control_if_else` branches, into typed `MicroDuckProgramStep[]`, retaining source block IDs. It validates numeric fields and rejects unsupported connected blocks/expressions; detached blocks remain ignored. It does not dispatch robot commands. `compileMicroDuckProgram` in the MicroDuck adapter lowers these steps to target-specific commands; the app composes the two functions. Posture blocks stay explicit (`sit`/`stand`) rather than becoming toggles at compile time. Kick blocks preserve `kick_left` / `kick_right` skill names; the imported-skill dropdown preserves its selected name across locale changes. The app supplies the project's model names without replacing the workspace. All three require the native simulator.
+
+Navigation blocks preserve sensor-guided intent without putting a distance or angle in the workspace. They are offered only with the native backend; the gateway interprets ToF frames during execution.
 
 <!-- posture predicates and control palette from src/lib/scratch-blocks-local-bridge.ts; validation from src/lib/microduck-program.ts -->
 
@@ -94,3 +100,17 @@ Sensing offers Boolean `botlab_microduck_is_sit`, `botlab_microduck_is_stand` an
 `botlab_stackchan_yaw`, `botlab_stackchan_center`, `botlab_stackchan_leds`, and `botlab_stackchan_leds_off` are localized in Catalan, Spanish, and English. Explicit field validators bound whole-degree yaw to ±20° and brightness to 0–25%; adapter preflight also validates imported/programmatic input. Side/color dropdowns select both/left/right and red/green/blue/amber/white.
 
 `readStackChanProgramFromWorkspace(artifact)` reads one enabled green-flag script into `StackChanProgramStep[]`, preserving block IDs. It supports literal waits and bounded repeat expansion (counts 0–10, four nested repeats, 40 expanded steps), skips explicitly disabled statements, and rejects incompatible blocks and computed inputs. It sends no commands; the adapter validates all physical limits before execution.
+
+## Shared web simulation blocks
+
+<!-- web block examples and parsers from src/lib/microduck-mujoco-blocks.ts, src/lib/jumper-blocks.ts, scratch-blocks-local-bridge.ts and src/index.ts -->
+
+The web walking examples use the existing educational movement blocks: advance in steps (one BotLab step = 0.5 m) or metres, plus a literal `control_wait`. MicroDuck additionally offers a 90° left turn; Jumper does not advertise turns. Right turns and reverse are withheld from this palette pending reliable policy behavior. `jumperWalkingBlockTypes` and `microduckWalkingBlockTypes` describe the distinct palettes. Labels and the **Advanced** category are localized in Catalan, Spanish and English. `botlab_web_velocity` remains in Advanced and existing timed programs remain compatible.
+
+`readMicroduckWalkingProgram()` returns structured `WalkingProgramStep[]`: measured distance/turn goals, waits, legacy timed velocity steps and `control_repeat` bodies. Both walking palettes offer repeat. Counts are literal integers 0–100; zero skips execution but its body is still validated. There may be at most 256 source blocks and 16 nested repeats, with a separate adapter limit of 256 expanded steps including iteration checkpoints. One enabled green-flag script is required; disconnected scripts, expressions and unsupported statement inputs are rejected. Educational left turns become positive SI radians; existing blocks keep their meaning. Joint-probe blocks and their parser remain separate. General conditions remain unsupported in this route.
+
+<!-- mounted callback forwarding from src/lib/blocks.tsx -->
+
+A mounted native editor forwards change notifications to the latest React `onArtifactChange` callback without remounting the workspace. Hosts can therefore react to the current execution/session when cancelling a run after edits.
+
+Mount generations exclude notifications from replaced or unmounted workspaces. A pending mount suppresses duplicate automatic mounts, and a handle returned after cancellation is disposed immediately. The local bridge also ignores queued changes after disposal, preventing late editor events from replacing an imported project.

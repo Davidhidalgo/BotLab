@@ -1,0 +1,4 @@
+{
+  "name": "botlab",
+  "script": "dev:server"
+}

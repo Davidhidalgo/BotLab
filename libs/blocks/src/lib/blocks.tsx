@@ -30,6 +30,7 @@ export interface BlocksEditorShellProps {
   workbench?: boolean;
   locale?: BlocksLocale;
   availableBlockTypes?: readonly string[];
+  importedSkills?: readonly string[];
 }
 
 export interface BlocksEditorShellLabels {
@@ -61,6 +62,7 @@ export function BlocksEditorShell({
   workbench = false,
   locale = 'ca',
   availableBlockTypes,
+  importedSkills,
 }: BlocksEditorShellProps) {
   const copy = useMemo(
     () => ({ ...defaultBlocksEditorShellLabels, ...labels }),
@@ -78,9 +80,17 @@ export function BlocksEditorShell({
   );
   const badgeVariant = workspaceStatus === 'invalid' ? 'outline' : 'secondary';
   const statusLabel = status ?? workspaceStatusLabels[workspaceStatus];
+  const onArtifactChangeRef = useRef(onArtifactChange);
+  const currentArtifactIdRef = useRef(artifact.id);
+  useEffect(() => {
+    onArtifactChangeRef.current = onArtifactChange;
+    currentArtifactIdRef.current = artifact.id;
+  }, [onArtifactChange, artifact.id]);
   const mountElementRef = useRef<HTMLDivElement>(null);
   const mountHandleRef = useRef<BlocksEditorMountHandle | undefined>(undefined);
   const mountedArtifactIdRef = useRef<string | undefined>(undefined);
+  const mountingArtifactIdRef = useRef<string | undefined>(undefined);
+  const mountGenerationRef = useRef(0);
   const [isNativeMounted, setIsNativeMounted] = useState(false);
   const [isMounting, setIsMounting] = useState(false);
   const [mountMessage, setMountMessage] = useState(
@@ -111,7 +121,10 @@ export function BlocksEditorShell({
       return;
     }
 
+    const generation = ++mountGenerationRef.current;
+    mountingArtifactIdRef.current = artifact.id;
     mountHandleRef.current?.dispose();
+    mountHandleRef.current = undefined;
     setIsMounting(true);
 
     try {
@@ -120,8 +133,20 @@ export function BlocksEditorShell({
         artifact,
         locale,
         availableBlockTypes,
-        onArtifactChange,
+        importedSkills,
+        onArtifactChange: (next) => {
+          if (
+            generation === mountGenerationRef.current &&
+            currentArtifactIdRef.current === artifact.id
+          )
+            onArtifactChangeRef.current?.(next);
+        },
       });
+
+      if (generation !== mountGenerationRef.current) {
+        if (result.mounted) result.handle.dispose();
+        return;
+      }
 
       if (!result.mounted) {
         setIsNativeMounted(false);
@@ -134,14 +159,17 @@ export function BlocksEditorShell({
       setIsNativeMounted(true);
       setMountMessage(`${resolvedProvider.name} ${copy.mounted}.`);
     } finally {
-      setIsMounting(false);
+      if (generation === mountGenerationRef.current) {
+        mountingArtifactIdRef.current = undefined;
+        setIsMounting(false);
+      }
     }
   }, [
     artifact,
     copy.mounted,
     locale,
     availableBlockTypes,
-    onArtifactChange,
+    importedSkills,
     resolvedProvider,
   ]);
 
@@ -149,7 +177,8 @@ export function BlocksEditorShell({
     if (
       !resolvedProvider.supportsNativeMount ||
       !canAutoMountNativeEditor ||
-      mountedArtifactIdRef.current === artifact.id
+      mountedArtifactIdRef.current === artifact.id ||
+      mountingArtifactIdRef.current === artifact.id
     ) {
       return;
     }
@@ -172,12 +201,20 @@ export function BlocksEditorShell({
   }, [availableBlockTypes, isNativeMounted]);
 
   useEffect(() => {
+    mountHandleRef.current?.setImportedSkills?.(importedSkills ?? []);
+  }, [importedSkills, isNativeMounted]);
+
+  useEffect(() => {
     mountHandleRef.current?.highlightBlock?.(activeBlockId);
   }, [activeBlockId, isNativeMounted]);
 
   useEffect(() => {
     return () => {
+      mountGenerationRef.current++;
+      mountingArtifactIdRef.current = undefined;
+      mountedArtifactIdRef.current = undefined;
       mountHandleRef.current?.dispose();
+      mountHandleRef.current = undefined;
     };
   }, []);
 

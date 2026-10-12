@@ -26,8 +26,18 @@ Run `pnpm nx test microduck` or the workspace-wide `pnpm run test:all`. The eigh
 
 `compileMicroDuckProgram(artifact, program, targetId)` lowers typed model steps to BotLab commands while preserving source IDs. It owns MicroDuck command IDs, units and the final zero-motion wait. XML parsing is provided by the blocks library. Posture steps lower to `microduck-posture` / `set-posture` with an explicit `posture` input. Conditional steps lower to `microduck-control` / `if-posture`, retaining the typed condition and recursively compiled `then` / `else` command arrays. Branch paths give nested commands unique IDs; only the outer program receives a final zero-motion wait. Native and iframe execution validate all branches. The iframe lowers branches to forward-only indexed frames; generic runtime control flow remains separate work.
 
-`nativeMicroDuckCapabilities(discovery, targetId)` maps the connected gateway's executable posture discovery to model `Capability` contracts bound to that target. Unavailable posture support produces no capability. Loaded kick/roll skills are not exposed as executable blocks yet. Generic runtime target registration and broader capability discovery remain subsequent work.
+`walk-until-obstacle` and `turn-until-clear` lower to native `navigate-by-depth` commands. The adapter rejects them for the browser simulator before dispatch.
+
+`nativeMicroDuckCapabilities(discovery, targetId)` maps the connected gateway's executable posture and kick discovery to model `Capability` contracts bound to that target. Unavailable skills produce no matching capability. `kick_left` and `kick_right` lower to `microduck-native-skills` / `run-skill`; loaded rolls remain informational. Generic runtime target registration and broader capability discovery remain subsequent work.
 
 <!-- repeat lowering from src/lib/microduck-program.ts -->
 
 `compileMicroDuckProgram` validates repeat counts and control depth before expanding finite repeats. The 256-command budget includes every branch, iteration checkpoint and the final stop. Each iteration starts with a zero-duration wait checkpoint, so even empty bodies remain observable and cancellable. Commands carry `iterations` from outermost to innermost, with the repeat source ID, current iteration and count. Conditions remain runtime decisions on every iteration; no posture is corrected automatically. Both simulator transports consume this same compiled program.
+
+## Shared MuJoCo web walking
+
+<!-- walking adapter API from src/lib/web-walking.ts and src/index.ts -->
+
+`createMicroduckWalkingAdapter()` advertises the separate `microduck-mujoco-web` target after model/controller loading. `compileMicroduckWalkingProgram()` compiles measured distance goals (0–20 m), left-turn goals (0–2π rad), waits (0–30 s), or legacy bounded SI velocity commands, retaining source IDs. Finite repeats use counts 0–100, 16 levels and a limit of 256 expanded actions including iteration checkpoints. Entire source bodies are checked even for zero repetitions; commands receive unique IDs and complete iteration paths. Measured right turns are rejected because the current policy can stall from rest. `microduckWalkingBehavior` describes its manual/exclusive execution. The simulator owns physics and ONNX; this adapter imports neither. See [the shared engine experiment](../../../tools/mujoco/README.md).
+
+The walking adapter supplies the validated goal speed and simulated timeout in compiled command inputs; the app dispatcher only transports them to the shared worker.

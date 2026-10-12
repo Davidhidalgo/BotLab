@@ -1,0 +1,281 @@
+{
+  "executedAt": "2026-10-12T17:45:37.527Z",
+  "browser": "154.0.8037.98",
+  "robots": [
+    {
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.5,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 4.432999999999815,
+            "displacementMeters": 0.49340668741824933,
+            "yawRadians": -0.062357525720563384,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.4933663733463869
+          },
+          "duration": 4.432999999999815,
+          "end": [
+            0.4962569970441437,
+            -0.003928794212499583,
+            0.10261210116664211
+          ],
+          "quaternion": [
+            0.999510660345404,
+            0.004924658851030533,
+            -0.004948407358247848,
+            -0.030490996305661357
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 1,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 11.250999999999204,
+            "displacementMeters": 0.9884375535422175,
+            "yawRadians": -0.05416092838060149,
+            "targetDistanceMeters": 1,
+            "forwardDisplacementMeters": 0.9874484906313387
+          },
+          "duration": 6.8179999999993885,
+          "end": [
+            1.480719472324258,
+            -0.10484340084014386,
+            0.10207996191373227
+          ],
+          "quaternion": [
+            0.9983838243384332,
+            0.0066535599146528325,
+            0.0039362422412090444,
+            -0.05630253490603597
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.1,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 13.71099999999784,
+            "displacementMeters": 0.09013735565710092,
+            "yawRadians": 0.032045237907053825,
+            "targetDistanceMeters": 0.1,
+            "forwardDisplacementMeters": 0.09011241222838784
+          },
+          "duration": 2.4599999999986366,
+          "end": [
+            1.5701687131976219,
+            -0.11715474301198182,
+            0.10229528037612277
+          ],
+          "quaternion": [
+            0.999114723765802,
+            0.0071879516393410356,
+            0.004352625269009112,
+            -0.04122082918721379
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 15.512999999996842,
+            "displacementMeters": 0.00048561223747348674,
+            "yawRadians": -0.0007642649264485574,
+            "targetDistanceMeters": 0,
+            "forwardDisplacementMeters": -0.00029176575353933025
+          },
+          "duration": 1.8019999999990013,
+          "end": [
+            1.569888850084518,
+            -0.11761405326226838,
+            0.10269788665971549
+          ],
+          "quaternion": [
+            0.9990698387093434,
+            0.007332359298276223,
+            -0.000726860430069097,
+            -0.042487239994175904
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        }
+      ]
+    },
+    {
+      "robot": "microduck",
+      "manifestId": "microduck-flat-ground",
+      "results": [
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.5,
+            "speed": 0.25,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 7.074999999999871,
+            "displacementMeters": 0.4960560247807342,
+            "yawRadians": -0.128249140566559,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.49236285911763145
+          },
+          "duration": 7.074999999999871,
+          "end": [
+            0.49357266780630304,
+            -0.06227810962973143,
+            0.1168629959966452
+          ],
+          "quaternion": [
+            0.9978009189659289,
+            -0.002654164490337372,
+            0.0013953705228261248,
+            -0.06621430708471975
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 13.710000000000743,
+            "displacementMeters": 0.02371768435903361,
+            "yawRadians": 1.5342339285031446,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 6.635000000000872,
+          "end": [
+            0.5053142360340889,
+            -0.04148596974401009,
+            0.11700818670322276
+          ],
+          "quaternion": [
+            0.7616997469043763,
+            -0.0045296398121573095,
+            0.002708432326274226,
+            0.647908668195847
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.5,
+            "speed": 0.25,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 20.72500000000016,
+            "displacementMeters": 0.4983187182553908,
+            "yawRadians": -0.12524414979614185,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.49811201792719684
+          },
+          "duration": 7.014999999999418,
+          "end": [
+            0.603086679536265,
+            0.4465474160236075,
+            0.11689195859591886
+          ],
+          "quaternion": [
+            0.8031753593241763,
+            -0.0033829921273323123,
+            0.0016627176920519116,
+            0.5957307553825152
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          }
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "error": "Error: El robot no avanza hacia el objetivo. Detén y reinicia la simulación.",
+          "duration": 13.654999999998974,
+          "end": [
+            0.6020983409673046,
+            0.4492544045285912,
+            0.1145002970653824
+          ],
+          "quaternion": [
+            0.871932197437512,
+            0.0027118035372265385,
+            -0.008784055711769507,
+            0.4895403247523327
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": -1
+          }
+        }
+      ]
+    }
+  ],
+  "passed": false
+}

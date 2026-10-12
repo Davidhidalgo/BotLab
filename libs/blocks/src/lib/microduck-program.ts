@@ -67,6 +67,20 @@ export function readMicroDuckProgramFromWorkspace(
         throw new Error('Programs support at most 256 blocks.');
       const type = block.getAttribute('type');
       switch (type) {
+        case 'botlab_microduck_walk_until_obstacle':
+          steps.push({
+            type: 'walk-until-obstacle',
+            sourceBlockId: block.getAttribute('id') ?? undefined,
+          });
+          break;
+        case 'botlab_microduck_turn_left_until_clear':
+        case 'botlab_microduck_turn_right_until_clear':
+          steps.push({
+            type: 'turn-until-clear',
+            direction: type.includes('_left_') ? 'left' : 'right',
+            sourceBlockId: block.getAttribute('id') ?? undefined,
+          });
+          break;
         case 'control_repeat': {
           const input = directXmlChild(block, 'value', 'TIMES');
           const value =
@@ -147,6 +161,32 @@ export function readMicroDuckProgramFromWorkspace(
             sourceBlockId: block.getAttribute('id') ?? undefined,
           });
           break;
+        case 'botlab_microduck_kick_left':
+        case 'botlab_microduck_kick_right':
+          steps.push({
+            type: 'skill',
+            skill:
+              type === 'botlab_microduck_kick_left'
+                ? 'kick_left'
+                : 'kick_right',
+            sourceBlockId: block.getAttribute('id') ?? undefined,
+          });
+          break;
+        case 'botlab_microduck_community_skill': {
+          const skill = directXmlChild(
+            block,
+            'field',
+            'SKILL',
+          )?.textContent?.trim();
+          if (!skill || !/^[a-z][a-z0-9_-]{0,39}$/.test(skill))
+            throw new Error('Enter an imported skill name in the skill block.');
+          steps.push({
+            type: 'skill',
+            skill,
+            sourceBlockId: block.getAttribute('id') ?? undefined,
+          });
+          break;
+        }
         case 'botlab_microduck_set_leds':
           steps.push({
             type: 'leds',

@@ -16,6 +16,7 @@ export interface BlocksEditorMountHandle {
   togglePalette?(): void;
   setLocale?(locale: BlocksLocale): void;
   setAvailableBlockTypes?(types: readonly string[]): void;
+  setImportedSkills?(names: readonly string[]): void;
   dispose(): void;
 }
 
@@ -24,6 +25,7 @@ export interface BlocksEditorMountRequest {
   artifact: BlocksWorkspaceArtifact;
   locale?: BlocksLocale;
   availableBlockTypes?: readonly string[];
+  importedSkills?: readonly string[];
   onArtifactChange?: (artifact: BlocksWorkspaceArtifact) => void;
 }
 

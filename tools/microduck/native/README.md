@@ -4,7 +4,7 @@ An isolated macOS arm64 experiment, not a replacement for BotLab's supported bro
 
 ## Setup and checks
 
-<!-- native probe entry points and dependencies from prepare.py, requirements.txt, angles.py, reactive.py, lifecycle.py, viewer.py, client.py and serve.py, verify-app.mjs, verify-video.mjs and ../../../package.json -->
+<!-- native probe entry points and dependencies from prepare.py, requirements.txt, angles.py, reactive.py, lifecycle.py, viewer.py, client.py, serve.py and try-huggingface-skill.py, verify-app.mjs, verify-video.mjs and ../../../package.json -->
 
 Requires `uv`, Python 3, Node 22.22 (or a compatible TypeScript-stripping runtime), `curl`, `tar` and Xcode command-line tools. From the repository root:
 
@@ -43,6 +43,22 @@ Each run owns its processes, uses temporary Unix sockets, retains timestamped JS
 - `viewer.py`: starts `mjpython`, checks control rate and upright state. Window rendering still requires human/visual acceptance; this probe cannot assert pixel correctness.
 
 The pinned body branch lacks the launcher's newer camera arguments. `mediad` is Linux-only. The app now embeds a MuJoCo render of body truth through a separate renderer process and bounded MJPEG stream via the native library gateway. The isolated Python requirements include Pillow for JPEG encoding. Camera/WebRTC, person detection and physical-device parity remain unverified. Upstream source/assets remain in the ignored cache; none are redistributed here.
+
+## Try a Hugging Face skill yourself
+
+<!-- simulator-only Hugging Face trial arguments, download pinning and results from try-huggingface-skill.py -->
+
+The BotLab application now offers this trial directly: select MicroDuck, add a Hugging Face model URL beside the project controls, select its name in the **execute imported skill** block, and connect **MuJoCo native**. The app imports it when the connected program uses it. The CLI below is useful for an isolated trial with explicit revision and file arguments.
+
+After `prepare.py`, choose a public episodic MicroDuck ONNX skill trained for the daemon's zero-command skill input, plus its documented run duration. For example, to register the [Polite Bow model](https://huggingface.co/fffiloni/microduck-polite-bow-b1d864) without moving the simulated robot:
+
+```sh
+tmp/microduck-native/venv/bin/python tools/microduck/native/try-huggingface-skill.py \
+  --repo fffiloni/microduck-polite-bow-b1d864 \
+  --name polite-bow --duration 4
+```
+
+Add `--execute` to run it in MuJoCo. This particular model **registered and ran but ended fallen** in the 2026-09-22 probe; see [the recorded result](../../../docs/community-skills-evaluation.md). For another model, replace `--repo`, `--name`, `--duration`, and optionally `--revision` / `--file`. A branch name is resolved to a commit before download; the report records that commit and SHA-256. The trial creates a fresh simulated session, reports whether the policy visibly started and recovered to stable standing, and writes `huggingface-trial.json` with full logs under `tmp/microduck-native/runs/`. It never connects to physical hardware or changes the pinned official policy set. Stop the BotLab simulator companion before running it because the two sessions share the local body port.
 
 ## Mac companion
 

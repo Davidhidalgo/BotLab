@@ -15,8 +15,11 @@ export type MicroDuckProgramStep = { sourceBlockId?: string } & (
   | { type: 'leds'; pattern: string }
   | { type: 'walk'; distanceMeters: number; backward?: boolean }
   | { type: 'turn'; angleDegrees: number }
+  | { type: 'walk-until-obstacle' }
+  | { type: 'turn-until-clear'; direction: 'left' | 'right' }
   | { type: 'wait'; seconds: number }
   | { type: 'posture'; posture: RobotPosture }
+  | { type: 'skill'; skill: string }
   | { type: 'repeat'; count: number; body: MicroDuckProgramStep[] }
   | {
       type: 'if';

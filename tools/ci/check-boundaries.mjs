@@ -23,6 +23,11 @@ const cases = [
   ],
   ['libs/simulators/core/src/probe.ts', '@botlab/simulators-microduck', true],
   ['libs/runtime/src/probe.ts', '@botlab/model', false],
+  ['libs/runtime/src/probe.ts', '@mujoco/mujoco', true],
+  ['libs/botlab-model/src/probe.ts', 'onnxruntime-web', true],
+  ['libs/simulators/core/src/probe.ts', 'three', true],
+  ['libs/adapters/jumper/src/probe.ts', '@mujoco/mujoco', true],
+  ['libs/simulators/mujoco/src/probe.ts', '@mujoco/mujoco', false],
   ['apps/botlab-web/src/app/probe.ts', '@botlab/simulators-microduck', false],
 ];
 for (const [file, dependency, forbidden] of cases) {

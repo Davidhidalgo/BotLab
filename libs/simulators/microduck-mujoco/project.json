@@ -1,0 +1,16 @@
+{
+  "name": "simulators-microduck-mujoco",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/simulators/microduck-mujoco/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/dist/libs/simulators/microduck-mujoco"],
+      "options": {
+        "command": "tsc -p libs/simulators/microduck-mujoco/tsconfig.lib.json --outDir dist/libs/simulators/microduck-mujoco"
+      }
+    }
+  },
+  "tags": ["scope:simulator", "target:microduck"]
+}

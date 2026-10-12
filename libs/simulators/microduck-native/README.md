@@ -49,6 +49,12 @@ The video URL is available only to the owning browser token and does not renew i
 
 `pnpm run test:simulator-native-video` checks the actual Chrome image via canvas sampling as well as the received stream, and asserts at least 27 received fps, 24 distinct painted images/s and a 45 Hz policy loop. On the measured Mac, results were 29.1 received fps, 28.7 painted images/s and 49.8 Hz control; hardware and load affect these figures.
 
+## Circuit and navigation
+
+<!-- circuit geometry and sensor-guided control from python/botlab_microduck_native/circuit.py, depth_navigation.py, gateway.py and program.py -->
+
+The gateway builds a five-wall corridor in the physical MuJoCo scene and uses that same scene for the video renderer. The front ToF sensor sees the first barrier from the starting pose. `walk-until-obstacle` stops after three distinct frames at or below 0.40 m; left/right `turn-until-clear` requires a meaningful turn and three frames at or above 0.65 m. It checks clearance again after the body settles, continuing the turn if the opening vanished. Each action waits for stable standing before advancing. Missing reliable readings for two seconds, a walk beyond 3 m / 35 s, or a turn beyond 360° / 25 s fails the action. These limits are internal safeguards, not block inputs. Restart the local gateway or rebuild the Mac companion to load a changed circuit.
+
 ## Native process lifecycle
 
 <!-- session lifecycle from python/botlab_microduck_native/session.py -->
@@ -78,13 +84,15 @@ The test target runs Vitest plus standard-library Python unittest tests (Python 
 
 <!-- posture lifecycle from python/botlab_microduck_native/posture.py, program.py and gateway.py -->
 
-The gateway reads `robot.subscribe` loaded-policy information and `robot.skills` configured/built-in names at startup and before a run or toolbar posture action. Snapshots expose executable skill names and supported postures; both client and server reject unsupported posture steps before running. Other discovered skills are informational, not executable program steps yet.
+The gateway reads `robot.subscribe` loaded-policy information and `robot.skills` configured/built-in names at startup and before a run or toolbar posture action. Snapshots expose executable skill names and supported postures; both client and server reject unsupported posture or skill steps before running. The bundled `kick_left` and `kick_right` skills are executable, as are community skills imported into the current simulator session. The app imports only models selected by connected blocks when it connects or when that program changes. An import pins a public Hugging Face ONNX model to a commit, records its SHA-256, registers it with `robot.setSkill`, and waits for loaded-policy discovery before making its name executable. Resetting the scene clears imported skills and the app loads those used by the program again.
 
 A posture action sends `sit_toggle` at most once when the stable posture differs from the request. An already achieved posture fails at its source block with a localized teaching error; it neither toggles away nor silently skips the instruction. Completion requires the requested policy plus 0.6 seconds of stable simulated trunk height (range below 4 mm, sit at most 8.5 cm, stand at least 9.5 cm) and low gyro motion (each axis below 0.15 rad/s). Missing stability times out after 12 seconds. These are native scene observations, not physical-robot guarantees. The toolbar shares this execution path instead of a fixed busy delay. Walking/turning while seated fails without dispatching motion; place a Stand block first.
 
 Native `robot.stop` zeros velocity without cancelling a latched posture transition. BotLab stops the sequence and dispatches no further blocks, while the posture observer follows the current transition. The toolbar waits for stability, but a new program can inspect a known transition after cancellation; walking/turning still fails unless standing is stable. Refusals, telemetry loss and falls fail the run. The updated iframe backend also executes posture commands and conditions, with its own physical observer and the same explicit-action/error semantics.
 
 `pnpm run test:simulator-native-posture` performs real browser/physics acceptance. Unit coverage includes redundant-posture errors, one-shot dispatch, observed settling, timeout, refusal, missing capability and cancellation before the next action.
+
+Native skill steps dispatch `robot.do` once from a stable standing posture, require the requested policy to appear in fresh telemetry, then require stable standing recovery before advancing. Missing start or recovery times out; falls, refusals, telemetry loss and stop fail or cancel the program. This is verified by unit tests and direct physics probes of both bundled kick policies; full editor-to-gateway acceptance for skills remains to be run. A community Polite Bow model registered and started but ended fallen in a direct trial, so registration alone does not certify the motion.
 
 <!-- condition execution and observation from python/botlab_microduck_native/program.py, posture.py, gateway.py and src/lib/app-connection.ts -->
 

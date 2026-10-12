@@ -1,6 +1,21 @@
-import { act, fireEvent, render, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import type { BlocksEditorShellProps } from '@botlab/blocks';
 import App from './app';
+
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.setAttribute('open', '');
+  };
+  HTMLDialogElement.prototype.close = function () {
+    this.removeAttribute('open');
+  };
+});
 
 jest.mock('@botlab/blocks', () => ({
   ...jest.requireActual('@botlab/blocks'),
@@ -9,11 +24,13 @@ jest.mock('@botlab/blocks', () => ({
     onArtifactChange,
     activeBlockId,
     locale,
+    importedSkills,
   }: BlocksEditorShellProps) => (
     <textarea
       aria-label="Test workspace"
       data-active-block={activeBlockId}
       data-locale={locale}
+      data-imported-skills={importedSkills?.join(',')}
       value={artifact?.content}
       onChange={(event) =>
         artifact &&
@@ -34,33 +51,75 @@ describe('One-click simulator execution', () => {
     jest.restoreAllMocks();
   });
 
-  it('keeps separate local projects and reopens the last one with its robot and simulator', () => {
+  it('saves a Hugging Face model from its URL in the project and restores it', () => {
     const view = render(<App />);
     fireEvent.change(view.getByRole('combobox', { name: 'Robot' }), {
       target: { value: 'microduck' },
     });
-    fireEvent.change(view.getByLabelText('Nom del projecte'), {
-      target: { value: 'Pato' },
+    fireEvent.change(view.getByRole('combobox', { name: 'Simulador' }), {
+      target: { value: 'native' },
+    });
+    fireEvent.click(
+      view.getByRole('button', { name: 'Afegeix un model de Hugging Face' }),
+    );
+    fireEvent.change(view.getByLabelText('URL del model'), {
+      target: { value: 'https://huggingface.co/joanfox/microduck-happy-hop' },
+    });
+    expect(view.getByLabelText('Nom de l’habilitat')).toHaveProperty(
+      'value',
+      'happy-hop',
+    );
+    fireEvent.click(view.getByRole('button', { name: 'Desa el model' }));
+    const stored = JSON.parse(localStorage.getItem('botlab.projects.v1')!);
+    expect(stored.projects[0].document.huggingFaceModels).toEqual([
+      expect.objectContaining({
+        repo: 'joanfox/microduck-happy-hop',
+        name: 'happy-hop',
+        duration: 3,
+      }),
+    ]);
+    view.unmount();
+    const restored = render(<App />);
+    expect(
+      restored
+        .getByLabelText('Test workspace')
+        .getAttribute('data-imported-skills'),
+    ).toBe('happy-hop');
+    expect(
+      JSON.parse(localStorage.getItem('botlab.projects.v1')!).projects[0]
+        .document.huggingFaceModels[0].name,
+    ).toBe('happy-hop');
+  });
+
+  it('manages separate projects in a dialog and reopens the last one with its robot', () => {
+    const view = render(<App />);
+    fireEvent.change(view.getByRole('combobox', { name: 'Robot' }), {
+      target: { value: 'microduck' },
     });
     const firstContent = (
       view.getByLabelText('Test workspace') as HTMLTextAreaElement
     ).value;
+    fireEvent.click(view.getByRole('button', { name: 'Projectes' }));
+    fireEvent.change(view.getByLabelText('Nom del projecte'), {
+      target: { value: 'Pato' },
+    });
+    fireEvent.click(view.getByRole('button', { name: 'Desa el nom' }));
     fireEvent.click(view.getByRole('button', { name: 'Nou projecte' }));
-    expect(view.getByRole('combobox', { name: 'Robot' })).toHaveProperty(
+    expect(view.queryByRole('dialog')).toBeNull();
+    expect(view.getByLabelText('Test workspace')).not.toHaveProperty(
       'value',
-      'stackchan',
+      firstContent,
     );
-    const secondId = (view.getByLabelText('Projecte') as HTMLSelectElement)
-      .value;
-    expect(
-      (view.getByLabelText('Test workspace') as HTMLTextAreaElement).value,
-    ).not.toBe(firstContent);
+    fireEvent.change(view.getByRole('combobox', { name: 'Robot' }), {
+      target: { value: 'stackchan' },
+    });
+    fireEvent.click(view.getByRole('button', { name: 'Projectes' }));
     fireEvent.change(view.getByLabelText('Nom del projecte'), {
       target: { value: 'Cabeza' },
     });
-    fireEvent.change(view.getByLabelText('Projecte'), {
-      target: { value: 'initial-project' },
-    });
+    fireEvent.click(view.getByRole('button', { name: 'Desa el nom' }));
+    fireEvent.click(view.getByRole('button', { name: /Pato/ }));
+    fireEvent.click(view.getByRole('button', { name: 'Obre el projecte' }));
     expect(view.getByLabelText('Test workspace')).toHaveProperty(
       'value',
       firstContent,
@@ -69,16 +128,8 @@ describe('One-click simulator execution', () => {
       'value',
       'microduck',
     );
-    expect(view.getByLabelText('Nom del projecte')).toHaveProperty(
-      'value',
-      'Pato',
-    );
     view.unmount();
     const restored = render(<App />);
-    expect(restored.getByLabelText('Projecte')).toHaveProperty(
-      'value',
-      'initial-project',
-    );
     expect(restored.getByRole('combobox', { name: 'Robot' })).toHaveProperty(
       'value',
       'microduck',
@@ -89,17 +140,77 @@ describe('One-click simulator execution', () => {
     expect(
       restored.queryByTitle('MicroDuck official simulator preview'),
     ).toBeNull();
-    fireEvent.change(restored.getByLabelText('Projecte'), {
-      target: { value: secondId },
-    });
+    fireEvent.click(restored.getByRole('button', { name: 'Projectes' }));
+    expect(restored.getByLabelText('Nom del projecte')).toHaveProperty(
+      'value',
+      'Pato',
+    );
+    fireEvent.click(restored.getByRole('button', { name: /Cabeza/ }));
+    fireEvent.click(restored.getByRole('button', { name: 'Obre el projecte' }));
     expect(restored.getByRole('combobox', { name: 'Robot' })).toHaveProperty(
       'value',
       'stackchan',
     );
-    expect(restored.getByLabelText('Nom del projecte')).toHaveProperty(
-      'value',
-      'Cabeza',
+  });
+
+  it('duplicates all programs independently and confirms deletion without losing the original', () => {
+    const view = render(<App />);
+    const original = (
+      view.getByLabelText('Test workspace') as HTMLTextAreaElement
+    ).value;
+    const library = () =>
+      JSON.parse(localStorage.getItem('botlab.projects.v1')!);
+    fireEvent.click(view.getByRole('button', { name: 'Projectes' }));
+    fireEvent.click(view.getByRole('button', { name: 'Duplica' }));
+    expect(library().projects).toHaveLength(2);
+    const duplicateId = library().activeId;
+    fireEvent.change(view.getByLabelText('Test workspace'), {
+      target: { value: '<xml></xml>' },
+    });
+    expect(
+      library().projects.find(
+        (project: { id: string }) => project.id === 'initial-project',
+      ).document.workspace.content,
+    ).toBe(original);
+    fireEvent.click(view.getByRole('button', { name: 'Projectes' }));
+    fireEvent.click(view.getByRole('button', { name: 'Elimina' }));
+    expect(library().projects).toHaveLength(2);
+    fireEvent.click(view.getByRole('button', { name: 'Cancel·la' }));
+    expect(library().activeId).toBe(duplicateId);
+    fireEvent.click(view.getByRole('button', { name: 'Elimina' }));
+    fireEvent.click(
+      view.getByRole('button', { name: 'Elimina definitivament' }),
     );
+    expect(library().projects).toHaveLength(1);
+    expect(library().activeId).toBe('initial-project');
+    expect(view.getByLabelText('Test workspace')).toHaveProperty(
+      'value',
+      original,
+    );
+    fireEvent.click(view.getByRole('button', { name: 'Projectes' }));
+    expect(view.getByRole('button', { name: 'Elimina' })).toHaveProperty(
+      'disabled',
+      true,
+    );
+  });
+
+  it('keeps the project and dialog when storage rejects a project operation', () => {
+    const view = render(<App />);
+    const original = localStorage.getItem('botlab.projects.v1');
+    fireEvent.click(view.getByRole('button', { name: 'Projectes' }));
+    const write = jest
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new Error('Quota');
+      });
+    try {
+      fireEvent.click(view.getByRole('button', { name: 'Nou projecte' }));
+      expect(view.getByRole('dialog')).toBeTruthy();
+      expect(within(view.getByRole('dialog')).getByRole('alert')).toBeTruthy();
+      expect(localStorage.getItem('botlab.projects.v1')).toBe(original);
+    } finally {
+      write.mockRestore();
+    }
   });
 
   it('passes the locale to blocks without stopping or replaying a simulator execution', async () => {
@@ -553,7 +664,7 @@ describe('One-click simulator execution', () => {
     const view = render(<App />);
     fireEvent.click(view.getByRole('button', { name: /MicroDuck Simulator/ }));
     const editor = view.getByLabelText('Test workspace') as HTMLTextAreaElement;
-    const input = view.getByLabelText('Importar programa', {
+    const input = view.getByLabelText('Importa un projecte', {
       selector: 'input',
     });
     const original = editor.value;
@@ -587,5 +698,8 @@ describe('One-click simulator execution', () => {
     expect(
       view.queryByTitle('MicroDuck official simulator preview'),
     ).toBeNull();
+    const library = JSON.parse(localStorage.getItem('botlab.projects.v1')!);
+    expect(library.projects).toHaveLength(2);
+    expect(library.projects[0].document.workspace.content).toBe(original);
   });
 });

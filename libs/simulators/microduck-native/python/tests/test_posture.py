@@ -88,7 +88,7 @@ class PostureTests(unittest.TestCase):
             {'skills': [{'name': 'kick_left'}, {'name': 'kick_right'}], 'built_in': ['sit_toggle']},
         ])
         gateway.refresh_capabilities()
-        self.assertEqual(gateway.capabilities, {'skills': ['kick_left', 'sit_toggle'], 'postures': ['sit', 'stand'], 'postureConditions': ['sit', 'stand', 'transitioning']})
+        self.assertEqual(gateway.capabilities, {'skills': ['kick_left', 'sit_toggle'], 'executableSkills': ['kick_left'], 'postures': ['sit', 'stand'], 'postureConditions': ['sit', 'stand', 'transitioning']})
 
     def test_configured_but_unloaded_posture_is_unavailable(self):
         gateway = Gateway()
@@ -106,7 +106,7 @@ class PostureTests(unittest.TestCase):
         rpc.messages = [{'at': 2, 'message': {'method': 'robot.state'}}]
         rpc.cv = threading.Condition()
         rpc.call.side_effect = lambda method, params: {'result': {'accepted': method != 'robot.do', 'reason': 'posture disabled'}}
-        gateway.session = SimpleNamespace(check_health=Mock(), rpc=rpc, tof=SimpleNamespace(cv=threading.Condition(), messages=[]))
+        gateway.session = SimpleNamespace(check_health=Mock(), rpc=rpc, tof=SimpleNamespace(cv=threading.Condition(), messages=[], latest={}))
         gateway.program = Program('refused', [{'kind': 'posture', 'value': 'sit'}, {'kind': 'walk', 'value': 1}], 0)
         gateway.tick(2)
         self.assertEqual(gateway.program.status, 'failed')

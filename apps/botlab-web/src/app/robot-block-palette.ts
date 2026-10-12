@@ -4,6 +4,7 @@
 export function robotBlockPalette(
   simulator: boolean,
   capabilityIds: readonly string[],
+  native = false,
 ): string[] {
   const common = ['event_whenflagclicked', 'control_wait', 'control_repeat'];
   if (!simulator)
@@ -40,6 +41,15 @@ export function robotBlockPalette(
   }
   if (capabilityIds.includes('microduck-leds'))
     blocks.push('botlab_microduck_set_leds');
+  if (native && capabilityIds.includes('microduck-motion'))
+    blocks.push(
+      'botlab_microduck_walk_until_obstacle',
+      'botlab_microduck_turn_left_until_clear',
+      'botlab_microduck_turn_right_until_clear',
+      'botlab_microduck_kick_left',
+      'botlab_microduck_kick_right',
+      'botlab_microduck_community_skill',
+    );
   return blocks;
 }
 

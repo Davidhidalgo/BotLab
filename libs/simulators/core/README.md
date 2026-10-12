@@ -14,3 +14,9 @@ Keep this package light. Robot-specific simulator dependencies, assets, and runt
 - `defineSimulatorIntegration`: typed helper for one simulator integration.
 - `defineSimulatorIntegrations`: typed helper for integration lists.
 - `createSimulatorSnapshot`: copies a snapshot defensively.
+
+<!-- shared web session contracts exported from src/lib/session.ts -->
+
+`SimulationSession` owns load/start/pause/step/reset/stop, observed commands, snapshots and disposal. `SimulationManifest` pins scene resources, joint actuation and optional controller metadata. `SimulationFrame` uses metres, seconds, radians, Z-up positions and row-major rotations. `SimulationEvidenceLevel` separates command validation, kinematic preview, physics and closed-loop policy. These are data contracts without engine or renderer imports.
+
+`SimulationMotionGoal` describes a measured distance or turn, a bounded controller speed and a simulated timeout. `SimulationCommandResult` can retain the requested distance/angle and measured forward displacement/unwrapped yaw; legacy timed velocity yaw remains the shortest signed heading change.

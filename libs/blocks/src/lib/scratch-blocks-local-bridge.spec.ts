@@ -48,6 +48,43 @@ describe('createLocalScratchBlocksEditorBridge', () => {
     }
   });
 
+  it('offers project models in the skill dropdown and keeps the selected name across locale changes', async () => {
+    const result = await createLocalScratchBlocksEditorBridge().mount({
+      element: document.createElement('div'),
+      artifact: sampleScratchBlocksWorkspaceArtifact,
+      importedSkills: ['happy-hop'],
+    });
+    if (!result.mounted) throw new Error('Editor did not mount');
+    try {
+      const scratch = await import('scratch-blocks');
+      const workspace = scratch.getMainWorkspace() as InstanceType<
+        typeof scratch.WorkspaceSvg
+      >;
+      const block = workspace.newBlock(
+        'botlab_microduck_community_skill',
+        'skill-choice',
+      );
+      const field = block.getField('SKILL') as InstanceType<
+        typeof scratch.FieldDropdown
+      >;
+      expect(field.getOptions(false).map((option) => option[1])).toContain(
+        'happy-hop',
+      );
+      block.setFieldValue('happy-hop', 'SKILL');
+      result.handle.setImportedSkills?.(['happy-hop', 'tiny-pickup']);
+      expect(field.getOptions(false).map((option) => option[1])).toContain(
+        'tiny-pickup',
+      );
+      result.handle.setLocale?.('es');
+      expect(
+        workspace.getBlockById('skill-choice')?.getFieldValue('SKILL'),
+      ).toBe('happy-hop');
+      expect(result.handle.exportWorkspace().content).toContain('happy-hop');
+    } finally {
+      result.handle.dispose();
+    }
+  });
+
   it('offers localized StackChan blocks with bounded fields and persists their values', async () => {
     const allowed = [
       'event_whenflagclicked',

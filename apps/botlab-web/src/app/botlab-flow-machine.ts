@@ -33,6 +33,7 @@ import {
   microDuckSimulatorIntegrations,
 } from '@botlab/simulators-microduck';
 import { assign, fromPromise, setup } from 'xstate';
+import { mujocoCatalogAdapter } from './mujoco-targets';
 
 export type BotLabWorkspaceState =
   | 'loaded'
@@ -1038,7 +1039,11 @@ function createBotLabFlowContext(
   targetId?: string,
 ): BotLabFlowContext {
   const runtime = createBotLabRuntime({
-    adapters: [createMicroDuckAdapter(), createStackChanAdapter()],
+    adapters: [
+      createMicroDuckAdapter(),
+      createStackChanAdapter(),
+      mujocoCatalogAdapter,
+    ],
     simulators: microDuckSimulatorIntegrations,
     behaviors: [sampleMicroDuckLedBehavior],
     skills: sampleSkills,

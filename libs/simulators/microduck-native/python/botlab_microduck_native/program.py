@@ -1,6 +1,9 @@
 """Bounded native movement controller. Native policies accept velocity intents, not angles."""
 import math
+from .community_skill import NAME
 from .posture import PostureAction
+from .skill import SkillAction
+from .depth_navigation import DepthNavigation
 
 
 def walk_steps(steps):
@@ -45,9 +48,15 @@ def validate_program(steps):
                 if value not in ('sit', 'stand'):
                     raise ValueError('Unsupported posture.')
                 continue
+            if kind == 'skill':
+                if not isinstance(value, str) or not NAME.fullmatch(value):
+                    raise ValueError('Unsupported native skill.')
+                continue
             if isinstance(value, bool) or not isinstance(value, (float, int)) or not math.isfinite(value):
                 raise ValueError('Step value must be finite.')
-            if not ((kind == 'walk' and 0 < abs(value) <= 5) or
+            if not ((kind == 'walk-until-obstacle' and value == 1) or
+                    (kind == 'turn-until-clear' and value in (-1, 1)) or
+                    (kind == 'walk' and 0 < abs(value) <= 5) or
                     (kind == 'turn' and 0 < abs(value) <= 360) or
                     (kind == 'wait' and 0 <= value <= 60)):
                 raise ValueError('Unsupported step or value outside native limits.')
@@ -70,7 +79,9 @@ class Program:
         self.error_code = None
         self.progress = 0
         self.posture_action = None
+        self.skill_action = None
         self.skill_request = None
+        self.navigation = None
 
     def snapshot(self):
         return {'runId': self.run_id, 'status': self.status, 'index': self.index,
@@ -82,7 +93,7 @@ class Program:
         self.error = error
         self.error_code = error_code
 
-    def tick(self, state, now, posture=None):
+    def tick(self, state, now, posture=None, depth=None):
         if self.status != 'running':
             return {}
         if state['safety']['fallen'] or state['safety']['limp']:
@@ -120,7 +131,21 @@ class Program:
             if self.posture_action.completed:
                 self.advance()
             return {}
-        if self.started is None and step['kind'] in ('walk', 'turn') and (state['policy'] != 'stand' or (posture is not None and posture.stable != 'stand')):
+        if step['kind'] == 'skill':
+            if posture is None:
+                self.stop('Posture observations unavailable.')
+                return {}
+            if self.skill_action is None:
+                self.skill_action = SkillAction(step['value'], now)
+            try:
+                self.skill_request = self.skill_action.tick(state, posture, now)
+            except (TimeoutError, ValueError) as error:
+                self.stop(str(error), 'skill-timeout' if isinstance(error, TimeoutError) else 'skill-posture-required')
+            self.progress = now - self.skill_action.started
+            if self.skill_action.completed:
+                self.advance()
+            return {}
+        if self.started is None and step['kind'] in ('walk', 'turn', 'walk-until-obstacle', 'turn-until-clear') and (state['policy'] != 'stand' or (posture is not None and posture.stable != 'stand')):
             self.stop('Stand the robot up before moving.')
             return {}
         odom = state['odom']
@@ -135,6 +160,8 @@ class Program:
             self.quiet_at = None
             self.last_progress = now
             self.best_progress = 0
+            if step['kind'] in ('walk-until-obstacle', 'turn-until-clear'):
+                self.navigation = DepthNavigation('obstacle' if step['kind'] == 'walk-until-obstacle' else 'clear', now)
         elapsed = now - self.started
         kind, value = step['kind'], step['value']
         done = False
@@ -142,6 +169,41 @@ class Program:
         if kind == 'wait':
             self.progress = elapsed
             done = elapsed >= value
+        elif kind in ('walk-until-obstacle', 'turn-until-clear'):
+            reading = self.navigation.observe(depth, now)
+            if kind == 'walk-until-obstacle':
+                self.progress = math.dist(odom['position'][:2], self.position)
+                if self.progress > 3 or elapsed > 35:
+                    self.stop('No obstacle found within the safe walking limit.')
+                elif (self.settle_at is None and reading in ('valid', 'waiting') and self.navigation.distance is not None and
+                      now - self.navigation.last_valid_at <= .25 and self.navigation.distance > .40):
+                    velocity = {'vx': .25}
+            else:
+                delta = (odom['yaw'] - self.last_yaw + math.pi) % (2 * math.pi) - math.pi
+                self.turned += delta
+                self.last_yaw = odom['yaw']
+                self.progress = abs(math.degrees(self.turned))
+                if self.progress > 360 or elapsed > 25:
+                    self.stop('No clear path found within one full turn.')
+                elif (self.settle_at is None and reading in ('valid', 'waiting') and self.navigation.distance is not None and
+                      now - self.navigation.last_valid_at <= .25 and (self.progress < 60 or self.navigation.distance < .65)):
+                    velocity = {'vyaw': 1.2 if value < 0 else -1.2}
+            if reading == 'lost':
+                self.stop('Front distance sensor stopped providing reliable readings.')
+            if reading == 'target' and (kind == 'walk-until-obstacle' or self.progress >= 60):
+                self.settle_at = self.settle_at or now
+            if self.settle_at is not None and now - self.settle_at > 12:
+                self.stop('Navigation stopped, but standing did not stabilize.')
+            stable = state['policy'] == 'stand' and (posture is None or posture.stable == 'stand')
+            if (kind == 'turn-until-clear' and self.settle_at is not None and stable and
+                    reading == 'valid' and self.navigation.distance < .65):
+                # Stopping a turn can change the final heading. Scan again from
+                # the settled pose instead of accepting a transient opening.
+                self.settle_at = None
+            clear = (self.navigation.distance is not None and self.navigation.distance >= .65 and
+                     self.navigation.confirmations >= 3 and now - self.navigation.last_valid_at <= .25)
+            done = (self.settle_at is not None and stable and self.status == 'running' and
+                    (kind == 'walk-until-obstacle' or clear))
         elif kind == 'walk':
             self.progress = math.dist(odom['position'][:2], self.position)
             if self.progress > self.best_progress + 0.003:
@@ -191,6 +253,8 @@ class Program:
         self.started = None
         self.progress = 0
         self.posture_action = None
+        self.skill_action = None
         self.skill_request = None
+        self.navigation = None
         if self.index >= len(self.steps):
             self.status = 'completed'

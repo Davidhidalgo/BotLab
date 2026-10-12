@@ -1,0 +1,16 @@
+{
+  "name": "simulators-mujoco",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/simulators/mujoco/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/dist/libs/simulators/mujoco"],
+      "options": {
+        "command": "tsc -p libs/simulators/mujoco/tsconfig.lib.json --outDir dist/libs/simulators/mujoco"
+      }
+    }
+  },
+  "tags": ["scope:simulator", "type:integration"]
+}

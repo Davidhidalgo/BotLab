@@ -107,6 +107,48 @@ export function compileMicroDuckProgram(
         });
         continue;
       }
+      if (step.type === 'skill') {
+        planParts.push(step.skill);
+        commands.push({
+          id: `command-microduck-skill-${index}`,
+          sourceBlockId: step.sourceBlockId,
+          ...(iterations.length ? { iterations } : {}),
+          capabilityId: 'microduck-native-skills',
+          commandId: 'run-skill',
+          targetId,
+          inputs: { skill: step.skill },
+        });
+        continue;
+      }
+      if (
+        step.type === 'walk-until-obstacle' ||
+        step.type === 'turn-until-clear'
+      ) {
+        if (targetId !== 'microduck-native')
+          throw new Error('Obstacle navigation requires the native simulator.');
+        const left =
+          step.type === 'turn-until-clear' && step.direction === 'left';
+        planParts.push(
+          step.type === 'walk-until-obstacle'
+            ? 'walk-until-obstacle'
+            : `turn-${step.direction}-until-clear`,
+        );
+        commands.push({
+          id: `command-microduck-${step.type}-${index}`,
+          sourceBlockId: step.sourceBlockId,
+          ...(iterations.length ? { iterations } : {}),
+          capabilityId: 'microduck-motion',
+          commandId: 'navigate-by-depth',
+          targetId,
+          inputs: {
+            action: step.type,
+            ...(step.type === 'turn-until-clear'
+              ? { direction: left ? 'left' : 'right' }
+              : {}),
+          },
+        });
+        continue;
+      }
       const walking = step.type === 'walk';
       const turning = step.type === 'turn';
       planParts.push(

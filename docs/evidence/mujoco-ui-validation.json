@@ -1,0 +1,56 @@
+{
+  "executedAt": "2026-10-12T15:10:41.497Z",
+  "url": "http://127.0.0.1:4211",
+  "browser": "154.0.8037.98",
+  "defaultAppEngineRequests": 0,
+  "nativeServiceRequests": 0,
+  "jumper": "load/step/reset/run/cancel/pause passed",
+  "jumperWalking": "advance/zero-twist/pause/resume/cancel passed",
+  "jumperWalkingPosition": "Posición: 0.619 · -0.011 · 0.103 m",
+  "microduck": "walk/turn/zero-twist/stop/cancel passed",
+  "microduckPosition": "Posición: 0.308 · -0.029 · 0.116 m",
+  "targetSwitchCycles": [
+    {
+      "robot": "jumper",
+      "workers": 1
+    },
+    {
+      "robot": "jumper-walking",
+      "workers": 1
+    },
+    {
+      "robot": "microduck",
+      "workers": 1
+    },
+    {
+      "robot": "jumper",
+      "workers": 1
+    },
+    {
+      "robot": "jumper-walking",
+      "workers": 1
+    },
+    {
+      "robot": "microduck",
+      "workers": 1
+    },
+    {
+      "robot": "jumper",
+      "workers": 1
+    },
+    {
+      "robot": "jumper-walking",
+      "workers": 1
+    },
+    {
+      "robot": "microduck",
+      "workers": 1
+    },
+    {
+      "robot": "jumper",
+      "workers": 1
+    }
+  ],
+  "workersAfterClose": 0,
+  "errors": []
+}

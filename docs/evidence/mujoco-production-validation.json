@@ -1,0 +1,19 @@
+{
+  "executedAt": "2026-10-12T15:07:41.278Z",
+  "browser": "154.0.8037.98",
+  "targets": [
+    {
+      "robot": "jumper",
+      "result": "verified assets, worker, controller and step passed"
+    },
+    {
+      "robot": "jumper-walking",
+      "result": "verified assets, worker, controller and step passed"
+    },
+    {
+      "robot": "microduck",
+      "result": "verified assets, worker, controller and step passed"
+    }
+  ],
+  "errors": []
+}

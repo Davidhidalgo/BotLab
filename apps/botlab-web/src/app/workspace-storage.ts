@@ -9,9 +9,68 @@ import {
   type MicroDuckSimulatorControlSource,
 } from '@botlab/simulators-microduck';
 import type { BotLabLocale } from './i18n';
+import { isMujocoTarget, type MujocoTargetId } from './mujoco-targets';
+import {
+  decodeMujocoExecution,
+  type SavedMujocoExecution,
+} from './mujoco-execution-storage';
+import {
+  parseHuggingFaceModel,
+  type HuggingFaceModel,
+} from './huggingface-models';
 
 export const workspaceStorageKey = 'botlab.workspace.v1';
 export const maxWorkspaceFileBytes = 2 * 1024 * 1024;
+export type WorkspaceTargetId =
+  | 'stackchan-planned'
+  | 'microduck-sim'
+  | 'microduck-usb'
+  | MujocoTargetId;
+export type SimulatorBackend = 'browser' | 'native' | 'mujoco';
+export const workspaceDestinations = {
+  'stackchan-planned': {
+    targetId: 'stackchan-planned',
+    simulatorBackend: 'browser',
+  },
+  'microduck-sim:browser': {
+    targetId: 'microduck-sim',
+    simulatorBackend: 'browser',
+  },
+  'microduck-sim:native': {
+    targetId: 'microduck-sim',
+    simulatorBackend: 'native',
+  },
+  'microduck-usb': { targetId: 'microduck-usb', simulatorBackend: 'browser' },
+  'jumper-web-joint-probe': {
+    targetId: 'jumper-web-joint-probe',
+    simulatorBackend: 'mujoco',
+  },
+  'jumper-web-walking': {
+    targetId: 'jumper-web-walking',
+    simulatorBackend: 'mujoco',
+  },
+  'microduck-mujoco-web': {
+    targetId: 'microduck-mujoco-web',
+    simulatorBackend: 'mujoco',
+  },
+} as const;
+export type WorkspaceDestination = keyof typeof workspaceDestinations;
+export function workspaceDestination(
+  targetId: WorkspaceTargetId,
+  backend: SimulatorBackend,
+): WorkspaceDestination {
+  return targetId === 'microduck-sim'
+    ? `microduck-sim:${backend === 'native' ? 'native' : 'browser'}`
+    : targetId;
+}
+export interface WorkspaceSlot {
+  workspace: BlocksWorkspaceArtifact;
+  lastExecution?: SavedExecution;
+  mujocoExecution?: SavedMujocoExecution;
+}
+export type TargetWorkspaces = Partial<
+  Record<WorkspaceDestination, WorkspaceSlot>
+>;
 export interface SavedExecution {
   outcome?: ExecutionResult;
   source: MicroDuckSimulatorControlSource;
@@ -27,9 +86,12 @@ export interface WorkspaceDocument {
   schemaVersion: 1;
   workspace: BlocksWorkspaceArtifact;
   locale: BotLabLocale;
-  targetId?: 'stackchan-planned' | 'microduck-sim' | 'microduck-usb';
-  simulatorBackend?: 'browser' | 'native';
+  targetId?: WorkspaceTargetId;
+  simulatorBackend?: SimulatorBackend;
+  huggingFaceModels?: HuggingFaceModel[];
   lastExecution?: SavedExecution;
+  mujocoExecution?: SavedMujocoExecution;
+  targetWorkspaces?: TargetWorkspaces;
 }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -78,9 +140,14 @@ export function decodeWorkspaceDocument(text: string): WorkspaceDocument {
   const run = data.lastExecution;
   if (data.targetId !== undefined) {
     if (
-      !['stackchan-planned', 'microduck-sim', 'microduck-usb'].includes(
-        String(data.targetId),
-      )
+      ![
+        'stackchan-planned',
+        'microduck-sim',
+        'microduck-usb',
+        'jumper-web-joint-probe',
+        'jumper-web-walking',
+        'microduck-mujoco-web',
+      ].includes(String(data.targetId))
     )
       throw new Error('Invalid project target.');
     result.targetId = data.targetId as WorkspaceDocument['targetId'];
@@ -88,10 +155,82 @@ export function decodeWorkspaceDocument(text: string): WorkspaceDocument {
   if (data.simulatorBackend !== undefined) {
     if (
       data.simulatorBackend !== 'browser' &&
-      data.simulatorBackend !== 'native'
+      data.simulatorBackend !== 'native' &&
+      data.simulatorBackend !== 'mujoco'
     )
       throw new Error('Invalid simulator.');
     result.simulatorBackend = data.simulatorBackend;
+  }
+  if (isMujocoTarget(result.targetId ?? '')) {
+    if (result.simulatorBackend !== 'mujoco')
+      throw new Error('Invalid MuJoCo destination.');
+  } else if (result.simulatorBackend === 'mujoco')
+    throw new Error('Invalid MuJoCo destination.');
+  if (data.mujocoExecution !== undefined)
+    result.mujocoExecution = decodeMujocoExecution(
+      data.mujocoExecution,
+      result.workspace,
+      result.targetId,
+    );
+  if (data.targetWorkspaces !== undefined) {
+    if (!record(data.targetWorkspaces))
+      throw new Error('Invalid target workspaces.');
+    result.targetWorkspaces = {};
+    for (const [key, slot] of Object.entries(data.targetWorkspaces)) {
+      if (
+        !Object.prototype.hasOwnProperty.call(workspaceDestinations, key) ||
+        !record(slot) ||
+        slot.targetWorkspaces !== undefined
+      )
+        throw new Error('Invalid target workspace.');
+      const destination = key as WorkspaceDestination;
+      const checked = decodeWorkspaceDocument(
+        JSON.stringify({
+          schemaVersion: 1,
+          locale: result.locale,
+          ...workspaceDestinations[destination],
+          workspace: slot.workspace,
+          lastExecution: slot.lastExecution,
+          mujocoExecution: slot.mujocoExecution,
+        }),
+      );
+      result.targetWorkspaces[destination] = {
+        workspace: checked.workspace,
+        lastExecution: checked.lastExecution,
+        mujocoExecution: checked.mujocoExecution,
+      };
+    }
+  }
+  if (data.huggingFaceModels !== undefined) {
+    if (
+      !Array.isArray(data.huggingFaceModels) ||
+      data.huggingFaceModels.length > 30
+    )
+      throw new Error('Invalid Hugging Face model list.');
+    const names = new Set<string>();
+    result.huggingFaceModels = data.huggingFaceModels.map((model: unknown) => {
+      if (
+        !record(model) ||
+        typeof model.url !== 'string' ||
+        typeof model.name !== 'string' ||
+        typeof model.duration !== 'number'
+      )
+        throw new Error('Invalid Hugging Face model.');
+      const checked = parseHuggingFaceModel(
+        model.url,
+        model.name,
+        model.duration,
+      );
+      if (
+        model.repo !== checked.repo ||
+        model.revision !== checked.revision ||
+        model.filename !== checked.filename ||
+        names.has(checked.name)
+      )
+        throw new Error('Invalid Hugging Face model.');
+      names.add(checked.name);
+      return checked;
+    });
   }
   if (run !== undefined) {
     if (

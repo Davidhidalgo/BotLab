@@ -29,6 +29,39 @@ describe('versioned workspace storage', () => {
     expect(restored.document).not.toHaveProperty('compiledArtifact');
   });
 
+  it('keeps validated Hugging Face models with the exported workspace', () => {
+    const withModel: WorkspaceDocument = {
+      ...document,
+      huggingFaceModels: [
+        {
+          url: 'https://huggingface.co/joanfox/microduck-happy-hop',
+          repo: 'joanfox/microduck-happy-hop',
+          revision: 'main',
+          filename: 'policy.onnx',
+          name: 'happy-hop',
+          duration: 3,
+        },
+      ],
+    };
+    expect(
+      decodeWorkspaceDocument(encodeWorkspaceDocument(withModel))
+        .huggingFaceModels,
+    ).toEqual(withModel.huggingFaceModels);
+    expect(() =>
+      decodeWorkspaceDocument(
+        JSON.stringify({
+          ...withModel,
+          huggingFaceModels: [
+            {
+              ...withModel.huggingFaceModels![0],
+              url: 'https://evil.example/model',
+            },
+          ],
+        }),
+      ),
+    ).toThrow();
+  });
+
   it('marks previously active execution as interrupted and retains its exact plan and trace', () => {
     const saved: WorkspaceDocument = {
       ...document,

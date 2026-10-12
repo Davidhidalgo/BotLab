@@ -5,11 +5,11 @@ import threading
 import time
 
 
-def render_worker(port, frames, enabled, stopping):
+def render_worker(port, scene, frames, enabled, stopping):
     # MuJoCo's GL context belongs to this process's main thread (including on macOS).
     from .renderer import Renderer
     from .session import Body
-    renderer = Renderer()
+    renderer = Renderer(scene)
     body = None
     try:
         while not stopping.is_set():
@@ -48,7 +48,7 @@ def render_worker(port, frames, enabled, stopping):
 
 
 class VideoStream:
-    def __init__(self, port):
+    def __init__(self, port, scene):
         context = multiprocessing.get_context('spawn')
         self.frames = context.Queue(maxsize=2)
         self.enabled = context.Event()
@@ -56,7 +56,7 @@ class VideoStream:
         self.changed = threading.Condition()
         self.latest = None
         self.discard_before = 0
-        self.process = context.Process(target=render_worker, args=(port, self.frames, self.enabled, self.stopping), daemon=True)
+        self.process = context.Process(target=render_worker, args=(port, scene, self.frames, self.enabled, self.stopping), daemon=True)
         self.process.start()
         self.receiver = threading.Thread(target=self.receive, daemon=True)
         self.receiver.start()

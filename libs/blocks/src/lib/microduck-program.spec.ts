@@ -2,6 +2,38 @@ import { readMicroDuckProgramFromWorkspace } from './microduck-program';
 import { sampleScratchBlocksWorkspaceArtifact } from './blocks-contract';
 
 describe('MicroDuck posture parsing', () => {
+  it('reads sensor-guided navigation blocks without numeric inputs', () => {
+    const steps = readMicroDuckProgramFromWorkspace({
+      ...sampleScratchBlocksWorkspaceArtifact,
+      content:
+        '<xml><block type="event_whenflagclicked"><next><block type="botlab_microduck_walk_until_obstacle" id="walk"><next><block type="botlab_microduck_turn_left_until_clear" id="turn"/></next></block></next></block></xml>',
+    });
+    expect(steps).toEqual([
+      { type: 'walk-until-obstacle', sourceBlockId: 'walk' },
+      { type: 'turn-until-clear', direction: 'left', sourceBlockId: 'turn' },
+    ]);
+  });
+  it('keeps native kicks in program order with their source blocks', () => {
+    const steps = readMicroDuckProgramFromWorkspace({
+      ...sampleScratchBlocksWorkspaceArtifact,
+      content:
+        '<xml><block type="event_whenflagclicked"><next><block type="botlab_microduck_kick_left" id="left"><next><block type="botlab_microduck_kick_right" id="right"/></next></block></next></block></xml>',
+    });
+    expect(steps).toEqual([
+      { type: 'skill', skill: 'kick_left', sourceBlockId: 'left' },
+      { type: 'skill', skill: 'kick_right', sourceBlockId: 'right' },
+    ]);
+  });
+  it('reads the imported skill name from the visible block field', () => {
+    const steps = readMicroDuckProgramFromWorkspace({
+      ...sampleScratchBlocksWorkspaceArtifact,
+      content:
+        '<xml><block type="event_whenflagclicked"><next><block type="botlab_microduck_community_skill" id="bow"><field name="SKILL">polite-bow</field></block></next></block></xml>',
+    });
+    expect(steps).toEqual([
+      { type: 'skill', skill: 'polite-bow', sourceBlockId: 'bow' },
+    ]);
+  });
   it('preserves explicit repeated postures and source IDs in connection order', () => {
     const steps = readMicroDuckProgramFromWorkspace({
       ...sampleScratchBlocksWorkspaceArtifact,

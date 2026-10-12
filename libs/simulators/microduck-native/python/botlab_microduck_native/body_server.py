@@ -20,7 +20,7 @@ def run(world, headless):
     viewer = mujoco.viewer.launch_passive(
         world.model, world.data, show_left_ui=False, show_right_ui=False)
     with viewer.lock():
-        viewer.cam.distance = 0.8
+        viewer.cam.distance = 2.1
         viewer.cam.azimuth = 135
         viewer.cam.elevation = -20
         viewer.cam.lookat[:] = [0, 0, .1]

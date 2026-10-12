@@ -6,11 +6,14 @@ import queue
 import signal
 import threading
 import time
+import urllib.error
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit, parse_qs
 from .session import NativeMicroDuckSession, ViewerClosed
 from .program import Program, walk_steps
 from .posture import PostureObserver
+from .community_skill import fetch_skill
+from .circuit import write_circuit_scene
 
 
 class Gateway:
@@ -22,13 +25,17 @@ class Gateway:
         self.heartbeat = 0
         self.program = None
         self.posture = PostureObserver()
-        self.capabilities = {'skills': [], 'postures': [], 'postureConditions': ['sit', 'stand', 'transitioning']}
+        self.capabilities = {'skills': [], 'executableSkills': [], 'postures': [], 'postureConditions': ['sit', 'stand', 'transitioning']}
+        self.imported_skills = {}
         self.video = None
         self.state = None
 
     def start(self):
-        self.session = NativeMicroDuckSession('app', viewer=self.presentation == 'external').start()
+        session = NativeMicroDuckSession('app', viewer=self.presentation == 'external')
+        session.scene = write_circuit_scene(session.out / 'circuit.xml')
+        self.session = session.start()
         self.posture = PostureObserver()
+        self.imported_skills = {}
         self.refresh_capabilities()
 
     def refresh_capabilities(self):
@@ -39,7 +46,8 @@ class Gateway:
         for name, slot in [('sit_toggle', 'sitstand'), ('ground_pick', 'ground_pick')]:
             if loaded.get(slot) and name in report.get('built_in', []):
                 skills.add(name)
-        self.capabilities = {'skills': sorted(skills), 'postures': ['sit', 'stand'] if 'sit_toggle' in skills else [], 'postureConditions': ['sit', 'stand', 'transitioning']}
+        executable = (skills & {'kick_left', 'kick_right'}) | (skills & self.imported_skills.keys())
+        self.capabilities = {'skills': sorted(skills), 'executableSkills': sorted(executable), 'postures': ['sit', 'stand'] if 'sit_toggle' in skills else [], 'postureConditions': ['sit', 'stand', 'transitioning']}
 
     def rpc(self, method, params=None):
         reply = self.session.rpc.call(method, params)
@@ -100,7 +108,35 @@ class Gateway:
             candidate = Program(run_id, body.get('steps'), now)
             if any(step['kind'] == 'posture' and step['value'] not in self.capabilities['postures'] for step in walk_steps(candidate.steps)):
                 raise ValueError('Native posture capability is unavailable.')
+            if any(step['kind'] == 'skill' and step['value'] not in self.capabilities['executableSkills'] for step in walk_steps(candidate.steps)):
+                raise ValueError('Native skill capability is unavailable.')
             self.program = candidate
+        elif path == '/import-skill':
+            if self.program and self.program.status == 'running':
+                raise ValueError('Stop the current program before importing a skill.')
+            if body.get('name') in self.imported_skills:
+                raise ValueError('A skill with this name is already imported. Reset the scene to replace it.')
+            try:
+                skill = fetch_skill(body.get('repo'), body.get('revision', 'main'),
+                                    body.get('filename', 'policy.onnx'), body.get('name'), body.get('duration'))
+            except (urllib.error.URLError, OSError) as error:
+                raise ValueError(f'Hugging Face download failed: {error}') from error
+            result = self.rpc('robot.setSkill', {'name': skill['name'], 'path': skill['path'],
+                                                'duration': skill['duration']})
+            if result.get('accepted') is not True:
+                raise ValueError(result.get('reason', 'Native daemon refused the skill.'))
+            deadline = time.monotonic() + 12
+            while time.monotonic() < deadline:
+                loaded = self.rpc('robot.subscribe', {'hz': 50})
+                configured = self.rpc('robot.skills')
+                if (skill['name'] in loaded.get('skills', []) and
+                    any(item.get('name') == skill['name'] for item in configured.get('skills', []))):
+                    self.imported_skills[skill['name']] = skill
+                    self.refresh_capabilities()
+                    return self.snapshot(time.monotonic())
+                time.sleep(.2)
+            self.rpc('robot.removeSkill', {'name': skill['name']})
+            raise ValueError('Skill was registered but did not become executable.')
         elif path == '/rpc':
             message = body.get('message', {})
             if not isinstance(message, dict) or not isinstance(message.get('params', {}), dict):
@@ -134,6 +170,9 @@ class Gateway:
                 'frameTime': self.video.latest[0] if self.video and self.video.latest else 0,
                 'program': self.program.snapshot() if self.program else None,
                 'capabilities': self.capabilities, 'observedPosture': self.posture.observed,
+                'importedSkills': [
+                    {key: value[key] for key in ('repo', 'revision', 'filename', 'name', 'duration', 'sha256')}
+                    for value in self.imported_skills.values()],
                 'postureBusy': self.posture.stable is None or bool(self.program and self.program.status == 'running' and self.program.steps[self.program.index]['kind'] == 'posture')}
 
     def tick(self, now):
@@ -153,7 +192,7 @@ class Gateway:
             if not fresh:
                 self.stop('Native telemetry stopped.')
             else:
-                velocity = self.program.tick(self.state, now, self.posture)
+                velocity = self.program.tick(self.state, now, self.posture, self.session.tof.latest.get('tof.frame'))
                 if self.program.skill_request:
                     skill = self.program.skill_request
                     self.program.skill_request = None
@@ -162,6 +201,8 @@ class Gateway:
                         if result.get('accepted') is not True:
                             self.posture.invalidate()
                             self.program.stop(result.get('reason', 'Native skill was refused.'))
+                        elif self.program.skill_action:
+                            self.program.skill_action.accepted = True
                     except (ValueError, RuntimeError, TimeoutError) as error:
                         self.posture.invalidate()
                         self.program.stop(str(error))
@@ -283,7 +324,7 @@ def main():
                 requests.put_nowait(item)
             except (ValueError, queue.Full) as error:
                 return self.answer(400, {'error': str(error)})
-            if not item['done'].wait(25):
+            if not item['done'].wait(55 if self.path == '/import-skill' else 25):
                 return self.answer(504, {'error': 'Native gateway timed out.'})
             self.answer(item['status'], item['result'])
 
@@ -295,7 +336,7 @@ def main():
         gateway.start()
         if args.presentation == 'embedded':
             from .video import VideoStream
-            video = VideoStream(gateway.session.port)
+            video = VideoStream(gateway.session.port, gateway.session.scene)
             gateway.video = video
         threading.Thread(target=server.serve_forever, daemon=True).start()
         print(f'BotLab native simulator ready on http://127.0.0.1:{args.port}', flush=True)
@@ -315,6 +356,8 @@ def main():
                     item['status'] = 409
                     item['result'] = {'error': str(error)}
                 finally:
+                    if item['path'] == '/import-skill' and item['body'].get('token') == gateway.owner:
+                        gateway.heartbeat = time.monotonic()
                     item['done'].set()
             gateway.tick(time.monotonic())
             stopping.wait(max(0, 0.02 - (time.monotonic() - start)))

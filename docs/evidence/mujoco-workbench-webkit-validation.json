@@ -1,0 +1,90 @@
+{
+  "executedAt": "2026-10-12T17:55:28.214Z",
+  "url": "http://127.0.0.1:4211",
+  "browserName": "webkit",
+  "browser": "26.5",
+  "checks": [
+    "main editor selects all three MuJoCo targets",
+    "simple advance/wait and MicroDuck left-turn blocks achieve measured goals within 2.5 cm / 5 degrees",
+    "Advanced retains timed velocity blocks",
+    "observed movement versus goal shown and persisted",
+    "real programs and measurements persisted",
+    "reload retains completed result with zero workers",
+    "edits invalidate result and cancel active run",
+    "robot and backend slots preserve independent XML",
+    "export/import preserves all destination programs and results",
+    "project dialog creates, renames, duplicates, imports, exports and deletes after confirmation",
+    "modal focus contained, Escape restores focus, responsive at 390px",
+    "one MuJoCo simulator, joint probe under advanced options",
+    "project switching restores selection",
+    "reload of active run marks interrupted without auto-start",
+    "default route has no engine asset requests"
+  ],
+  "measurements": {
+    "jumper": [
+      {
+        "sourceBlockId": "walk",
+        "result": {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 4.239999999999751,
+          "displacementMeters": 0.4890323564133107,
+          "yawRadians": -0.018719434018266236,
+          "targetDistanceMeters": 0.5,
+          "forwardDisplacementMeters": 0.48898883507686536
+        }
+      },
+      {
+        "sourceBlockId": "wait",
+        "result": {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 5.240000000000085,
+          "displacementMeters": 0.0006336091090314475,
+          "yawRadians": -0.0014307061552913081
+        }
+      }
+    ],
+    "microduck": [
+      {
+        "sourceBlockId": "walk",
+        "result": {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 6.904999999999875,
+          "displacementMeters": 0.5062662099303772,
+          "yawRadians": -0.2593351495126903,
+          "targetDistanceMeters": 0.5,
+          "forwardDisplacementMeters": 0.5014161212420438
+        }
+      },
+      {
+        "sourceBlockId": "turn",
+        "result": {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 14.52500000000087,
+          "displacementMeters": 0.04089492290714161,
+          "yawRadians": 1.4949335905068641,
+          "targetYawRadians": 1.5707963267948966
+        }
+      },
+      {
+        "sourceBlockId": "wait",
+        "result": {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 15.54000000000103,
+          "displacementMeters": 0.00007789711543685882,
+          "yawRadians": -0.011899250751654213
+        }
+      }
+    ]
+  },
+  "errors": []
+}

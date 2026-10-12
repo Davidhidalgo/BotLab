@@ -1,0 +1,327 @@
+{
+  "executedAt": "2026-10-12T22:12:05.717507+00:00",
+  "kind": "Independent native MuJoCo/ORT directional probe; not long-horizon numerical parity",
+  "platform": "macOS-26.3-arm64-arm-64bit",
+  "mujoco": "3.11.0",
+  "onnxruntime": "1.27.0",
+  "modelRevision": "363b7effd4eae9f24dd1bb8bf647aef4d74edca9",
+  "policySha256": "e36332d383997d51401897734cd3e79cf5038406feddb18b4d57ecfb141daa6c",
+  "results": [
+    {
+      "label": "left",
+      "afterForward": false,
+      "minHeight": 0.11525469872111915,
+      "maxTiltRadians": 0.0719879945728427,
+      "commands": [
+        {
+          "label": "settle",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 1,
+          "forwardDisplacementMeters": 0.001475131468606431,
+          "displacementMeters": 0.0014959672076158448,
+          "yawRadians": -0.004340225123286234
+        },
+        {
+          "label": "left",
+          "forward": 0,
+          "yaw": 1,
+          "durationSeconds": 20,
+          "forwardDisplacementMeters": 0.013994226586282485,
+          "displacementMeters": 0.015518556135547182,
+          "yawRadians": 7.30597540667586
+        },
+        {
+          "label": "zero-command",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 2,
+          "forwardDisplacementMeters": -0.007052141170589576,
+          "displacementMeters": 0.01448788071336642,
+          "yawRadians": -0.07548281823361591
+        }
+      ]
+    },
+    {
+      "label": "right",
+      "afterForward": false,
+      "minHeight": 0.11448635044402411,
+      "maxTiltRadians": 0.018498665439193665,
+      "commands": [
+        {
+          "label": "settle",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 1,
+          "forwardDisplacementMeters": 0.001475131468606431,
+          "displacementMeters": 0.0014959672076158448,
+          "yawRadians": -0.004340225123286234
+        },
+        {
+          "label": "right",
+          "forward": 0,
+          "yaw": -1,
+          "durationSeconds": 20,
+          "forwardDisplacementMeters": 0.001794304053384728,
+          "displacementMeters": 0.0023858760837991836,
+          "yawRadians": -0.21910621556108467
+        },
+        {
+          "label": "zero-command",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 2,
+          "forwardDisplacementMeters": -0.0016510910147637798,
+          "displacementMeters": 0.0025063806180237987,
+          "yawRadians": 0.2544753221090619
+        }
+      ]
+    },
+    {
+      "label": "reverse",
+      "afterForward": false,
+      "minHeight": 0.115494308036878,
+      "maxTiltRadians": 0.02322123352105224,
+      "commands": [
+        {
+          "label": "settle",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 1,
+          "forwardDisplacementMeters": 0.001475131468606431,
+          "displacementMeters": 0.0014959672076158448,
+          "yawRadians": -0.004340225123286234
+        },
+        {
+          "label": "reverse",
+          "forward": -0.2,
+          "yaw": 0,
+          "durationSeconds": 20,
+          "forwardDisplacementMeters": -0.0006356306152222538,
+          "displacementMeters": 0.0033058241387805736,
+          "yawRadians": 0.013646297284038324
+        },
+        {
+          "label": "zero-command",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 2,
+          "forwardDisplacementMeters": 0.000847765546799206,
+          "displacementMeters": 0.0016081252688966432,
+          "yawRadians": -0.008309753315983326
+        }
+      ]
+    },
+    {
+      "label": "forward-control",
+      "afterForward": false,
+      "minHeight": 0.11360270689672408,
+      "maxTiltRadians": 0.07175745539564052,
+      "commands": [
+        {
+          "label": "settle",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 1,
+          "forwardDisplacementMeters": 0.001475131468606431,
+          "displacementMeters": 0.0014959672076158448,
+          "yawRadians": -0.004340225123286234
+        },
+        {
+          "label": "forward-control",
+          "forward": 0.25,
+          "yaw": 0,
+          "durationSeconds": 20,
+          "forwardDisplacementMeters": 2.098841922221004,
+          "displacementMeters": 2.1517367998118617,
+          "yawRadians": -0.3402527223565945
+        },
+        {
+          "label": "zero-command",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 2,
+          "forwardDisplacementMeters": 0.0027713817891023146,
+          "displacementMeters": 0.005243485047714141,
+          "yawRadians": 0.0785187675470988
+        }
+      ]
+    },
+    {
+      "label": "left",
+      "afterForward": true,
+      "minHeight": 0.11360270689672408,
+      "maxTiltRadians": 0.07317424032188793,
+      "commands": [
+        {
+          "label": "settle",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 1,
+          "forwardDisplacementMeters": 0.001475131468606431,
+          "displacementMeters": 0.0014959672076158448,
+          "yawRadians": -0.004340225123286234
+        },
+        {
+          "label": "advance",
+          "forward": 0.25,
+          "yaw": 0,
+          "durationSeconds": 8,
+          "forwardDisplacementMeters": 0.8361470929268389,
+          "displacementMeters": 0.8445776821354937,
+          "yawRadians": -0.17075244677637852
+        },
+        {
+          "label": "left",
+          "forward": 0,
+          "yaw": 1,
+          "durationSeconds": 20,
+          "forwardDisplacementMeters": 0.03157957040384389,
+          "displacementMeters": 0.03462868650145274,
+          "yawRadians": 7.403865418926503
+        },
+        {
+          "label": "zero-command",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 2,
+          "forwardDisplacementMeters": -0.006385681229875598,
+          "displacementMeters": 0.01378466214628731,
+          "yawRadians": -0.05359698490719256
+        }
+      ]
+    },
+    {
+      "label": "right",
+      "afterForward": true,
+      "minHeight": 0.11360270689672408,
+      "maxTiltRadians": 0.07175745539564052,
+      "commands": [
+        {
+          "label": "settle",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 1,
+          "forwardDisplacementMeters": 0.001475131468606431,
+          "displacementMeters": 0.0014959672076158448,
+          "yawRadians": -0.004340225123286234
+        },
+        {
+          "label": "advance",
+          "forward": 0.25,
+          "yaw": 0,
+          "durationSeconds": 8,
+          "forwardDisplacementMeters": 0.8361470929268389,
+          "displacementMeters": 0.8445776821354937,
+          "yawRadians": -0.17075244677637852
+        },
+        {
+          "label": "right",
+          "forward": 0,
+          "yaw": -1,
+          "durationSeconds": 20,
+          "forwardDisplacementMeters": 0.018234688017359137,
+          "displacementMeters": 0.01932401527372725,
+          "yawRadians": -12.971807886168042
+        },
+        {
+          "label": "zero-command",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 2,
+          "forwardDisplacementMeters": -0.006015898616118918,
+          "displacementMeters": 0.011660084290237948,
+          "yawRadians": -0.015292069600620684
+        }
+      ]
+    },
+    {
+      "label": "reverse",
+      "afterForward": true,
+      "minHeight": 0.11360270689672408,
+      "maxTiltRadians": 0.07365188125755125,
+      "commands": [
+        {
+          "label": "settle",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 1,
+          "forwardDisplacementMeters": 0.001475131468606431,
+          "displacementMeters": 0.0014959672076158448,
+          "yawRadians": -0.004340225123286234
+        },
+        {
+          "label": "advance",
+          "forward": 0.25,
+          "yaw": 0,
+          "durationSeconds": 8,
+          "forwardDisplacementMeters": 0.8361470929268389,
+          "displacementMeters": 0.8445776821354937,
+          "yawRadians": -0.17075244677637852
+        },
+        {
+          "label": "reverse",
+          "forward": -0.2,
+          "yaw": 0,
+          "durationSeconds": 20,
+          "forwardDisplacementMeters": -0.133807126692441,
+          "displacementMeters": 1.2227050197579428,
+          "yawRadians": -2.822854070286123
+        },
+        {
+          "label": "zero-command",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 2,
+          "forwardDisplacementMeters": -0.012816343765021363,
+          "displacementMeters": 0.014906954974845971,
+          "yawRadians": -0.04879638578315326
+        }
+      ]
+    },
+    {
+      "label": "forward-control",
+      "afterForward": true,
+      "minHeight": 0.11360270689672408,
+      "maxTiltRadians": 0.07175745539564052,
+      "commands": [
+        {
+          "label": "settle",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 1,
+          "forwardDisplacementMeters": 0.001475131468606431,
+          "displacementMeters": 0.0014959672076158448,
+          "yawRadians": -0.004340225123286234
+        },
+        {
+          "label": "advance",
+          "forward": 0.25,
+          "yaw": 0,
+          "durationSeconds": 8,
+          "forwardDisplacementMeters": 0.8361470929268389,
+          "displacementMeters": 0.8445776821354937,
+          "yawRadians": -0.17075244677637852
+        },
+        {
+          "label": "forward-control",
+          "forward": 0.25,
+          "yaw": 0,
+          "durationSeconds": 20,
+          "forwardDisplacementMeters": 2.1504464704429975,
+          "displacementMeters": 2.17034412558067,
+          "yawRadians": -0.3273251441732062
+        },
+        {
+          "label": "zero-command",
+          "forward": 0,
+          "yaw": 0,
+          "durationSeconds": 2,
+          "forwardDisplacementMeters": 0.0011623900307271545,
+          "displacementMeters": 0.008159780457603526,
+          "yawRadians": 0.13085099997803717
+        }
+      ]
+    }
+  ]
+}

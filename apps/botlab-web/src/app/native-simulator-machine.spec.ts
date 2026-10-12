@@ -25,6 +25,7 @@ function fixture() {
     stop: jest.fn(async () => undefined),
     reset: jest.fn(async () => undefined),
     togglePosture: jest.fn(async () => undefined),
+    importSkill: jest.fn(async () => data),
     dispose: jest.fn(),
   };
   const actor = createActor(nativeSimulatorMachine, {
@@ -41,6 +42,33 @@ function fixture() {
 }
 
 describe('native simulator lifecycle', () => {
+  it('imports a skill through the leased connection and returns ready', async () => {
+    const f = fixture();
+    f.actor.send({ type: 'connect' });
+    await waitFor(f.actor, (s) => s.matches({ online: 'ready' }));
+    f.actor.send({
+      type: 'operate',
+      operation: {
+        kind: 'import-skill',
+        repo: 'owner/model',
+        name: 'bow',
+        duration: 4,
+      },
+    });
+    await waitFor(
+      f.actor,
+      (s) =>
+        s.matches({ online: 'ready' }) &&
+        (f.connection.importSkill as jest.Mock).mock.calls.length > 0,
+    );
+    expect(f.connection.importSkill).toHaveBeenCalledWith({
+      kind: 'import-skill',
+      repo: 'owner/model',
+      name: 'bow',
+      duration: 4,
+    });
+    f.actor.stop();
+  });
   it('releases communication on unmount', async () => {
     const f = fixture();
     f.actor.send({ type: 'connect' });

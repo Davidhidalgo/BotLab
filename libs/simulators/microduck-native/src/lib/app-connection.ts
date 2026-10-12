@@ -6,7 +6,9 @@ export type NativeProgramStep = {
   iterations?: ProgramIteration[];
 } & (
   | { kind: 'walk' | 'turn' | 'wait'; value: number }
+  | { kind: 'walk-until-obstacle' | 'turn-until-clear'; value: number }
   | { kind: 'posture'; value: 'sit' | 'stand' }
+  | { kind: 'skill'; value: string }
   | {
       kind: 'if';
       condition: {
@@ -19,6 +21,7 @@ export type NativeProgramStep = {
 );
 export interface NativeCapabilities {
   skills: string[];
+  executableSkills?: string[];
   postures: string[];
   postureConditions?: string[];
 }
@@ -37,6 +40,14 @@ export interface NativeAppSnapshot {
   postureBusy: boolean;
   observedPosture?: 'sit' | 'stand' | 'transitioning' | 'unknown';
   capabilities: NativeCapabilities;
+  importedSkills?: {
+    repo: string;
+    revision: string;
+    filename: string;
+    name: string;
+    duration: number;
+    sha256: string;
+  }[];
   program: {
     runId: string;
     status: 'running' | 'completed' | 'stopped' | 'failed';
@@ -128,9 +139,55 @@ export function createNativeProgram(
           sourceBlockId: command.sourceBlockId,
         };
       }
+      if (command.commandId === 'run-skill') {
+        const value = input['skill'];
+        if (
+          typeof value !== 'string' ||
+          !/^[a-z][a-z0-9_-]{0,39}$/.test(value) ||
+          !(
+            capabilities?.executableSkills ??
+            capabilities?.skills?.filter(
+              (skill) => skill === 'kick_left' || skill === 'kick_right',
+            ) ??
+            []
+          ).includes(value)
+        )
+          throw new Error(
+            'Native skill is unavailable on the connected simulator.',
+          );
+        return {
+          kind: 'skill',
+          value,
+          iterations: command.iterations,
+          sourceBlockId: command.sourceBlockId,
+        };
+      }
+      if (command.commandId === 'navigate-by-depth') {
+        const action = input['action'];
+        const direction = input['direction'];
+        if (action !== 'walk-until-obstacle' && action !== 'turn-until-clear')
+          throw new Error('Unsupported native navigation action.');
+        if (
+          action === 'turn-until-clear' &&
+          direction !== 'left' &&
+          direction !== 'right'
+        )
+          throw new Error('Choose a direction for the turn.');
+        return {
+          kind: action,
+          value:
+            action === 'walk-until-obstacle'
+              ? 1
+              : direction === 'left'
+                ? -1
+                : 1,
+          iterations: command.iterations,
+          sourceBlockId: command.sourceBlockId,
+        };
+      }
       if (command.commandId !== 'drive-differential') {
         throw new Error(
-          'MuJoCo native supports movement, posture, conditions and waits. Remove LED blocks before running.',
+          'MuJoCo native supports movement, kicks, posture, conditions and waits. Remove LED blocks before running.',
         );
       }
       const left = input['leftPower'];
@@ -184,6 +241,8 @@ export function createNativeAppConnection(
   const token = crypto.randomUUID();
   let sequence = 0;
   let disposed = false;
+  let importing = false;
+  let lastSnapshot: NativeAppSnapshot | undefined;
   async function post(
     path: string,
     body: object = {},
@@ -194,7 +253,7 @@ export function createNativeAppConnection(
     const controller = new AbortController();
     const timeout = setTimeout(
       () => controller.abort(),
-      path === '/reset' ? 20000 : 5000,
+      path === '/import-skill' ? 50000 : path === '/reset' ? 20000 : 5000,
     );
     try {
       const response = await fetcher(`${baseUrl}${path}`, {
@@ -242,6 +301,7 @@ export function createNativeAppConnection(
       await post('/claim');
     },
     async snapshot(): Promise<NativeAppSnapshot> {
+      if (importing && lastSnapshot) return lastSnapshot;
       const result = (await post('/state')) as NativeAppSnapshot;
       if (
         !result ||
@@ -252,6 +312,11 @@ export function createNativeAppConnection(
         typeof result.postureBusy !== 'boolean' ||
         !Array.isArray(result.capabilities?.skills) ||
         !result.capabilities.skills.every((s) => typeof s === 'string') ||
+        (result.capabilities.executableSkills !== undefined &&
+          (!Array.isArray(result.capabilities.executableSkills) ||
+            !result.capabilities.executableSkills.every(
+              (s) => typeof s === 'string',
+            ))) ||
         !Array.isArray(result.capabilities?.postures) ||
         !result.capabilities.postures.every(
           (s) => s === 'sit' || s === 'stand',
@@ -266,6 +331,7 @@ export function createNativeAppConnection(
           'Incompatible native simulator. Update BotLab Simulator and reconnect.',
         );
       }
+      lastSnapshot = result;
       return result;
     },
     async run(steps: NativeProgramStep[]) {
@@ -278,6 +344,25 @@ export function createNativeAppConnection(
     },
     async reset() {
       await post('/reset');
+    },
+    async importSkill(input: {
+      repo: string;
+      name: string;
+      duration: number;
+      revision?: string;
+      filename?: string;
+    }) {
+      importing = true;
+      try {
+        const result = (await post(
+          '/import-skill',
+          input,
+        )) as NativeAppSnapshot;
+        lastSnapshot = result;
+        return result;
+      } finally {
+        importing = false;
+      }
     },
     async togglePosture() {
       await rpc.togglePosture();

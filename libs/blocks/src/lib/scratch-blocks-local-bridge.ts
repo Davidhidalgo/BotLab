@@ -1,7 +1,12 @@
 import {
+  registerMicroduckMujocoBlocks,
+  applyWebWalkingLocale,
+} from './microduck-mujoco-blocks';
+import {
   applyStackChanLocale,
   registerStackChanBlocks,
 } from './stackchan-blocks';
+import { registerJumperBlocks } from './jumper-blocks';
 import type * as ScratchBlocksModule from 'scratch-blocks';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -29,6 +34,7 @@ type ScratchBlocksWorkspace = ReturnType<ScratchBlocksApi['inject']>;
 type ScratchBlockStyle = ScratchBlocksModule.Theme.BlockStyle;
 
 let botLabBlocksRegistered = false;
+const importedSkillsByWorkspace = new WeakMap<object, readonly string[]>();
 let scratchBlocksPromise: Promise<ScratchBlocksApi> | undefined;
 let botLabScratchBlocksTheme:
   | ReturnType<ScratchBlocksApi['Theme']['defineTheme']>
@@ -73,6 +79,7 @@ function mountLocalScratchBlocksWorkspace(
     scratchBlocks.ScratchMsgs.setLocale('en');
     scratchBlocks.ScratchMsgs.setLocale(value);
     applyStackChanLocale(scratchBlocks, value);
+    applyWebWalkingLocale(scratchBlocks, value);
     for (const key of Object.keys(microDuckBlockMessages.messages)) {
       scratchBlocks.Msg[`BOTLAB_MICRODUCK_${key.toUpperCase()}`] = translate(
         key,
@@ -83,6 +90,8 @@ function mountLocalScratchBlocksWorkspace(
   applyLocale(locale);
   registerBotLabBlocks(scratchBlocks);
   registerStackChanBlocks(scratchBlocks);
+  registerJumperBlocks(scratchBlocks);
+  registerMicroduckMujocoBlocks(scratchBlocks);
 
   request.element.replaceChildren();
   request.element.classList.add('botlab-scratch-blocks-workspace');
@@ -102,6 +111,18 @@ function mountLocalScratchBlocksWorkspace(
         wheel: true,
       },
     });
+
+    const previousSkillNames = Array.from(
+      new DOMParser()
+        .parseFromString(request.artifact.content, 'text/xml')
+        .querySelectorAll(
+          'block[type="botlab_microduck_community_skill"] > field[name="SKILL"]',
+        ),
+      (field) => field.textContent ?? '',
+    ).filter((name) => /^[a-z][a-z0-9_-]{0,39}$/.test(name));
+    importedSkillsByWorkspace.set(workspace, [
+      ...new Set([...(request.importedSkills ?? []), ...previousSkillNames]),
+    ]);
 
     loadWorkspaceXml(request.artifact.content, workspace, scratchBlocks);
     function updateBlockCompatibility() {
@@ -157,7 +178,11 @@ function mountLocalScratchBlocksWorkspace(
     resizeWorkspace();
 
     workspace.addChangeListener((event) => {
-      if (event.isUiEvent || request.artifact.status === 'read-only') {
+      if (
+        disposed ||
+        event.isUiEvent ||
+        request.artifact.status === 'read-only'
+      ) {
         return;
       }
 
@@ -179,6 +204,23 @@ function mountLocalScratchBlocksWorkspace(
     return {
       mounted: true,
       handle: {
+        setImportedSkills(names) {
+          importedSkillsByWorkspace.set(workspace, [
+            ...new Set([
+              ...names,
+              ...workspace
+                .getAllBlocks(false)
+                .filter(
+                  (block) => block.type === 'botlab_microduck_community_skill',
+                )
+                .map((block) => block.getFieldValue('SKILL'))
+                .filter(
+                  (name): name is string =>
+                    typeof name === 'string' && name !== '__none__',
+                ),
+            ]),
+          ]);
+        },
         setAvailableBlockTypes(types) {
           if (
             disposed ||
@@ -422,6 +464,17 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
     },
   ];
   scratchBlocks.defineBlocksWithJsonArray([
+    ...[
+      ['walk_until_obstacle', 'walkUntilObstacle'],
+      ['turn_left_until_clear', 'turnLeftUntilClear'],
+      ['turn_right_until_clear', 'turnRightUntilClear'],
+    ].map(([type, key]) => ({
+      type: `botlab_microduck_${type}`,
+      message0: message(key),
+      style: 'motion',
+      extensions: ['shape_statement'],
+      tooltip: message('navigationTooltip'),
+    })),
     ...['sit', 'stand', 'transitioning'].map((posture) => ({
       type: `botlab_microduck_is_${posture}`,
       message0: message(`is_${posture}`),
@@ -436,6 +489,27 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
       extensions: ['shape_statement'],
       tooltip: message('postureTooltip'),
     })),
+    ...['kick_left', 'kick_right'].map((skill) => ({
+      type: `botlab_microduck_${skill}`,
+      message0: message(skill),
+      style: 'motion',
+      extensions: ['shape_statement'],
+      tooltip: message('kickTooltip'),
+    })),
+    {
+      type: 'botlab_microduck_community_skill',
+      message0: message('communitySkill'),
+      args0: [
+        {
+          type: 'field_dropdown',
+          name: 'SKILL',
+          options: [['%{BKY_BOTLAB_MICRODUCK_CHOOSESKILL}', '__none__']],
+        },
+      ],
+      style: 'motion',
+      extensions: ['shape_statement'],
+      tooltip: message('communitySkillTooltip'),
+    },
     ...movementBlocks.map((block) => ({
       type: `botlab_microduck_${block.type}`,
       message0: `%${block.field ? 2 : 1} ${message(block.key)}`,
@@ -487,6 +561,29 @@ function registerBotLabBlocks(scratchBlocks: ScratchBlocksApi) {
     },
   ]);
   const turnDefinition = scratchBlocks.Blocks.botlab_microduck_turn_degrees;
+  const communityDefinition =
+    scratchBlocks.Blocks.botlab_microduck_community_skill;
+  const initializeCommunity = communityDefinition.init;
+  communityDefinition.init = function () {
+    initializeCommunity.call(this);
+    const input = this.inputList[0];
+    input.removeField('SKILL');
+    input.appendField(
+      new scratchBlocks.FieldDropdown(() => {
+        const names = importedSkillsByWorkspace.get(this.workspace) ?? [];
+        const selected = this.getFieldValue('SKILL');
+        const all =
+          selected && selected !== '__none__' && !names.includes(selected)
+            ? [...names, selected]
+            : names;
+        return [
+          [String(scratchBlocks.Msg.BOTLAB_MICRODUCK_CHOOSESKILL), '__none__'],
+          ...all.map((name): [string, string] => [name, name]),
+        ];
+      }),
+      'SKILL',
+    );
+  };
   const initializeTurn = turnDefinition.init;
   turnDefinition.init = function () {
     initializeTurn.call(this);
@@ -593,6 +690,12 @@ function createBotLabToolbox(
     contents: [
       {
         kind: 'category',
+        name: 'Jumper',
+        categorystyle: 'motion_category',
+        contents: [{ kind: 'block', type: 'botlab_joint_position' }],
+      },
+      {
+        kind: 'category',
         name: scratchBlocks.Msg['BOTLAB_STACKCHAN_MOVEMENT'],
         categorystyle: 'motion_category',
         contents: ['yaw', 'center'].map((type) => ({
@@ -629,6 +732,16 @@ function createBotLabToolbox(
       },
       {
         kind: 'category',
+        name: scratchBlocks.Msg['BOTLAB_MICRODUCK_NAVIGATION'],
+        categorystyle: 'motion_category',
+        contents: [
+          'walk_until_obstacle',
+          'turn_left_until_clear',
+          'turn_right_until_clear',
+        ].map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` })),
+      },
+      {
+        kind: 'category',
         name: scratchBlocks.Msg['BOTLAB_MICRODUCK_PRECISEMOVEMENT'],
         categorystyle: 'motion_category',
         contents: [
@@ -637,6 +750,9 @@ function createBotLabToolbox(
           'turn_degrees',
           'sit',
           'stand',
+          'kick_left',
+          'kick_right',
+          'community_skill',
         ].map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` })),
       },
       {
@@ -680,6 +796,12 @@ function createBotLabToolbox(
             },
           },
         ],
+      },
+      {
+        kind: 'category',
+        name: scratchBlocks.Msg['BOTLAB_WEB_ADVANCED'],
+        categorystyle: 'motion_category',
+        contents: [{ kind: 'block', type: 'botlab_web_velocity' }],
       },
     ]
       .map((category) => ({

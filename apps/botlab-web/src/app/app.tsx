@@ -1,3 +1,8 @@
+import { ProjectManager } from './project-manager';
+import { workbenchCopy, workspaceDescription } from './workbench-copy';
+import { isMujocoTarget, mujocoTargets } from './mujoco-targets';
+import type { SavedMujocoExecution } from './mujoco-execution-storage';
+import { selectWorkspaceDestination } from './workspace-destinations';
 import { robotBlockPalette, hasUnavailableBlocks } from './robot-block-palette';
 import { StackChanPanel } from './stackchan-panel';
 import {
@@ -27,6 +32,7 @@ import {
 } from '@botlab/simulators-microduck';
 import { Badge, Button } from '@botlab/ui';
 import { useMachine } from '@xstate/react';
+import { flushSync } from 'react-dom';
 import {
   Activity,
   Cpu,
@@ -39,11 +45,12 @@ import {
   Radar,
   RotateCcw,
   Square,
-  Download,
-  Upload,
+  FolderOpen,
   SlidersHorizontal,
 } from 'lucide-react';
 import {
+  lazy,
+  Suspense,
   type ReactNode,
   type RefObject,
   useEffect,
@@ -68,13 +75,23 @@ import { simulatorLaunchMachine } from './simulator-launch-machine';
 import { simulatorExecutionMachine } from './simulator-execution-machine';
 import { WorkbenchLayout } from './workbench-layout';
 import {
+  parseHuggingFaceModel,
+  type HuggingFaceModel,
+} from './huggingface-models';
+import {
   decodeWorkspaceDocument,
   encodeWorkspaceDocument,
   maxWorkspaceFileBytes,
   readWorkspaceDocument,
   saveWorkspaceDocument,
   type SavedExecution,
+  type WorkspaceDocument,
+  type WorkspaceTargetId,
+  type SimulatorBackend,
+  type TargetWorkspaces,
 } from './workspace-storage';
+
+const MujocoSimulatorPanel = lazy(() => import('./mujoco-simulator-panel'));
 
 const microDuckOfficialSimulatorPreviewUrl =
   process.env.BOTLAB_SIMULATOR_URL ?? 'http://127.0.0.1:4300/?boot=1';
@@ -136,9 +153,27 @@ export function App() {
       (project) => project.id === projectRestore.library?.activeId,
     )?.name ?? 'Mi proyecto',
   );
-  const [simulatorBackend, setSimulatorBackend] = useState<
-    'browser' | 'native'
-  >(restored.document?.simulatorBackend ?? 'browser');
+  const [huggingFaceModels, setHuggingFaceModels] = useState<
+    HuggingFaceModel[]
+  >(restored.document?.huggingFaceModels ?? []);
+  const [projectsOpen, setProjectsOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const importPending = useRef(false);
+  const [modelFormOpen, setModelFormOpen] = useState(false);
+  const [modelUrl, setModelUrl] = useState('');
+  const [modelName, setModelName] = useState('');
+  const [modelNameEdited, setModelNameEdited] = useState(false);
+  const [modelDuration, setModelDuration] = useState('3');
+  const [modelError, setModelError] = useState<string>();
+  const [simulatorBackend, setSimulatorBackend] = useState<SimulatorBackend>(
+    restored.document?.simulatorBackend ?? 'browser',
+  );
+  const [targetWorkspaces, setTargetWorkspaces] = useState<TargetWorkspaces>(
+    restored.document?.targetWorkspaces ?? {},
+  );
+  const [mujocoExecution, setMujocoExecution] = useState<
+    SavedMujocoExecution | undefined
+  >(restored.document?.mujocoExecution);
   const [nativeActiveBlock, setNativeActiveBlock] = useState<string>();
   const [nativeBusy, setNativeBusy] = useState(false);
   const [flowSnapshot, sendFlow, flowActor] = useMachine(botLabFlowMachine, {
@@ -180,6 +215,7 @@ export function App() {
   const [sceneRevision, setSceneRevision] = useState(0);
   const officialSimulatorFrameRef = useRef<HTMLIFrameElement>(null);
   const copy = botLabTranslations[locale];
+  const ui = workbenchCopy[locale];
   const {
     compiledArtifact,
     runtime,
@@ -203,11 +239,28 @@ export function App() {
   const isCompiling = flowSnapshot.hasTag('build-busy');
   const isSimulating = flowSnapshot.hasTag('simulation-busy');
   const isPreparingLaunch = launchSnapshot.hasTag('busy');
+  const projectBusy =
+    executionBusy || isPreparingLaunch || nativeBusy || isImporting;
+  const executionActive = executionBusy || isPreparingLaunch || nativeBusy;
+  const importContext = useRef({
+    projectId,
+    workspaceArtifact,
+    executionActive,
+  });
+  importContext.current = { projectId, workspaceArtifact, executionActive };
   const targets = runtime.listTargets();
   const capabilities = runtime.listCapabilities();
   const selectedTarget = targets.find(
     (target) => target.id === selectedTargetId,
   );
+  const mujocoTarget = isMujocoTarget(selectedTargetId)
+    ? selectedTargetId
+    : undefined;
+  const selectedRobot = mujocoTarget
+    ? mujocoTargets[mujocoTarget].robot === 'microduck'
+      ? 'microduck'
+      : 'jumper'
+    : (selectedTarget?.adapterId ?? 'stackchan');
   const selectedCapabilities = capabilities.filter((capability) =>
     capability.targetIds.includes(selectedTargetId),
   );
@@ -217,11 +270,14 @@ export function App() {
     .join(',');
   const availableBlockTypes = useMemo(
     () =>
-      robotBlockPalette(
-        selectedTarget?.kind === 'simulator',
-        capabilityKey.split(','),
-      ),
-    [selectedTarget?.kind, capabilityKey],
+      mujocoTarget
+        ? mujocoTargets[mujocoTarget].blocks
+        : robotBlockPalette(
+            selectedTarget?.kind === 'simulator',
+            capabilityKey.split(','),
+            simulatorBackend === 'native',
+          ),
+    [selectedTarget?.kind, capabilityKey, simulatorBackend, mujocoTarget],
   );
   const incompatibleBlocks = useMemo(
     () => hasUnavailableBlocks(workspaceArtifact.content, availableBlockTypes),
@@ -302,7 +358,9 @@ export function App() {
           executionUpdate.frameIndex
         ];
   const activeBlockId =
-    selectedTarget?.adapterId === 'stackchan' || simulatorBackend === 'native'
+    selectedTarget?.adapterId === 'stackchan' ||
+    simulatorBackend === 'native' ||
+    !!mujocoTarget
       ? nativeActiveBlock
       : (executionState === 'running' || executionState === 'failed') &&
           compiledArtifact?.id ===
@@ -324,8 +382,11 @@ export function App() {
     workspaceArtifact,
     locale,
     lastExecution,
+    mujocoExecution,
+    targetWorkspaces,
     selectedTargetId,
     simulatorBackend,
+    huggingFaceModels,
     projectId,
     projectName,
     projects,
@@ -489,6 +550,7 @@ export function App() {
   }
   function runDemo() {
     if (
+      isImporting ||
       incompatibleBlocks ||
       !flowSnapshot.can({ type: 'build.compile' }) ||
       isPreparingLaunch ||
@@ -554,18 +616,41 @@ export function App() {
     setOfficialSimulatorHostResult({ state: 'running', messages: [] });
     setSceneRevision((value) => value + 1);
   }
-  function currentProjectDocument() {
+  function currentProjectDocument(): WorkspaceDocument {
     return {
       schemaVersion: 1 as const,
       workspace: workspaceArtifact,
       locale,
       lastExecution,
-      targetId: selectedTargetId as
-        | 'stackchan-planned'
-        | 'microduck-sim'
-        | 'microduck-usb',
+      targetId: selectedTargetId as WorkspaceTargetId,
+      targetWorkspaces,
+      mujocoExecution:
+        mujocoExecution?.sourceContent === workspaceArtifact.content
+          ? mujocoExecution
+          : undefined,
       simulatorBackend,
+      huggingFaceModels,
     };
+  }
+  function changeDestination(
+    targetId: WorkspaceTargetId,
+    backend: SimulatorBackend = isMujocoTarget(targetId) ? 'mujoco' : 'browser',
+  ) {
+    if (projectBusy) return;
+    const next = selectWorkspaceDestination(
+      currentProjectDocument(),
+      targetId,
+      backend,
+    );
+    disconnectOfficialSimulatorRuntimePreview();
+    setNativeActiveBlock(undefined);
+    setSimulatorBackend(backend);
+    setTargetWorkspaces(next.targetWorkspaces ?? {});
+    setMujocoExecution(next.mujocoExecution);
+    setLastExecution(next.lastExecution);
+    setEditorRevision((value) => value + 1);
+    sendFlow({ type: 'target.selected', targetId });
+    sendFlow({ type: 'workspace.changed', artifact: next.workspace });
   }
   function currentProjects(document = currentProjectDocument()) {
     const current = {
@@ -579,72 +664,138 @@ export function App() {
         )
       : [...projects, current];
   }
-  function openProject(id: string, create = false) {
-    if (executionBusy || isPreparingLaunch || nativeBusy || !storageEnabled)
-      return;
-    const updated = currentProjects();
-    const project = create
-      ? {
-          id: createLocalProjectId(),
-          name: `Proyecto ${updated.length + 1}`,
-          document: {
-            schemaVersion: 1 as const,
-            locale,
-            targetId: 'stackchan-planned' as const,
-            simulatorBackend: 'browser' as const,
-            workspace: {
-              ...workspaceArtifact,
-              id: createLocalProjectId(),
-              behaviorId: createLocalProjectId(),
-              label: 'Proyecto',
-              content:
-                '<xml xmlns="https://developers.google.com/blockly/xml"></xml>',
-            },
-          },
-        }
-      : updated.find((item) => item.id === id);
-    if (!project || (create && updated.length >= 50)) return;
-    const next = create ? [...updated, project] : updated;
-    if (
-      !saveProjectLibrary({
-        schemaVersion: 1,
-        activeId: project.id,
-        projects: next,
-      })
-    ) {
-      setSaveFailed(true);
+  function saveProjects(next: LocalProject[], activeId = projectId) {
+    const saved = saveProjectLibrary({
+      schemaVersion: 1,
+      activeId,
+      projects: next,
+    });
+    setSaveFailed(!saved);
+    return saved;
+  }
+  function openProject(id: string) {
+    if (projectBusy || !storageEnabled) return;
+    if (id === projectId) {
+      setProjectsOpen(false);
       return;
     }
-    disconnectOfficialSimulatorRuntimePreview();
-    setProjects(next);
-    setProjectId(project.id);
-    setProjectName(project.name);
-    setLocale(project.document.locale);
-    setSimulatorBackend(project.document.simulatorBackend ?? 'browser');
-    setLastExecution(
-      'lastExecution' in project.document
-        ? project.document.lastExecution
-        : undefined,
-    );
-    setEditorRevision((value) => value + 1);
-    sendFlow({
-      type: 'target.selected',
-      targetId: project.document.targetId ?? 'stackchan-planned',
-    });
-    sendFlow({
-      type: 'workspace.changed',
-      artifact: project.document.workspace,
-    });
+    const next = currentProjects();
+    const project = next.find((item) => item.id === id);
+    if (project) activateProject(project, next);
   }
-  function exportWorkspaceFile() {
+  function newProject() {
+    if (projectBusy || !storageEnabled) return;
+    const next = currentProjects();
+    if (next.length >= 50) return;
+    const project: LocalProject = {
+      id: createLocalProjectId(),
+      name: `${ui.project} ${next.length + 1}`,
+      document: {
+        schemaVersion: 1,
+        locale,
+        targetId: selectedTargetId as WorkspaceTargetId,
+        simulatorBackend,
+        workspace: {
+          ...workspaceArtifact,
+          id: createLocalProjectId(),
+          behaviorId: createLocalProjectId(),
+          label: ui.project,
+          content:
+            '<xml xmlns="https://developers.google.com/blockly/xml"></xml>',
+        },
+      },
+    };
+    activateProject(project, [...next, project]);
+  }
+  function renameProject(id: string, name: string) {
+    if (
+      projectBusy ||
+      !storageEnabled ||
+      !name.trim() ||
+      name.trim().length > 80
+    )
+      return;
+    const next = currentProjects().map((project) =>
+      project.id === id ? { ...project, name: name.trim() } : project,
+    );
+    if (!saveProjects(next)) return;
+    setProjects(next);
+    if (id === projectId) setProjectName(name.trim());
+  }
+  function duplicateProject(id: string) {
+    if (projectBusy || !storageEnabled) return;
+    const next = currentProjects();
+    const source = next.find((project) => project.id === id);
+    if (!source || next.length >= 50) return;
+    const project: LocalProject = {
+      ...source,
+      id: createLocalProjectId(),
+      name: `${source.name.slice(0, 65)} (${ui.copy})`,
+      document: decodeWorkspaceDocument(
+        encodeWorkspaceDocument(source.document),
+      ),
+    };
+    activateProject(project, [...next, project]);
+  }
+  function deleteProject(id: string) {
+    if (projectBusy || !storageEnabled) return false;
+    const next = currentProjects().filter((project) => project.id !== id);
+    if (!next.length) return false;
+    if (id === projectId) return activateProject(next[0], next);
+    if (!saveProjects(next)) return false;
+    setProjects(next);
+    return true;
+  }
+  function activateProject(project: LocalProject, next: LocalProject[]) {
+    if (!saveProjects(next, project.id)) return false;
+    // Async file reads otherwise mix deferred React state with synchronous actor
+    // updates: the old project briefly receives the new source and clears its result.
+    flushSync(() => {
+      disconnectOfficialSimulatorRuntimePreview();
+      setProjects(next);
+      setProjectsOpen(false);
+      setNativeActiveBlock(undefined);
+      setProjectId(project.id);
+      setProjectName(project.name);
+      setLocale(project.document.locale);
+      setSimulatorBackend(project.document.simulatorBackend ?? 'browser');
+      setTargetWorkspaces(project.document.targetWorkspaces ?? {});
+      setMujocoExecution(project.document.mujocoExecution);
+      setHuggingFaceModels(project.document.huggingFaceModels ?? []);
+      setModelFormOpen(false);
+      setModelError(undefined);
+      setModelUrl('');
+      setModelName('');
+      setModelNameEdited(false);
+      setModelDuration('3');
+      setLastExecution(
+        'lastExecution' in project.document
+          ? project.document.lastExecution
+          : undefined,
+      );
+      setEditorRevision((value) => value + 1);
+      sendFlow({
+        type: 'target.selected',
+        targetId: project.document.targetId ?? 'stackchan-planned',
+      });
+      sendFlow({
+        type: 'workspace.changed',
+        artifact: project.document.workspace,
+      });
+    });
+    return true;
+  }
+  function exportWorkspaceFile(id = projectId) {
     try {
-      const text = encodeWorkspaceDocument(currentProjectDocument());
+      const project = currentProjects().find((item) => item.id === id);
+      if (!project) return;
+      const text = encodeWorkspaceDocument(project.document);
       const url = URL.createObjectURL(
         new Blob([text], { type: 'application/json' }),
       );
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = 'botlab-workspace.json';
+      anchor.download = `${project.name.replace(/[^\p{L}\p{N}._-]+/gu, '-').slice(0, 80) || 'botlab-project'}.botlab.json`;
       anchor.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       setFileFailed(false);
@@ -653,29 +804,39 @@ export function App() {
     }
   }
   async function importWorkspaceFile(file?: File) {
-    if (!file) return;
-    const initialWorkspace = latestWorkspace.current;
+    if (!file || projectBusy || importPending.current) return;
+    importPending.current = true;
+    setIsImporting(true);
+    const initial = importContext.current;
+    const next = currentProjects();
     try {
-      if (file.size > maxWorkspaceFileBytes)
-        throw new Error('Workspace file too large.');
+      if (file.size > maxWorkspaceFileBytes || next.length >= 50)
+        throw new Error('Project limit exceeded.');
       const imported = decodeWorkspaceDocument(await file.text());
-      if (latestWorkspace.current !== initialWorkspace)
+      if (
+        importContext.current.projectId !== initial.projectId ||
+        importContext.current.workspaceArtifact !== initial.workspaceArtifact ||
+        importContext.current.executionActive
+      )
         throw new Error('Workspace changed during import.');
-      disconnectOfficialSimulatorRuntimePreview();
-      setEditorRevision((value) => value + 1);
-      sendFlow({ type: 'workspace.changed', artifact: imported.workspace });
-      setLocale(imported.locale);
-      if (imported.targetId)
-        sendFlow({ type: 'target.selected', targetId: imported.targetId });
-      if (imported.simulatorBackend)
-        setSimulatorBackend(imported.simulatorBackend);
-      setLastExecution(imported.lastExecution);
-      setStorageEnabled(true);
-      setFileFailed(false);
+      const project = {
+        id: createLocalProjectId(),
+        name: (
+          file.name?.replace(/(?:\.botlab)?\.json$/i, '').trim() || ui.project
+        ).slice(0, 80),
+        document: imported,
+      };
+      if (activateProject(project, [...next, project])) {
+        setStorageEnabled(true);
+        setFileFailed(false);
+      }
     } catch {
       setFileFailed(true);
+    } finally {
+      setIsImporting(false);
+      importPending.current = false;
+      if (importInputRef.current) importInputRef.current.value = '';
     }
-    if (importInputRef.current) importInputRef.current.value = '';
   }
   const artifactCards = [
     {
@@ -729,56 +890,78 @@ export function App() {
         <div className="flex min-w-0 items-center gap-3">
           <h1 className="text-xl font-semibold">BotLab</h1>
           <span className="text-xs text-muted-foreground">alpha</span>
+          <span className="h-6 border-l" aria-hidden="true" />
+          <Button
+            variant="ghost"
+            aria-haspopup="dialog"
+            onClick={(event) => {
+              event.currentTarget.focus();
+              setProjectsOpen(true);
+            }}
+          >
+            <FolderOpen size={18} />
+            {ui.projects}
+          </Button>
+          <span className="workbench-project-name" title={projectName}>
+            {projectName}
+          </span>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Robot</span>
             <select
               aria-label="Robot"
-              value={selectedTarget?.adapterId ?? 'stackchan'}
-              disabled={executionBusy || isPreparingLaunch || nativeBusy}
+              value={selectedRobot}
+              disabled={projectBusy}
               className="rounded-md border bg-background px-3 py-2"
-              onChange={(event) => {
-                disconnectOfficialSimulatorRuntimePreview();
-                setNativeActiveBlock(undefined);
-                sendFlow({
-                  type: 'target.selected',
-                  targetId:
-                    event.target.value === 'stackchan'
-                      ? 'stackchan-planned'
+              onChange={(event) =>
+                changeDestination(
+                  event.target.value === 'stackchan'
+                    ? 'stackchan-planned'
+                    : event.target.value === 'jumper'
+                      ? 'jumper-web-walking'
                       : 'microduck-sim',
-                });
-              }}
+                )
+              }
             >
               <option value="stackchan">StackChan</option>
               <option value="microduck">MicroDuck</option>
+              <option value="jumper">Jumper</option>
             </select>
           </label>
-          {selectedTarget?.adapterId === 'microduck' ? (
+          {selectedRobot === 'microduck' || selectedRobot === 'jumper' ? (
             <label className="flex items-center gap-2 text-sm">
               {nativeSimulatorLabels[locale].backend}
               <select
                 aria-label={nativeSimulatorLabels[locale].backend}
                 value={simulatorBackend}
-                disabled={executionBusy || isPreparingLaunch || nativeBusy}
+                disabled={projectBusy}
                 className="rounded-md border bg-background px-3 py-2"
                 onChange={(event) => {
-                  disconnectOfficialSimulatorRuntimePreview();
-                  sendFlow({
-                    type: 'target.selected',
-                    targetId: 'microduck-sim',
-                  });
-                  setSimulatorBackend(
-                    event.target.value as 'browser' | 'native',
-                  );
+                  const value = event.target.value;
+                  if (selectedRobot === 'jumper') return;
+                  if (value === 'mujoco')
+                    changeDestination('microduck-mujoco-web');
+                  else
+                    changeDestination(
+                      'microduck-sim',
+                      value as 'browser' | 'native',
+                    );
                 }}
               >
-                <option value="browser">
-                  {nativeSimulatorLabels[locale].browser}
-                </option>
-                <option value="native">
-                  {nativeSimulatorLabels[locale].native}
-                </option>
+                {selectedRobot === 'jumper' ? (
+                  <option value="mujoco">MuJoCo web</option>
+                ) : (
+                  <>
+                    <option value="browser">
+                      {nativeSimulatorLabels[locale].browser}
+                    </option>
+                    <option value="native">
+                      {nativeSimulatorLabels[locale].native}
+                    </option>
+                    <option value="mujoco">MuJoCo web</option>
+                  </>
+                )}
               </select>
             </label>
           ) : null}
@@ -804,71 +987,17 @@ export function App() {
 
       <section className="workbench-content">
         <div className="workbench-filebar">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
-            <label className="flex items-center gap-2 text-sm">
-              {locale === 'en'
-                ? 'Project'
-                : locale === 'ca'
-                  ? 'Projecte'
-                  : 'Proyecto'}
-              <select
-                aria-label={
-                  locale === 'en'
-                    ? 'Project'
-                    : locale === 'ca'
-                      ? 'Projecte'
-                      : 'Proyecto'
-                }
-                value={projectId}
-                disabled={
-                  executionBusy ||
-                  isPreparingLaunch ||
-                  nativeBusy ||
-                  !storageEnabled
-                }
-                className="rounded-md border bg-background px-2 py-1"
-                onChange={(event) => openProject(event.target.value)}
-              >
-                {currentProjects().map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <input
-              aria-label={
-                locale === 'en'
-                  ? 'Project name'
-                  : locale === 'ca'
-                    ? 'Nom del projecte'
-                    : 'Nombre del proyecto'
-              }
-              maxLength={80}
-              value={projectName}
-              onChange={(event) => setProjectName(event.target.value)}
-              className="w-36 rounded-md border bg-background px-2 py-1 text-sm"
-            />
-            <Button
-              variant="secondary"
-              disabled={
-                executionBusy ||
-                isPreparingLaunch ||
-                nativeBusy ||
-                !storageEnabled ||
-                currentProjects().length >= 50
-              }
-              onClick={() => openProject('', true)}
-            >
-              {locale === 'en'
-                ? 'New project'
-                : locale === 'ca'
-                  ? 'Nou projecte'
-                  : 'Nuevo proyecto'}
-            </Button>
-            <span className="text-sm font-medium">
-              {copy.blocks.workspaceName}
-            </span>
+          <div className="min-w-0">
+            <p className="text-sm font-medium" aria-label={ui.program}>
+              {ui.program}{' '}
+              <span className="mx-2 text-muted-foreground" aria-hidden="true">
+                /
+              </span>
+              {workspaceDescription(currentProjectDocument(), locale)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{ui.separate}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
             <span
               role="status"
               aria-label={copy.storage.label}
@@ -876,40 +1005,197 @@ export function App() {
             >
               {saveFailed ? copy.storage.failed : copy.storage.saved}
             </span>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              size="icon"
-              variant="secondary"
-              onClick={() => importInputRef.current?.click()}
-              disabled={isPreparingLaunch || executionBusy || nativeBusy}
-              title={copy.storage.import}
-              aria-label={copy.storage.import}
-            >
-              <Upload className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="secondary"
-              onClick={exportWorkspaceFile}
-              title={copy.storage.export}
-              aria-label={copy.storage.export}
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-            <input
-              ref={importInputRef}
-              type="file"
-              accept=".json,application/json"
-              hidden
-              aria-label={copy.storage.import}
-              onChange={(event) =>
-                void importWorkspaceFile(event.target.files?.[0])
-              }
-            />
+            {selectedRobot === 'microduck' && !mujocoTarget && (
+              <Button
+                variant="secondary"
+                onClick={() => setModelFormOpen((open) => !open)}
+              >
+                {locale === 'en'
+                  ? 'Add Hugging Face model'
+                  : locale === 'ca'
+                    ? 'Afegeix un model de Hugging Face'
+                    : 'Añadir modelo de Hugging Face'}
+              </Button>
+            )}
           </div>
         </div>
-        {fileFailed ? (
+        {selectedRobot === 'jumper' && (
+          <details
+            className="workbench-advanced"
+            key={projectId}
+            open={selectedTargetId === 'jumper-web-joint-probe' || undefined}
+          >
+            <summary>{ui.advanced}</summary>
+            <div className="flex flex-wrap items-center gap-3 px-3 pb-3">
+              <label className="flex items-center gap-2 text-sm">
+                {ui.mode}
+                <select
+                  aria-label={ui.mode}
+                  value={selectedTargetId}
+                  disabled={projectBusy}
+                  className="rounded-md border bg-background px-3 py-2"
+                  onChange={(event) =>
+                    changeDestination(event.target.value as WorkspaceTargetId)
+                  }
+                >
+                  <option value="jumper-web-walking">{ui.walking}</option>
+                  <option value="jumper-web-joint-probe">{ui.joints}</option>
+                </select>
+              </label>
+              <p className="text-xs text-muted-foreground">
+                {selectedTargetId === 'jumper-web-joint-probe'
+                  ? ui.jointHint
+                  : ui.walkingHint}
+              </p>
+            </div>
+          </details>
+        )}
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".json,application/json"
+          hidden
+          aria-label={ui.import}
+          onChange={(event) =>
+            void importWorkspaceFile(event.target.files?.[0])
+          }
+        />
+        {projectsOpen && (
+          <ProjectManager
+            projects={currentProjects()}
+            activeId={projectId}
+            locale={locale}
+            busy={projectBusy}
+            storageEnabled={storageEnabled}
+            error={
+              fileFailed
+                ? copy.storage.fileFailed
+                : saveFailed
+                  ? copy.storage.failed
+                  : undefined
+            }
+            onClose={() => setProjectsOpen(false)}
+            onOpen={openProject}
+            onNew={newProject}
+            onRename={renameProject}
+            onDuplicate={duplicateProject}
+            onDelete={deleteProject}
+            onImport={() => importInputRef.current?.click()}
+            onExport={exportWorkspaceFile}
+          />
+        )}
+        {modelFormOpen && selectedRobot === 'microduck' && !mujocoTarget && (
+          <form
+            className="flex flex-wrap items-end gap-2 border-b p-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              try {
+                const model = parseHuggingFaceModel(
+                  modelUrl,
+                  modelName.trim(),
+                  Number(modelDuration),
+                );
+                if (huggingFaceModels.some((item) => item.name === model.name))
+                  throw new Error(
+                    'A model with this skill name already exists in this project.',
+                  );
+                if (huggingFaceModels.length >= 30)
+                  throw new Error('This project supports at most 30 models.');
+                setHuggingFaceModels((current) => [...current, model]);
+                setModelError(undefined);
+                setModelFormOpen(false);
+                setModelUrl('');
+                setModelName('');
+                setModelNameEdited(false);
+              } catch (error) {
+                setModelError(
+                  error instanceof Error ? error.message : String(error),
+                );
+              }
+            }}
+          >
+            <label className="grid min-w-[240px] flex-1 gap-1 text-xs">
+              {locale === 'en'
+                ? 'Model URL'
+                : locale === 'ca'
+                  ? 'URL del model'
+                  : 'URL del modelo'}
+              <input
+                type="url"
+                required
+                className="rounded-md border bg-background px-2 py-1 text-sm"
+                placeholder="https://huggingface.co/owner/model"
+                value={modelUrl}
+                onChange={(event) => {
+                  const url = event.target.value;
+                  setModelUrl(url);
+                  if (!modelNameEdited) {
+                    let repoName = '';
+                    try {
+                      repoName =
+                        new URL(url).pathname.split('/').filter(Boolean)[1] ??
+                        '';
+                    } catch {
+                      /* Partial URL while typing. */
+                    }
+                    setModelName(
+                      repoName
+                        .replace(/^microduck-/, '')
+                        .toLowerCase()
+                        .replace(/[^a-z0-9_-]/g, '-'),
+                    );
+                  }
+                }}
+              />
+            </label>
+            <label className="grid gap-1 text-xs">
+              {locale === 'en'
+                ? 'Skill name'
+                : locale === 'ca'
+                  ? 'Nom de l’habilitat'
+                  : 'Nombre de habilidad'}
+              <input
+                required
+                className="w-36 rounded-md border bg-background px-2 py-1 text-sm"
+                value={modelName}
+                onChange={(event) => {
+                  setModelNameEdited(true);
+                  setModelName(event.target.value);
+                }}
+              />
+            </label>
+            <label className="grid gap-1 text-xs">
+              {locale === 'en'
+                ? 'Duration (s)'
+                : locale === 'ca'
+                  ? 'Durada (s)'
+                  : 'Duración (s)'}
+              <input
+                required
+                type="number"
+                min="0.1"
+                max="30"
+                step="0.1"
+                className="w-20 rounded-md border bg-background px-2 py-1 text-sm"
+                value={modelDuration}
+                onChange={(event) => setModelDuration(event.target.value)}
+              />
+            </label>
+            <Button type="submit">
+              {locale === 'en'
+                ? 'Save model'
+                : locale === 'ca'
+                  ? 'Desa el model'
+                  : 'Guardar modelo'}
+            </Button>
+            {modelError && (
+              <p role="alert" className="w-full text-sm text-destructive">
+                {modelError}
+              </p>
+            )}
+          </form>
+        )}
+        {fileFailed && !projectsOpen ? (
           <p role="alert" className="text-sm text-destructive">
             {copy.storage.fileFailed}
           </p>
@@ -928,7 +1214,10 @@ export function App() {
           editor={
             <BlocksEditorShell
               key={editorRevision}
-              workspaceName={copy.blocks.workspaceName}
+              workspaceName={workspaceDescription(
+                currentProjectDocument(),
+                locale,
+              )}
               labels={copy.blocks}
               status={getWorkspaceArtifactStatusLabel(
                 workspaceArtifact.status,
@@ -940,29 +1229,54 @@ export function App() {
               workbench
               blocks={[]}
               availableBlockTypes={availableBlockTypes}
-              onArtifactChange={(artifact) =>
-                sendFlow({ type: 'workspace.changed', artifact })
-              }
+              importedSkills={huggingFaceModels.map((model) => model.name)}
+              onArtifactChange={(artifact) => {
+                if (artifact.content !== workspaceArtifact.content)
+                  setMujocoExecution(undefined);
+                sendFlow({ type: 'workspace.changed', artifact });
+              }}
             />
           }
           simulator={
-            selectedTarget?.adapterId !== 'microduck' ? (
+            mujocoTarget ? (
+              <Suspense
+                fallback={
+                  <p className="p-4" role="status">
+                    Cargando MuJoCo…
+                  </p>
+                }
+              >
+                <MujocoSimulatorPanel
+                  key={`${projectId}:${mujocoTarget}:${editorRevision}`}
+                  locale={locale}
+                  targetId={mujocoTarget}
+                  robot={mujocoTargets[mujocoTarget].robot}
+                  artifact={workspaceArtifact}
+                  savedExecution={mujocoExecution}
+                  onExecution={setMujocoExecution}
+                  onBusy={setNativeBusy}
+                  onActiveBlock={setNativeActiveBlock}
+                  executionBlocked={incompatibleBlocks || isImporting}
+                />
+              </Suspense>
+            ) : selectedTarget?.adapterId !== 'microduck' ? (
               <StackChanPanel
                 key={projectId}
                 locale={locale}
                 onBusy={setNativeBusy}
                 workspace={workspaceArtifact}
-                executionBlocked={incompatibleBlocks}
+                executionBlocked={incompatibleBlocks || isImporting}
                 onActiveBlock={setNativeActiveBlock}
               />
             ) : simulatorBackend === 'native' ? (
               <NativeSimulatorPanel
                 key={projectId}
                 workspace={workspaceArtifact}
+                models={huggingFaceModels}
                 locale={locale}
                 onActiveBlock={setNativeActiveBlock}
                 onBusy={setNativeBusy}
-                executionBlocked={incompatibleBlocks}
+                executionBlocked={incompatibleBlocks || isImporting}
               />
             ) : (
               <MicroDuckSimulatorHost
@@ -1075,7 +1389,7 @@ export function App() {
         ) : null}
         <details
           className="workbench-diagnostics"
-          hidden={simulatorBackend === 'native'}
+          hidden={simulatorBackend === 'native' || !!mujocoTarget}
         >
           <summary>
             <SlidersHorizontal size={16} />
@@ -1383,10 +1697,7 @@ export function App() {
                       type="button"
                       aria-pressed={isSelected}
                       onClick={() =>
-                        sendFlow({
-                          type: 'target.selected',
-                          targetId: target.id,
-                        })
+                        changeDestination(target.id as WorkspaceTargetId)
                       }
                       className={`w-full rounded-md border bg-background p-3 text-left transition-colors hover:border-primary/60 ${
                         isSelected

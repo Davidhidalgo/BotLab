@@ -2,6 +2,41 @@ import { compileMicroDuckProgram } from './microduck-program';
 import { nativeMicroDuckCapabilities } from './microduck-capabilities';
 
 describe('native posture capability and lowering', () => {
+  it('lowers navigation intents only for the native simulator', () => {
+    const steps = [
+      { type: 'walk-until-obstacle' as const, sourceBlockId: 'wall' },
+      {
+        type: 'turn-until-clear' as const,
+        direction: 'right' as const,
+        sourceBlockId: 'turn',
+      },
+    ];
+    expect(
+      compileMicroDuckProgram(
+        { behaviorId: 'corridor' },
+        steps,
+        'microduck-native',
+      ).commands.slice(0, 2),
+    ).toMatchObject([
+      {
+        commandId: 'navigate-by-depth',
+        sourceBlockId: 'wall',
+        inputs: { action: 'walk-until-obstacle' },
+      },
+      {
+        commandId: 'navigate-by-depth',
+        sourceBlockId: 'turn',
+        inputs: { action: 'turn-until-clear', direction: 'right' },
+      },
+    ]);
+    expect(() =>
+      compileMicroDuckProgram(
+        { behaviorId: 'corridor' },
+        steps,
+        'microduck-sim',
+      ),
+    ).toThrow('native simulator');
+  });
   it('does not expose posture when only a configured or unrelated skill exists', () => {
     expect(nativeMicroDuckCapabilities(undefined, 'native')).toEqual([]);
     expect(
@@ -9,7 +44,7 @@ describe('native posture capability and lowering', () => {
         { skills: ['kick_left'], postures: ['sit', 'stand'] },
         'native',
       ),
-    ).toEqual([]);
+    ).toMatchObject([{ id: 'microduck-native-skills' }]);
     expect(
       nativeMicroDuckCapabilities(
         { skills: ['sit_toggle'], postures: [] },
@@ -47,6 +82,25 @@ describe('native posture capability and lowering', () => {
       ['set-posture', 'stand', 'b'],
       ['set-posture', 'sit', 'c'],
     ]);
+  });
+  it('lowers kick blocks with source identity and a discovered native capability', () => {
+    const plan = compileMicroDuckProgram(
+      { behaviorId: 'kick' },
+      [{ type: 'skill', skill: 'kick_left', sourceBlockId: 'left' }],
+      'native',
+    );
+    expect(plan.commands[0]).toMatchObject({
+      capabilityId: 'microduck-native-skills',
+      commandId: 'run-skill',
+      sourceBlockId: 'left',
+      inputs: { skill: 'kick_left' },
+    });
+    expect(
+      nativeMicroDuckCapabilities(
+        { skills: ['kick_left', 'kick_right'], postures: [] },
+        'native',
+      )[0].schema?.commands[0].inputs[0].enumValues,
+    ).toEqual(['kick_left', 'kick_right']);
   });
 });
 

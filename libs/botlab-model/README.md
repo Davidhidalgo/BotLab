@@ -17,3 +17,7 @@ Run `nx test botlab-model` to execute the unit tests via [Vitest](https://vitest
 <!-- StackChan program types exported from src/lib/stackchan-program.ts -->
 
 `StackChanProgramStep` describes yaw degrees, side LED color/brightness, or wait seconds with a `sourceBlockId`. `StackChanLedSide` is `both | left | right`. These are data contracts; the StackChan adapter enforces physical command restrictions.
+
+<!-- web program types and bounded expansion exported from src/lib/joint-program.ts and src/lib/velocity-program.ts -->
+
+`JointPositionStep` and `JointPositionLimits` describe named joints in radians. `VelocityProgramStep` describes forward m/s, yaw rad/s, simulated seconds and source-block identity. `WalkingActionStep` adds measured distance goals in metres, signed turn goals in radians and waits in seconds alongside legacy velocity steps. `WalkingProgramStep` also includes structured repeat bodies. `expandWalkingProgram(program, validateAction)` validates the entire source (including zero-count bodies) through the adapter callback, requires unique source IDs, then emits actions with `ProgramIteration[]` paths. `walkingProgramLimits` sets counts 0–100, depth 16, 256 source blocks and 256 expanded steps. Each iteration includes a zero-duration wait checkpoint so empty loops remain bounded and cancellable. The adapter assigns unique command IDs after expansion; old sequential IDs remain unchanged. An all-zero repeat yields no commands. These contracts do not change the units of existing MicroDuck programs.

@@ -14,6 +14,14 @@ import {
 
 type Operation =
   | { kind: 'run'; steps: NativeProgramStep[]; program?: ProgramIdentity }
+  | {
+      kind: 'import-skill';
+      repo: string;
+      revision?: string;
+      filename?: string;
+      name: string;
+      duration: number;
+    }
   | { kind: 'stop' | 'reset' | 'posture' };
 type Event =
   | { type: 'connect' }
@@ -93,6 +101,9 @@ export const nativeSimulatorMachine = setup({
             break;
           case 'posture':
             await input.connection.togglePosture();
+            break;
+          case 'import-skill':
+            await input.connection.importSkill(input.operation);
             break;
         }
         return undefined;

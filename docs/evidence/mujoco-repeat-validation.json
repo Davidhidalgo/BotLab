@@ -1,0 +1,1443 @@
+{
+  "executedAt": "2026-10-12T21:31:20.912Z",
+  "browser": "154.0.8037.98",
+  "url": "https://botlab.localhost",
+  "robots": [
+    {
+      "robot": "jumper",
+      "visible": [
+        "Esperando · Repetición 1 de 3",
+        "Avanzando · Repetición 2 de 3",
+        "Avanzando · Repetición 3 de 3"
+      ],
+      "three": {
+        "trace": [
+          {
+            "commandId": "velocity-0",
+            "sourceBlockId": "repeat",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 1,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 0.001,
+              "displacementMeters": 0,
+              "yawRadians": 0
+            }
+          },
+          {
+            "commandId": "velocity-1",
+            "sourceBlockId": "walk",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 1,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 4.23899999999975,
+              "displacementMeters": 0.489105477850179,
+              "yawRadians": -0.017512988178280547,
+              "targetDistanceMeters": 0.5,
+              "forwardDisplacementMeters": 0.48906677747210703
+            }
+          },
+          {
+            "commandId": "velocity-2",
+            "sourceBlockId": "wait",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 1,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 5.240000000000085,
+              "displacementMeters": 0.0006271747002137849,
+              "yawRadians": -0.00137148489424083
+            }
+          },
+          {
+            "commandId": "velocity-3",
+            "sourceBlockId": "repeat",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 2,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 5.241000000000085,
+              "displacementMeters": 0.0000023224723342806915,
+              "yawRadians": 0.000010847872462960845
+            }
+          },
+          {
+            "commandId": "velocity-4",
+            "sourceBlockId": "walk",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 2,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 9.483000000000184,
+              "displacementMeters": 0.49102426600147686,
+              "yawRadians": -0.004153571504174643,
+              "targetDistanceMeters": 0.5,
+              "forwardDisplacementMeters": 0.4909848034643749
+            }
+          },
+          {
+            "commandId": "velocity-5",
+            "sourceBlockId": "wait",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 2,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 10.484999999999628,
+              "displacementMeters": 0.0007711880355689522,
+              "yawRadians": 0.0018246469074493787
+            }
+          },
+          {
+            "commandId": "velocity-6",
+            "sourceBlockId": "repeat",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 3,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 10.485999999999628,
+              "displacementMeters": 0.0000014794345238610634,
+              "yawRadians": -8.643599499272292e-7
+            }
+          },
+          {
+            "commandId": "velocity-7",
+            "sourceBlockId": "walk",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 3,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 14.723999999997279,
+              "displacementMeters": 0.4887302363407796,
+              "yawRadians": -0.014348440134499797,
+              "targetDistanceMeters": 0.5,
+              "forwardDisplacementMeters": 0.4887262601943693
+            }
+          },
+          {
+            "commandId": "velocity-8",
+            "sourceBlockId": "wait",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 3,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 15.724999999996724,
+              "displacementMeters": 0.0004290165498997682,
+              "yawRadians": -0.001899387095068955
+            }
+          }
+        ],
+        "observedMeters": 1.4687778411308512,
+        "goalMeters": 1.5
+      },
+      "two": {
+        "trace": [
+          {
+            "commandId": "velocity-0",
+            "sourceBlockId": "repeat",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 1,
+                "count": 2
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 0.001,
+              "displacementMeters": 0,
+              "yawRadians": 0
+            }
+          },
+          {
+            "commandId": "velocity-1",
+            "sourceBlockId": "walk",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 1,
+                "count": 2
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 4.23899999999975,
+              "displacementMeters": 0.489105477850179,
+              "yawRadians": -0.017512988178280547,
+              "targetDistanceMeters": 0.5,
+              "forwardDisplacementMeters": 0.48906677747210703
+            }
+          },
+          {
+            "commandId": "velocity-2",
+            "sourceBlockId": "wait",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 1,
+                "count": 2
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 5.240000000000085,
+              "displacementMeters": 0.0006271747002137849,
+              "yawRadians": -0.00137148489424083
+            }
+          },
+          {
+            "commandId": "velocity-3",
+            "sourceBlockId": "repeat",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 2,
+                "count": 2
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 5.241000000000085,
+              "displacementMeters": 0.0000023224723342806915,
+              "yawRadians": 0.000010847872462960845
+            }
+          },
+          {
+            "commandId": "velocity-4",
+            "sourceBlockId": "walk",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 2,
+                "count": 2
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 9.483000000000184,
+              "displacementMeters": 0.49102426600147686,
+              "yawRadians": -0.004153571504174643,
+              "targetDistanceMeters": 0.5,
+              "forwardDisplacementMeters": 0.4909848034643749
+            }
+          },
+          {
+            "commandId": "velocity-5",
+            "sourceBlockId": "wait",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 2,
+                "count": 2
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 10.489999999999625,
+              "displacementMeters": 0.0007517600671640743,
+              "yawRadians": 0.0018120921328924205
+            }
+          }
+        ],
+        "observedMeters": 0.9800515809364819,
+        "goalMeters": 1
+      },
+      "nested": [
+        {
+          "commandId": "velocity-0",
+          "sourceBlockId": "outer",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 1,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 0.001,
+            "displacementMeters": 0,
+            "yawRadians": 0
+          }
+        },
+        {
+          "commandId": "velocity-1",
+          "sourceBlockId": "inner",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 1,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 1,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 0.006,
+            "displacementMeters": 0.000017799018437539375,
+            "yawRadians": 0.000008227996227380158
+          }
+        },
+        {
+          "commandId": "velocity-2",
+          "sourceBlockId": "nested-walk",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 1,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 1,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 2.3649999999998506,
+            "displacementMeters": 0.0993613130241891,
+            "yawRadians": -0.009253992033294573,
+            "targetDistanceMeters": 0.1,
+            "forwardDisplacementMeters": 0.09934940075535544
+          }
+        },
+        {
+          "commandId": "velocity-3",
+          "sourceBlockId": "inner",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 1,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 2,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 2.3659999999998504,
+            "displacementMeters": 0.000015394374125165427,
+            "yawRadians": 0.000008345985107830259
+          }
+        },
+        {
+          "commandId": "velocity-4",
+          "sourceBlockId": "nested-walk",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 1,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 2,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 4.737999999999917,
+            "displacementMeters": 0.09032782846702919,
+            "yawRadians": -0.02249670254335927,
+            "targetDistanceMeters": 0.1,
+            "forwardDisplacementMeters": 0.09024400999873682
+          }
+        },
+        {
+          "commandId": "velocity-5",
+          "sourceBlockId": "outer",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 2,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 4.740999999999918,
+            "displacementMeters": 0.000007294114228819084,
+            "yawRadians": 0.000004321468837123477
+          }
+        },
+        {
+          "commandId": "velocity-6",
+          "sourceBlockId": "inner",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 2,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 1,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 4.750999999999921,
+            "displacementMeters": 0.000004338902909074072,
+            "yawRadians": 0.000016347642011561855
+          }
+        },
+        {
+          "commandId": "velocity-7",
+          "sourceBlockId": "nested-walk",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 2,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 1,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 7.080000000000699,
+            "displacementMeters": 0.10102296120301794,
+            "yawRadians": 0.014211909671663043,
+            "targetDistanceMeters": 0.1,
+            "forwardDisplacementMeters": 0.1007076197371386
+          }
+        },
+        {
+          "commandId": "velocity-8",
+          "sourceBlockId": "inner",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 2,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 2,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 7.081000000000699,
+            "displacementMeters": 0.0000014442044157057278,
+            "yawRadians": 0.000040989558646457175
+          }
+        },
+        {
+          "commandId": "velocity-9",
+          "sourceBlockId": "nested-walk",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 2,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 2,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 9.421000000000218,
+            "displacementMeters": 0.09522988333180547,
+            "yawRadians": 0.025874265534145756,
+            "targetDistanceMeters": 0.1,
+            "forwardDisplacementMeters": 0.09519647917992397
+          }
+        }
+      ],
+      "cancelledTrace": [
+        {
+          "commandId": "velocity-0",
+          "sourceBlockId": "repeat",
+          "iterations": [
+            {
+              "sourceBlockId": "repeat",
+              "iteration": 1,
+              "count": 3
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 0.001,
+            "displacementMeters": 0,
+            "yawRadians": 0
+          }
+        },
+        {
+          "commandId": "velocity-1",
+          "sourceBlockId": "walk",
+          "iterations": [
+            {
+              "sourceBlockId": "repeat",
+              "iteration": 1,
+              "count": 3
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 4.23899999999975,
+            "displacementMeters": 0.489105477850179,
+            "yawRadians": -0.017512988178280547,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.48906677747210703
+          }
+        },
+        {
+          "commandId": "velocity-2",
+          "sourceBlockId": "wait",
+          "iterations": [
+            {
+              "sourceBlockId": "repeat",
+              "iteration": 1,
+              "count": 3
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 5.245000000000086,
+            "displacementMeters": 0.0006014173110099012,
+            "yawRadians": -0.001418262897325325
+          }
+        },
+        {
+          "commandId": "velocity-3",
+          "sourceBlockId": "repeat",
+          "iterations": [
+            {
+              "sourceBlockId": "repeat",
+              "iteration": 2,
+              "count": 3
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 5.251000000000088,
+            "displacementMeters": 0.0000016438002580189597,
+            "yawRadians": -0.000022596730970540768
+          }
+        }
+      ],
+      "zero": {
+        "executionId": "runtime-a2f2eb2b-7be483da-b926b953-706cf3e-mujoco-program-4",
+        "program": {
+          "programId": "jumper-web-walking",
+          "targetId": "jumper-web-walking",
+          "revision": "{\"commands\":[],\"requiredPolicyIds\":[]}"
+        },
+        "status": "no-work",
+        "evidence": "none"
+      },
+      "empty": [
+        {
+          "commandId": "velocity-0",
+          "sourceBlockId": "empty",
+          "iterations": [
+            {
+              "sourceBlockId": "empty",
+              "iteration": 1,
+              "count": 3
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 0.001,
+            "displacementMeters": 0,
+            "yawRadians": 0
+          }
+        },
+        {
+          "commandId": "velocity-1",
+          "sourceBlockId": "empty",
+          "iterations": [
+            {
+              "sourceBlockId": "empty",
+              "iteration": 2,
+              "count": 3
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 0.006,
+            "displacementMeters": 0.000017799018437539375,
+            "yawRadians": 0.000008227996227380158
+          }
+        },
+        {
+          "commandId": "velocity-2",
+          "sourceBlockId": "empty",
+          "iterations": [
+            {
+              "sourceBlockId": "empty",
+              "iteration": 3,
+              "count": 3
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 0.026000000000000016,
+            "displacementMeters": 0.00001885133078550198,
+            "yawRadians": 0.0000034368882757339185
+          }
+        }
+      ],
+      "checks": [
+        "iteration progress and distinct result rows",
+        "JSON export/import and reload retain identities",
+        "3 to 2 repetitions changes measured total",
+        "stop on second iteration prevents third",
+        "editing cancels and invalidates result",
+        "zero count has no commands or physics advancement",
+        "nested iteration paths",
+        "empty bodies have bounded checkpoints",
+        "expansion budget rejected before physics",
+        "legacy first-steps project completes",
+        "close releases worker"
+      ]
+    },
+    {
+      "robot": "microduck",
+      "visible": [
+        "Esperando · Repetición 1 de 3",
+        "Avanzando · Repetición 2 de 3",
+        "Avanzando · Repetición 3 de 3"
+      ],
+      "three": {
+        "trace": [
+          {
+            "commandId": "velocity-0",
+            "sourceBlockId": "repeat",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 1,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 0.005,
+              "displacementMeters": 0,
+              "yawRadians": 0
+            }
+          },
+          {
+            "commandId": "velocity-1",
+            "sourceBlockId": "walk",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 1,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 6.9749999999998735,
+              "displacementMeters": 0.504019654309723,
+              "yawRadians": -0.23520826090639493,
+              "targetDistanceMeters": 0.5,
+              "forwardDisplacementMeters": 0.5022901095451978
+            }
+          },
+          {
+            "commandId": "velocity-2",
+            "sourceBlockId": "wait",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 1,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 7.979999999999852,
+              "displacementMeters": 0.0004391965266252412,
+              "yawRadians": -0.014302383029906357
+            }
+          },
+          {
+            "commandId": "velocity-3",
+            "sourceBlockId": "repeat",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 2,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 7.984999999999852,
+              "displacementMeters": 0.00000282169372008758,
+              "yawRadians": 0.000017507635284186307
+            }
+          },
+          {
+            "commandId": "velocity-4",
+            "sourceBlockId": "walk",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 2,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 14.84000000000092,
+              "displacementMeters": 0.49610732250961115,
+              "yawRadians": -0.1817609506560245,
+              "targetDistanceMeters": 0.5,
+              "forwardDisplacementMeters": 0.49610378913691544
+            }
+          },
+          {
+            "commandId": "velocity-5",
+            "sourceBlockId": "wait",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 2,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 15.840000000001076,
+              "displacementMeters": 0.0003409974337591758,
+              "yawRadians": -0.01753288374291173
+            }
+          },
+          {
+            "commandId": "velocity-6",
+            "sourceBlockId": "repeat",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 3,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 15.845000000001077,
+              "displacementMeters": 0.000004438962965790443,
+              "yawRadians": -0.000020217218499929412
+            }
+          },
+          {
+            "commandId": "velocity-7",
+            "sourceBlockId": "walk",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 3,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 22.754999999999757,
+              "displacementMeters": 0.5021227893418861,
+              "yawRadians": -0.24478619838297117,
+              "targetDistanceMeters": 0.5,
+              "forwardDisplacementMeters": 0.4997543693382904
+            }
+          },
+          {
+            "commandId": "velocity-8",
+            "sourceBlockId": "wait",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 3,
+                "count": 3
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 23.759999999999557,
+              "displacementMeters": 0.00019220656319369778,
+              "yawRadians": -0.015013488278697418
+            }
+          }
+        ],
+        "observedMeters": 1.4981482680204037,
+        "goalMeters": 1.5
+      },
+      "two": {
+        "trace": [
+          {
+            "commandId": "velocity-0",
+            "sourceBlockId": "repeat",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 1,
+                "count": 2
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 0.005,
+              "displacementMeters": 0,
+              "yawRadians": 0
+            }
+          },
+          {
+            "commandId": "velocity-1",
+            "sourceBlockId": "walk",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 1,
+                "count": 2
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 6.9749999999998735,
+              "displacementMeters": 0.504019654309723,
+              "yawRadians": -0.23520826090639493,
+              "targetDistanceMeters": 0.5,
+              "forwardDisplacementMeters": 0.5022901095451978
+            }
+          },
+          {
+            "commandId": "velocity-2",
+            "sourceBlockId": "wait",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 1,
+                "count": 2
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 7.979999999999852,
+              "displacementMeters": 0.0004391965266252412,
+              "yawRadians": -0.014302383029906357
+            }
+          },
+          {
+            "commandId": "velocity-3",
+            "sourceBlockId": "repeat",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 2,
+                "count": 2
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 7.984999999999852,
+              "displacementMeters": 0.00000282169372008758,
+              "yawRadians": 0.000017507635284186307
+            }
+          },
+          {
+            "commandId": "velocity-4",
+            "sourceBlockId": "walk",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 2,
+                "count": 2
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 14.84000000000092,
+              "displacementMeters": 0.49610732250961115,
+              "yawRadians": -0.1817609506560245,
+              "targetDistanceMeters": 0.5,
+              "forwardDisplacementMeters": 0.49610378913691544
+            }
+          },
+          {
+            "commandId": "velocity-5",
+            "sourceBlockId": "wait",
+            "iterations": [
+              {
+                "sourceBlockId": "repeat",
+                "iteration": 2,
+                "count": 2
+              }
+            ],
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 15.840000000001076,
+              "displacementMeters": 0.0003409974337591758,
+              "yawRadians": -0.01753288374291173
+            }
+          }
+        ],
+        "observedMeters": 0.9983938986821133,
+        "goalMeters": 1
+      },
+      "nested": [
+        {
+          "commandId": "velocity-0",
+          "sourceBlockId": "outer",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 1,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 0.005,
+            "displacementMeters": 0,
+            "yawRadians": 0
+          }
+        },
+        {
+          "commandId": "velocity-1",
+          "sourceBlockId": "inner",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 1,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 1,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 0.025,
+            "displacementMeters": 0.000044525482690219214,
+            "yawRadians": 0.00007954473335199866
+          }
+        },
+        {
+          "commandId": "velocity-2",
+          "sourceBlockId": "nested-walk",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 1,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 1,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 3.154999999999955,
+            "displacementMeters": 0.09999724337663046,
+            "yawRadians": -0.036033835589353,
+            "targetDistanceMeters": 0.1,
+            "forwardDisplacementMeters": 0.09858100508816826
+          }
+        },
+        {
+          "commandId": "velocity-3",
+          "sourceBlockId": "inner",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 1,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 2,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 3.1649999999999547,
+            "displacementMeters": 0.000007685806433236605,
+            "yawRadians": 0.00010308017361942978
+          }
+        },
+        {
+          "commandId": "velocity-4",
+          "sourceBlockId": "nested-walk",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 1,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 2,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 6.19499999999989,
+            "displacementMeters": 0.10131503805535523,
+            "yawRadians": -0.11631281128441102,
+            "targetDistanceMeters": 0.1,
+            "forwardDisplacementMeters": 0.10131226437554264
+          }
+        },
+        {
+          "commandId": "velocity-5",
+          "sourceBlockId": "outer",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 2,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 6.20499999999989,
+            "displacementMeters": 0.00000797371443117382,
+            "yawRadians": -0.00013936027669991804
+          }
+        },
+        {
+          "commandId": "velocity-6",
+          "sourceBlockId": "inner",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 2,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 1,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 6.2249999999998895,
+            "displacementMeters": 0.0000034764998571867075,
+            "yawRadians": -0.00013141968153246308
+          }
+        },
+        {
+          "commandId": "velocity-7",
+          "sourceBlockId": "nested-walk",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 2,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 1,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 9.265000000000049,
+            "displacementMeters": 0.10257004244295913,
+            "yawRadians": -0.11755335081460008,
+            "targetDistanceMeters": 0.1,
+            "forwardDisplacementMeters": 0.10247286789329106
+          }
+        },
+        {
+          "commandId": "velocity-8",
+          "sourceBlockId": "inner",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 2,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 2,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 9.285000000000052,
+            "displacementMeters": 0.000008648999364587484,
+            "yawRadians": -0.00018726264436091933
+          }
+        },
+        {
+          "commandId": "velocity-9",
+          "sourceBlockId": "nested-walk",
+          "iterations": [
+            {
+              "sourceBlockId": "outer",
+              "iteration": 2,
+              "count": 2
+            },
+            {
+              "sourceBlockId": "inner",
+              "iteration": 2,
+              "count": 2
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 12.325000000000527,
+            "displacementMeters": 0.10334411316028728,
+            "yawRadians": -0.026482213328539672,
+            "targetDistanceMeters": 0.1,
+            "forwardDisplacementMeters": 0.10307010099731997
+          }
+        }
+      ],
+      "cancelledTrace": [
+        {
+          "commandId": "velocity-0",
+          "sourceBlockId": "repeat",
+          "iterations": [
+            {
+              "sourceBlockId": "repeat",
+              "iteration": 1,
+              "count": 3
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 0.005,
+            "displacementMeters": 0,
+            "yawRadians": 0
+          }
+        },
+        {
+          "commandId": "velocity-1",
+          "sourceBlockId": "walk",
+          "iterations": [
+            {
+              "sourceBlockId": "repeat",
+              "iteration": 1,
+              "count": 3
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 6.9749999999998735,
+            "displacementMeters": 0.504019654309723,
+            "yawRadians": -0.23520826090639493,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.5022901095451978
+          }
+        },
+        {
+          "commandId": "velocity-2",
+          "sourceBlockId": "wait",
+          "iterations": [
+            {
+              "sourceBlockId": "repeat",
+              "iteration": 1,
+              "count": 3
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 7.979999999999852,
+            "displacementMeters": 0.0004391965266252412,
+            "yawRadians": -0.014302383029906357
+          }
+        },
+        {
+          "commandId": "velocity-3",
+          "sourceBlockId": "repeat",
+          "iterations": [
+            {
+              "sourceBlockId": "repeat",
+              "iteration": 2,
+              "count": 3
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 7.984999999999852,
+            "displacementMeters": 0.00000282169372008758,
+            "yawRadians": 0.000017507635284186307
+          }
+        }
+      ],
+      "zero": {
+        "executionId": "runtime-9ecd3e8a-358c32a7-aad14bc3-ef784437-mujoco-program-4",
+        "program": {
+          "programId": "microduck-web-walking",
+          "targetId": "microduck-mujoco-web",
+          "revision": "{\"commands\":[],\"requiredPolicyIds\":[]}"
+        },
+        "status": "no-work",
+        "evidence": "none"
+      },
+      "empty": [
+        {
+          "commandId": "velocity-0",
+          "sourceBlockId": "empty",
+          "iterations": [
+            {
+              "sourceBlockId": "empty",
+              "iteration": 1,
+              "count": 3
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 0.005,
+            "displacementMeters": 0,
+            "yawRadians": 0
+          }
+        },
+        {
+          "commandId": "velocity-1",
+          "sourceBlockId": "empty",
+          "iterations": [
+            {
+              "sourceBlockId": "empty",
+              "iteration": 2,
+              "count": 3
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 0.025,
+            "displacementMeters": 0.000044525482690219214,
+            "yawRadians": 0.00007954473335199866
+          }
+        },
+        {
+          "commandId": "velocity-2",
+          "sourceBlockId": "empty",
+          "iterations": [
+            {
+              "sourceBlockId": "empty",
+              "iteration": 3,
+              "count": 3
+            }
+          ],
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 0.045,
+            "displacementMeters": 0.00007167979117800652,
+            "yawRadians": -0.00006104254706787046
+          }
+        }
+      ],
+      "checks": [
+        "iteration progress and distinct result rows",
+        "JSON export/import and reload retain identities",
+        "3 to 2 repetitions changes measured total",
+        "stop on second iteration prevents third",
+        "editing cancels and invalidates result",
+        "zero count has no commands or physics advancement",
+        "nested iteration paths",
+        "empty bodies have bounded checkpoints",
+        "expansion budget rejected before physics",
+        "legacy first-steps project completes",
+        "close releases worker"
+      ]
+    }
+  ],
+  "errors": [],
+  "passed": true
+}

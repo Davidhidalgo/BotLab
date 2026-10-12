@@ -189,9 +189,10 @@ try {
   await editNumber('walk', 0.25);
   const authored = await stored();
   await assertIdle();
+  await page.getByRole('button', { name: 'Projects', exact: true }).click();
   const downloadPromise = page.waitForEvent('download');
   await page
-    .getByRole('button', { name: 'Export program', exact: true })
+    .getByRole('button', { name: 'Export project', exact: true })
     .click();
   const download = await downloadPromise;
   await download.saveAs(resolve(output, 'exported.botlab.json'));

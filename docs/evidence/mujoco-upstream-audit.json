@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "inspectedOn": "2026-10-12",
+  "jumper": {
+    "repository": "https://github.com/KingKongRobotics/jumper",
+    "revision": "78966f45de6f2b6de3f7cea017f32a39f8b993e6",
+    "archiveSha256": "efd13ba4cf3ed25c1dcb4e2ee679927aac8b3ccda46b95a2ff12d26cf8d16c9f",
+    "modelSha256": "3342ca15a5bbcaf40e1f16dedb60044b91360dddae5f7f03f05eb3e6c830cf37",
+    "bundleSha256": "88a1e061ac17853837063cc3f1b69737042f4372fd931177ee6b4464172a3948",
+    "verifiedBundleFiles": 54,
+    "controllerRevision": "ce71f79b191766f0208dca34516564a37816c729",
+    "locomotion": {
+      "bytes": 1552128,
+      "sha256": "a6e0864c425d0604dfa6f11a82ac9e17d5396858dbed3b7dfe70188dba1b02ef"
+    },
+    "contract": {
+      "bytes": 14584,
+      "sha256": "6204effa319eba88e16b3d23bc1a8d005c59c3e0d074cac80f2ba233aab0e5d2"
+    },
+    "controllerWasm": {
+      "bytes": 1357577,
+      "sha256": "5ca0cf7a917cecbe95f5e2ff0b4392ae7564c3c758958a7742c06c5214d73982"
+    },
+    "policyLicense": "Generated outputs do not automatically inherit repository license; redistribution pending review.",
+    "sceneVariant": "fixed-base-joint-probe",
+    "generatedManifestSha256": "acca66d66f450c13278a027b413d3f1fbd60dc8b6d51efc250f38004fde96ceb",
+    "executedByPreparation": false,
+    "executionEvidence": [
+      "docs/evidence/mujoco-browser-validation.json",
+      "docs/evidence/jumper-walking-browser.json"
+    ]
+  },
+  "microduck": {
+    "browser": {
+      "repository": "https://huggingface.co/spaces/pollen-robotics/microduck-simulator",
+      "revision": "023172c8a7d629b5258d90364c13bafe013abbfa"
+    },
+    "nativeDaemonRevision": "e9cca6272f633dd9054dd0e021f356fe086e5be1",
+    "nativeBodyRevision": "363b7effd4eae9f24dd1bb8bf647aef4d74edca9",
+    "policyRevision": "916c1e1ee11f8460506532e037a4cf1aa110aca6",
+    "sharedBackendValidation": "See docs/evidence/mujoco-browser-validation.json and mujoco-ui-validation.json; not executed by preparation"
+  }
+}

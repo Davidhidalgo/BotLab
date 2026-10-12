@@ -1,0 +1,21 @@
+{
+  "executedAt": "2026-10-12T17:51:02.812Z",
+  "url": "http://127.0.0.1:4211",
+  "browserName": "chrome",
+  "browser": "154.0.8037.98",
+  "checks": [
+    "main editor selects all three MuJoCo targets",
+    "real programs and measurements persisted",
+    "reload retains completed result with zero workers",
+    "edits invalidate result and cancel active run",
+    "robot and backend slots preserve independent XML",
+    "export/import preserves all destination programs and results",
+    "project dialog creates, renames, duplicates, imports, exports and deletes after confirmation",
+    "modal focus contained, Escape restores focus, responsive at 390px",
+    "one MuJoCo simulator, joint probe under advanced options",
+    "project switching restores selection",
+    "reload of active run marks interrupted without auto-start",
+    "default route has no engine asset requests"
+  ],
+  "errors": []
+}

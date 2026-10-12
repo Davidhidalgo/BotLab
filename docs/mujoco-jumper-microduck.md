@@ -545,7 +545,7 @@ Plan solicitado por el usuario al adoptar MuJoCo web como único destino visible
 | ---------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
 | Distancia al obstáculo [zona]                  | Número con unidad y validez                            | Distancias conocidas, orientación del sensor, alcance, objetos que ocultan otros y ausencia de impacto                      |
 | ¿Obstáculo a menos de [distancia]?             | Condición sobre lecturas confirmadas                   | Filtrado temporal e histéresis; distinguir espacio libre, fuera de alcance y fallo de lectura                               |
-| Avanzar hasta estar a [distancia]              | Avance limitado que termina con margen observado       | Parada antes de colisión, lectura tras asentarse, límite de recorrido/tiempo, cancelación y sensor obstruido                |
+| Repetir hasta [condición] + avanzar [15] cm     | El alumno compone avance y comprobación de proximidad | Evaluar antes de entrar y después de cada avance terminado; lectura reciente, límite de iteraciones/tiempo y cancelación |
 | Girar [dirección] hasta encontrar paso libre   | Buscar apertura observada                              | Giro mínimo significativo, confirmación de apertura y revisión después de parar; respetar direcciones de marcha disponibles |
 | ¿Está [postura]? / ¿está cambiando de postura? | Observación estable, transición conocida o desconocido | No deducir «sentado» de una caída ni «transición» de cualquier desequilibrio                                                |
 
@@ -575,7 +575,7 @@ Las familias Postura y Habilidades pueden compartir estructura y presentación, 
 
 1. Unificar destinos (BL-025): MuJoCo web en selección, restauración e importación; programas antiguos preservados y exportables; incompatibilidades visibles; referencias internas separadas.
 2. Definir contrato de capacidades y unidades (BL-024): disponibilidad y límites por acción, sin renombrar o reinterpretar identificadores guardados. Mantener los movimientos ya medidos como base.
-3. ToF (BL-026): escena pequeña con obstáculos y lectura visible; después predicados y una acción de avance hasta obstáculo. Esta acción acotada no depende de completar todo el intérprete de expresiones.
+3. ToF (BL-026): escena pequeña con obstáculos y lectura visible (implementada); después condición de proximidad, bucle condicional y avance explícito en centímetros. Primera actividad: avanzar 15 cm y volver a comprobar. Requiere un subconjunto acotado de condiciones/control de BL-007; no exige completar todo el intérprete de expresiones.
 4. Posturas y cabeza: trasladar las capacidades de referencia al modelo web correcto y validar observación de estado; después condiciones de postura compartidas.
 5. Habilidades propias: elegir una acción por robot y validar su ciclo completo antes de ampliar catálogos. El plan conserva salto, pinzas, patadas, recuperación, gestos y bailes; no obliga a implementarlos simultáneamente.
 6. Extensiones: desplazamiento lateral, rangos de giro, nuevas marchas, volteretas y ruedas según evidencia; expresiones y eventos siguen sus entradas BL-007/BL-017.
@@ -585,3 +585,17 @@ Este orden describe dependencias técnicas; el registro es la única prioridad v
 ### Primer incremento de profundidad — 2026-10-13
 
 Implementada la observación geométrica de BL-026 para MicroDuck: escena opcional, contrato de profundidad compartido, mapa 8×8 visible y persistencia de escena. [Validación y límites](mujoco-validation.md#geometric-tof-prototype--2026-10-13). Los bloques de proximidad/navegación y el perfil propio de Jumper permanecen pendientes; el orden vigente está en el [registro](next-steps.md). La política de marcha no consume profundidad y no evita obstáculos.
+
+### Decisión educativa: componer la navegación — 2026-10-13
+
+Corrección del usuario: sustituir la propuesta del asistente «avanzar hasta obstáculo» por una condición reutilizable. El alumno escribe el bucle y elige cuánto avanzar entre comprobaciones; primera actividad con incrementos de 15 cm. La acción compuesta deja de ser el objetivo de BL-026. El avance existente en pasos de 0,5 m conserva su significado; introducir centímetros explícitos sin reinterpretar proyectos guardados.
+
+Ejemplo propuesto de composición (umbral de 30 cm ilustrativo, pendiente de validación):
+
+```text
+al pulsar la bandera
+  repetir hasta <¿obstáculo delante a menos de 30 cm?>
+    avanzar 15 cm
+```
+
+Evaluar la condición antes del primer avance y después de que termine cada movimiento, con una lectura reciente correspondiente a la nueva pose. Si ya hay un obstáculo cercano, ejecutar cero avances. Lectura inválida, caducada o sin retorno no equivale automáticamente a «no hay obstáculo»: definir y mostrar su significado antes de autorizar otro movimiento. La traza debe mostrar distancia observada, decisión e iteración, para relacionar causa y efecto. El bucle debe ser cancelable y acotado, incluido si nunca se satisface la condición. Validar avances repetidos de 15 cm, tolerancia, margen, condición inicial verdadera/falsa y pérdida de lectura; no inferir esa aceptación de la marcha de 0,5 m ya medida. Es una decisión de diseño registrada, todavía sin bloques nuevos implementados.

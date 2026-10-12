@@ -1,5 +1,9 @@
 # Experimental native MicroDuck probe
 
+<!-- reference integration availability from apps/botlab-web/src/app/simulation-destinations.ts and apps/botlab-web/vite.config.ts -->
+
+The default editor uses MuJoCo web exclusively for Jumper and MicroDuck. This legacy/native integration is retained for internal comparisons and regression checks. UI instructions in this document require a separate development server started with `BOTLAB_REFERENCE_SIMULATORS=1`; imported projects cannot enable it. Native services and command-line tools remain available independently.
+
 An isolated macOS arm64 experiment, not a replacement for BotLab's supported browser simulator. It executes the official robot services against the published MuJoCo body server. Results and limitations are in the [evaluation](../../../docs/microduck-simulator-evaluation.md).
 
 ## Setup and checks

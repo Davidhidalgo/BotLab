@@ -29,6 +29,9 @@ const scratchBlocksMediaSourceDirs = [
 export default defineConfig({
   root: __dirname,
   define: {
+    'process.env.BOTLAB_REFERENCE_SIMULATORS': JSON.stringify(
+      process.env.BOTLAB_REFERENCE_SIMULATORS ?? '0',
+    ),
     'process.env.BOTLAB_NATIVE_SIMULATOR_URL': JSON.stringify(
       process.env.BOTLAB_NATIVE_SIMULATOR_URL ?? 'http://127.0.0.1:4401',
     ),

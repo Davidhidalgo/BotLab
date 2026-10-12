@@ -1,6 +1,12 @@
 import { fireEvent, render, waitFor } from '@testing-library/react';
 import type { BlocksEditorShellProps } from '@botlab/blocks';
 import App from './app';
+import { sampleScratchBlocksWorkspaceArtifact } from '@botlab/blocks';
+import {
+  workspaceStorageKey,
+  encodeWorkspaceDocument,
+  readWorkspaceDocument,
+} from './workspace-storage';
 
 beforeAll(() => {
   HTMLDialogElement.prototype.showModal = function () {
@@ -35,8 +41,17 @@ jest.mock('@botlab/blocks', () => ({
 }));
 jest.mock('./mujoco-simulator-panel', () => ({
   __esModule: true,
-  default: ({ targetId }: { targetId: string }) => (
-    <p data-testid="mujoco-panel">{targetId}</p>
+  default: ({
+    targetId,
+    executionBlocked,
+  }: {
+    targetId: string;
+    executionBlocked: boolean;
+  }) => (
+    <div>
+      <p data-testid="mujoco-panel">{targetId}</p>
+      <button disabled={executionBlocked}>Test run</button>
+    </div>
   ),
 }));
 
@@ -76,7 +91,11 @@ describe('MuJoCo in the primary workspace', () => {
     fireEvent.change(robot(), { target: { value: 'stackchan' } });
     expect(editor().value).toBe(legacy);
     fireEvent.change(robot(), { target: { value: 'microduck' } });
-    fireEvent.change(backend(), { target: { value: 'mujoco' } });
+    expect(backend().querySelectorAll('option')).toHaveLength(1);
+    expect(
+      view.queryByRole('button', { name: /MicroDuck Simulator/ }),
+    ).toBeNull();
+    expect(view.container.querySelector('iframe')).toBeNull();
     await waitFor(() =>
       expect(view.getByTestId('mujoco-panel')).toHaveProperty(
         'textContent',
@@ -111,5 +130,93 @@ describe('MuJoCo in the primary workspace', () => {
       'value',
       walking,
     );
+  });
+});
+
+const retiredSource =
+  '<xml><block type="event_whenflagclicked" id="flag"><next><block type="botlab_microduck_sit" id="sit"/></next></block></xml>';
+const retiredDocument = (simulatorBackend: 'browser' | 'native') => ({
+  schemaVersion: 1 as const,
+  locale: 'es' as const,
+  targetId: 'microduck-sim' as const,
+  simulatorBackend,
+  workspace: {
+    ...sampleScratchBlocksWorkspaceArtifact,
+    content: retiredSource,
+  },
+});
+describe('opening retired programs in the product', () => {
+  beforeEach(() => localStorage.clear());
+  it.each(['browser', 'native'] as const)(
+    'restores %s without mounting its transport and blocks unsupported actions',
+    async (backend) => {
+      localStorage.setItem(
+        workspaceStorageKey,
+        encodeWorkspaceDocument(retiredDocument(backend)),
+      );
+      const view = render(<App />);
+      expect(await view.findByTestId('mujoco-panel')).toHaveProperty(
+        'textContent',
+        'microduck-mujoco-web',
+      );
+      expect(
+        view
+          .getByRole('combobox', { name: 'Simulador' })
+          .querySelectorAll('option'),
+      ).toHaveLength(1);
+      expect(view.container.querySelector('iframe')).toBeNull();
+      expect(view.getByRole('button', { name: 'Test run' })).toHaveProperty(
+        'disabled',
+        true,
+      );
+      expect(view.getByLabelText('Test workspace')).toHaveProperty(
+        'value',
+        retiredSource,
+      );
+      expect(view.getByText(/Se incluyen al exportar/)).toBeTruthy();
+      expect(
+        readWorkspaceDocument().document?.targetWorkspaces?.[
+          `microduck-sim:${backend}`
+        ]?.workspace.content,
+      ).toBe(retiredSource);
+    },
+  );
+  it('normalizes a file import and preserves its archived source after reload', async () => {
+    const view = render(<App />);
+    fireEvent.change(view.getByLabelText('Importa un projecte'), {
+      target: {
+        files: [
+          {
+            name: 'old.botlab.json',
+            size: 100,
+            text: async () =>
+              encodeWorkspaceDocument(retiredDocument('native')),
+          },
+        ],
+      },
+    });
+    expect(await view.findByTestId('mujoco-panel')).toHaveProperty(
+      'textContent',
+      'microduck-mujoco-web',
+    );
+    expect(view.getByRole('button', { name: 'Test run' })).toHaveProperty(
+      'disabled',
+      true,
+    );
+    view.unmount();
+    const again = render(<App />);
+    expect(await again.findByTestId('mujoco-panel')).toHaveProperty(
+      'textContent',
+      'microduck-mujoco-web',
+    );
+    expect(again.getByLabelText('Test workspace')).toHaveProperty(
+      'value',
+      retiredSource,
+    );
+    expect(
+      readWorkspaceDocument().document?.targetWorkspaces?.[
+        'microduck-sim:native'
+      ]?.workspace.content,
+    ).toBe(retiredSource);
   });
 });

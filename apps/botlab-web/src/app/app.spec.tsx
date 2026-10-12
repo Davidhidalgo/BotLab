@@ -1,3 +1,8 @@
+// Regression harness for the archived/reference integrations, not the product defaults.
+jest.mock('./simulation-destinations', () => ({
+  ...jest.requireActual('./simulation-destinations'),
+  referenceSimulatorsEnabled: true,
+}));
 import {
   act,
   fireEvent,

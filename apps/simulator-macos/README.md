@@ -1,6 +1,6 @@
 # BotLab Simulator for macOS
 
-Simulator companion for the web editor, initially bundling MicroDuck. The editor remains a web app; the companion owns the local simulator and its MuJoCo window.
+Internal reference companion, initially bundling MicroDuck. The product editor now uses MuJoCo web only. UI comparisons with this companion require starting a separate editor with `BOTLAB_REFERENCE_SIMULATORS=1`; preserve the companion’s allowed origin described below. The editor remains a web app; the companion owns the local simulator and its MuJoCo window.
 
 ## Build and open
 

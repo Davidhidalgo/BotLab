@@ -36,6 +36,8 @@ export const workbenchCopy = {
       'Cuerpo fijado para probar articulaciones. Este modo no comprueba el equilibrio.',
     walkingHint: 'Robot libre sobre el suelo con control de equilibrio.',
     hardware: 'Robot físico',
+    archivedPrograms:
+      'Este proyecto conserva programas de los simuladores anteriores. Se incluyen al exportar. MuJoCo no ejecuta las acciones que aún no admite; los bloques originales no se convierten automáticamente.',
     browser: 'Simulador web clásico',
     native: 'Simulador nativo',
   },
@@ -75,6 +77,8 @@ export const workbenchCopy = {
       "Cos fixat per provar articulacions. Aquest mode no comprova l'equilibri.",
     walkingHint: "Robot lliure sobre el terra amb control d'equilibri.",
     hardware: 'Robot físic',
+    archivedPrograms:
+      'Aquest projecte conserva programes dels simuladors anteriors. S’inclouen en exportar. MuJoCo no executa les accions que encara no admet; els blocs originals no es converteixen automàticament.',
     browser: 'Simulador web clàssic',
     native: 'Simulador natiu',
   },
@@ -112,6 +116,8 @@ export const workbenchCopy = {
       'Fixed body for testing joints. This mode does not test balance.',
     walkingHint: 'Free robot on the ground with balance control.',
     hardware: 'Physical robot',
+    archivedPrograms:
+      'This project retains programs from previous simulators. They are included in exports. MuJoCo cannot run unsupported actions; original blocks are not converted automatically.',
     browser: 'Classic web simulator',
     native: 'Native simulator',
   },

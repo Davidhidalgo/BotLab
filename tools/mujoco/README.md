@@ -1,5 +1,7 @@
 # Shared browser MuJoCo experiment
 
+The normal editor now selects MuJoCo web directly for both robots. Retired iframe/native projects are archived on opening and remain in JSON exports; unsupported blocks are preserved and cannot execute. Native and archived iframe UI regressions require the separate `BOTLAB_REFERENCE_SIMULATORS=1` development configuration documented in the root README.
+
 Runs physics, learned control, ONNX inference and rendering in the browser. Python is an optional preparation/verification tool, never a runtime service for this route. Models and weights stay in ignored `tmp/`.
 
 ## Start

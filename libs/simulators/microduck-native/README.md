@@ -1,6 +1,10 @@
 # Native MicroDuck simulator
 
-Experimental native MuJoCo integration, separate from the browser/iframe bridge in `@botlab/simulators-microduck`. The app can select either backend. This library provides the loopback gateway, measured program execution and native render stream used by the experimental panel.
+<!-- reference integration availability from apps/botlab-web/src/app/simulation-destinations.ts and apps/botlab-web/vite.config.ts -->
+
+The default editor uses MuJoCo web exclusively for Jumper and MicroDuck. This legacy/native integration is retained for internal comparisons and regression checks. UI instructions in this document require a separate development server started with `BOTLAB_REFERENCE_SIMULATORS=1`; imported projects cannot enable it. Native services and command-line tools remain available independently.
+
+Experimental native MuJoCo integration, separate from the browser/iframe bridge in `@botlab/simulators-microduck`. The internal reference build can select either backend. This library provides the loopback gateway, measured program execution and native render stream used by the experimental panel.
 
 ## Ownership
 

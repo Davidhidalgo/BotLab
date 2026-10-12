@@ -1,3 +1,8 @@
+import {
+  openCurrentSimulation,
+  hasArchivedMicroduckPrograms,
+  referenceSimulatorsEnabled,
+} from './simulation-destinations';
 import { ProjectManager } from './project-manager';
 import { workbenchCopy, workspaceDescription } from './workbench-copy';
 import { isMujocoTarget, mujocoTargets } from './mujoco-targets';
@@ -133,7 +138,7 @@ export function App() {
   const [projectRestore] = useState(readProjectLibrary);
   const [restored] = useState(() => {
     const library = projectRestore.library;
-    return library
+    const restored = library
       ? {
           document: library.projects.find(
             (project) => project.id === library.activeId,
@@ -141,6 +146,13 @@ export function App() {
           error: false,
         }
       : readWorkspaceDocument();
+    return {
+      ...restored,
+      document:
+        restored.document && !referenceSimulatorsEnabled
+          ? openCurrentSimulation(restored.document)
+          : restored.document,
+    };
   });
   const [projects, setProjects] = useState<LocalProject[]>(
     projectRestore.library?.projects ?? [],
@@ -248,7 +260,12 @@ export function App() {
     executionActive,
   });
   importContext.current = { projectId, workspaceArtifact, executionActive };
-  const targets = runtime.listTargets();
+  const targets = runtime
+    .listTargets()
+    .filter(
+      (target) =>
+        referenceSimulatorsEnabled || target.adapterId !== 'microduck',
+    );
   const capabilities = runtime.listCapabilities();
   const selectedTarget = targets.find(
     (target) => target.id === selectedTargetId,
@@ -747,6 +764,13 @@ export function App() {
     return true;
   }
   function activateProject(project: LocalProject, next: LocalProject[]) {
+    if (!referenceSimulatorsEnabled) {
+      project = {
+        ...project,
+        document: openCurrentSimulation(project.document),
+      };
+      next = next.map((item) => (item.id === project.id ? project : item));
+    }
     if (!saveProjects(next, project.id)) return false;
     // Async file reads otherwise mix deferred React state with synchronous actor
     // updates: the old project briefly receives the new source and clears its result.
@@ -920,7 +944,9 @@ export function App() {
                     ? 'stackchan-planned'
                     : event.target.value === 'jumper'
                       ? 'jumper-web-walking'
-                      : 'microduck-sim',
+                      : referenceSimulatorsEnabled
+                        ? 'microduck-sim'
+                        : 'microduck-mujoco-web',
                 )
               }
             >
@@ -949,7 +975,7 @@ export function App() {
                     );
                 }}
               >
-                {selectedRobot === 'jumper' ? (
+                {selectedRobot === 'jumper' || !referenceSimulatorsEnabled ? (
                   <option value="mujoco">MuJoCo web</option>
                 ) : (
                   <>
@@ -1200,6 +1226,12 @@ export function App() {
             {copy.storage.fileFailed}
           </p>
         ) : null}
+        {!referenceSimulatorsEnabled &&
+        hasArchivedMicroduckPrograms(currentProjectDocument()) ? (
+          <p role="status" className="mb-3 text-sm text-muted-foreground">
+            {ui.archivedPrograms}
+          </p>
+        ) : null}
         {incompatibleBlocks ? (
           <p role="alert" className="mb-3 text-sm text-amber-700">
             {locale === 'es'
@@ -1268,7 +1300,7 @@ export function App() {
                 executionBlocked={incompatibleBlocks || isImporting}
                 onActiveBlock={setNativeActiveBlock}
               />
-            ) : simulatorBackend === 'native' ? (
+            ) : referenceSimulatorsEnabled && simulatorBackend === 'native' ? (
               <NativeSimulatorPanel
                 key={projectId}
                 workspace={workspaceArtifact}
@@ -1278,7 +1310,7 @@ export function App() {
                 onBusy={setNativeBusy}
                 executionBlocked={incompatibleBlocks || isImporting}
               />
-            ) : (
+            ) : referenceSimulatorsEnabled ? (
               <MicroDuckSimulatorHost
                 targetName={selectedTarget?.name ?? copy.empty.noTarget}
                 assetReady={simulatorAssetPlan.ready}
@@ -1352,7 +1384,7 @@ export function App() {
                 )}
                 copy={copy}
               />
-            )
+            ) : null
           }
         />
         {lastExecution && simulatorBackend === 'browser' ? (
@@ -1389,7 +1421,11 @@ export function App() {
         ) : null}
         <details
           className="workbench-diagnostics"
-          hidden={simulatorBackend === 'native' || !!mujocoTarget}
+          hidden={
+            !referenceSimulatorsEnabled ||
+            simulatorBackend === 'native' ||
+            !!mujocoTarget
+          }
         >
           <summary>
             <SlidersHorizontal size={16} />

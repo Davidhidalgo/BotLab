@@ -1,18 +1,18 @@
 # Shared MuJoCo web implementation — measured status
 
-Implemented on 2026-10-12, initially as `?lab=mujoco` and now also as optional destinations in the main editor. All MuJoCo simulation work runs in the browser. Python is used only to prepare pinned resources and generate independent test references.
+Implemented on 2026-10-12, initially as `?lab=mujoco` and adopted as the sole visible simulation route for Jumper and MicroDuck on 2026-10-13. All MuJoCo simulation work runs in the browser. Python is used only to prepare pinned resources and generate independent test references.
 
 ## Available targets
 
-| Target                   | Educational palette                                         | Advanced behavior / scope                                                                                                    |
-| ------------------------ | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `jumper-web-joint-probe` | Separate advanced joint experiment                          | Named joint position in radians, fixed base and disabled contacts                                                            |
-| `jumper-web-walking`     | Advance by steps/metres; wait; finite repeat                | Timed forward 0–0.24 m/s and zero-velocity balance; no turns or reverse                                                      |
-| `microduck-mujoco-web`   | Advance by steps/metres; turn left 90°; wait; finite repeat | Existing timed forward/yaw requests remain available; reverse and right turns from rest are not reliable educational actions |
+| Target                   | Educational palette                                                | Advanced behavior / scope                                                                                                    |
+| ------------------------ | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `jumper-web-joint-probe` | Separate advanced joint experiment                                 | Named joint position in radians, fixed base and disabled contacts                                                            |
+| `jumper-web-walking`     | Advance by steps/metres; left/right 90° turns; wait; finite repeat | Timed forward 0–0.24 m/s and zero-velocity balance; no turns or reverse                                                      |
+| `microduck-mujoco-web`   | Advance by steps/metres; turn left 90°; wait; finite repeat        | Existing timed forward/yaw requests remain available; reverse and right turns from rest are not reliable educational actions |
 
 The interface uses the existing block provider and runtime, including compiled program identity, source-block highlighting, exclusive ownership and observed completion. The diagnostic panel records execution identity and measured command results. Editing invalidates the old result; edits during a run wait for cancellation acknowledgement before enabling another run. A timed velocity command completes after its interval has been physically simulated; it does not claim exact velocity tracking. **Detener** pauses physics and cancels work; a zero-velocity block preserves active balance control. Changing robot disposes the old worker and renderer. The main editor stores independent programs and the latest MuJoCo result per robot/simulator destination in the existing local project document. Export/import includes these variants, source identity, model revision and measured command traces. Reload never restores a live session: active records become interrupted. The standalone lab remains an in-memory test harness.
 
-The default app, legacy degree-based MicroDuck artifacts, iframe and native destinations retain their existing behavior. New heavy packages are optional at runtime and are not fetched by the default route. No hardware capability is enabled.
+The normal editor opens MuJoCo directly for both robots. Old MicroDuck sources and evidence are retained on migration; unsupported actions remain blocked. The archived iframe and native reference UI require an explicit internal build configuration. New heavy packages are optional at runtime and are not fetched by the default route. No hardware capability is enabled.
 
 ## Numerical evidence
 
@@ -203,3 +203,19 @@ The [development editor acceptance](evidence/jumper-turns-ui-validation.json) im
 The source parser validates Jumper and MicroDuck palettes separately, preventing this addition from enabling MicroDuck right turns. Unit tests cover signed axis mapping and rejection, stopping profiles without relaxed tolerance, quarter-turn-only compilation and target-specific parsing.
 
 The tolerance applies to each measured block, not the sum of multiple turns. Balancing can translate the body and turning left then right does not guarantee return to the starting position. Evidence is for the prepared flat-ground scene in Chrome on the local Mac; it does not establish hardware, Safari or mobile behavior. Reproduction commands are in the [MuJoCo tools README](../tools/mujoco/README.md#jumper-quarter-turn-acceptance).
+
+## Unified simulation destinations — 2026-10-13
+
+BL-025 makes MuJoCo web the only simulation choice for Jumper and MicroDuck in the normal editor, including restoration and file import. StackChan retains its physical route. Jumper's fixed-body joint probe remains an advanced MuJoCo mode. The old MicroDuck USB placeholder also opens on the web simulator with its source archived; no hardware support is implied.
+
+A retired MicroDuck document is archived in its original per-destination slot, including its execution. If a MuJoCo slot already exists, it is restored; otherwise a copy of the original XML remains in the editor for adaptation. No command translation or automatic run occurs. Unsupported blocks are disabled and block execution; the original archived source/result remains in JSON exports. A localized notice explains the retained programs. Inactive projects migrate when opened, not by rewriting the whole library.
+
+The native reference and archived iframe regression harness remain accessible only through `BOTLAB_REFERENCE_SIMULATORS=1` at dev/build time, not through saved data or a URL. The normal selector and runtime panels cannot start those transports. The environment flag participates in the app's Nx cache inputs so a reference build cannot satisfy a normal build cache lookup. Reference tests explicitly enable the reference configuration; product tests exercise the default.
+
+Verification:
+
+- 137 editor tests passed, including both old backends, source preservation, JSON round trips, existing MuJoCo slot preference, import/reload and blocked unsupported actions. Type checks across all configured projects, app lint, 13 architecture boundary checks and the production build passed. App lint retains existing advisory warnings.
+- [Chrome workbench acceptance](evidence/mujoco-unified-workbench-validation.json): actual measured Jumper and MicroDuck programs, advanced joint mode, source edits, cancellation, worker cleanup, project operations, export/import and reload. No browser errors. The 390px viewport check is responsive desktop testing, not a physical mobile device.
+- [Static-build migration acceptance](evidence/mujoco-destination-migration.json): both old backends preserve exact original XML and execution identity through export/reload; import prefers an existing web slot; unsupported posture cannot run after loading physics; no iframe or native requests and no browser errors. The first test attempt incorrectly expected a newly loaded world to be Paused; it was correctly Ready. The assertion was corrected and the full test passed without changing application behavior.
+
+Reproduce with `BOTLAB_TEST_URL=<editor> node tools/mujoco/verify-workbench.mjs` and `BOTLAB_TEST_URL=<static-preview> node tools/mujoco/verify-destination-migration.mjs`. These checks do not enable ToF, additional policies, hardware, real Safari or physical mobile support. The [requested block plan](mujoco-jumper-microduck.md#plan-de-bloques-comunes-y-específicos--2026-10-13) records those future capabilities and their acceptance criteria.

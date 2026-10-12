@@ -5,5 +5,14 @@
   "projectType": "application",
   "tags": ["scope:app", "type:web", "platform:react"],
   "// targets": "to see all targets run: nx show project botlab-web --web",
-  "targets": {}
+  "targets": {},
+  "namedInputs": {
+    "default": [
+      "{projectRoot}/**/*",
+      "sharedGlobals",
+      {
+        "env": "BOTLAB_REFERENCE_SIMULATORS"
+      }
+    ]
+  }
 }

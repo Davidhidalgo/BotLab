@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-12T23:23:14.340Z",
+  "url": "http://127.0.0.1:4230",
+  "browser": "154.0.8037.98",
+  "results": [
+    {
+      "backend": "browser",
+      "archivedSource": true,
+      "archivedExecution": true,
+      "export": true,
+      "reload": true,
+      "importPrefersExistingWeb": true,
+      "legacyRequests": [],
+      "errors": []
+    },
+    {
+      "backend": "native",
+      "archivedSource": true,
+      "archivedExecution": true,
+      "export": true,
+      "reload": true,
+      "importPrefersExistingWeb": true,
+      "legacyRequests": [],
+      "errors": []
+    }
+  ],
+  "passed": true
+}

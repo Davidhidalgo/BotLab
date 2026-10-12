@@ -1,6 +1,10 @@
 # @botlab/adapters-microduck
 
-MicroDuck target metadata and robot-specific capability helpers. The application supports browser and native simulators; physical hardware connection remains separate work.
+<!-- reference integration availability from apps/botlab-web/src/app/simulation-destinations.ts and apps/botlab-web/vite.config.ts -->
+
+The default editor uses MuJoCo web exclusively for Jumper and MicroDuck. This legacy/native integration is retained for internal comparisons and regression checks. UI instructions in this document require a separate development server started with `BOTLAB_REFERENCE_SIMULATORS=1`; imported projects cannot enable it. Native services and command-line tools remain available independently.
+
+MicroDuck target metadata and robot-specific capability helpers. The product uses MuJoCo web; legacy browser and native references remain internal; physical hardware connection remains separate work.
 
 ## Public API
 

@@ -147,8 +147,8 @@ try {
     .poll(async () => (await saved()).workspace.content)
     .toBe(original);
   await robot().selectOption('microduck');
-  const legacy = (await saved()).workspace.content;
-  await simulator().selectOption('mujoco');
+  await expect(simulator().locator('option')).toHaveCount(1);
+  await expect(page.locator('iframe')).toHaveCount(0);
   await saveExample('microduck');
   await button('Cargar MicroDuck').click();
   await expect(button('Ejecutar programa')).toBeEnabled({ timeout: 90000 });
@@ -173,9 +173,9 @@ try {
   await expect(page.getByLabel('Estado de la física')).toContainText('Pausada');
   await mkdir(resolve(root, 'output/mujoco'), { recursive: true });
   await page.screenshot({ path: resolve(root, 'output/mujoco/workbench.png') });
-  await simulator().selectOption('browser');
-  await expect.poll(async () => (await saved()).workspace.content).toBe(legacy);
-  await simulator().selectOption('mujoco');
+  await robot().selectOption('jumper');
+  await expect.poll(() => page.workers().length).toBe(0);
+  await robot().selectOption('microduck');
   await expect(outcome()).toHaveText('Completado con evidencia física');
   console.log(browserName, 'MicroDuck completed');
   await button('Proyectos').click();
@@ -330,7 +330,7 @@ try {
   await writeFile(
     resolve(
       root,
-      `docs/evidence/mujoco-workbench${browserName === 'chrome' ? '' : '-' + browserName}-validation.json`,
+      `docs/evidence/mujoco-unified-workbench${browserName === 'chrome' ? '' : '-' + browserName}-validation.json`,
     ),
     JSON.stringify(report, null, 2) + '\n',
   );

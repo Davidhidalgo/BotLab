@@ -26,6 +26,7 @@ export function selectWorkspaceDestination(
       workspace: document.workspace,
       lastExecution: document.lastExecution,
       mujocoExecution: document.mujocoExecution,
+      simulationScene: document.simulationScene,
     },
   };
   const next = slots[nextKey] ?? {
@@ -44,5 +45,6 @@ export function selectWorkspaceDestination(
     workspace: next.workspace,
     lastExecution: next.lastExecution,
     mujocoExecution: next.mujocoExecution,
+    simulationScene: next.simulationScene,
   };
 }

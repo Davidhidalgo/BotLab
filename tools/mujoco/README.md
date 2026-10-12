@@ -135,3 +135,18 @@ tmp/mujoco-native/venv/bin/python tools/mujoco/probe-jumper-turns.py
 The numerical acceptance runs 20 measured quarter turns in same-direction and alternating sequences, two 0.5 m advances and real-worker cancellation in both directions. The UI acceptance imports the turn activity, measures four turns across two repeat iterations, exports and reloads the results, cancels during a turn and checks worker disposal. Both accept `BOTLAB_TEST_URL`; the UI check also runs against a static build with `BOTLAB_PRODUCTION=1`, writing a separate production report.
 
 `probe-jumper-turns.mjs` reproduces the earlier isolated candidates from Git revision `fc890ac6536665c5d1e009496f90ee0e09b6b6d0`. Profiles are default `tapered`, or `BOTLAB_TURN_PROFILE=fixed`, `center`, `pure-yaw`; `BOTLAB_PROBE_RUNS=1` selects a four-case pilot instead of three reset repetitions. Candidates are generated in ignored `tmp/`, never loaded by the app. A failed probe does not enable capabilities. The native reference checks the pinned raw-axis mapping and balance separately; it is not an assertion of long-horizon trajectory parity. [Results and selection](../../docs/mujoco-validation.md#jumper-quarter-turns--2026-10-13).
+
+## ToF prototype
+
+<!-- optional scene, sampling and validation from prepare-microduck.py, tof-harness.ts, verify-tof.mjs and verify-tof-physics.mjs -->
+
+MicroDuck preparation additionally writes `obstacles.xml` and `obstacles-manifest.json`; the existing flat-ground manifest is unchanged. In the editor choose MicroDuck → **Escena → Obstáculos + ToF**, then load. The panel shows an 8×8 geometric map in metres (45° per axis, 4 m range, 15 simulated Hz); it follows the head site and distinguishes no return from zero distance. Pause freezes the reading; reset restores the initial scene. Close before selecting another scene. Projects and JSON exports retain scene selection per robot; changing scenes clears the previous execution result. No worker starts when reopening a project.
+
+Predict what will change, execute one advance and compare the readings. The first wall starts at X=1.52 m; another wall is behind it. The sensor does not steer or stop the robot: repeating advances can cause a collision. There is no optical noise, hardware equivalence or new navigation block in this increment.
+
+```sh
+node tools/mujoco/verify-tof.mjs
+node tools/mujoco/verify-tof-physics.mjs
+```
+
+Both accept `BOTLAB_TEST_URL` and default to `https://botlab.localhost`. The physics comparison requires Vite development mode; the UI check also runs on a static preview. Reports: `docs/evidence/mujoco-tof-web.json` and `docs/evidence/mujoco-tof-physics.json`.

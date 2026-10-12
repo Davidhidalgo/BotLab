@@ -67,6 +67,7 @@ export interface WorkspaceSlot {
   workspace: BlocksWorkspaceArtifact;
   lastExecution?: SavedExecution;
   mujocoExecution?: SavedMujocoExecution;
+  simulationScene?: 'flat' | 'obstacles';
 }
 export type TargetWorkspaces = Partial<
   Record<WorkspaceDestination, WorkspaceSlot>
@@ -91,6 +92,7 @@ export interface WorkspaceDocument {
   huggingFaceModels?: HuggingFaceModel[];
   lastExecution?: SavedExecution;
   mujocoExecution?: SavedMujocoExecution;
+  simulationScene?: 'flat' | 'obstacles';
   targetWorkspaces?: TargetWorkspaces;
 }
 
@@ -166,6 +168,15 @@ export function decodeWorkspaceDocument(text: string): WorkspaceDocument {
       throw new Error('Invalid MuJoCo destination.');
   } else if (result.simulatorBackend === 'mujoco')
     throw new Error('Invalid MuJoCo destination.');
+  if (data.simulationScene !== undefined) {
+    if (
+      result.targetId !== 'microduck-mujoco-web' ||
+      typeof data.simulationScene !== 'string' ||
+      !['flat', 'obstacles'].includes(String(data.simulationScene))
+    )
+      throw new Error('Invalid simulation scene.');
+    result.simulationScene = data.simulationScene as 'flat' | 'obstacles';
+  }
   if (data.mujocoExecution !== undefined)
     result.mujocoExecution = decodeMujocoExecution(
       data.mujocoExecution,
@@ -192,12 +203,14 @@ export function decodeWorkspaceDocument(text: string): WorkspaceDocument {
           workspace: slot.workspace,
           lastExecution: slot.lastExecution,
           mujocoExecution: slot.mujocoExecution,
+          simulationScene: slot.simulationScene,
         }),
       );
       result.targetWorkspaces[destination] = {
         workspace: checked.workspace,
         lastExecution: checked.lastExecution,
         mujocoExecution: checked.mujocoExecution,
+        simulationScene: checked.simulationScene,
       };
     }
   }

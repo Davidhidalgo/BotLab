@@ -46,6 +46,7 @@ export interface SimulationManifest {
   initialKeyframe?: string;
   rootBody?: string;
   gyroSensor?: string;
+  depthSensor?: SimulationDepthSensor;
   controller?: {
     id: string;
     model: string;
@@ -66,6 +67,32 @@ export interface RenderGeometry {
   mesh?: { vertices: number[]; indices: number[] };
 }
 
+/** Geometric depth sampler; site axes are +X forward, +Y left, +Z up. */
+export interface SimulationDepthSensor {
+  id: string;
+  site: string;
+  rows: number;
+  columns: number;
+  horizontalFovRadians: number;
+  verticalFovRadians: number;
+  maxRangeMeters: number;
+  frequencyHz: number;
+}
+export interface SimulationDepthFrame {
+  sensorId: string;
+  sequence: number;
+  capturedAtSeconds: number;
+  rows: number;
+  columns: number;
+  maxRangeMeters: number;
+  /** Row 0 is up, column 0 is left, viewed from behind the sensor. */
+  distancesMeters: (number | null)[];
+  statuses: ('hit' | 'no-return' | 'invalid')[];
+  sensorPosition: number[];
+  sensorRotation: number[];
+  processingMilliseconds: number;
+}
+
 export interface SimulationFrame {
   sessionId: string;
   generation: number;
@@ -78,6 +105,7 @@ export interface SimulationFrame {
   velocities: number[];
   efforts: number[];
   targets: number[];
+  depth?: SimulationDepthFrame;
   /** Packed world positions and row-major rotation matrices, Z up. */
   geomPositions: number[];
   geomRotations: number[];

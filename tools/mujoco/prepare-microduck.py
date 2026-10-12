@@ -1,6 +1,6 @@
 """Prepare MicroDuck flat-ground WASM scene; no native service is needed at runtime."""
 from pathlib import Path
-import hashlib,json,shutil,tarfile,urllib.request,xml.etree.ElementTree as ET
+import copy,hashlib,json,shutil,tarfile,urllib.request,xml.etree.ElementTree as ET
 ROOT=Path(__file__).resolve().parents[2]
 REV='363b7effd4eae9f24dd1bb8bf647aef4d74edca9'
 ARCHIVE_SHA='6948c7943c9220dec22ebcca8f6e441c8469395ec83d29e17a2196db023c94c0'
@@ -56,4 +56,17 @@ def main():
     manifest=dict(schemaVersion=1,id='microduck-flat-ground',robotId='microduck',revision=REV,mujocoVersion='3.11.0',scene='flat-ground.xml',assets=assets,joints=joints,actuation='position',initialKeyframe='initial',rootBody='trunk_base',gyroSensor='imu_ang_vel',evidenceLevel='closed-loop-policy',variant='flat-ground-alpha-walking',limitations=['Flat ground; walking only. No sit, recovery, depth camera or hardware support.'],controller=dict(id='microduck-alpha-walking',model='alpha-walking.onnx',decimation=4,observationSize=61,actionSize=14))
     (dst/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     print(json.dumps(dict(manifest=str(dst/'manifest.json'),sha256=sha(dst/'manifest.json'),assets=len(assets))))
+    # Separate, opt-in scene: the existing flat-ground manifest and its digest stay unchanged.
+    depth_xml=copy.deepcopy(xml)
+    world=depth_xml.find('worldbody')
+    ET.SubElement(world,'geom',name='tof_front_wall',type='box',pos='1.6 0 .6',size='.08 .45 .6',rgba='.22 .55 .72 1')
+    ET.SubElement(world,'geom',name='tof_rear_wall',type='box',pos='2.5 .3 .6',size='.08 .8 .6',rgba='.85 .55 .2 1')
+    ET.indent(depth_xml);ET.ElementTree(depth_xml).write(dst/'obstacles.xml',encoding='utf-8',xml_declaration=True)
+    obstacle_manifest=copy.deepcopy(manifest)
+    obstacle_manifest['assets']=[a for a in obstacle_manifest['assets'] if a['path']!='flat-ground.xml']
+    obstacle_scene=dst/'obstacles.xml'
+    obstacle_manifest['assets'].append(dict(path='obstacles.xml',url='/simulation-assets/microduck/obstacles.xml',sha256=sha(obstacle_scene),bytes=obstacle_scene.stat().st_size,source='tools/mujoco/prepare-microduck.py'))
+    obstacle_manifest.update(id='microduck-obstacles-tof',scene='obstacles.xml',variant='obstacles-alpha-walking-tof',depthSensor=dict(id='front-tof',site='tof',rows=8,columns=8,horizontalFovRadians=0.7853981633974483,verticalFovRadians=0.7853981633974483,maxRangeMeters=4,frequencyHz=15),limitations=['Geometric 8x8 depth, 45 degrees per axis, 4 m range, 15 simulated Hz. No optical noise or automatic avoidance. Walking policy unchanged.'])
+    (dst/'obstacles-manifest.json').write_text(json.dumps(obstacle_manifest,indent=2)+'\n')
+    print(json.dumps(dict(manifest=str(dst/'obstacles-manifest.json'),sha256=sha(dst/'obstacles-manifest.json'))))
 if __name__=='__main__':main()

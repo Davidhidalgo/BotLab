@@ -41,6 +41,8 @@ export interface MujocoSimulatorPanelProps {
   targetId: MujocoTargetId;
   artifact: BlocksWorkspaceArtifact;
   savedExecution?: SavedMujocoExecution;
+  scene?: 'flat' | 'obstacles';
+  onSceneChange?: (scene: 'flat' | 'obstacles') => void;
   executionBlocked?: boolean;
   onExecution?: (report: SavedMujocoExecution | undefined) => void;
   onActiveBlock?: (block: string | undefined) => void;
@@ -52,6 +54,8 @@ export default function MujocoSimulatorPanel({
   targetId,
   artifact,
   savedExecution,
+  scene = 'flat',
+  onSceneChange,
   executionBlocked,
   onExecution,
   onBusy,
@@ -363,7 +367,9 @@ export default function MujocoSimulatorPanel({
       ? copy.loading
       : ready
         ? walking
-          ? copy.walking
+          ? scene === 'obstacles'
+            ? copy.obstacles
+            : copy.walking
           : copy.joints
         : copy.unloaded;
   return (
@@ -384,11 +390,33 @@ export default function MujocoSimulatorPanel({
       </div>
       <section className="shrink-0 overflow-hidden rounded-xl border bg-white">
         <div className="flex flex-wrap gap-2 border-b p-3">
+          {duck && (
+            <label className="text-sm">
+              {copy.scene}
+              <select
+                aria-label={copy.scene}
+                className={button}
+                value={scene}
+                disabled={snapshot.matches('active') || executing}
+                onChange={(event) => {
+                  hasLocalChanges.current = true;
+                  setReport(undefined);
+                  setMessage('');
+                  onExecution?.(undefined);
+                  onSceneChange?.(event.target.value as 'flat' | 'obstacles');
+                }}
+              >
+                <option value="flat">{copy.flat}</option>
+                <option value="obstacles">{copy.obstacles}</option>
+              </select>
+            </label>
+          )}
+
           <button
             className={button}
             onClick={() => {
               setMessage('');
-              send({ type: 'load' });
+              send({ type: 'load', scene });
             }}
             disabled={snapshot.matches('active')}
           >
@@ -469,6 +497,71 @@ export default function MujocoSimulatorPanel({
               {copy.position}:{' '}
               {frame.rootPosition.map((v) => v.toFixed(3)).join(' · ')} m
             </p>
+          )}
+          {frame?.depth && (
+            <section
+              aria-label="ToF"
+              data-testid="tof-panel"
+              className="space-y-2"
+            >
+              <h3 className="font-medium">
+                ToF · {frame.depth.rows} × {frame.depth.columns}
+              </h3>
+              <p>{copy.tofHelp}</p>
+              <p>
+                {copy.tofTime}:{' '}
+                <span data-testid="tof-time">
+                  {frame.depth.capturedAtSeconds.toFixed(3)}
+                </span>{' '}
+                s ·{' '}
+                {snapshot.matches({ active: 'running' })
+                  ? copy.moving
+                  : copy.paused}
+              </p>
+              <div
+                role="table"
+                aria-label={copy.depthMap}
+                className="grid max-w-md gap-1"
+                style={{
+                  gridTemplateColumns: `repeat(${frame.depth.columns}, minmax(0, 1fr))`,
+                }}
+              >
+                {Array.from({ length: frame.depth.rows }, (_, row) => (
+                  <div role="row" className="contents" key={row}>
+                    {frame
+                      .depth!.distancesMeters.slice(
+                        row * frame.depth!.columns,
+                        (row + 1) * frame.depth!.columns,
+                      )
+                      .map((distance, column) => {
+                        const index = row * frame.depth!.columns + column;
+                        return (
+                          <span
+                            role="cell"
+                            key={index}
+                            aria-label={`${Math.floor(index / frame.depth!.columns) + 1}, ${(index % frame.depth!.columns) + 1}: ${distance === null ? (frame.depth!.statuses[index] === 'invalid' ? copy.invalidReading : copy.noReturn) : `${distance.toFixed(2)} m`}`}
+                            data-depth={distance ?? ''}
+                            className="rounded border p-1 text-center text-xs text-slate-950"
+                            style={{
+                              backgroundColor:
+                                distance === null
+                                  ? '#e2e8f0'
+                                  : `hsl(${Math.min(1, distance / frame.depth!.maxRangeMeters) * 200} 70% 85%)`,
+                            }}
+                          >
+                            {distance === null
+                              ? frame.depth!.statuses[index] === 'invalid'
+                                ? '?'
+                                : '—'
+                              : distance.toFixed(2)}
+                          </span>
+                        );
+                      })}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs">{copy.tofLegend}</p>
+            </section>
           )}
           {!walking && frame && manifest && (
             <table className="w-full text-xs">

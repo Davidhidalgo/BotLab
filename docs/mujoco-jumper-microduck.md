@@ -581,3 +581,7 @@ Las familias Postura y Habilidades pueden compartir estructura y presentación, 
 6. Extensiones: desplazamiento lateral, rangos de giro, nuevas marchas, volteretas y ruedas según evidencia; expresiones y eventos siguen sus entradas BL-007/BL-017.
 
 Este orden describe dependencias técnicas; el registro es la única prioridad vigente. Para cada incorporación: guardar/importar sin pérdida, parámetros inválidos rechazados antes de mover, resultado físico reproducible desde los estados permitidos, límites de tiempo, cancelación a mitad de acción, secuencias y repeticiones, limpieza al cambiar robot y una actividad breve de predecir/ejecutar/observar. No certificar hardware ni móvil a partir de la aceptación del navegador de escritorio.
+
+### Primer incremento de profundidad — 2026-10-13
+
+Implementada la observación geométrica de BL-026 para MicroDuck: escena opcional, contrato de profundidad compartido, mapa 8×8 visible y persistencia de escena. [Validación y límites](mujoco-validation.md#geometric-tof-prototype--2026-10-13). Los bloques de proximidad/navegación y el perfil propio de Jumper permanecen pendientes; el orden vigente está en el [registro](next-steps.md). La política de marcha no consume profundidad y no evita obstáculos.

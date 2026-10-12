@@ -17,7 +17,8 @@ import type {
 } from '@botlab/simulators-core';
 
 type Event =
-  | { type: 'load' | 'close' | 'start' | 'pause' | 'step' | 'reset' | 'stop' }
+  | { type: 'load'; scene?: 'flat' | 'obstacles' }
+  | { type: 'close' | 'start' | 'pause' | 'step' | 'reset' | 'stop' }
   | {
       type: 'loaded';
       manifest: SimulationManifest;
@@ -33,6 +34,7 @@ export const mujocoSessionMachine = setup({
     input: { robot: 'jumper' | 'jumper-walking' | 'microduck' };
     context: {
       robot: 'jumper' | 'jumper-walking' | 'microduck';
+      scene?: 'flat' | 'obstacles';
       session?: SimulationSession;
       manifest?: SimulationManifest;
       geometry?: RenderGeometry[];
@@ -45,6 +47,7 @@ export const mujocoSessionMachine = setup({
     session: fromCallback<
       Event,
       {
+        scene?: 'flat' | 'obstacles';
         session: SimulationSession;
         robot: 'jumper' | 'jumper-walking' | 'microduck';
       }
@@ -72,7 +75,7 @@ export const mujocoSessionMachine = setup({
           ? loadJumperJointManifest(abort.signal)
           : input.robot === 'jumper-walking'
             ? loadJumperWalkingManifest(abort.signal)
-            : loadMicroduckMujocoManifest(abort.signal)
+            : loadMicroduckMujocoManifest(abort.signal, input.scene)
       )
         .then(async (manifest) => {
           if (!active) return;
@@ -109,7 +112,11 @@ export const mujocoSessionMachine = setup({
     }),
   },
   actions: {
-    begin: assign(({ context }) => ({
+    begin: assign(({ context, event }) => ({
+      scene:
+        event.type === 'load' && context.robot === 'microduck'
+          ? event.scene
+          : undefined,
       session:
         context.robot === 'jumper'
           ? createMujocoSession()
@@ -151,6 +158,7 @@ export const mujocoSessionMachine = setup({
         input: ({ context }) => ({
           session: context.session!,
           robot: context.robot,
+          scene: context.scene,
         }),
       },
       initial: 'loading',

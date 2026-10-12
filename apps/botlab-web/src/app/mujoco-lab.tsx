@@ -43,6 +43,7 @@ export default function MujocoLab() {
 }
 function LabWorkspace({ target }: { target: MujocoTargetId }) {
   const definition = mujocoTargets[target];
+  const [scene, setScene] = useState<'flat' | 'obstacles'>('flat');
   const [artifact, setArtifact] = useState({ ...definition.example });
   const [activeBlock, setActiveBlock] = useState<string>();
   return (
@@ -51,6 +52,8 @@ function LabWorkspace({ target }: { target: MujocoTargetId }) {
         robot={definition.robot}
         targetId={target}
         artifact={artifact}
+        scene={scene}
+        onSceneChange={setScene}
         onActiveBlock={setActiveBlock}
       />
       <BlocksEditorShell

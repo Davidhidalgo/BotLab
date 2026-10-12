@@ -183,6 +183,9 @@ export function App() {
   const [targetWorkspaces, setTargetWorkspaces] = useState<TargetWorkspaces>(
     restored.document?.targetWorkspaces ?? {},
   );
+  const [simulationScene, setSimulationScene] = useState<
+    WorkspaceDocument['simulationScene']
+  >(restored.document?.simulationScene);
   const [mujocoExecution, setMujocoExecution] = useState<
     SavedMujocoExecution | undefined
   >(restored.document?.mujocoExecution);
@@ -400,6 +403,7 @@ export function App() {
     locale,
     lastExecution,
     mujocoExecution,
+    simulationScene,
     targetWorkspaces,
     selectedTargetId,
     simulatorBackend,
@@ -641,6 +645,10 @@ export function App() {
       lastExecution,
       targetId: selectedTargetId as WorkspaceTargetId,
       targetWorkspaces,
+      simulationScene:
+        selectedTargetId === 'microduck-mujoco-web'
+          ? simulationScene
+          : undefined,
       mujocoExecution:
         mujocoExecution?.sourceContent === workspaceArtifact.content
           ? mujocoExecution
@@ -664,6 +672,7 @@ export function App() {
     setSimulatorBackend(backend);
     setTargetWorkspaces(next.targetWorkspaces ?? {});
     setMujocoExecution(next.mujocoExecution);
+    setSimulationScene(next.simulationScene);
     setLastExecution(next.lastExecution);
     setEditorRevision((value) => value + 1);
     sendFlow({ type: 'target.selected', targetId });
@@ -785,6 +794,7 @@ export function App() {
       setSimulatorBackend(project.document.simulatorBackend ?? 'browser');
       setTargetWorkspaces(project.document.targetWorkspaces ?? {});
       setMujocoExecution(project.document.mujocoExecution);
+      setSimulationScene(project.document.simulationScene);
       setHuggingFaceModels(project.document.huggingFaceModels ?? []);
       setModelFormOpen(false);
       setModelError(undefined);
@@ -1285,6 +1295,8 @@ export function App() {
                   robot={mujocoTargets[mujocoTarget].robot}
                   artifact={workspaceArtifact}
                   savedExecution={mujocoExecution}
+                  scene={simulationScene ?? 'flat'}
+                  onSceneChange={setSimulationScene}
                   onExecution={setMujocoExecution}
                   onBusy={setNativeBusy}
                   onActiveBlock={setNativeActiveBlock}

@@ -1,4 +1,16 @@
 const es = {
+  scene: 'Escena',
+  flat: 'Suelo libre',
+  obstacles: 'Obstáculos + ToF',
+  tofHelp:
+    'Profundidad geométrica en metros: 45°, hasta 4 m, 15 lecturas por segundo simulado. No evita obstáculos automáticamente.',
+  tofTime: 'Lectura en tiempo simulado',
+  depthMap: 'Mapa de profundidad: arriba y a la izquierda del sensor',
+  noReturn: 'Sin retorno',
+  invalidReading: 'Lectura inválida',
+  tofLegend:
+    'Vista desde detrás del sensor. — sin retorno; ? lectura inválida. Cierra la sesión para cambiar de escena.',
+
   iteration: 'Repetición',
   of: 'de',
   progress: 'Progreso del programa',
@@ -58,6 +70,18 @@ const es = {
   historical: 'Último resultado guardado; la escena actual comienza de nuevo.',
 };
 const ca: typeof es = {
+  scene: 'Escena',
+  flat: 'Terra lliure',
+  obstacles: 'Obstacles + ToF',
+  tofHelp:
+    'Profunditat geomètrica en metres: 45°, fins a 4 m, 15 lectures per segon simulat. No evita obstacles automàticament.',
+  tofTime: 'Lectura en temps simulat',
+  depthMap: 'Mapa de profunditat: a dalt i a l’esquerra del sensor',
+  noReturn: 'Sense retorn',
+  invalidReading: 'Lectura invàlida',
+  tofLegend:
+    'Vista des de darrere del sensor. — sense retorn; ? lectura invàlida. Tanca la sessió per canviar d’escena.',
+
   iteration: 'Repetició',
   of: 'de',
   progress: 'Progrés del programa',
@@ -117,6 +141,18 @@ const ca: typeof es = {
   historical: 'Últim resultat desat; l’escena actual comença de nou.',
 };
 const en: typeof es = {
+  scene: 'Scene',
+  flat: 'Open floor',
+  obstacles: 'Obstacles + ToF',
+  tofHelp:
+    'Geometric depth in metres: 45°, up to 4 m, 15 readings per simulated second. No automatic obstacle avoidance.',
+  tofTime: 'Reading at simulated time',
+  depthMap: 'Depth map: sensor up and left',
+  noReturn: 'No return',
+  invalidReading: 'Invalid reading',
+  tofLegend:
+    'View from behind the sensor. — no return; ? invalid reading. Close the session to change scenes.',
+
   iteration: 'Repeat',
   of: 'of',
   progress: 'Program progress',

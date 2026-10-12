@@ -1,3 +1,4 @@
+import { MujocoDepthSensor } from './depth';
 import type { MainModule, MjModel, MjData } from '@mujoco/mujoco';
 import type {
   RenderGeometry,
@@ -14,6 +15,7 @@ export class MujocoWorld {
   private mapping: Array<{ q: number; v: number; actuator: number }> = [];
   private heat: number[] = [];
   private gains: Array<{ kp: number; kd: number }> = [];
+  private depth?: MujocoDepthSensor;
   private tick = 0;
   private disposed = false;
   readonly targets: number[];
@@ -66,8 +68,11 @@ export class MujocoWorld {
         });
       }
       this.targets = manifest.joints.map((j) => j.home);
+      if (manifest.depthSensor)
+        this.depth = new MujocoDepthSensor(mj, model, manifest.depthSensor);
       this.reset();
     } catch (error) {
+      this.depth?.dispose();
       data?.delete();
       model?.delete();
       throw error;
@@ -95,6 +100,7 @@ export class MujocoWorld {
     this.heat = this.targets.map(() => 0);
     this.gains = this.manifest.joints.map(({ kp, kd }) => ({ kp, kd }));
     this.tick = 0;
+    this.depth?.reset();
     this.mj.mj_forward(this.model, this.data);
   }
 
@@ -163,6 +169,7 @@ export class MujocoWorld {
       tick: this.tick,
       timeSeconds: this.data.time,
       state,
+      depth: this.depth?.sample(this.data),
       rootPosition: this.rootPosition(),
       rootQuaternion: this.rootQuaternion(),
       positions: this.mapping.map((m) => this.data.qpos[m.q]),
@@ -281,6 +288,7 @@ export class MujocoWorld {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    this.depth?.dispose();
     this.data.delete();
     this.model.delete();
   }

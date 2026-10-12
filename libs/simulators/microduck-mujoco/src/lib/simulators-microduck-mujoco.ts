@@ -9,10 +9,14 @@ export function createMicroduckMujocoSession() {
 }
 export async function loadMicroduckMujocoManifest(
   signal?: AbortSignal,
+  scene: 'flat' | 'obstacles' = 'flat',
 ): Promise<SimulationManifest> {
-  const response = await fetch('/simulation-assets/microduck/manifest.json', {
-    signal,
-  });
+  const response = await fetch(
+    `/simulation-assets/microduck/${scene === 'obstacles' ? 'obstacles-manifest' : 'manifest'}.json`,
+    {
+      signal,
+    },
+  );
   if (!response.ok)
     throw new Error(
       'Faltan recursos de MicroDuck. Ejecuta python3 tools/mujoco/prepare-microduck.py.',
@@ -23,7 +27,10 @@ export async function loadMicroduckMujocoManifest(
     (n) => n.toString(16).padStart(2, '0'),
   ).join('');
   if (
-    hash !== '50f88e703fefd010294a7a46b13e2dc8d1654b3a7c834c82f2449611115f45ed'
+    hash !==
+    (scene === 'obstacles'
+      ? '106f20379cc467f9e67cb396ffafd414efbc764ebdb522a3b729a2f9f964dde0'
+      : '50f88e703fefd010294a7a46b13e2dc8d1654b3a7c834c82f2449611115f45ed')
   )
     throw new Error('MicroDuck manifest hash mismatch.');
   return JSON.parse(new TextDecoder().decode(bytes));

@@ -1,3 +1,4 @@
+import type { SimulationDepthSensor } from '@botlab/simulators-core';
 import type { SimulationManifest } from '@botlab/simulators-core';
 
 export function validateManifest(manifest: SimulationManifest): void {
@@ -9,6 +10,7 @@ export function validateManifest(manifest: SimulationManifest): void {
     !manifest.joints?.length
   )
     throw new Error('Unsupported or unresolved simulation manifest.');
+  if (manifest.depthSensor) validateDepthSensor(manifest.depthSensor);
   const paths = new Set<string>();
   for (const asset of manifest.assets) {
     if (
@@ -96,4 +98,27 @@ export async function fetchSimulationAssets(
     }),
   );
   return Object.fromEntries(entries);
+}
+
+export function validateDepthSensor(sensor: SimulationDepthSensor) {
+  if (
+    typeof sensor.id !== 'string' ||
+    !sensor.id ||
+    typeof sensor.site !== 'string' ||
+    !sensor.site ||
+    ![sensor.rows, sensor.columns].every(
+      (n) => Number.isSafeInteger(n) && n > 0 && n <= 64,
+    ) ||
+    sensor.rows * sensor.columns > 4096 ||
+    ![sensor.horizontalFovRadians, sensor.verticalFovRadians].every(
+      (n) => Number.isFinite(n) && n > 0 && n < Math.PI,
+    ) ||
+    !Number.isFinite(sensor.maxRangeMeters) ||
+    sensor.maxRangeMeters <= 0 ||
+    sensor.maxRangeMeters > 100 ||
+    !Number.isFinite(sensor.frequencyHz) ||
+    sensor.frequencyHz <= 0 ||
+    sensor.frequencyHz > 60
+  )
+    throw new Error('Invalid depth sensor configuration.');
 }

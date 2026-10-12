@@ -27,3 +27,7 @@ Infinite walking floors follow the visible robot region while a 10 cm world-alig
 <!-- verification and commands from src/lib/assets.ts, project.json and tools/mujoco/README.md -->
 
 Resources are verified by size/SHA-256 before entering the MuJoCo VFS. Host/browser caching may reuse downloads, but verification runs on each load. The default app does not import the engine. `pnpm nx test simulators-mujoco` runs protocol, asset and servo unit tests; real-engine browser/native checks are documented in [tools/mujoco](../../../tools/mujoco/README.md).
+
+<!-- geometric depth ownership and sampling from src/lib/depth.ts, assets.ts and world.ts -->
+
+Optional geometric depth samples `mj_ray` from a named site's pose, using normalized rays at zone centres. All geometry groups, static geometry and self intersections are included. A separate kinematic `MjData` copies joint/mocap poses so observations never alter the running solver or controller state. Simulated time limits sampling; pause reuses the last sample, reset restarts it, and world disposal frees the scratch data. No optical noise or automatic avoidance is implemented. Real-WASM tests cover distance, occlusion, range/no return, pose, self intersections, cadence and dynamics independence.

@@ -53,6 +53,30 @@ const initial: WorkspaceDocument = {
 };
 
 describe('per-destination project documents', () => {
+  it('round-trips the optional MicroDuck scene through robot changes and rejects unsupported scenes', () => {
+    let doc = selectWorkspaceDestination(
+      initial,
+      'microduck-mujoco-web',
+      'mujoco',
+    );
+    doc.simulationScene = 'obstacles';
+    doc = selectWorkspaceDestination(doc, 'jumper-web-walking', 'mujoco');
+    expect(doc.simulationScene).toBeUndefined();
+    doc = decodeWorkspaceDocument(encodeWorkspaceDocument(doc));
+    doc = selectWorkspaceDestination(doc, 'microduck-mujoco-web', 'mujoco');
+    expect(doc.simulationScene).toBe('obstacles');
+    expect(() =>
+      decodeWorkspaceDocument(
+        JSON.stringify({ ...doc, simulationScene: 'unknown' }),
+      ),
+    ).toThrow('Invalid simulation scene');
+    expect(() =>
+      decodeWorkspaceDocument(
+        JSON.stringify({ ...doc, targetId: 'jumper-web-walking' }),
+      ),
+    ).toThrow('Invalid simulation scene');
+  });
+
   it('migrates a legacy document without overwriting its blocks and keeps independently edited targets', () => {
     let doc = decodeWorkspaceDocument(encodeWorkspaceDocument(initial));
     doc = selectWorkspaceDestination(doc, 'jumper-web-walking', 'mujoco');

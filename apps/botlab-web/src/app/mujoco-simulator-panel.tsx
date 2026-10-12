@@ -8,6 +8,7 @@ import { useMachine } from '@xstate/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   readMicroduckWalkingProgram,
+  readJumperWalkingProgram,
   readJumperJointProgram,
   type BlocksWorkspaceArtifact,
 } from '@botlab/blocks';
@@ -234,7 +235,9 @@ export default function MujocoSimulatorPanel({
     try {
       const compiled = walking
         ? (duck ? compileMicroduckWalkingProgram : compileJumperWalkingProgram)(
-            readMicroduckWalkingProgram(artifact),
+            (duck ? readMicroduckWalkingProgram : readJumperWalkingProgram)(
+              artifact,
+            ),
           )
         : compileJumperJointProgram(
             readJumperJointProgram(artifact),

@@ -4,18 +4,19 @@
 
 ## Punto de reanudación
 
-- **Trabajo activo:** BL-004; autorizado el 2026-10-13 junto con el versionado local del trabajo acumulado. BL-003 terminado.
-- **Último resultado:** limitación de giro derecho y retroceso confirmada para la política MicroDuck fijada. La respuesta depende del estado previo; no se amplía la paleta sencilla. [Mediciones y alcance](mujoco-validation.md#microduck-directional-investigation--2026-10-13).
-- **Verificación:** 36 ejecuciones temporizadas en Chrome, cuatro objetivos angulares y cancelación real del worker; comparación nativa independiente de ocho escenarios. Giro derecho −90° bloqueado desde reposo y tras completar 0,5 m; giro izquierdo dentro de ±5°. Sin caídas en las secuencias temporizadas; pausa comprobada y cero workers tras cerrar. Pasan 28 pruebas del adaptador, sintaxis, lint del script y formato. [Navegador](evidence/microduck-directions-probe.json), [nativo](evidence/microduck-directions-native-probe.json). No se ha determinado un defecto concreto del entrenamiento ni validado hardware.
-- **Incremento actual:** BL-004, validar giros de Jumper. Primero auditar el contrato fijado y medir antes de ampliar capacidades.
-- **Primera acción al continuarlo:** revisar el contrato y mapeo de giro del controlador Jumper fijado; diseñar la prueba angular desde reposo y tras avance, con tolerancia, parada y repetición, antes de habilitar un bloque.
-- **Versionado:** el usuario solicita commits locales del trabajo acumulado y del siguiente incremento. Se incluyen código, ejemplos, pruebas e informes de BotLab; los artefactos generados de `output/` y herramientas externas de Blender se conservan fuera del commit. No se ha solicitado push. Revisar `git status` antes de editar y preservar ese trabajo. El servidor se vuelve a comprobar o arrancar; no se supone que siga vivo tras reiniciar la sesión.
+- **Trabajo activo:** ninguno. BL-004 terminado el 2026-10-13, autorizado por el usuario junto con su versionado local.
+- **Último resultado:** Jumper ofrece giros medidos de 90° a izquierda y derecha, también dentro de repeticiones. Se ajustan el mapeo del mando y la aproximación/parada para Jumper; la tolerancia sigue siendo ±5°. [Actividad importable](../examples/jumper-mujoco-turns.botlab.json) y [resultado](mujoco-validation.md#jumper-quarter-turns--2026-10-13).
+- **Verificación:** 20 giros y dos avances en secuencias, cancelación en ambos sentidos, comparación nativa del mapeo, ejemplo completo en el editor de desarrollo y en compilación estática (repetición, exportación, recarga y parada). Pasan cinco proyectos de pruebas, todos los tipos, lint afectado, 13 comprobaciones de arquitectura y compilación. [Física/worker](evidence/jumper-turns-validation.json), [editor](evidence/jumper-turns-ui-validation.json), [producción](evidence/jumper-turns-production-validation.json). Sin validación de hardware ni móvil.
+- **Siguiente incremento recomendado:** BL-005, Safari real y un dispositivo móvil físico. Sigue siendo propuesta.
+- **Primera acción al continuarlo:** comprobar Safari disponible en este Mac y elegir con el usuario un móvil físico; definir escenarios y medidas de carga, cadencia y liberación de recursos sin confundir WebKit automatizado con Safari.
+- **Versionado:** el usuario solicita commits locales del trabajo acumulado y del siguiente incremento. La base acumulada quedó en `fc890ac`; BL-004 se guarda en su propio commit al cierre. Se incluyen código, ejemplos, pruebas e informes de BotLab; los artefactos generados de `output/` y herramientas externas de Blender se conservan fuera del commit. No se ha solicitado push. Revisar `git status` antes de editar y preservar ese trabajo. El servidor se vuelve a comprobar o arrancar; no se supone que siga vivo tras reiniciar la sesión.
 - **Continuidad de los proyectos del editor:** se guardan por origen del navegador. Los de `http://127.0.0.1:4210` no aparecen automáticamente en `https://botlab.localhost`; trasladarlos mediante Proyectos → Exportar / Importar.
 
 ## Decisiones que guían el trabajo
 
 | Fecha      | Decisión y motivo                                                                                                                                                                              | Referencia                                                                                                                    |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-13 | Habilitar solo giros medidos ±90° de Jumper, a 1 rad/s con parada próxima al objetivo; conservar las restricciones de MicroDuck, los límites de ángulo y el avance temporizado sin giro.       | [BL-004](mujoco-validation.md#jumper-quarter-turns--2026-10-13)                                                               |
 | 2026-10-13 | Conservar deshabilitados el giro derecho y el retroceso simples de MicroDuck: las pruebas BL-003 no acreditan ejecución fiable desde los estados de inicio educativos.                         | [Investigación BL-003](mujoco-validation.md#microduck-directional-investigation--2026-10-13)                                  |
 | 2026-10-12 | El enfoque es educativo: predecir, ejecutar, observar y ajustar. Empezar con acciones comprensibles y mostrar qué ocurrió.                                                                     | [Criterios educativos](implementation-plan.md#educational-product-criteria--2026-10-12) y confirmación del usuario en el chat |
 | 2026-10-12 | Jumper y MicroDuck comparten la vía MuJoCo web, con controladores y capacidades propios. La ejecución de esa vía ocurre en el navegador. Las alternativas de MicroDuck permanecen disponibles. | [Validación](mujoco-validation.md) y [ADR 0003 propuesto](adr/0003-shared-browser-mujoco.md)                                  |
@@ -29,14 +30,6 @@
 ## Próximos incrementos propuestos
 
 El orden siguiente es la recomendación vigente. Su origen es la propuesta del asistente y el [informe de validación](mujoco-validation.md), revisados el 2026-10-12. Registrar estas tareas no las pone en ejecución.
-
-### BL-004 Validar giros de Jumper
-
-**Estado:** En curso; autorizado el 2026-10-13. **Objetivo:** ofrecer otra acción comprensible donde el controlador la soporte.
-
-**Próxima acción:** comprobar el contrato del controlador y medir un giro en una escena reproducible. **Cierre:** demostrar seguimiento angular, estabilidad, parada y repetición antes de exponer el bloque. La interfaz actual solo habilita avance; cargar el controlador no acredita todas sus maniobras.
-
-Referencia: [capacidades y evidencia](mujoco-validation.md).
 
 ### BL-005 Ampliar las pruebas de navegador y rendimiento
 
@@ -69,6 +62,7 @@ Estas entradas conservan líneas del proyecto fuera del incremento inmediato. Ca
 
 | ID     | Estado y fecha    | Resultado y referencia                                                                                                                                                                                                                                                                                                                                                                                                    |
 | ------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| BL-004 | Hecha; 2026-10-13 | Autorizada por el usuario. Giros medidos ±90° de Jumper en la paleta y en repeticiones; perfil de parada específico, sin ampliar tolerancia. 20 giros, avance, estabilidad y cancelación; aceptación del editor de desarrollo/producción. [Evidencia y límites](mujoco-validation.md#jumper-quarter-turns--2026-10-13).                                                                                                   |
 | BL-003 | Hecha; 2026-10-13 | Autorizada por el usuario. Comparación navegador/nativa confirma respuesta dependiente del estado; derecha −90° falla desde reposo y tras avance terminado, retroceso no sigue una trayectoria recta fiable. Cancelación y estabilidad comprobadas; se conservan restricciones. [Investigación y causas delimitadas](mujoco-validation.md#microduck-directional-investigation--2026-10-13).                               |
 | BL-001 | Hecha; 2026-10-12 | Autorizada por el usuario. Repetición MuJoCo para ambos robots: conteos 0–100, 16 niveles, 256 pasos, progreso y trazas por iteración. Cero, entradas inválidas, anidamiento, parada, edición y programas guardados comprobados. [Aceptación](mujoco-validation.md#bounded-repetition-and-first-activity--2026-10-12). La primera carga de desarrollo agotó el tiempo; la pasada final completa no reprodujo el problema. |
 | BL-002 | Hecha; 2026-10-12 | Autorizada por el usuario; dependía de BL-001. Actividad de predecir, ejecutar y comparar 3 y 2 vueltas; [Jumper](../examples/jumper-mujoco-repeat.botlab.json), [MicroDuck](../examples/microduck-mujoco-repeat.botlab.json) e [instrucciones](../README.md#actividad-repite-avanza-y-observa). Distancias dentro de 2,5 cm por avance. Aceptación técnica, sin evaluación con alumnos ni galería.                       |

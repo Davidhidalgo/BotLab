@@ -16,4 +16,5 @@ export {
   microduckWalkingExample,
   jumperWalkingExample,
   readMicroduckWalkingProgram,
+  readJumperWalkingProgram,
 } from './lib/microduck-mujoco-blocks';

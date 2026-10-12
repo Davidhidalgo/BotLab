@@ -51,7 +51,7 @@ export async function loadJumperWalkingManifest(
     (n) => n.toString(16).padStart(2, '0'),
   ).join('');
   if (
-    hash !== '776644a00027a9042e6c79de48a5169e2d51df4dafa79432ef03b4438ea12002'
+    hash !== 'aeec1ff2435981ccff8cf426c732ea34141bcbbb65cc505dcf2fe2fa9b4d41f1'
   )
     throw new Error('Jumper walking manifest hash mismatch.');
   return JSON.parse(new TextDecoder().decode(bytes));

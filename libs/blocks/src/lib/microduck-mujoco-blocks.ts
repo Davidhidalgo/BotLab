@@ -44,7 +44,7 @@ export function registerMicroduckMujocoBlocks(api: typeof ScratchBlocks) {
     },
   ]);
 }
-export const jumperWalkingBlockTypes = [
+const commonWalkingBlockTypes = [
   'event_whenflagclicked',
   'botlab_microduck_walk_steps',
   'botlab_microduck_walk_distance',
@@ -52,8 +52,13 @@ export const jumperWalkingBlockTypes = [
   'control_repeat',
   'botlab_web_velocity',
 ];
+export const jumperWalkingBlockTypes = [
+  ...commonWalkingBlockTypes,
+  'botlab_microduck_turn_left',
+  'botlab_microduck_turn_right',
+];
 export const microduckWalkingBlockTypes = [
-  ...jumperWalkingBlockTypes,
+  ...commonWalkingBlockTypes,
   'botlab_microduck_turn_left',
 ];
 const wait = (id: string) =>
@@ -84,6 +89,17 @@ export const microduckWalkingExample: BlocksWorkspaceArtifact = {
 /** Bounded sequences with literal waits/repeats; expressions remain unsupported. */
 export function readMicroduckWalkingProgram(
   artifact: BlocksWorkspaceArtifact,
+): WalkingProgramStep[] {
+  return readWalkingProgram(artifact, microduckWalkingBlockTypes);
+}
+export function readJumperWalkingProgram(
+  artifact: BlocksWorkspaceArtifact,
+): WalkingProgramStep[] {
+  return readWalkingProgram(artifact, jumperWalkingBlockTypes);
+}
+function readWalkingProgram(
+  artifact: BlocksWorkspaceArtifact,
+  allowedTypes: readonly string[],
 ): WalkingProgramStep[] {
   const doc = new DOMParser().parseFromString(artifact.content, 'text/xml');
   if (
@@ -164,7 +180,7 @@ export function readMicroduckWalkingProgram(
       const type = current.getAttribute('type') ?? '';
       if (
         ++nodes > walkingProgramLimits.sourceSteps ||
-        !microduckWalkingBlockTypes.includes(type) ||
+        !allowedTypes.includes(type) ||
         type === 'event_whenflagclicked' ||
         current.getAttribute('disabled') === 'true'
       )
@@ -213,8 +229,12 @@ export function readMicroduckWalkingProgram(
           distanceMeters: isSteps ? value * 0.5 : value,
         });
       } else {
-        // Only the physically validated left turn is in this palette.
-        steps.push({ sourceBlockId, kind: 'turn', angleRadians: Math.PI / 2 });
+        steps.push({
+          sourceBlockId,
+          kind: 'turn',
+          angleRadians:
+            type === 'botlab_microduck_turn_right' ? -Math.PI / 2 : Math.PI / 2,
+        });
       }
     }
     return steps;

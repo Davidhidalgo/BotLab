@@ -3,8 +3,27 @@ import { jumperJointExample, readJumperJointProgram } from './jumper-blocks';
 import {
   microduckWalkingExample,
   readMicroduckWalkingProgram,
+  readJumperWalkingProgram,
 } from './microduck-mujoco-blocks';
 describe('MuJoCo blocks', () => {
+  it('reads both Jumper turn directions while retaining the MicroDuck restriction', () => {
+    const right = {
+      ...microduckWalkingExample,
+      content: microduckWalkingExample.content.replace(
+        'botlab_microduck_turn_left',
+        'botlab_microduck_turn_right',
+      ),
+    };
+    expect(readJumperWalkingProgram(right)[1]).toMatchObject({
+      kind: 'turn',
+      angleRadians: -Math.PI / 2,
+    });
+    expect(readJumperWalkingProgram(microduckWalkingExample)[1]).toMatchObject({
+      kind: 'turn',
+      angleRadians: Math.PI / 2,
+    });
+    expect(() => readMicroduckWalkingProgram(right)).toThrow(/compatible/);
+  });
   it('parses example programs without changing units', () => {
     expect(
       readJumperJointProgram(jumperJointExample).map((s) => s.positionRadians),

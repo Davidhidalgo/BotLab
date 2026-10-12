@@ -51,7 +51,7 @@ it('only enables the validated forward walking capability', () => {
   ).toThrow(/sin giro/);
 });
 
-it('compiles measured distance and waits without inventing turn support', () => {
+it('compiles measured distance and waits, rejecting unvalidated turn angles', () => {
   expect(
     compileJumperWalkingProgram([
       { sourceBlockId: 'd', kind: 'distance', distanceMeters: 0.5 },
@@ -65,7 +65,34 @@ it('compiles measured distance and waits without inventing turn support', () => 
     compileJumperWalkingProgram([
       { sourceBlockId: 't', kind: 'turn', angleRadians: 1 },
     ]),
-  ).toThrow(/sin giro/);
+  ).toThrow(/90°/);
+});
+
+it('compiles only measured quarter turns and preserves direction', () => {
+  for (const sign of [-1, 1]) {
+    expect(
+      compileJumperWalkingProgram([
+        {
+          sourceBlockId: 't',
+          kind: 'turn',
+          angleRadians: (sign * Math.PI) / 2,
+        },
+      ]).commands[0],
+    ).toMatchObject({
+      commandId: 'turn',
+      inputs: {
+        angleRadians: (sign * Math.PI) / 2,
+        speed: 1,
+        timeoutSeconds: 45,
+      },
+    });
+  }
+  for (const angleRadians of [0, Math.PI, NaN, Infinity])
+    expect(() =>
+      compileJumperWalkingProgram([
+        { sourceBlockId: 't', kind: 'turn', angleRadians },
+      ]),
+    ).toThrow(/90°/);
 });
 
 it('compiles repeated actions with unique execution IDs, source identity and iterations', () => {

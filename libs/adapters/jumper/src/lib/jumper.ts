@@ -124,7 +124,8 @@ export const jumperWalkingBehavior: Behavior = {
   ...jumperJointBehavior,
   id: 'jumper-web-walking',
   name: 'Marcha web de Jumper',
-  description: 'Avance con controlador upstream sobre suelo plano.',
+  description:
+    'Avance y giros de 90° con controlador upstream sobre suelo plano.',
 };
 export function createJumperWalkingAdapter(): BotLabAdapter {
   return {
@@ -143,12 +144,40 @@ export function createJumperWalkingAdapter(): BotLabAdapter {
     capabilities: [
       {
         id: 'jumper-web-velocity',
-        name: 'Avanzar y parar',
+        name: 'Avanzar, girar y parar',
         kind: 'motion',
-        description: 'Avance en suelo plano; giro no habilitado.',
+        description: 'Avance y giros medidos de 90° en suelo plano.',
         targetIds: [jumperWalkingTargetId],
         schema: {
           commands: [
+            {
+              id: 'turn',
+              name: 'Girar 90°',
+              description: 'Cuarto de vuelta medido a izquierda o derecha.',
+              inputs: [
+                {
+                  name: 'angleRadians',
+                  type: 'number',
+                  required: true,
+                  min: -Math.PI / 2,
+                  max: Math.PI / 2,
+                },
+                {
+                  name: 'speed',
+                  type: 'number',
+                  required: true,
+                  min: 1,
+                  max: 1,
+                },
+                {
+                  name: 'timeoutSeconds',
+                  type: 'number',
+                  required: true,
+                  min: 1,
+                  max: 45,
+                },
+              ],
+            },
             {
               id: 'distance',
               name: 'Avanzar',
@@ -236,10 +265,10 @@ export function compileJumperWalkingProgram(
         !Number.isFinite(value) ||
         (s.kind === 'distance' && (value < 0 || value > 20)) ||
         (s.kind === 'wait' && (value < 0 || value > 30)) ||
-        (s.kind === 'turn' && true)
+        (s.kind === 'turn' && Math.abs(value) !== Math.PI / 2)
       )
         throw new Error(
-          'Jumper admite avance de 0–20 m y espera de 0–30 s; sin giro.',
+          'Jumper admite avance de 0–20 m, espera de 0–30 s y giros de 90° a izquierda o derecha.',
         );
     } else if (
       ![s.forward, s.yaw, s.durationSeconds].every(Number.isFinite) ||
@@ -278,7 +307,7 @@ export function compileJumperWalkingProgram(
                 timeoutSeconds: 15 + s.distanceMeters / 0.04,
               }
             : s.kind === 'turn'
-              ? { angleRadians: s.angleRadians }
+              ? { angleRadians: s.angleRadians, speed: 1, timeoutSeconds: 45 }
               : { durationSeconds: s.durationSeconds }
           : {
               forward: s.forward,

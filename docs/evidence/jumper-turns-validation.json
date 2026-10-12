@@ -1,0 +1,756 @@
+{
+  "executedAt": "2026-10-12T22:23:42.123Z",
+  "browser": "154.0.8037.98",
+  "url": "https://botlab.localhost",
+  "sequences": [
+    {
+      "signs": [1, 1, 1, -1, -1, -1],
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 3.3529999999997417,
+            "displacementMeters": 0.015819695268457373,
+            "yawRadians": 1.5000538080810781,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 3.3529999999997417,
+          "end": [
+            -0.012222359015080354, -0.0029717235429467127, 0.10211928464091628
+          ],
+          "quaternion": [
+            0.731204971603225, 0.0049696219688940505, 0.005082465824047997,
+            0.6821207817544941
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09946507504183924,
+          "maxTiltRadians": 0.03285137978294245,
+          "measuredYawRadians": 1.5000538080810781
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 6.705000000000574,
+            "displacementMeters": 0.014492091095585007,
+            "yawRadians": 1.4947315822579412,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 3.352000000000832,
+          "end": [
+            -0.005264942623564401, -0.015220976645305938, 0.10332980026125538
+          ],
+          "quaternion": [
+            0.07370182685746314, 0.0038229613424854143, -0.006626376470759067,
+            0.9972509798537752
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.0986996628773886,
+          "maxTiltRadians": 0.02719639832865911,
+          "measuredYawRadians": 1.4947315822579412
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 10.272999999999746,
+            "displacementMeters": 0.025595302638578475,
+            "yawRadians": 1.5245573775062968,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 3.567999999999172,
+          "end": [
+            0.0013077059048635974, 0.00921132788096426, 0.10343570716680049
+          ],
+          "quaternion": [
+            -0.6357840591733568, 0.006793073783129405, -0.0037404430238393467,
+            0.771828020569099
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09871313125879974,
+          "maxTiltRadians": 0.029993884931161213,
+          "measuredYawRadians": 1.5245573775062968
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 13.650999999997874,
+            "displacementMeters": 0.011487559142645976,
+            "yawRadians": -1.5033235820188433,
+            "targetYawRadians": -1.5707963267948966
+          },
+          "duration": 3.377999999998128,
+          "end": [
+            0.005941923403291811, 0.02003593004418186, 0.10268141699653405
+          ],
+          "quaternion": [
+            0.062358305331555335, 0.0030096936832826977, 0.006753987221674095,
+            0.9980264361011281
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09879128726575821,
+          "maxTiltRadians": 0.03487050581156329,
+          "measuredYawRadians": -1.5033235820188433
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 17.017999999997816,
+            "displacementMeters": 0.015090276147306979,
+            "yawRadians": -1.4993012391975342,
+            "targetYawRadians": -1.5707963267948966
+          },
+          "duration": 3.3669999999999423,
+          "end": [
+            0.019967727074498003, 0.014056408543694842, 0.10274876440834681
+          ],
+          "quaternion": [
+            0.7264769123209164, 0.00741368960795067, 0.0017413723572500882,
+            0.6871486743735875
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09961063196252391,
+          "maxTiltRadians": 0.02748705434939827,
+          "measuredYawRadians": -1.4993012391975342
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 20.987000000002666,
+            "displacementMeters": 0.029792926033221482,
+            "yawRadians": -1.5000164821491466,
+            "targetYawRadians": -1.5707963267948966
+          },
+          "duration": 3.9690000000048506,
+          "end": [
+            -0.008028072853559167, 0.003831824487714055, 0.10232185272051561
+          ],
+          "quaternion": [
+            0.9999585685236151, 0.005815404605939409, -0.003645348155576444,
+            0.0059794433098567705
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09915177048774464,
+          "maxTiltRadians": 0.027791160861747606,
+          "measuredYawRadians": -1.5000164821491466
+        },
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.5,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 25.243000000007868,
+            "displacementMeters": 0.4886578828745165,
+            "yawRadians": -0.029498094874893094,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.4885461912849769
+          },
+          "duration": 4.256000000005201,
+          "end": [
+            0.48069255396953753, -0.002295751769116764, 0.10124066779256208
+          ],
+          "quaternion": [
+            0.9999136184813134, 0.004632799461230007, 0.006137981878656658,
+            -0.010659170850313843
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.10049630479933047,
+          "maxTiltRadians": 0.03189538440424539,
+          "measuredYawRadians": -0.029498094874893094
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 28.709000000012104,
+            "displacementMeters": 0.021559786106845363,
+            "yawRadians": 1.4940541018796822,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 3.466000000004236,
+          "end": [
+            0.4825983416925739, -0.023748330892325132, 0.10278914548745997
+          ],
+          "quaternion": [
+            0.7410009993295628, -0.002008598417563011, -0.006910092379518017,
+            0.6714653640719623
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09841121687721048,
+          "maxTiltRadians": 0.0277977423253817,
+          "measuredYawRadians": 1.4940541018796822
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 32.2660000000155,
+            "displacementMeters": 0.02906227317801313,
+            "yawRadians": 1.5174540368610754,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 3.5570000000033986,
+          "end": [
+            0.5103231578650042, -0.03312917258044176, 0.10349172245218097
+          ],
+          "quaternion": [
+            0.07418884643025953, 0.001751542851036015, -0.007432153614945736,
+            0.9972149769511249
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09897740055558499,
+          "maxTiltRadians": 0.03353842710058606,
+          "measuredYawRadians": 1.5174540368610754
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 35.99700000000681,
+            "displacementMeters": 0.036649236873223655,
+            "yawRadians": 1.4909480090286849,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 3.7309999999913046,
+          "end": [
+            0.5331194499538566, -0.004132361897115611, 0.1026971683181827
+          ],
+          "quaternion": [
+            -0.6221758182574533, -0.0051513984013928085, 0.005720193795864468,
+            0.782839698567412
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09898024333584288,
+          "maxTiltRadians": 0.03357288731132172,
+          "measuredYawRadians": 1.4909480090286849
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 39.502999999998636,
+            "displacementMeters": 0.023540748765674892,
+            "yawRadians": -1.5028035024464041,
+            "targetYawRadians": -1.5707963267948966
+          },
+          "duration": 3.505999999991829,
+          "end": [
+            0.5567726463337512, -0.002745320477141023, 0.10334877512814954
+          ],
+          "quaternion": [
+            0.07978044419349341, 0.0030610468079887575, 0.007106551290539957,
+            0.9967824274361397
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09904892026645819,
+          "maxTiltRadians": 0.028154993928769984,
+          "measuredYawRadians": -1.5028035024464041
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 42.98499999999052,
+            "displacementMeters": 0.018594050588147684,
+            "yawRadians": -1.4960465794513762,
+            "targetYawRadians": -1.5707963267948966
+          },
+          "duration": 3.481999999991885,
+          "end": [
+            0.5627398452991056, -0.020520651853383254, 0.10282940855159364
+          ],
+          "quaternion": [
+            0.7367747746498644, 0.007524585352916707, 0.001155710170421501,
+            0.6760953900071413
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.0987960272085944,
+          "maxTiltRadians": 0.028056323034680506,
+          "measuredYawRadians": -1.4960465794513762
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 46.57999999998214,
+            "displacementMeters": 0.020482957539389394,
+            "yawRadians": -1.515449928386471,
+            "targetYawRadians": -1.5707963267948966
+          },
+          "duration": 3.5949999999916216,
+          "end": [
+            0.5424791188561369, -0.017848921020488153, 0.10330678601593782
+          ],
+          "quaternion": [
+            0.9998243234119897, 0.007229223246052586, -0.002461660937702601,
+            -0.017117268194557902
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09857717769719146,
+          "maxTiltRadians": 0.030862576985250724,
+          "measuredYawRadians": -1.515449928386471
+        }
+      ]
+    },
+    {
+      "signs": [-1, 1, -1, 1],
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 4.009999999999674,
+            "displacementMeters": 0.027287843062799032,
+            "yawRadians": -1.5079673053863076,
+            "targetYawRadians": -1.5707963267948966
+          },
+          "duration": 4.009999999999674,
+          "end": [
+            -0.007634365935837292, 0.026908857747156026, 0.10228269318850461
+          ],
+          "quaternion": [
+            0.7294148555063413, 0.001892828150060589, -0.0068295142681092475,
+            -0.6840348993312546
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09924377646977038,
+          "maxTiltRadians": 0.03235038289433902,
+          "measuredYawRadians": -1.5079673053863076
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 7.373000000000797,
+            "displacementMeters": 0.012467491003255416,
+            "yawRadians": 1.506033841775151,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 3.363000000001123,
+          "end": [
+            -0.014678016282336136, 0.036735526819582295, 0.10372483802706545
+          ],
+          "quaternion": [
+            0.9999633683991311, -0.008012196061142484, -0.001803568463608908,
+            -0.0024111646435972093
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.0988860354279811,
+          "maxTiltRadians": 0.03308331571326463,
+          "measuredYawRadians": 1.506033841775151
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 11.050999999999314,
+            "displacementMeters": 0.020326290738108915,
+            "yawRadians": -1.520838601463343,
+            "targetYawRadians": -1.5707963267948966
+          },
+          "duration": 3.6779999999985176,
+          "end": [
+            -0.02302495016883106, 0.05531521514090018, 0.10337007163199696
+          ],
+          "quaternion": [
+            0.7224997192442901, 0.003913863377052987, -0.006668279929567919,
+            -0.6913279767289677
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09966979724346445,
+          "maxTiltRadians": 0.031029006062153305,
+          "measuredYawRadians": -1.520838601463343
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 14.43199999999744,
+            "displacementMeters": 0.015581399151621694,
+            "yawRadians": 1.5087854761192745,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 3.380999999998126,
+          "end": [
+            -0.036551241396310906, 0.06364080138803614, 0.102759126138111
+          ],
+          "quaternion": [
+            0.9999294120223089, -0.0065179920627401475, -0.0037390011429734122,
+            -0.009203620083517914
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09893407639046614,
+          "maxTiltRadians": 0.03475732317628754,
+          "measuredYawRadians": 1.5087854761192745
+        },
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.5,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 18.712999999999887,
+            "displacementMeters": 0.4918919553761833,
+            "yawRadians": -0.027068440064383345,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.49178132022760696
+          },
+          "duration": 4.281000000002447,
+          "end": [
+            0.45495366626465494, 0.04462334266877837, 0.10189431433685334
+          ],
+          "quaternion": [
+            0.9997380589784047, 0.0059243183575960895, 0.004326780449969355,
+            -0.021679364682296903
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.10189431433685334,
+          "maxTiltRadians": 0.031790992706260165,
+          "measuredYawRadians": -0.027068440064383345
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 22.093000000004018,
+            "displacementMeters": 0.014891360455251692,
+            "yawRadians": -1.5211576110602443,
+            "targetYawRadians": -1.5707963267948966
+          },
+          "duration": 3.380000000004131,
+          "end": [0.4409840020517044, 0.05001734802517566, 0.1026717233716813],
+          "quaternion": [
+            0.7081547899810873, -0.007467542098923834, 0.002154274950251285,
+            -0.7060144391875292
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.1000226181957277,
+          "maxTiltRadians": 0.03363902539891628,
+          "measuredYawRadians": -1.5211576110602443
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 25.486000000008165,
+            "displacementMeters": 0.015643142927989583,
+            "yawRadians": 1.5169321094109294,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 3.3930000000041467,
+          "end": [0.4253708130207455, 0.05426004640466131, 0.10296670481632791],
+          "quaternion": [
+            0.9996792623290942, -0.006938889032116412, -0.003050814880879467,
+            -0.02416437081161535
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09969501837237714,
+          "maxTiltRadians": 0.04438895339092403,
+          "measuredYawRadians": 1.5169321094109294
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 28.978000000012432,
+            "displacementMeters": 0.019068745688709258,
+            "yawRadians": -1.49694067169199,
+            "targetYawRadians": -1.5707963267948966
+          },
+          "duration": 3.4920000000042677,
+          "end": [0.419864873946647, 0.07199336349291002, 0.10283283894782991],
+          "quaternion": [
+            0.7163366553240059, 0.0016938087992634174, -0.007390157919073262,
+            -0.6977136323857376
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09860882115592037,
+          "maxTiltRadians": 0.029178953177830997,
+          "measuredYawRadians": -1.49694067169199
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 32.35000000001531,
+            "displacementMeters": 0.017866212903488214,
+            "yawRadians": 1.5238790781927756,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 3.372000000002874,
+          "end": [
+            0.40762973040253914, 0.08510161350008454, 0.10214502506617419
+          ],
+          "quaternion": [
+            0.9999022665764012, 0.00685693891827749, -0.001403489475098757,
+            -0.012102475008813392
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09997217195802748,
+          "maxTiltRadians": 0.03420431908199394,
+          "measuredYawRadians": 1.5238790781927756
+        }
+      ]
+    }
+  ],
+  "cancellation": [
+    {
+      "sign": -1,
+      "outcome": {
+        "error": "Error: Command cancelled."
+      },
+      "stoppedTick": 1510,
+      "laterTick": 1510,
+      "stoppedPosition": [
+        0.004162870083092123, 0.0029587574358181773, 0.10159154352205922
+      ],
+      "laterPosition": [
+        0.004162870083092123, 0.0029587574358181773, 0.10159154352205922
+      ],
+      "state": "paused"
+    },
+    {
+      "sign": 1,
+      "outcome": {
+        "error": "Error: Command cancelled."
+      },
+      "stoppedTick": 1505,
+      "laterTick": 1505,
+      "stoppedPosition": [
+        -0.009744347142539989, 0.00044789791268659324, 0.10346691133493487
+      ],
+      "laterPosition": [
+        -0.009744347142539989, 0.00044789791268659324, 0.10346691133493487
+      ],
+      "state": "paused"
+    }
+  ],
+  "errors": [],
+  "workersAfterDispose": 0,
+  "passed": true
+}

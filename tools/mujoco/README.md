@@ -30,7 +30,7 @@ UV_CACHE_DIR=tmp/mujoco-native/uv-cache uv pip install --python tmp/mujoco-nativ
 corepack pnpm run mujoco:prepare:jumper-walking
 ```
 
-Select **Jumper · marcha**. The exposed capability is forward 0–0.24 m/s and zero yaw. Other modes in the upstream bundle are not exposed. The host maps velocity to the verified gamepad axis, feeds wire-order feedback, and applies the controller's targets and gains with the original servo speed/thermal law.
+Select **Jumper · marcha**. The exposed capabilities are forward 0–0.24 m/s and measured left/right 90° turns. Timed velocity remains forward-only. Other modes in the upstream bundle are not exposed. The host maps forward velocity to Ly and signed 1 rad/s turns to the verified outer Rx band, feeds wire-order feedback, and applies the controller's targets and gains with the original servo speed/thermal law.
 
 The exporter normally uses a 5 ms timestep; this bundle declares 1 ms physics and 5 ms control. The walking preparer retains exported collision/solver configuration and explicitly applies the bundle's timestep, adds torque motors, floor and gyro. The source XML and upstream code remain unchanged. `GIT_CEILING_DIRECTORIES` prevents an archive checkout from accidentally recording BotLab's Git revision as its own.
 
@@ -117,3 +117,19 @@ LICENSE/NOTICE files travel with prepared model resources. Generated policy outp
 `corepack pnpm run test:mujoco:repeats` runs both importable repeat activities in the main editor against real MuJoCo workers and the prepared controllers. It uses the same local server and `BOTLAB_TEST_URL` override as the other browser checks. It verifies three and two measured 0.5 m advances, nested progress, bounded empty bodies, zero-count no-work outcomes, cancellation on the second iteration, source-edit cancellation, the expansion budget, distinct command identities, JSON export/import, reload and legacy first-steps programs. No user browser projects are modified. The latest development report is `docs/evidence/mujoco-repeat-validation.json`; the separate production acceptance is retained in `mujoco-repeat-production-validation.json`, and the final build smoke result in `mujoco-repeat-final-build-validation.json`. Screenshots are `output/mujoco/repeat-*.png`.
 
 Follow [the activity](../../README.md#actividad-repite-avanza-y-observa) to predict, run, compare and change the count. Its technical acceptance does not establish learning outcomes with students.
+
+## Jumper quarter-turn acceptance
+
+<!-- Jumper turn checks from probe-jumper-turns.mjs, probe-jumper-turns.py, verify-jumper-turns.mjs, verify-jumper-turns-ui.mjs and ../../examples/jumper-mujoco-turns.botlab.json -->
+
+With the prepared walking assets and Vite development server available:
+
+```sh
+node tools/mujoco/verify-jumper-turns.mjs
+node tools/mujoco/verify-jumper-turns-ui.mjs
+tmp/mujoco-native/venv/bin/python tools/mujoco/probe-jumper-turns.py
+```
+
+The numerical acceptance runs 20 measured quarter turns in same-direction and alternating sequences, two 0.5 m advances and real-worker cancellation in both directions. The UI acceptance imports the turn activity, measures four turns across two repeat iterations, exports and reloads the results, cancels during a turn and checks worker disposal. Both accept `BOTLAB_TEST_URL`; the UI check also runs against a static build with `BOTLAB_PRODUCTION=1`, writing a separate production report.
+
+`probe-jumper-turns.mjs` reproduces the earlier isolated candidates from Git revision `fc890ac6536665c5d1e009496f90ee0e09b6b6d0`. Profiles are default `tapered`, or `BOTLAB_TURN_PROFILE=fixed`, `center`, `pure-yaw`; `BOTLAB_PROBE_RUNS=1` selects a four-case pilot instead of three reset repetitions. Candidates are generated in ignored `tmp/`, never loaded by the app. A failed probe does not enable capabilities. The native reference checks the pinned raw-axis mapping and balance separately; it is not an assertion of long-horizon trajectory parity. [Results and selection](../../docs/mujoco-validation.md#jumper-quarter-turns--2026-10-13).

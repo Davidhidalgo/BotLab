@@ -4,6 +4,7 @@ import type {
   ControllerFactory,
   ControllerOutput,
 } from '@botlab/simulators-mujoco';
+import { jumperWalkingAxes } from './walking-input';
 interface Fsm {
   set_state(
     q: Float32Array,
@@ -69,6 +70,8 @@ export const createJumperWalkingController: ControllerFactory = async (
   }
   const empty: ControllerOutput = { targets: [], state: [] };
   return {
+    turnProfile: 'constant',
+    turnStopFraction: 0.1,
     validateFeedback(f) {
       const [w, x, y, z] = f.quaternion;
       if (
@@ -79,10 +82,7 @@ export const createJumperWalkingController: ControllerFactory = async (
         throw new Error('Jumper left the validated walking envelope.');
     },
     validateVelocity(v) {
-      if (v.forward < 0 || v.forward > 0.24 || v.yaw !== 0)
-        throw new Error(
-          'Jumper currently supports forward 0–0.24 m/s and zero yaw only.',
-        );
+      jumperWalkingAxes(v);
     },
     async infer(feedback, velocity) {
       const now = Math.round(feedback.timeSeconds * 1e6),
@@ -103,10 +103,10 @@ export const createJumperWalkingController: ControllerFactory = async (
         new Float32Array(feedback.angularVelocity),
         now,
       );
-      // This bundle maps Ly with sign -1 and full travel to ±0.8 m/s. No keyboard/joystick shares ownership.
-      current.setAxis('Ly', -velocity.forward / 0.8);
-      for (const axis of ['Lx', 'Rx', 'Ry', 'LT', 'RT'])
-        current.setAxis(axis, 0);
+      const axes = jumperWalkingAxes(velocity);
+      current.setAxis('Ly', axes.Ly);
+      current.setAxis('Rx', axes.Rx);
+      for (const axis of ['Lx', 'Ry', 'LT', 'RT']) current.setAxis(axis, 0);
       current.padFrame(now);
       current.set_command(0, 0, 0, now);
       const mode = current.tick(now);

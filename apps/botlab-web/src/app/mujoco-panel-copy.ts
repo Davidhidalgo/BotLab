@@ -30,7 +30,7 @@ const es = {
   jointHelp:
     'Base fija y contactos desactivados para aislar el control articular. Selecciona el destino de marcha para locomoción.',
   jumperHelp:
-    'Jumper puede avanzar y esperar. Los giros y el retroceso todavía no están disponibles.',
+    'Jumper puede avanzar, girar 90° a izquierda o derecha y esperar. El retroceso no está disponible.',
   microduckHelp:
     'MicroDuck puede avanzar, girar a la izquierda y esperar. El giro a la derecha y el retroceso todavía no están disponibles.',
   physics: 'Estado de la física',
@@ -89,7 +89,7 @@ const ca: typeof es = {
   jointHelp:
     'Base fixa i contactes desactivats per aïllar el control articular. Selecciona el destí de marxa per a locomoció.',
   jumperHelp:
-    'Jumper pot avançar i esperar. Els girs i el retrocés encara no estan disponibles.',
+    'Jumper pot avançar, girar 90° a esquerra o dreta i esperar. El retrocés no està disponible.',
   microduckHelp:
     'MicroDuck pot avançar, girar a l’esquerra i esperar. El gir a la dreta i el retrocés encara no estan disponibles.',
   physics: 'Estat de la física',
@@ -148,7 +148,7 @@ const en: typeof es = {
   jointHelp:
     'Fixed base with contacts disabled to isolate joint control. Select the walking destination for locomotion.',
   jumperHelp:
-    'Jumper can advance and wait. Turning and backward movement are not available yet.',
+    'Jumper can advance, turn 90° left or right and wait. Backward movement is not available.',
   microduckHelp:
     'MicroDuck can advance, turn left and wait. Right turns and backward movement are not available yet.',
   physics: 'Physics state',

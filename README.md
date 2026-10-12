@@ -156,7 +156,11 @@ See [setup and reproducible checks](tools/mujoco/README.md), [measured results a
 
 <!-- educational walking from libs/blocks/src/lib/microduck-mujoco-blocks.ts, apps/botlab-web/src/app/mujoco-simulator-panel.tsx and libs/simulators/mujoco/src/lib/motion-goal.ts -->
 
-New walking workspaces start with simple blocks: **advance** and **wait** for both robots, plus **turn left** for MicroDuck. One BotLab step means 0.5 m. Movement completes from measured distance/angle, with 2.5 cm/5° tolerances and a settling check, and the panel compares the observed result with the goal. **Advanced** retains timed `marchar` blocks without changing existing projects. Right turns, reverse and Jumper turns are not in the educational palette because they still need reliable physical validation. Import the short [Jumper](examples/jumper-mujoco-first-steps.botlab.json) or [MicroDuck](examples/microduck-mujoco-first-steps.botlab.json) example through **Projects → Import project** to try the new blocks without replacing saved work.
+New walking workspaces start with simple blocks: **advance** and **wait** for both robots, plus **turn left/right 90°** for Jumper and **turn left** for MicroDuck. One BotLab step means 0.5 m. Movement completes from measured distance/angle, with 2.5 cm/5° tolerances and a settling check, and the panel compares the observed result with the goal. **Advanced** retains timed `marchar` blocks without changing existing projects. Reverse and MicroDuck right turns remain unavailable in the educational palette. Jumper exposes measured quarter turns only; arbitrary angles and combined timed turning are not enabled. Import the short [Jumper](examples/jumper-mujoco-first-steps.botlab.json) or [MicroDuck](examples/microduck-mujoco-first-steps.botlab.json) example through **Projects → Import project** to try the new blocks without replacing saved work.
+
+<!-- Jumper turn activity from examples/jumper-mujoco-turns.botlab.json and libs/adapters/jumper/src/lib/jumper.ts -->
+
+Para probar los giros de Jumper, importa [Avanza y compara izquierda y derecha](examples/jumper-mujoco-turns.botlab.json): avanza 0,5 m y repite dos veces un giro izquierdo de 90° y otro derecho. Predice la orientación final y compara cada medida con ±5° de tolerancia. El robot puede desplazarse ligeramente al mantener el equilibrio; dos giros opuestos no garantizan volver a la misma posición.
 
 ### Actividad: repite, avanza y observa
 

@@ -179,3 +179,27 @@ The observed limitation depends on the controller/physical state, not just the r
 No corrective advance, opposite full-circle turn, weight change, or physics change was introduced. Right turns and backwards distance remain unavailable as simple educational blocks. Advanced timed commands remain probes whose elapsed duration is not proof of achieving a distance or angle.
 
 Reproduce with the [directional probe commands](../tools/mujoco/README.md#microduck-directional-investigation). The existing adapter tests retain rejection of negative measured distance and right-turn goals.
+
+## Jumper quarter turns — 2026-10-13
+
+BL-004 adds measured left/right 90° blocks to Jumper's simple palette after validating the pinned controller's input mapping and stopping behavior. Other angles, reverse, strafe and mixed timed forward/yaw remain unsupported. MicroDuck's restrictions are unchanged. The [importable activity](../examples/jumper-mujoco-turns.botlab.json) advances 0.5 m, then repeats a left and right quarter turn twice.
+
+### Mapping and approach selection
+
+The pinned locomotion contract (`operator_controller/2`, controls hash `a70239319ad99a853a12bac571b79599f936c4f9a7f3a1930b07ac08338a44d3`) uses Rx with sign −1. Its yaw travel is `[0.5, 1]` and angular range `[−4, 4]`; the inner stick band controls posture twist. Therefore signed 1 rad/s maps to Rx ∓0.625, not ∓0.25. The [independent native check](evidence/jumper-turns-native-probe.json) confirms observed velocity commands of ±1 rad/s, posture twist ±0.261799 rad, correct turn direction and stable zero-command settling, from rest and after advance. That coupled posture behavior is retained from upstream. This is a native/WASM qualitative comparison, not long-horizon numerical parity.
+
+The [initial tapered-goal probe](evidence/jumper-turns-probe.json) ran three resets for each direction/start condition. Nine of twelve turns stalled near ±85°; only the left turn after forward completed. Merely preserving signed 1 rad/s was insufficient: the [fixed-speed pilot](evidence/jumper-turns-fixed-probe.json) recorded six successful rest cases and a failed left turn after advance, then was interrupted by a development-page navigation. It is an incomplete experiment, not acceptance.
+
+A [four-case pilot](evidence/jumper-turns-center-probe.json) passed after moving the braking band from 2.25° to 0.5° while retaining constant signed 1 rad/s until stopping. The final tolerance remains ±5° for 0.8 s; it was not widened. This per-controller choice is exposed internally as `turnProfile: constant` and `turnStopFraction: 0.1`; shared defaults preserve MicroDuck's approach. A separate [2 rad/s pilot](evidence/jumper-turns-pure-yaw-probe.json), in the upstream stick region without posture twist, also passed its four isolated cases, but was not selected or enabled: the final sequences and worker acceptance validate the slower 1 rad/s profile.
+
+No policy weights, joints, servo law, physics timestep or inference frequency changed. Model revision remains `78966f45de6f2b6de3f7cea017f32a39f8b993e6` and controller bundle revision `ce71f79b191766f0208dca34516564a37816c729`. Only the manifest's human-readable limitation changed; its new pinned SHA-256 is `aeec1ff2435981ccff8cf426c732ea34141bcbbb65cc505dcf2fe2fa9b4d41f1`. Re-run walking preparation when updating an older asset cache.
+
+### Acceptance and limits
+
+The [final numerical/worker acceptance](evidence/jumper-turns-validation.json) completed 20 turns and two measured 0.5 m advances across consecutive same-direction and alternating sequences, before and after advancing. Maximum angular error was 4.575°; minimum height 0.098411 m and maximum tilt 2.544°, within the existing 0.065 m / 50° walking envelope. Both turn directions cancelled through the real worker, preserving identical tick and position after 500 ms paused; disposal left zero workers. These are simulator stops, not hardware-stop evidence.
+
+The [development editor acceptance](evidence/jumper-turns-ui-validation.json) imports the activity, checks all four signed goal measurements and repeat identities, exports/reloads the same trace without starting a worker, then cancels during a left turn after advance. The [final production editor acceptance](evidence/jumper-turns-production-validation.json) passed the same flow against the static build, including the corrected ES/CA/EN capability help. An initial static run caught the previous help text in an older build; rebuilding with the corrected copy resolved it. Five affected project test suites, all configured TypeScript checks, affected lint, 13 architecture checks and the production app plus 13 dependencies passed. Probe scripts also passed syntax/lint and scoped formatting checks.
+
+The source parser validates Jumper and MicroDuck palettes separately, preventing this addition from enabling MicroDuck right turns. Unit tests cover signed axis mapping and rejection, stopping profiles without relaxed tolerance, quarter-turn-only compilation and target-specific parsing.
+
+The tolerance applies to each measured block, not the sum of multiple turns. Balancing can translate the body and turning left then right does not guarantee return to the starting position. Evidence is for the prepared flat-ground scene in Chrome on the local Mac; it does not establish hardware, Safari or mobile behavior. Reproduction commands are in the [MuJoCo tools README](../tools/mujoco/README.md#jumper-quarter-turn-acceptance).

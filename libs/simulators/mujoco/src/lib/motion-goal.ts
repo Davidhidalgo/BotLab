@@ -23,6 +23,8 @@ export class MotionGoal {
   constructor(
     readonly command: SimulationMotionGoal,
     private readonly start: number,
+    private readonly turnProfile: 'constant' | 'tapered' = 'tapered',
+    private readonly turnStopFraction = 0.45,
   ) {
     const value =
       command.kind === 'distance'
@@ -35,6 +37,9 @@ export class MotionGoal {
       command.speed <= 0 ||
       command.timeoutSeconds <= 0 ||
       command.timeoutSeconds > 600 ||
+      !Number.isFinite(turnStopFraction) ||
+      turnStopFraction <= 0 ||
+      turnStopFraction > 1 ||
       (command.kind === 'distance'
         ? value < 0 || value > 20
         : Math.abs(value) > 2 * Math.PI)
@@ -78,7 +83,11 @@ export class MotionGoal {
     const close =
       Math.abs(error) <=
       this.tolerance *
-        (this.settledSince === undefined ? (distance ? 0.2 : 0.45) : 1);
+        (this.settledSince === undefined
+          ? distance
+            ? 0.2
+            : this.turnStopFraction
+          : 1);
     if (close || (distance && error < 0)) {
       this.velocity = { forward: 0, yaw: 0 };
       this.settledSince ??= now;
@@ -114,10 +123,12 @@ export class MotionGoal {
             forward: 0,
             yaw:
               Math.sign(error) *
-              Math.min(
-                this.command.speed,
-                Math.max(0.65, Math.abs(error) * 1.5),
-              ),
+              (this.turnProfile === 'constant'
+                ? this.command.speed
+                : Math.min(
+                    this.command.speed,
+                    Math.max(0.65, Math.abs(error) * 1.5),
+                  )),
           };
     }
     if (Math.abs(measured - this.progressAt) >= (distance ? 0.01 : 0.05)) {

@@ -16,6 +16,49 @@ const feedback = (
   angularVelocity: [],
 });
 describe('measured movement goals', () => {
+  it('allows a robot to brake closer to the target without widening final tolerance', () => {
+    const command = {
+      kind: 'turn' as const,
+      angleRadians: Math.PI / 2,
+      speed: 1,
+      timeoutSeconds: 30,
+    };
+    const goal = new MotionGoal(command, 0, 'constant', 0.1);
+    goal.update(feedback(1));
+    goal.update(feedback(2, 0, 0, 1.55));
+    expect(goal.intent().yaw).toBe(1);
+    goal.update(feedback(3, 0, 0, 1.567));
+    expect(goal.intent().yaw).toBe(0);
+    expect(goal.update(feedback(4, 0, 0, 1.46))).toBeUndefined();
+    expect(goal.intent().yaw).toBe(1);
+    for (const invalid of [NaN, 0, -1, 2])
+      expect(() => new MotionGoal(command, 0, 'constant', invalid)).toThrow(
+        /no válido/,
+      );
+  });
+  it('keeps the configured constant turn speed until measured settling, in either direction', () => {
+    for (const sign of [-1, 1]) {
+      const command = {
+        kind: 'turn' as const,
+        angleRadians: (sign * Math.PI) / 2,
+        speed: 1,
+        timeoutSeconds: 30,
+      };
+      const constant = new MotionGoal(command, 0, 'constant');
+      const tapered = new MotionGoal(command, 0);
+      for (const goal of [constant, tapered]) {
+        goal.update(feedback(1));
+        goal.update(feedback(2, 0, 0, sign * 1.4));
+      }
+      expect(constant.intent().yaw).toBe(sign);
+      expect(tapered.intent().yaw).toBe(sign * 0.65);
+      constant.update(feedback(3, 0, 0, sign * 1.55));
+      expect(constant.intent().yaw).toBe(0);
+      const result = constant.update(feedback(4, 0, 0, sign * 1.51));
+      expect(result?.status).toBe('completed');
+      expect(result?.yawRadians).toBeCloseTo(sign * 1.51, 10);
+    }
+  });
   it('ignores lateral sway and waits for measured forward progress and settling', () => {
     const goal = new MotionGoal(
       {

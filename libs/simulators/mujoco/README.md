@@ -6,7 +6,7 @@ Optional shared MuJoCo 3.11.0 backend. This package owns physics and rendering, 
 
 <!-- public API from src/index.ts, src/worker.ts and src/lib/controller.ts -->
 
-`createMujocoSession()` starts one dedicated worker; load a verified `SimulationManifest` before stepping or executing commands. `createSimulationRenderer(container, geometry)` consumes copied geometry/frame data. `validateManifest` rejects unresolved versions, paths, hashes and invalid joint metadata. The separate `@botlab/simulators-mujoco/worker` entry exports `installSimulationWorker(factory?)`; it must only be imported by worker modules. Controllers implement feedback, velocity validation, inference and explicit state commit/reset/disposal.
+`createMujocoSession()` starts one dedicated worker; load a verified `SimulationManifest` before stepping or executing commands. `createSimulationRenderer(container, geometry)` consumes copied geometry/frame data. `validateManifest` rejects unresolved versions, paths, hashes and invalid joint metadata. The separate `@botlab/simulators-mujoco/worker` entry exports `installSimulationWorker(factory?)`; it must only be imported by worker modules. Controllers implement feedback, velocity validation, inference and explicit state commit/reset/disposal. Optional `turnProfile` (`constant` or default `tapered`) and `turnStopFraction` (default 0.45, bounded above zero through 1) tune approach speed and the inner braking band without widening final angle tolerance.
 
 <!-- lifecycle from src/lib/client.ts and src/lib/worker-runtime.ts -->
 

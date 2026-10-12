@@ -1,0 +1,258 @@
+{
+  "executedAt": "2026-10-12T22:19:06.745053+00:00",
+  "kind": "Independent native Jumper Rx mapping probe; not long-horizon parity",
+  "mujoco": "3.11.0",
+  "onnxruntime": "1.27.0",
+  "modelRevision": "78966f45de6f2b6de3f7cea017f32a39f8b993e6",
+  "controllerSha256": "e079122ae93e48c19606c4155aba6f3adae25eaa9ab85e69fb4bb2feb16e62f7",
+  "runs": [
+    {
+      "afterForward": false,
+      "sign": 1,
+      "error": null,
+      "minHeight": 0.09972053644615178,
+      "maxTiltRadians": 0.0323504142437004,
+      "simulatedSeconds": 14.999999999997126,
+      "commands": [
+        {
+          "label": "balance",
+          "requestedYaw": 0,
+          "durationSeconds": 3,
+          "yawRadians": 0.0007540125312540213,
+          "displacementMeters": 0.0035125920897566506,
+          "forwardDisplacementMeters": 0.0029083998830377465,
+          "observedCommand": {
+            "velocity": [0.0, 0.0, 0.0],
+            "posture": [0.0, 0.0, 0.0, 0.0],
+            "rx": 0
+          }
+        },
+        {
+          "label": "turn",
+          "requestedYaw": 1,
+          "durationSeconds": 10,
+          "yawRadians": 10.01703794583476,
+          "displacementMeters": 0.011015429039856231,
+          "forwardDisplacementMeters": 0.00726162146134247,
+          "observedCommand": {
+            "velocity": [0.0, 0.0, 1.0],
+            "posture": [0.2617993950843811, 0.0, 0.0, 0.0],
+            "rx": -0.625
+          }
+        },
+        {
+          "label": "zero-command",
+          "requestedYaw": 0,
+          "durationSeconds": 2,
+          "yawRadians": -0.034189159198792396,
+          "displacementMeters": 0.010992546596655673,
+          "forwardDisplacementMeters": 0.005844910454624996,
+          "observedCommand": {
+            "velocity": [0.0, 0.0, 0.0],
+            "posture": [0.0, 0.0, 0.0, 0.0],
+            "rx": 0
+          }
+        }
+      ]
+    },
+    {
+      "afterForward": false,
+      "sign": -1,
+      "error": null,
+      "minHeight": 0.09912110968422513,
+      "maxTiltRadians": 0.0323504142437004,
+      "simulatedSeconds": 14.999999999997126,
+      "commands": [
+        {
+          "label": "balance",
+          "requestedYaw": 0,
+          "durationSeconds": 3,
+          "yawRadians": 0.0007540125312540213,
+          "displacementMeters": 0.0035125920897566506,
+          "forwardDisplacementMeters": 0.0029083998830377465,
+          "observedCommand": {
+            "velocity": [0.0, 0.0, 0.0],
+            "posture": [0.0, 0.0, 0.0, 0.0],
+            "rx": 0
+          }
+        },
+        {
+          "label": "turn",
+          "requestedYaw": -1,
+          "durationSeconds": 10,
+          "yawRadians": -10.047956178071525,
+          "displacementMeters": 0.021244325477872486,
+          "forwardDisplacementMeters": 0.010482848887706384,
+          "observedCommand": {
+            "velocity": [0.0, 0.0, -1.0],
+            "posture": [-0.2617993950843811, 0.0, 0.0, 0.0],
+            "rx": 0.625
+          }
+        },
+        {
+          "label": "zero-command",
+          "requestedYaw": 0,
+          "durationSeconds": 2,
+          "yawRadians": 0.08374973264722962,
+          "displacementMeters": 0.013229833381668145,
+          "forwardDisplacementMeters": -0.010586449353439234,
+          "observedCommand": {
+            "velocity": [0.0, 0.0, 0.0],
+            "posture": [0.0, 0.0, 0.0, 0.0],
+            "rx": 0
+          }
+        }
+      ]
+    },
+    {
+      "afterForward": true,
+      "sign": 1,
+      "error": null,
+      "minHeight": 0.09969392146061713,
+      "maxTiltRadians": 0.0323504142437004,
+      "simulatedSeconds": 25.00000000000757,
+      "commands": [
+        {
+          "label": "balance",
+          "requestedYaw": 0,
+          "durationSeconds": 3,
+          "yawRadians": 0.0007540125312540213,
+          "displacementMeters": 0.0035125920897566506,
+          "forwardDisplacementMeters": 0.0029083998830377465,
+          "observedCommand": {
+            "velocity": [0.0, 0.0, 0.0],
+            "posture": [0.0, 0.0, 0.0, 0.0],
+            "rx": 0
+          }
+        },
+        {
+          "label": "forward",
+          "requestedYaw": 0,
+          "durationSeconds": 8,
+          "yawRadians": -0.040811391967808044,
+          "displacementMeters": 1.6686052046857613,
+          "forwardDisplacementMeters": 1.667550677519363,
+          "observedCommand": {
+            "velocity": [0.24000000953674316, 0.0, 0.0],
+            "posture": [0.0, 0.0, 0.0, 0.0],
+            "rx": 0
+          }
+        },
+        {
+          "label": "balance-after-forward",
+          "requestedYaw": 0,
+          "durationSeconds": 2,
+          "yawRadians": -0.013566212147462196,
+          "displacementMeters": 0.002580295361325676,
+          "forwardDisplacementMeters": 0.0021235865825292126,
+          "observedCommand": {
+            "velocity": [0.0, 0.0, 0.0],
+            "posture": [0.0, 0.0, 0.0, 0.0],
+            "rx": 0
+          }
+        },
+        {
+          "label": "turn",
+          "requestedYaw": 1,
+          "durationSeconds": 10,
+          "yawRadians": 10.01893815817441,
+          "displacementMeters": 0.011558506116820659,
+          "forwardDisplacementMeters": 0.00797993370460273,
+          "observedCommand": {
+            "velocity": [0.0, 0.0, 1.0],
+            "posture": [0.2617993950843811, 0.0, 0.0, 0.0],
+            "rx": -0.625
+          }
+        },
+        {
+          "label": "zero-command",
+          "requestedYaw": 0,
+          "durationSeconds": 2,
+          "yawRadians": -0.034567135389544035,
+          "displacementMeters": 0.011088890289173262,
+          "forwardDisplacementMeters": 0.006146657775834896,
+          "observedCommand": {
+            "velocity": [0.0, 0.0, 0.0],
+            "posture": [0.0, 0.0, 0.0, 0.0],
+            "rx": 0
+          }
+        }
+      ]
+    },
+    {
+      "afterForward": true,
+      "sign": -1,
+      "error": null,
+      "minHeight": 0.09914335823164662,
+      "maxTiltRadians": 0.0323504142437004,
+      "simulatedSeconds": 25.00000000000757,
+      "commands": [
+        {
+          "label": "balance",
+          "requestedYaw": 0,
+          "durationSeconds": 3,
+          "yawRadians": 0.0007540125312540213,
+          "displacementMeters": 0.0035125920897566506,
+          "forwardDisplacementMeters": 0.0029083998830377465,
+          "observedCommand": {
+            "velocity": [0.0, 0.0, 0.0],
+            "posture": [0.0, 0.0, 0.0, 0.0],
+            "rx": 0
+          }
+        },
+        {
+          "label": "forward",
+          "requestedYaw": 0,
+          "durationSeconds": 8,
+          "yawRadians": -0.040811391967808044,
+          "displacementMeters": 1.6686052046857613,
+          "forwardDisplacementMeters": 1.667550677519363,
+          "observedCommand": {
+            "velocity": [0.24000000953674316, 0.0, 0.0],
+            "posture": [0.0, 0.0, 0.0, 0.0],
+            "rx": 0
+          }
+        },
+        {
+          "label": "balance-after-forward",
+          "requestedYaw": 0,
+          "durationSeconds": 2,
+          "yawRadians": -0.013566212147462196,
+          "displacementMeters": 0.002580295361325676,
+          "forwardDisplacementMeters": 0.0021235865825292126,
+          "observedCommand": {
+            "velocity": [0.0, 0.0, 0.0],
+            "posture": [0.0, 0.0, 0.0, 0.0],
+            "rx": 0
+          }
+        },
+        {
+          "label": "turn",
+          "requestedYaw": -1,
+          "durationSeconds": 10,
+          "yawRadians": -10.047679835551012,
+          "displacementMeters": 0.02180532010136332,
+          "forwardDisplacementMeters": 0.011131267138677174,
+          "observedCommand": {
+            "velocity": [0.0, 0.0, -1.0],
+            "posture": [-0.2617993950843811, 0.0, 0.0, 0.0],
+            "rx": 0.625
+          }
+        },
+        {
+          "label": "zero-command",
+          "requestedYaw": 0,
+          "durationSeconds": 2,
+          "yawRadians": 0.08389259535048854,
+          "displacementMeters": 0.013236617910018105,
+          "forwardDisplacementMeters": -0.010643452714007986,
+          "observedCommand": {
+            "velocity": [0.0, 0.0, 0.0],
+            "posture": [0.0, 0.0, 0.0, 0.0],
+            "rx": 0
+          }
+        }
+      ]
+    }
+  ]
+}

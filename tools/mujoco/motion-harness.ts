@@ -8,6 +8,7 @@ import { createJumperWalkingController } from '../../libs/simulators/jumper/src/
 import { createWalkingController } from '../../libs/simulators/microduck-mujoco/src/lib/controller';
 import { loadJumperWalkingManifest } from '@botlab/simulators-jumper';
 import { loadMicroduckMujocoManifest } from '@botlab/simulators-microduck-mujoco';
+import type { ControllerFactory } from '@botlab/simulators-mujoco';
 
 export async function motionReference(
   robot: 'jumper' | 'microduck',
@@ -17,6 +18,7 @@ export async function motionReference(
     yaw: number;
     durationSeconds: number;
   }>,
+  candidateFactory?: ControllerFactory,
 ) {
   const mj = await loadMujoco({
     locateFile: (name) => (name.endsWith('.wasm') ? wasmUrl : name),
@@ -27,7 +29,10 @@ export async function motionReference(
   const files = await fetchSimulationAssets(manifest);
   const world = new MujocoWorld(mj, manifest, files);
   const controller = await (
-    robot === 'jumper' ? createJumperWalkingController : createWalkingController
+    candidateFactory ??
+    (robot === 'jumper'
+      ? createJumperWalkingController
+      : createWalkingController)
   )(manifest, files);
   const results = [];
   try {
@@ -164,6 +169,7 @@ export async function motionReference(
 export async function measuredGoalReference(
   robot: 'jumper' | 'microduck',
   commands: import('@botlab/simulators-core').SimulationMotionGoal[],
+  candidateFactory?: ControllerFactory,
 ) {
   const { MotionGoal } =
     await import('../../libs/simulators/mujoco/src/lib/motion-goal');
@@ -176,15 +182,27 @@ export async function measuredGoalReference(
   const files = await fetchSimulationAssets(manifest);
   const world = new MujocoWorld(mj, manifest, files);
   const controller = await (
-    robot === 'jumper' ? createJumperWalkingController : createWalkingController
+    candidateFactory ??
+    (robot === 'jumper'
+      ? createJumperWalkingController
+      : createWalkingController)
   )(manifest, files);
   const results = [];
   try {
     for (const command of commands) {
-      const goal = new MotionGoal(command, world.feedback().timeSeconds);
+      const goal = new MotionGoal(
+        command,
+        world.feedback().timeSeconds,
+        controller.turnProfile,
+        controller.turnStopFraction,
+      );
       let result;
       let error: string | undefined;
       const start = world.feedback().timeSeconds;
+      let minHeight = Infinity,
+        maxTiltRadians = 0;
+      let previousYaw: number | undefined,
+        measuredYawRadians = 0;
       try {
         controller.validateVelocity(
           command.kind === 'distance'
@@ -198,8 +216,27 @@ export async function measuredGoalReference(
           world.setControllerTargets(out.targets);
           for (let i = 0; i < manifest.controller!.decimation; i++) {
             world.step();
-            controller.validateFeedback(world.feedback());
-            result = goal.update(world.feedback());
+            const feedback = world.feedback();
+            minHeight = Math.min(minHeight, feedback.rootPosition[2]);
+            const [w, x, y, z] = feedback.quaternion;
+            maxTiltRadians = Math.max(
+              maxTiltRadians,
+              Math.acos(Math.max(-1, Math.min(1, 1 - 2 * (x * x + y * y)))),
+            );
+            if (feedback.timeSeconds - start >= 1) {
+              const yaw = Math.atan2(
+                2 * (w * z + x * y),
+                1 - 2 * (y * y + z * z),
+              );
+              if (previousYaw !== undefined)
+                measuredYawRadians += Math.atan2(
+                  Math.sin(yaw - previousYaw),
+                  Math.cos(yaw - previousYaw),
+                );
+              previousYaw = yaw;
+            }
+            controller.validateFeedback(feedback);
+            result = goal.update(feedback);
             if (result) break;
           }
         }
@@ -214,6 +251,9 @@ export async function measuredGoalReference(
         end: world.feedback().rootPosition,
         quaternion: world.feedback().quaternion,
         intent: goal.intent(),
+        minHeight,
+        maxTiltRadians,
+        measuredYawRadians,
       });
       if (error) break;
     }

@@ -1,0 +1,625 @@
+{
+  "executedAt": "2026-10-12T22:18:27.762Z",
+  "kind": "BL-004 test-only yaw mapping; no exposed production capability",
+  "url": "https://botlab.localhost",
+  "candidateSha256": "9ae81897ca1db14e1e65a7a506101f33d97c1ab707230cd74c68c93d70769277",
+  "mapping": "Rx = yaw == 0 ? 0 : -sign(yaw)*(0.5+abs(yaw)/8); pinned Rx yaw band [0.5,1], range [-4,4]",
+  "toleranceRadians": 0.08726646259971647,
+  "goals": [
+    {
+      "afterForward": false,
+      "sign": 1,
+      "run": 0,
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "error": "Error: El robot no avanza hacia el objetivo. Detén y reinicia la simulación.",
+          "duration": 12.723999999998387,
+          "end": [
+            0.012443160187126592, -0.10720471862615967, 0.10380225681766046
+          ],
+          "quaternion": [
+            0.7369812534250632, 0.0034793999189689337, 0.0021004318358141105,
+            0.6759009646851595
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0.65
+          },
+          "minHeight": 0.09916531928227187,
+          "maxTiltRadians": 0.03791134097703564,
+          "measuredYawRadians": 1.4830658285709841
+        }
+      ]
+    },
+    {
+      "afterForward": false,
+      "sign": 1,
+      "run": 1,
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "error": "Error: El robot no avanza hacia el objetivo. Detén y reinicia la simulación.",
+          "duration": 12.723999999998387,
+          "end": [
+            0.012443160187126592, -0.10720471862615967, 0.10380225681766046
+          ],
+          "quaternion": [
+            0.7369812534250632, 0.0034793999189689337, 0.0021004318358141105,
+            0.6759009646851595
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0.65
+          },
+          "minHeight": 0.09916531928227187,
+          "maxTiltRadians": 0.03791134097703564,
+          "measuredYawRadians": 1.4830658285709841
+        }
+      ]
+    },
+    {
+      "afterForward": false,
+      "sign": 1,
+      "run": 2,
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "error": "Error: El robot no avanza hacia el objetivo. Detén y reinicia la simulación.",
+          "duration": 12.723999999998387,
+          "end": [
+            0.012443160187126592, -0.10720471862615967, 0.10380225681766046
+          ],
+          "quaternion": [
+            0.7369812534250632, 0.0034793999189689337, 0.0021004318358141105,
+            0.6759009646851595
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0.65
+          },
+          "minHeight": 0.09916531928227187,
+          "maxTiltRadians": 0.03791134097703564,
+          "measuredYawRadians": 1.4830658285709841
+        }
+      ]
+    },
+    {
+      "afterForward": false,
+      "sign": -1,
+      "run": 0,
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "error": "Error: El robot no avanza hacia el objetivo. Detén y reinicia la simulación.",
+          "duration": 12.698999999998401,
+          "end": [
+            -0.04042876376106188, 0.13468443324495166, 0.10151294682554632
+          ],
+          "quaternion": [
+            0.7378466591769433, -0.004166117863583562, -0.0033212795496922066,
+            -0.6749473461726644
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": -0.65
+          },
+          "minHeight": 0.09902586913804497,
+          "maxTiltRadians": 0.03235038289433902,
+          "measuredYawRadians": -1.4831198164776556
+        }
+      ]
+    },
+    {
+      "afterForward": false,
+      "sign": -1,
+      "run": 1,
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "error": "Error: El robot no avanza hacia el objetivo. Detén y reinicia la simulación.",
+          "duration": 12.698999999998401,
+          "end": [
+            -0.04042876376106188, 0.13468443324495166, 0.10151294682554632
+          ],
+          "quaternion": [
+            0.7378466591769433, -0.004166117863583562, -0.0033212795496922066,
+            -0.6749473461726644
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": -0.65
+          },
+          "minHeight": 0.09902586913804497,
+          "maxTiltRadians": 0.03235038289433902,
+          "measuredYawRadians": -1.4831198164776556
+        }
+      ]
+    },
+    {
+      "afterForward": false,
+      "sign": -1,
+      "run": 2,
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "error": "Error: El robot no avanza hacia el objetivo. Detén y reinicia la simulación.",
+          "duration": 12.698999999998401,
+          "end": [
+            -0.04042876376106188, 0.13468443324495166, 0.10151294682554632
+          ],
+          "quaternion": [
+            0.7378466591769433, -0.004166117863583562, -0.0033212795496922066,
+            -0.6749473461726644
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": -0.65
+          },
+          "minHeight": 0.09902586913804497,
+          "maxTiltRadians": 0.03235038289433902,
+          "measuredYawRadians": -1.4831198164776556
+        }
+      ]
+    },
+    {
+      "afterForward": true,
+      "sign": 1,
+      "run": 0,
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.5,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 4.239999999999751,
+            "displacementMeters": 0.4890323564133108,
+            "yawRadians": -0.01871943401826624,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.48898883507686536
+          },
+          "duration": 4.239999999999751,
+          "end": [
+            0.49187974807422435, -0.004151518768983883, 0.10219770103059578
+          ],
+          "quaternion": [
+            0.99993226604915, 0.006007450635641016, 0.004811856941101678,
+            -0.008730399959472583
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.10096609888788345,
+          "maxTiltRadians": 0.03235038289433902,
+          "measuredYawRadians": -0.01871943401826624
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 8.344000000000815,
+            "displacementMeters": 0.03007995552938763,
+            "yawRadians": 1.4870261030332386,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 4.104000000001064,
+          "end": [
+            0.4832344118901742, -0.033509652489196275, 0.10267839006016204
+          ],
+          "quaternion": [
+            0.7424000052821358, 0.007281851901738026, 0.0014919115300419295,
+            0.669915652145816
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09820193852882493,
+          "maxTiltRadians": 0.02753726464805305,
+          "measuredYawRadians": 1.4870261030332386
+        }
+      ]
+    },
+    {
+      "afterForward": true,
+      "sign": 1,
+      "run": 1,
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.5,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 4.239999999999751,
+            "displacementMeters": 0.4890323564133108,
+            "yawRadians": -0.01871943401826624,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.48898883507686536
+          },
+          "duration": 4.239999999999751,
+          "end": [
+            0.49187974807422435, -0.004151518768983883, 0.10219770103059578
+          ],
+          "quaternion": [
+            0.99993226604915, 0.006007450635641016, 0.004811856941101678,
+            -0.008730399959472583
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.10096609888788345,
+          "maxTiltRadians": 0.03235038289433902,
+          "measuredYawRadians": -0.01871943401826624
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 8.344000000000815,
+            "displacementMeters": 0.03007995552938763,
+            "yawRadians": 1.4870261030332386,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 4.104000000001064,
+          "end": [
+            0.4832344118901742, -0.033509652489196275, 0.10267839006016204
+          ],
+          "quaternion": [
+            0.7424000052821358, 0.007281851901738026, 0.0014919115300419295,
+            0.669915652145816
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09820193852882493,
+          "maxTiltRadians": 0.02753726464805305,
+          "measuredYawRadians": 1.4870261030332386
+        }
+      ]
+    },
+    {
+      "afterForward": true,
+      "sign": 1,
+      "run": 2,
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.5,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 4.239999999999751,
+            "displacementMeters": 0.4890323564133108,
+            "yawRadians": -0.01871943401826624,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.48898883507686536
+          },
+          "duration": 4.239999999999751,
+          "end": [
+            0.49187974807422435, -0.004151518768983883, 0.10219770103059578
+          ],
+          "quaternion": [
+            0.99993226604915, 0.006007450635641016, 0.004811856941101678,
+            -0.008730399959472583
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.10096609888788345,
+          "maxTiltRadians": 0.03235038289433902,
+          "measuredYawRadians": -0.01871943401826624
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": 1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 8.344000000000815,
+            "displacementMeters": 0.03007995552938763,
+            "yawRadians": 1.4870261030332386,
+            "targetYawRadians": 1.5707963267948966
+          },
+          "duration": 4.104000000001064,
+          "end": [
+            0.4832344118901742, -0.033509652489196275, 0.10267839006016204
+          ],
+          "quaternion": [
+            0.7424000052821358, 0.007281851901738026, 0.0014919115300419295,
+            0.669915652145816
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.09820193852882493,
+          "maxTiltRadians": 0.02753726464805305,
+          "measuredYawRadians": 1.4870261030332386
+        }
+      ]
+    },
+    {
+      "afterForward": true,
+      "sign": -1,
+      "run": 0,
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.5,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 4.239999999999751,
+            "displacementMeters": 0.4890323564133108,
+            "yawRadians": -0.01871943401826624,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.48898883507686536
+          },
+          "duration": 4.239999999999751,
+          "end": [
+            0.49187974807422435, -0.004151518768983883, 0.10219770103059578
+          ],
+          "quaternion": [
+            0.99993226604915, 0.006007450635641016, 0.004811856941101678,
+            -0.008730399959472583
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.10096609888788345,
+          "maxTiltRadians": 0.03235038289433902,
+          "measuredYawRadians": -0.01871943401826624
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "error": "Error: El robot no avanza hacia el objetivo. Detén y reinicia la simulación.",
+          "duration": 12.974999999998307,
+          "end": [0.485973657211182, 0.09851260124100147, 0.1032227068609919],
+          "quaternion": [
+            0.7308846791525125, 0.0005732436271142597, 0.00004025183911812672,
+            -0.6825007366674866
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": -0.65
+          },
+          "minHeight": 0.09822375186912531,
+          "maxTiltRadians": 0.03732407193185832,
+          "measuredYawRadians": -1.483523191384529
+        }
+      ]
+    },
+    {
+      "afterForward": true,
+      "sign": -1,
+      "run": 1,
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.5,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 4.239999999999751,
+            "displacementMeters": 0.4890323564133108,
+            "yawRadians": -0.01871943401826624,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.48898883507686536
+          },
+          "duration": 4.239999999999751,
+          "end": [
+            0.49187974807422435, -0.004151518768983883, 0.10219770103059578
+          ],
+          "quaternion": [
+            0.99993226604915, 0.006007450635641016, 0.004811856941101678,
+            -0.008730399959472583
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.10096609888788345,
+          "maxTiltRadians": 0.03235038289433902,
+          "measuredYawRadians": -0.01871943401826624
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "error": "Error: El robot no avanza hacia el objetivo. Detén y reinicia la simulación.",
+          "duration": 12.974999999998307,
+          "end": [0.485973657211182, 0.09851260124100147, 0.1032227068609919],
+          "quaternion": [
+            0.7308846791525125, 0.0005732436271142597, 0.00004025183911812672,
+            -0.6825007366674866
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": -0.65
+          },
+          "minHeight": 0.09822375186912531,
+          "maxTiltRadians": 0.03732407193185832,
+          "measuredYawRadians": -1.483523191384529
+        }
+      ]
+    },
+    {
+      "afterForward": true,
+      "sign": -1,
+      "run": 2,
+      "robot": "jumper",
+      "manifestId": "jumper-walking",
+      "results": [
+        {
+          "command": {
+            "kind": "distance",
+            "distanceMeters": 0.5,
+            "speed": 0.24,
+            "timeoutSeconds": 60
+          },
+          "result": {
+            "status": "completed",
+            "evidence": "simulator",
+            "level": "closed-loop-policy",
+            "timeSeconds": 4.239999999999751,
+            "displacementMeters": 0.4890323564133108,
+            "yawRadians": -0.01871943401826624,
+            "targetDistanceMeters": 0.5,
+            "forwardDisplacementMeters": 0.48898883507686536
+          },
+          "duration": 4.239999999999751,
+          "end": [
+            0.49187974807422435, -0.004151518768983883, 0.10219770103059578
+          ],
+          "quaternion": [
+            0.99993226604915, 0.006007450635641016, 0.004811856941101678,
+            -0.008730399959472583
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": 0
+          },
+          "minHeight": 0.10096609888788345,
+          "maxTiltRadians": 0.03235038289433902,
+          "measuredYawRadians": -0.01871943401826624
+        },
+        {
+          "command": {
+            "kind": "turn",
+            "angleRadians": -1.5707963267948966,
+            "speed": 1,
+            "timeoutSeconds": 45
+          },
+          "error": "Error: El robot no avanza hacia el objetivo. Detén y reinicia la simulación.",
+          "duration": 12.974999999998307,
+          "end": [0.485973657211182, 0.09851260124100147, 0.1032227068609919],
+          "quaternion": [
+            0.7308846791525125, 0.0005732436271142597, 0.00004025183911812672,
+            -0.6825007366674866
+          ],
+          "intent": {
+            "forward": 0,
+            "yaw": -0.65
+          },
+          "minHeight": 0.09822375186912531,
+          "maxTiltRadians": 0.03732407193185832,
+          "measuredYawRadians": -1.483523191384529
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "browser": "154.0.8037.98",
+  "turnsPassed": false
+}

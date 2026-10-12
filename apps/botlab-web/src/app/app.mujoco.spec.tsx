@@ -57,9 +57,8 @@ describe('MuJoCo in the primary workspace', () => {
     expect(editor().dataset.palette).toContain('botlab_microduck_walk_steps');
     expect(editor().dataset.palette).toContain('control_wait');
     expect(editor().dataset.palette).toContain('control_repeat');
-    expect(editor().dataset.palette).not.toContain(
-      'botlab_microduck_turn_left',
-    );
+    expect(editor().dataset.palette).toContain('botlab_microduck_turn_left');
+    expect(editor().dataset.palette).toContain('botlab_microduck_turn_right');
     const walking = editor().value.replace('>1<', '>2<');
     fireEvent.change(editor(), { target: { value: walking } });
     expect(backend().querySelectorAll('option')).toHaveLength(1);

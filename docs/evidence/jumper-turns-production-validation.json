@@ -1,0 +1,165 @@
+{
+  "executedAt": "2026-10-12T22:28:16.673Z",
+  "url": "http://127.0.0.1:4230",
+  "browser": "154.0.8037.98",
+  "production": true,
+  "errors": [],
+  "passed": true,
+  "execution": {
+    "targetId": "jumper-web-walking",
+    "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"botlab_microduck_walk_steps\" id=\"walk\"><field name=\"STEPS\">1</field><next><block type=\"control_repeat\" id=\"repeat\"><value name=\"TIMES\"><shadow type=\"math_whole_number\" id=\"Elu@`gyHfuNPqr5$Fe^s\"><field name=\"NUM\">2</field></shadow></value><statement name=\"SUBSTACK\"><block type=\"botlab_microduck_turn_left\" id=\"left\"><next><block type=\"botlab_microduck_turn_right\" id=\"right\"></block></next></block></statement></block></next></block></next></block></xml>",
+    "status": "completed",
+    "startedAt": "2026-10-12T22:28:26.799Z",
+    "manifestId": "jumper-walking",
+    "modelRevision": "78966f45de6f2b6de3f7cea017f32a39f8b993e6",
+    "mujocoVersion": "3.11.0",
+    "trace": [
+      {
+        "commandId": "velocity-0",
+        "sourceBlockId": "walk",
+        "result": {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 4.239999999999751,
+          "displacementMeters": 0.4890323564133108,
+          "yawRadians": -0.01871943401826624,
+          "targetDistanceMeters": 0.5,
+          "forwardDisplacementMeters": 0.48898883507686536
+        }
+      },
+      {
+        "commandId": "velocity-1",
+        "sourceBlockId": "repeat",
+        "iterations": [
+          {
+            "sourceBlockId": "repeat",
+            "iteration": 1,
+            "count": 2
+          }
+        ],
+        "result": {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 4.240999999999751,
+          "displacementMeters": 0.000007090174134493569,
+          "yawRadians": 0.000004110784912723236
+        }
+      },
+      {
+        "commandId": "velocity-2",
+        "sourceBlockId": "left",
+        "iterations": [
+          {
+            "sourceBlockId": "repeat",
+            "iteration": 1,
+            "count": 2
+          }
+        ],
+        "result": {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 7.984000000001001,
+          "displacementMeters": 0.036817108622692274,
+          "yawRadians": 1.4895135919648497,
+          "targetYawRadians": 1.5707963267948966
+        }
+      },
+      {
+        "commandId": "velocity-3",
+        "sourceBlockId": "right",
+        "iterations": [
+          {
+            "sourceBlockId": "repeat",
+            "iteration": 1,
+            "count": 2
+          }
+        ],
+        "result": {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 12.552999999998482,
+          "displacementMeters": 0.03058482713004285,
+          "yawRadians": -1.5210484690998995,
+          "targetYawRadians": -1.5707963267948966
+        }
+      },
+      {
+        "commandId": "velocity-4",
+        "sourceBlockId": "repeat",
+        "iterations": [
+          {
+            "sourceBlockId": "repeat",
+            "iteration": 2,
+            "count": 2
+          }
+        ],
+        "result": {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 12.55599999999848,
+          "displacementMeters": 0.000007845226460638928,
+          "yawRadians": -0.000042171363885352975
+        }
+      },
+      {
+        "commandId": "velocity-5",
+        "sourceBlockId": "left",
+        "iterations": [
+          {
+            "sourceBlockId": "repeat",
+            "iteration": 2,
+            "count": 2
+          }
+        ],
+        "result": {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 15.945999999996602,
+          "displacementMeters": 0.017907109259438003,
+          "yawRadians": 1.5192108038701033,
+          "targetYawRadians": 1.5707963267948966
+        }
+      },
+      {
+        "commandId": "velocity-6",
+        "sourceBlockId": "right",
+        "iterations": [
+          {
+            "sourceBlockId": "repeat",
+            "iteration": 2,
+            "count": 2
+          }
+        ],
+        "result": {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 19.554000000000915,
+          "displacementMeters": 0.023708020844839157,
+          "yawRadians": -1.5152638215635559,
+          "targetYawRadians": -1.5707963267948966
+        }
+      }
+    ],
+    "outcome": {
+      "executionId": "runtime-869dce46-7734164a-d2a8ed30-e81e1907-mujoco-program-1",
+      "program": {
+        "programId": "jumper-web-walking",
+        "targetId": "jumper-web-walking",
+        "revision": "{\"commands\":[{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-0\",\"inputs\":{\"distanceMeters\":0.5,\"speed\":0.24,\"timeoutSeconds\":27.5},\"sourceBlockId\":\"walk\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"wait\",\"id\":\"velocity-1\",\"inputs\":{\"durationSeconds\":0},\"iterations\":[{\"count\":2,\"iteration\":1,\"sourceBlockId\":\"repeat\"}],\"sourceBlockId\":\"repeat\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"turn\",\"id\":\"velocity-2\",\"inputs\":{\"angleRadians\":1.5707963267948966,\"speed\":1,\"timeoutSeconds\":45},\"iterations\":[{\"count\":2,\"iteration\":1,\"sourceBlockId\":\"repeat\"}],\"sourceBlockId\":\"left\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"turn\",\"id\":\"velocity-3\",\"inputs\":{\"angleRadians\":-1.5707963267948966,\"speed\":1,\"timeoutSeconds\":45},\"iterations\":[{\"count\":2,\"iteration\":1,\"sourceBlockId\":\"repeat\"}],\"sourceBlockId\":\"right\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"wait\",\"id\":\"velocity-4\",\"inputs\":{\"durationSeconds\":0},\"iterations\":[{\"count\":2,\"iteration\":2,\"sourceBlockId\":\"repeat\"}],\"sourceBlockId\":\"repeat\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"turn\",\"id\":\"velocity-5\",\"inputs\":{\"angleRadians\":1.5707963267948966,\"speed\":1,\"timeoutSeconds\":45},\"iterations\":[{\"count\":2,\"iteration\":2,\"sourceBlockId\":\"repeat\"}],\"sourceBlockId\":\"left\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"turn\",\"id\":\"velocity-6\",\"inputs\":{\"angleRadians\":-1.5707963267948966,\"speed\":1,\"timeoutSeconds\":45},\"iterations\":[{\"count\":2,\"iteration\":2,\"sourceBlockId\":\"repeat\"}],\"sourceBlockId\":\"right\",\"targetId\":\"jumper-web-walking\"}],\"requiredPolicyIds\":[]}"
+      },
+      "status": "completed",
+      "evidence": "simulator"
+    },
+    "finishedAt": "2026-10-12T22:28:46.422Z"
+  },
+  "cancelledDuring": "left turn after forward",
+  "pausedTime": "Tiempo simulado: 4.780 s · tick 4780",
+  "workersAfterClose": 0
+}

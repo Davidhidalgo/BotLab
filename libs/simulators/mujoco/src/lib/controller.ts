@@ -17,6 +17,10 @@ export interface ControllerOutput {
   kd?: number[];
 }
 export interface SimulationController {
+  /** Robot-specific approach speed; measured stopping and tolerances stay shared. */
+  turnProfile?: 'constant' | 'tapered';
+  /** Fraction of angular tolerance at which braking begins; default 0.45. */
+  turnStopFraction?: number;
   validateFeedback(feedback: ControllerFeedback): void;
   validateVelocity(velocity: { forward: number; yaw: number }): void;
   infer(

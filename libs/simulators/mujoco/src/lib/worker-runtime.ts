@@ -322,7 +322,12 @@ export function installSimulationWorker(createController?: ControllerFactory) {
                 throw new Error(
                   'Este robot no dispone de control de movimiento.',
                 );
-              const goal = new MotionGoal(c, frame().timeSeconds);
+              const goal = new MotionGoal(
+                c,
+                frame().timeSeconds,
+                controller.turnProfile,
+                controller.turnStopFraction,
+              );
               controller.validateVelocity(
                 c.kind === 'distance'
                   ? { forward: c.speed, yaw: 0 }

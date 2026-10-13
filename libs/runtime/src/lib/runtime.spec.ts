@@ -1155,11 +1155,14 @@ describe('bounded conditional command flow', () => {
       [],
     );
     const session = runtime.createSession({ id: 'timeout' });
-    const artifact = plan();
+    const artifact = {
+      ...plan(),
+      commands: plan().commands as CompiledCommand[],
+    };
     artifact.commands[0] = {
       ...artifact.commands[0],
-      flow: { ...artifact.commands[0].flow, maxFalseChecks: 3 },
-    } as (typeof artifact.commands)[0];
+      flow: { whenTrue: 2, whenFalse: 1, maxFalseChecks: 3 },
+    };
     for (let i = 1; i <= 2; i++) {
       expect(
         runtime.loadCompiledBehavior(session.id, artifact).validation.valid,

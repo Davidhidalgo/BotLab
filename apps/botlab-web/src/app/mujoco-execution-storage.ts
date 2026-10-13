@@ -261,6 +261,22 @@ export function decodeMujocoExecution(
           capturedAtSeconds: p.capturedAtSeconds,
         };
       }
+      if (result.bodyPitch !== undefined) {
+        const p = result.bodyPitch;
+        if (
+          !record(p) ||
+          typeof p.targetRadians !== 'number' ||
+          ![0, -0.1].includes(p.targetRadians) ||
+          typeof p.observedRadians !== 'number' ||
+          !Number.isFinite(p.observedRadians) ||
+          Math.abs(p.observedRadians - p.targetRadians) > 0.025
+        )
+          throw new Error('Invalid saved body pitch.');
+        checked.bodyPitch = {
+          targetRadians: p.targetRadians,
+          observedRadians: p.observedRadians,
+        };
+      }
       if (result.skill !== undefined) {
         const v = result.skill;
         if (

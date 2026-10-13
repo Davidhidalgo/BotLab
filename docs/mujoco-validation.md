@@ -319,3 +319,11 @@ BL-032 integrates the official jump ONNX (167 observations, 20 actions, SHA `182
 The shared skill goal requires at least 0.04 s with zero contacts and 3 cm body-height gain, then current contact, upright height and the usual 0.8 s rest window. Failure to observe flight cannot produce a successful jump.
 
 [Other-mode audit](evidence/jumper-skills-probe.json) exercises official pincher, gesture, dance and locomotion-pitch modes with each policy’s dimensions and dynamic gains. Pincher entry is not a verified grasp; a gesture’s stable mode is not a verified completed semantic action. The long dances (up to 235.68 s reference duration) were probed only for entry/initial dynamics and are not enabled. Control modifiers use concrete keys (`key_left_ctrl`), not the aggregate modifier alias. These observations retain pending acceptance criteria in BL-029.
+
+## Jumper measured backward body pitch — 2026-10-13
+
+BL-033 exposes backward tilt (−0.1 rad) and level (0), independently of head orientation and body yaw. The official Ry posture input remains active while balancing and subsequent movement; reset clears it. Arrival requires observed quaternion pitch within 0.025 rad and angular speed ≤0.1 rad/s for 0.4 s, with an eight-second deadline. [Compiled-editor acceptance](evidence/jumper-body-workbench.json) covers both offered targets, 15 cm advance, reload, cancellation and explicit rejection of jumping while inclined. MicroDuck rejects this block.
+
+Positive pitch is deliberately not exposed. [Exact-controller calibration](evidence/jumper-body-pitch-probe.json) tried 0.05, 0.08, 0.1 and 0.12 rad from cold start and 0.1 after balance. None reached the required stable window; the 0.1 trial oscillated materially despite a plausible single snapshot in the initial mode audit. No arrival tolerance or model physics was relaxed. This remains an unresolved direction of BL-033. The controller’s internal bounded posture input remains available to reproduce the probe; the public worker/adapter/XML path accepts only backward/level.
+
+Repeated invalidations now preserve Jumper’s interrupted-skill reset requirement: a second pause arriving before a cancelled inference settles cannot silently clear the latch.

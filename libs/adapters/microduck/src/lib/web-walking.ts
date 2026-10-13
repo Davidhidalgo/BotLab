@@ -217,6 +217,8 @@ export function compileMicroduckWalkingProgram(
 ): CompiledBehaviorArtifact {
   const expanded = expandWalkingProgram(steps, (s) => {
     if ('expression' in s) return;
+    if ('kind' in s && s.kind === 'body-pitch')
+      throw new Error('MicroDuck no tiene inclinación corporal validada.');
     if ('kind' in s && s.kind === 'skill') {
       if (!['kick-left', 'kick-right', 'ground-pick'].includes(s.skill))
         throw new Error('Unsupported skill.');
@@ -287,7 +289,7 @@ export function compileMicroduckWalkingProgram(
                 ? {}
                 : s.kind === 'posture'
                   ? { posture: s.posture }
-                  : s.kind === 'head-yaw'
+                  : s.kind === 'head-yaw' || s.kind === 'body-pitch'
                     ? { angleRadians: s.angleRadians }
                     : s.kind === 'condition'
                       ? { condition: s.condition }

@@ -127,6 +127,7 @@ export type SimulationSkill =
   | 'ground-pick'
   | 'jump';
 export interface SimulationCommandResult {
+  bodyPitch?: { targetRadians: number; observedRadians: number };
   skill?: {
     name: SimulationSkill;
     durationSeconds: number;
@@ -195,6 +196,7 @@ export type SimulationMotionGoal =
       timeoutSeconds: number;
     };
 export type SimulationCommand =
+  | { kind: 'body-pitch'; angleRadians: number }
   | { kind: 'skill'; name: SimulationSkill }
   | { kind: 'rest' }
   | { kind: 'observe-posture' }

@@ -19,3 +19,5 @@ Build with `pnpm nx build simulators-jumper`; run manifest rejection tests with 
 <!-- jump controller and resources from src/lib/walking-controller.ts and tools/mujoco/prepare-jumper-jump.py -->
 
 Separately pinned manifests add the official 167D/20D jump policy and use the same Rust/WASM state machine, reference trajectory and mode gains. A jump has fixed upstream parameters; no user height is advertised. The shared goal checks contact-free flight, height gain, landing contact and settled upright return before continuing. Cancelling an active jump freezes physics and requires explicit reset before further movement; it does not silently recover or finish the jump. Other bundle modes remain probe-only.
+
+The optional body-pitch channel exposes only backward (−0.1 rad) and level (0) through the adapter/worker. Positive targets failed stability calibration and remain probe-only. The target persists across ordinary pause/condition reads and movement; reset clears it. Jump requires explicit level first.

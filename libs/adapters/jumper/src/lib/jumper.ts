@@ -160,6 +160,20 @@ export function createJumperWalkingAdapter(
           commands: [
             ...numericCommandSchemas,
             {
+              id: 'body-pitch',
+              name: 'Inclinar cuerpo',
+              description: 'Inclinación medida del cuerpo.',
+              inputs: [
+                {
+                  name: 'angleRadians',
+                  type: 'number',
+                  min: -0.1,
+                  max: 0,
+                  required: true,
+                },
+              ],
+            },
+            {
               id: 'skill',
               name: 'Salto',
               description:
@@ -285,6 +299,11 @@ export function compileJumperWalkingProgram(
 ): CompiledBehaviorArtifact {
   const expanded = expandWalkingProgram(steps, (s) => {
     if ('expression' in s) return;
+    if ('kind' in s && s.kind === 'body-pitch') {
+      if (![0, -0.1].includes(s.angleRadians))
+        throw new Error('Unsupported body pitch.');
+      return;
+    }
     if ('kind' in s && s.kind === 'skill') {
       if (s.skill !== 'jump')
         throw new Error('Jumper no dispone de las habilidades de MicroDuck.');
@@ -363,7 +382,7 @@ export function compileJumperWalkingProgram(
                 ? {}
                 : s.kind === 'posture'
                   ? { posture: s.posture }
-                  : s.kind === 'head-yaw'
+                  : s.kind === 'head-yaw' || s.kind === 'body-pitch'
                     ? { angleRadians: s.angleRadians }
                     : s.kind === 'condition'
                       ? { condition: s.condition }

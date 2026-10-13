@@ -39,6 +39,7 @@ export type WalkingActionStep =
   | { sourceBlockId: string; kind: 'rest' }
   | { sourceBlockId: string; kind: 'posture'; posture: 'sit' | 'stand' }
   | { sourceBlockId: string; kind: 'head-yaw'; angleRadians: number }
+  | { sourceBlockId: string; kind: 'body-pitch'; angleRadians: number }
   | VelocityProgramStep
   | { sourceBlockId: string; kind: 'distance'; distanceMeters: number }
   | { sourceBlockId: string; kind: 'turn'; angleRadians: number }

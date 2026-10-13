@@ -26,6 +26,7 @@ export interface SimulationController {
   /** Optional robot-specific head channel, distinct from body turning. */
   setPosture?(posture: 'sit' | 'stand'): void;
   getPosture?(): 'sit' | 'stand' | 'transitioning';
+  setBodyPitch?(angleRadians: number): void;
   setHeadYaw?(angleRadians: number): void;
   /** Robot-specific approach speed; measured stopping and tolerances stay shared. */
   turnProfile?: 'constant' | 'tapered';

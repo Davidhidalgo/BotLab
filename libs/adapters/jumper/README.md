@@ -25,3 +25,5 @@ Jumper rejects MicroDuck sit/stand actions. Its body-height modes require their 
 Jumper compilation rejects posture predicates until its own posture observer is implemented.
 
 The adapter also compiles numeric expressions/variables, measured rest and the fixed `jump` skill. MicroDuck-specific skills remain rejected. The worker must observe flight and landing before the jump command completes.
+
+Body-pitch compilation accepts only −0.1 and 0 rad. MicroDuck rejects the action; no forward-tilt capability is claimed.

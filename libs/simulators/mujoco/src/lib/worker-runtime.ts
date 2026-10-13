@@ -1,3 +1,4 @@
+import { BodyPitchGoal } from './body-pitch-goal';
 import { SkillGoal } from './skill-goal';
 import { RestGoal } from './rest-goal';
 import loadMujoco from '@mujoco/mujoco';
@@ -49,6 +50,9 @@ export function installSimulationWorker(createController?: ControllerFactory) {
   let postureCommand:
     | { request: WorkerRequest; target: 'sit' | 'stand'; start: number }
     | undefined;
+  let bodyPitchGoal:
+    | { request: WorkerRequest; goal: BodyPitchGoal }
+    | undefined;
   let skillGoal: { request: WorkerRequest; goal: SkillGoal } | undefined;
   let restGoal: { request: WorkerRequest; goal: RestGoal } | undefined;
   let motionGoal: { request: WorkerRequest; goal: MotionGoal } | undefined;
@@ -72,6 +76,9 @@ export function installSimulationWorker(createController?: ControllerFactory) {
     return Math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z));
   }
   function cancelCommand() {
+    if (bodyPitchGoal)
+      reply(bodyPitchGoal.request, { error: 'Command cancelled.' });
+    bodyPitchGoal = undefined;
     if (skillGoal) reply(skillGoal.request, { error: 'Command cancelled.' });
     skillGoal = undefined;
     controller?.cancelSkill?.();
@@ -100,6 +107,23 @@ export function installSimulationWorker(createController?: ControllerFactory) {
   function inspectCommand() {
     const current = frame();
     if (controller) controller.validateFeedback(world!.feedback());
+    if (bodyPitchGoal) {
+      const active = bodyPitchGoal;
+      try {
+        const result = active.goal.update(world!.feedback());
+        if (result) {
+          bodyPitchGoal = undefined;
+          reply(active.request, { result });
+        }
+      } catch (error) {
+        bodyPitchGoal = undefined;
+        halt();
+        reply(active.request, {
+          error: error instanceof Error ? error.message : String(error),
+          frame: frame(),
+        });
+      }
+    }
     if (skillGoal) {
       const active = skillGoal;
       try {
@@ -377,6 +401,7 @@ export function installSimulationWorker(createController?: ControllerFactory) {
           case 'step':
             if (
               state === 'running' ||
+              bodyPitchGoal ||
               skillGoal ||
               restGoal ||
               postureCommand ||
@@ -398,6 +423,7 @@ export function installSimulationWorker(createController?: ControllerFactory) {
             break;
           case 'command': {
             if (
+              bodyPitchGoal ||
               skillGoal ||
               restGoal ||
               postureCommand ||
@@ -443,7 +469,17 @@ export function installSimulationWorker(createController?: ControllerFactory) {
               });
               return;
             }
-            if (c && 'kind' in c && c.kind === 'skill') {
+            if (c && 'kind' in c && c.kind === 'body-pitch') {
+              if (!controller?.setBodyPitch)
+                throw new Error('Body pitch is unavailable for this robot.');
+              const goal = new BodyPitchGoal(
+                c.angleRadians,
+                frame().timeSeconds,
+              );
+              halt();
+              controller.setBodyPitch(c.angleRadians);
+              bodyPitchGoal = { request, goal };
+            } else if (c && 'kind' in c && c.kind === 'skill') {
               if (!controller?.setSkill || !controller.isSkillRunning)
                 throw new Error('Skill is unavailable for this robot.');
               halt();

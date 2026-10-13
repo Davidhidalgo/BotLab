@@ -74,10 +74,12 @@ export const createJumperWalkingController: ControllerFactory = async (
   }
   let jump: { sent: boolean; entered: boolean } | undefined;
   let needsReset = false;
+  let bodyPitch = 0;
   let fsm: Fsm | undefined,
     version = 0,
     awaiting = false;
-  function reset() {
+  function reset(preservePose = false) {
+    if (!preservePose) bodyPitch = 0;
     version++;
     jump = undefined;
     needsReset = false;
@@ -86,6 +88,13 @@ export const createJumperWalkingController: ControllerFactory = async (
   }
   const empty: ControllerOutput = { targets: [], state: [] };
   return {
+    setBodyPitch(angle) {
+      if (needsReset)
+        throw new Error('Reinicia Jumper después de interrumpir un salto.');
+      if (!Number.isFinite(angle) || Math.abs(angle) > Math.PI / 9)
+        throw new Error('Unsupported body pitch.');
+      bodyPitch = angle;
+    },
     ...(jumpSession
       ? {
           setSkill(skill: import('@botlab/simulators-core').SimulationSkill) {
@@ -93,6 +102,8 @@ export const createJumperWalkingController: ControllerFactory = async (
               throw new Error(
                 'Reinicia Jumper después de interrumpir un salto.',
               );
+            if (bodyPitch !== 0)
+              throw new Error('Nivela el cuerpo de Jumper antes de saltar.');
             if (skill !== 'jump') throw new Error('Unsupported Jumper skill.');
             jump = { sent: false, entered: false };
           },
@@ -145,7 +156,8 @@ export const createJumperWalkingController: ControllerFactory = async (
       const axes = jumperWalkingAxes(velocity);
       current.setAxis('Ly', axes.Ly);
       current.setAxis('Rx', axes.Rx);
-      for (const axis of ['Lx', 'Ry', 'LT', 'RT']) current.setAxis(axis, 0);
+      for (const axis of ['Lx', 'LT', 'RT']) current.setAxis(axis, 0);
+      current.setAxis('Ry', -bodyPitch / (Math.PI / 9));
       current.setKey('key_space', !!jump && !jump.sent);
       if (jump) jump.sent = true;
       current.padFrame(now);
@@ -196,8 +208,9 @@ export const createJumperWalkingController: ControllerFactory = async (
     reset,
     invalidate() {
       if (awaiting) {
-        const interrupted = !!jump;
-        reset();
+        // Repeated pause/stop requests must not clear an interrupted-skill latch.
+        const interrupted = needsReset || !!jump;
+        reset(true);
         if (interrupted) needsReset = true;
       }
     },

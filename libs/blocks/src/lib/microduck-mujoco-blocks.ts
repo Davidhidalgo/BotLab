@@ -34,6 +34,10 @@ export function applyWebWalkingLocale(
       'Variables',
       'inclinarse hacia el suelo',
       'saltar',
+      'inclinar cuerpo %1',
+      'delante',
+      'nivelado',
+      'atrás',
     ],
     ca: [
       'Avançat',
@@ -54,6 +58,10 @@ export function applyWebWalkingLocale(
       'Variables',
       'inclinar-se cap a terra',
       'saltar',
+      'inclina el cos %1',
+      'endavant',
+      'anivellat',
+      'enrere',
     ],
     en: [
       'Advanced',
@@ -74,6 +82,10 @@ export function applyWebWalkingLocale(
       'Variables',
       'bow towards the ground',
       'jump',
+      'tilt body %1',
+      'forward',
+      'level',
+      'back',
     ],
   }[locale];
   for (const [i, key] of [
@@ -95,12 +107,32 @@ export function applyWebWalkingLocale(
     'VARIABLES',
     'GROUND_PICK',
     'JUMP',
+    'BODY_PITCH',
+    'FORWARD',
+    'LEVEL',
+    'BACK',
   ].entries())
     api.Msg[`BOTLAB_WEB_${key}`] = copy[i];
 }
 export function registerMicroduckMujocoBlocks(api: typeof ScratchBlocks) {
   if (api.Blocks['botlab_web_velocity']) return;
   api.defineBlocksWithJsonArray([
+    {
+      type: 'botlab_web_body_pitch',
+      message0: '%{BKY_BOTLAB_WEB_BODY_PITCH}',
+      args0: [
+        {
+          type: 'field_dropdown',
+          name: 'DIRECTION',
+          options: [
+            ['%{BKY_BOTLAB_WEB_LEVEL}', 'level'],
+            ['%{BKY_BOTLAB_WEB_BACK}', 'back'],
+          ],
+        },
+      ],
+      style: 'motion',
+      extensions: ['shape_statement'],
+    },
     {
       type: 'botlab_jumper_jump',
       message0: '%{BKY_BOTLAB_WEB_JUMP}',
@@ -260,6 +292,7 @@ const commonWalkingBlockTypes = [
   'botlab_web_velocity',
 ];
 export const jumperWalkingBlockTypes = [
+  'botlab_web_body_pitch',
   'botlab_jumper_jump',
   ...commonWalkingBlockTypes,
   'botlab_microduck_turn_left',
@@ -592,6 +625,21 @@ function readWalkingProgram(
       }
       if (type === 'botlab_jumper_jump') {
         steps.push({ sourceBlockId, kind: 'skill', skill: 'jump' });
+        continue;
+      }
+      if (type === 'botlab_web_body_pitch') {
+        const fields = children(current, 'field').filter(
+          (f) => f.getAttribute('name') === 'DIRECTION',
+        );
+        const direction = fields[0]?.textContent;
+        if (fields.length !== 1 || !['level', 'back'].includes(direction ?? ''))
+          throw new Error('Inclinación no válida.');
+        steps.push({
+          sourceBlockId,
+          kind: 'body-pitch',
+          angleRadians:
+            direction === 'forward' ? 0.1 : direction === 'back' ? -0.1 : 0,
+        });
         continue;
       }
       if (type === 'botlab_web_rest') {

@@ -376,3 +376,7 @@ La actividad [Sentarse, levantarse y avanzar](examples/microduck-mujoco-posture.
 - [Salto de Jumper](examples/jumper-mujoco-jump.botlab.json): salto fijo, aterrizaje confirmado y avance. El resultado muestra tiempo sin contactos y ascenso máximo observado. Si se cancela el salto, hay que reiniciar la simulación antes de volver a moverlo.
 
 Importa los archivos desde **Proyectos → Importar proyecto**. Las variables deben inicializarse antes de usarlas; dividir entre cero o calcular un movimiento fuera de sus límites detiene el programa con un error.
+
+<!-- activity from examples/jumper-mujoco-body.botlab.json -->
+
+[Jumper: inclinar atrás, nivelar y avanzar](examples/jumper-mujoco-body.botlab.json) separa postura, giro y salto. El resultado compara la inclinación observada con el objetivo. Antes de saltar se exige nivelar explícitamente; la dirección hacia delante sigue sin ofrecerse porque no superó la prueba de estabilidad.

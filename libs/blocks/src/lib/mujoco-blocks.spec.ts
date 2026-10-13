@@ -251,3 +251,19 @@ it('offers the fixed jump only for Jumper', () => {
   ]);
   expect(() => readMicroduckWalkingProgram(artifact)).toThrow(/compatible/);
 });
+
+it('keeps body tilt distinct from head orientation and robot capability', () => {
+  for (const [direction, angle] of [
+    ['level', 0],
+    ['back', -0.1],
+  ] as const) {
+    const artifact = {
+      ...microduckWalkingExample,
+      content: `<xml><block type="event_whenflagclicked" id="start"><next><block type="botlab_web_body_pitch" id="tilt"><field name="DIRECTION">${direction}</field></block></next></block></xml>`,
+    };
+    expect(readJumperWalkingProgram(artifact)).toEqual([
+      { sourceBlockId: 'tilt', kind: 'body-pitch', angleRadians: angle },
+    ]);
+    expect(() => readMicroduckWalkingProgram(artifact)).toThrow(/compatible/);
+  }
+});

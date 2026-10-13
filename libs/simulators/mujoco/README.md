@@ -53,3 +53,5 @@ Posture observation pauses the worker, validates current feedback and reads the 
 Optional controller skill hooks run under the same exclusive/cancellable command lifecycle. `SkillGoal` requires at least 0.15 rad joint excursion, completion of the policy window, upright return and `RestGoal` confirmation; its total deadline is ten seconds. Results identify the skill and observed duration/excursion, without claiming contact with a ball or pickup of an object.
 
 For the optional jump, `SkillGoal` additionally requires ≥0.04 s with zero MuJoCo contacts and ≥3 cm vertical gain, then contact and upright measured rest. `MujocoWorld.contactCount()` reads the current solver contact count only; it does not modify physics. Zero contacts conservatively proves absence of all contacts, including self contacts.
+
+`BodyPitchGoal` confirms quaternion pitch within 0.025 rad and angular speed ≤0.1 rad/s for 0.4 s, with an eight-second timeout and the shared cancellation path. Its offered targets are backward/level only.

@@ -174,3 +174,31 @@ it('requires saved flight evidence for a completed jump', () => {
       }),
     ).toThrow();
 });
+
+it('restores body pitch only when observation supports the target', () => {
+  const result = {
+    status: 'completed',
+    evidence: 'simulator',
+    level: 'closed-loop-policy',
+    timeSeconds: 2,
+    bodyPitch: { targetRadians: -0.1, observedRadians: -0.095 },
+  };
+  expect(
+    decode({ ...saved, trace: [{ sourceBlockId: 'tilt', result }] }).trace[0]
+      .result,
+  ).toEqual(result);
+  expect(() =>
+    decode({
+      ...saved,
+      trace: [
+        {
+          sourceBlockId: 'tilt',
+          result: {
+            ...result,
+            bodyPitch: { targetRadians: 0.1, observedRadians: 0 },
+          },
+        },
+      ],
+    }),
+  ).toThrow();
+});

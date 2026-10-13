@@ -211,3 +211,7 @@ MicroDuck preparation now adds separately pinned skill manifests with kick-left,
 `python3 tools/mujoco/prepare-jumper-skills-probe.py` prepares verified probe-only models from the cached bundle; `node tools/mujoco/probe-jumper-skills.mjs` audits mode entry, dynamics and return without enabling product blocks. Gesture/pincer entry is not a complete action test; long dances need full-duration acceptance. `BOTLAB_PROBE_SKILLS=jump,jump-cold` selects the focused startup/settled jump cases.
 
 Normal Jumper preparation adds a separate pinned jump manifest. `node tools/mujoco/verify-jump.mjs` imports the fixed-jump example, checks observed flight/landing and subsequent advance, persists results, cancels in flight, verifies explicit reset is required and reruns successfully after reset.
+
+<!-- body-pitch calibration and acceptance from body-pitch-harness.ts, probe-body-pitch.mjs and verify-body-pitch.mjs -->
+
+`node tools/mujoco/probe-body-pitch.mjs` reproduces positive/negative exact-controller calibration. `node tools/mujoco/verify-body-pitch.mjs` checks the supported backward/level sequence, later advance, persistence/cancellation and the explicit level precondition for jumping. Positive pitch remains outside the public palette.

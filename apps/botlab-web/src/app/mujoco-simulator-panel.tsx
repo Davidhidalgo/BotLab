@@ -168,54 +168,61 @@ export default function MujocoSimulatorPanel({
                                 | 'sit'
                                 | 'stand',
                             }
-                          : command.commandId === 'head-yaw'
+                          : command.commandId === 'body-pitch'
                             ? {
-                                kind: 'head-yaw',
+                                kind: 'body-pitch',
                                 angleRadians: Number(
                                   command.inputs['angleRadians'],
                                 ),
                               }
-                            : command.commandId === 'distance'
+                            : command.commandId === 'head-yaw'
                               ? {
-                                  kind: 'distance',
-                                  distanceMeters: Number(
-                                    command.inputs['distanceMeters'],
-                                  ),
-                                  speed: Number(command.inputs['speed']),
-                                  timeoutSeconds: Number(
-                                    command.inputs['timeoutSeconds'],
+                                  kind: 'head-yaw',
+                                  angleRadians: Number(
+                                    command.inputs['angleRadians'],
                                   ),
                                 }
-                              : command.commandId === 'turn'
+                              : command.commandId === 'distance'
                                 ? {
-                                    kind: 'turn',
-                                    angleRadians: Number(
-                                      command.inputs['angleRadians'],
+                                    kind: 'distance',
+                                    distanceMeters: Number(
+                                      command.inputs['distanceMeters'],
                                     ),
                                     speed: Number(command.inputs['speed']),
                                     timeoutSeconds: Number(
                                       command.inputs['timeoutSeconds'],
                                     ),
                                   }
-                                : command.commandId === 'wait'
+                                : command.commandId === 'turn'
                                   ? {
-                                      kind: 'velocity',
-                                      forward: 0,
-                                      yaw: 0,
-                                      durationSeconds: Number(
-                                        command.inputs['durationSeconds'],
+                                      kind: 'turn',
+                                      angleRadians: Number(
+                                        command.inputs['angleRadians'],
+                                      ),
+                                      speed: Number(command.inputs['speed']),
+                                      timeoutSeconds: Number(
+                                        command.inputs['timeoutSeconds'],
                                       ),
                                     }
-                                  : {
-                                      kind: 'velocity',
-                                      forward: Number(
-                                        command.inputs['forward'],
-                                      ),
-                                      yaw: Number(command.inputs['yaw']),
-                                      durationSeconds: Number(
-                                        command.inputs['durationSeconds'],
-                                      ),
-                                    }
+                                  : command.commandId === 'wait'
+                                    ? {
+                                        kind: 'velocity',
+                                        forward: 0,
+                                        yaw: 0,
+                                        durationSeconds: Number(
+                                          command.inputs['durationSeconds'],
+                                        ),
+                                      }
+                                    : {
+                                        kind: 'velocity',
+                                        forward: Number(
+                                          command.inputs['forward'],
+                                        ),
+                                        yaw: Number(command.inputs['yaw']),
+                                        durationSeconds: Number(
+                                          command.inputs['durationSeconds'],
+                                        ),
+                                      }
                   : {
                       joint: String(command.inputs['joint']),
                       positionRadians: Number(
@@ -788,6 +795,22 @@ export default function MujocoSimulatorPanel({
               ? copy.sitting
               : copy.standing}{' '}
             · {(entry.result.posture!.heightMeters * 100).toFixed(1)} cm
+          </p>
+        ))}
+      {commandTrace
+        .filter((e) => e.result.bodyPitch)
+        .map((entry) => (
+          <p key={entry.commandId} className="px-4 text-sm">
+            {copy.bodyPitch}:{' '}
+            {(
+              (entry.result.bodyPitch!.observedRadians * 180) /
+              Math.PI
+            ).toFixed(1)}
+            ° /{' '}
+            {((entry.result.bodyPitch!.targetRadians * 180) / Math.PI).toFixed(
+              1,
+            )}
+            °
           </p>
         ))}
       {commandTrace

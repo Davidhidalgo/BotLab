@@ -1,0 +1,76 @@
+{
+  "date": "2026-10-13T00:56:56.143Z",
+  "browser": "155.0.8059.40",
+  "results": [
+    {
+      "robot": "jumper",
+      "run": {
+        "targetId": "jumper-web-walking",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"botlab_web_body_pitch\" id=\"back\"><field name=\"DIRECTION\">back</field><next><block type=\"botlab_web_body_pitch\" id=\"level\"><field name=\"DIRECTION\">level</field><next><block type=\"botlab_web_advance_cm\" id=\"advance\"><field name=\"CM\">15</field></block></next></block></next></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:56:29.785Z",
+        "manifestId": "jumper-walking-jump",
+        "modelRevision": "78966f45de6f2b6de3f7cea017f32a39f8b993e6",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@1",
+            "sourceBlockId": "back",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 1.1129999999999882,
+              "bodyPitch": {
+                "targetRadians": -0.1,
+                "observedRadians": -0.09015130347573722
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@2",
+            "sourceBlockId": "level",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 2.7129999999998122,
+              "bodyPitch": {
+                "targetRadians": 0,
+                "observedRadians": -0.006066694751357156
+              }
+            }
+          },
+          {
+            "commandId": "velocity-2@3",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 5.332000000000115,
+              "displacementMeters": 0.15182156681075676,
+              "yawRadians": 0.026975828085797363,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.15179910845360411
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-f83a3d97-869cc1be-dbaf2c09-de87d1c4-mujoco-program-1",
+          "program": {
+            "programId": "jumper-web-walking",
+            "targetId": "jumper-web-walking",
+            "revision": "{\"commands\":[{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"body-pitch\",\"id\":\"velocity-0\",\"inputs\":{\"angleRadians\":-0.1},\"sourceBlockId\":\"back\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"body-pitch\",\"id\":\"velocity-1\",\"inputs\":{\"angleRadians\":0},\"sourceBlockId\":\"level\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-2\",\"inputs\":{\"distanceMeters\":0.15,\"speed\":0.24,\"timeoutSeconds\":18.75},\"sourceBlockId\":\"advance\",\"targetId\":\"jumper-web-walking\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:56:35.209Z"
+      },
+      "cancelled": true,
+      "tiltedJumpRejected": true
+    }
+  ],
+  "errors": []
+}

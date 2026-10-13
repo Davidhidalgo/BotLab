@@ -1,0 +1,403 @@
+{
+  "date": "2026-10-13T00:34:42.428Z",
+  "browser": "154.0.8037.98",
+  "results": [
+    {
+      "robot": "microduck",
+      "run": {
+        "targetId": "microduck-mujoco-web",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"botlab_web_set_number\" id=\"initialize\"><field name=\"NAME\">contador</field><value name=\"VALUE\"><shadow type=\"math_number\" id=\"t!}z{3._)I%$EG;DGxI~\"><field name=\"NUM\">0</field></shadow></value><next><block type=\"control_repeat_until\" id=\"until\"><value name=\"CONDITION\"><block type=\"operator_equals\" id=\"compare\"><value name=\"OPERAND1\"><shadow type=\"math_number\" id=\"~b^~3A}ah7OyHke$E$M+\"><field name=\"NUM\">0</field></shadow><block type=\"botlab_web_number\" id=\"counter-value\"><field name=\"NAME\">contador</field></block></value><value name=\"OPERAND2\"><shadow type=\"math_number\" id=\"{`y~3F6(:8BH#AMFfRqq\"><field name=\"NUM\">2</field></shadow></value></block></value><statement name=\"SUBSTACK\"><block type=\"botlab_web_advance_value\" id=\"advance\"><value name=\"CM\"><shadow type=\"math_number\" id=\"p!Dr(@$eos(qOMboGF;X\"><field name=\"NUM\">15</field></shadow><block type=\"operator_add\" id=\"sum\"><value name=\"NUM1\"><shadow type=\"math_number\" id=\"uYUDe0}Nn=]ZZR;b_O)7\"><field name=\"NUM\">10</field></shadow></value><value name=\"NUM2\"><shadow type=\"math_number\" id=\"Sn%_X..4YF{:~B]7ulcU\"><field name=\"NUM\">5</field></shadow></value></block></value><next><block type=\"botlab_web_change_number\" id=\"increment\"><field name=\"NAME\">contador</field><value name=\"VALUE\"><shadow type=\"math_number\" id=\"[p}h%[6W]+RVp%|g_n7#\"><field name=\"NUM\">1</field></shadow></value></block></next></block></statement></block></next></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:33:54.995Z",
+        "manifestId": "microduck-flat-ground-posture",
+        "modelRevision": "363b7effd4eae9f24dd1bb8bf647aef4d74edca9",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@1",
+            "sourceBlockId": "initialize",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "program-evaluation",
+              "timeSeconds": 0,
+              "variableChange": {
+                "name": "contador",
+                "value": 0
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@2",
+            "sourceBlockId": "compare",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "program-evaluation",
+              "timeSeconds": 0,
+              "decision": {
+                "condition": {
+                  "sourceBlockId": "compare",
+                  "comparison": "eq",
+                  "left": {
+                    "kind": "variable",
+                    "name": "contador"
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "value": 2
+                  }
+                },
+                "value": false,
+                "variables": [["contador", 0]]
+              }
+            }
+          },
+          {
+            "commandId": "velocity-2@3",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 3.5399999999999467,
+              "displacementMeters": 0.15136846669526036,
+              "yawRadians": -0.04610426334250334,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14990138734462066
+            }
+          },
+          {
+            "commandId": "velocity-3@4",
+            "sourceBlockId": "increment",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "program-evaluation",
+              "timeSeconds": 3.5399999999999467,
+              "variableChange": {
+                "name": "contador",
+                "value": 1
+              }
+            }
+          },
+          {
+            "commandId": "velocity-4@5",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 3.5449999999999466,
+              "displacementMeters": 0.000008772204823434948,
+              "yawRadians": 0.00016622684745023347
+            }
+          },
+          {
+            "commandId": "velocity-1@6",
+            "sourceBlockId": "compare",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "program-evaluation",
+              "timeSeconds": 3.5599999999999463,
+              "decision": {
+                "condition": {
+                  "sourceBlockId": "compare",
+                  "comparison": "eq",
+                  "left": {
+                    "kind": "variable",
+                    "name": "contador"
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "value": 2
+                  }
+                },
+                "value": false,
+                "variables": [["contador", 1]]
+              }
+            }
+          },
+          {
+            "commandId": "velocity-2@7",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 7.084999999999871,
+              "displacementMeters": 0.1485191048452994,
+              "yawRadians": 0.03594197281640165,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14735727974244517
+            }
+          },
+          {
+            "commandId": "velocity-3@8",
+            "sourceBlockId": "increment",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "program-evaluation",
+              "timeSeconds": 7.099999999999871,
+              "variableChange": {
+                "name": "contador",
+                "value": 2
+              }
+            }
+          },
+          {
+            "commandId": "velocity-4@9",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 7.104999999999871,
+              "displacementMeters": 0.000013734677928350668,
+              "yawRadians": 0.00026059006735734214
+            }
+          },
+          {
+            "commandId": "velocity-1@10",
+            "sourceBlockId": "compare",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "program-evaluation",
+              "timeSeconds": 7.11999999999987,
+              "decision": {
+                "condition": {
+                  "sourceBlockId": "compare",
+                  "comparison": "eq",
+                  "left": {
+                    "kind": "variable",
+                    "name": "contador"
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "value": 2
+                  }
+                },
+                "value": true,
+                "variables": [["contador", 2]]
+              }
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-99235604-277411dd-c0e35c4b-72fc0ab9-mujoco-program-1",
+          "program": {
+            "programId": "microduck-web-walking",
+            "targetId": "microduck-mujoco-web",
+            "revision": "{\"commands\":[{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"set-number\",\"id\":\"velocity-0\",\"inputs\":{\"expression\":{\"kind\":\"literal\",\"value\":0},\"name\":\"contador\"},\"sourceBlockId\":\"initialize\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"condition\",\"flow\":{\"whenFalse\":2,\"whenTrue\":5},\"id\":\"velocity-1\",\"inputs\":{\"condition\":{\"comparison\":\"eq\",\"left\":{\"kind\":\"variable\",\"name\":\"contador\"},\"right\":{\"kind\":\"literal\",\"value\":2},\"sourceBlockId\":\"compare\"}},\"sourceBlockId\":\"compare\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"distance-value\",\"id\":\"velocity-2\",\"inputs\":{\"expression\":{\"kind\":\"add\",\"left\":{\"kind\":\"literal\",\"value\":10},\"right\":{\"kind\":\"literal\",\"value\":5}},\"speed\":0.25},\"sourceBlockId\":\"advance\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"change-number\",\"id\":\"velocity-3\",\"inputs\":{\"expression\":{\"kind\":\"literal\",\"value\":1},\"name\":\"contador\"},\"sourceBlockId\":\"increment\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"wait\",\"flow\":{\"next\":1},\"id\":\"velocity-4\",\"inputs\":{\"durationSeconds\":0},\"sourceBlockId\":\"until\",\"targetId\":\"microduck-mujoco-web\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:34:02.105Z"
+      },
+      "rerunVariables": [0, 1, 2]
+    },
+    {
+      "robot": "jumper",
+      "run": {
+        "targetId": "jumper-web-walking",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"botlab_web_set_number\" id=\"initialize\"><field name=\"NAME\">contador</field><value name=\"VALUE\"><shadow type=\"math_number\" id=\"hJdFhPrx}MvhV(yv@ZYH\"><field name=\"NUM\">0</field></shadow></value><next><block type=\"control_repeat_until\" id=\"until\"><value name=\"CONDITION\"><block type=\"operator_equals\" id=\"compare\"><value name=\"OPERAND1\"><shadow type=\"math_number\" id=\"TI2n_Zl`PHId3X9y$.w.\"><field name=\"NUM\">0</field></shadow><block type=\"botlab_web_number\" id=\"counter-value\"><field name=\"NAME\">contador</field></block></value><value name=\"OPERAND2\"><shadow type=\"math_number\" id=\"q;Kt?gC7z7U5(e11bhcq\"><field name=\"NUM\">2</field></shadow></value></block></value><statement name=\"SUBSTACK\"><block type=\"botlab_web_advance_value\" id=\"advance\"><value name=\"CM\"><shadow type=\"math_number\" id=\"xHcaS3~Er)NA{@Oz(Wb9\"><field name=\"NUM\">15</field></shadow><block type=\"operator_add\" id=\"sum\"><value name=\"NUM1\"><shadow type=\"math_number\" id=\"303+-B^3K)^h7AZ6:_!@\"><field name=\"NUM\">10</field></shadow></value><value name=\"NUM2\"><shadow type=\"math_number\" id=\"Da7~JxM(#^%k1bq6|1`A\"><field name=\"NUM\">5</field></shadow></value></block></value><next><block type=\"botlab_web_change_number\" id=\"increment\"><field name=\"NAME\">contador</field><value name=\"VALUE\"><shadow type=\"math_number\" id=\"4b#s8{IM6Cm0L8jXy6k@\"><field name=\"NUM\">1</field></shadow></value></block></next></block></statement></block></next></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:34:27.393Z",
+        "manifestId": "jumper-walking",
+        "modelRevision": "78966f45de6f2b6de3f7cea017f32a39f8b993e6",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@1",
+            "sourceBlockId": "initialize",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "program-evaluation",
+              "timeSeconds": 0,
+              "variableChange": {
+                "name": "contador",
+                "value": 0
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@2",
+            "sourceBlockId": "compare",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "program-evaluation",
+              "timeSeconds": 0,
+              "decision": {
+                "condition": {
+                  "sourceBlockId": "compare",
+                  "comparison": "eq",
+                  "left": {
+                    "kind": "variable",
+                    "name": "contador"
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "value": 2
+                  }
+                },
+                "value": false,
+                "variables": [["contador", 0]]
+              }
+            }
+          },
+          {
+            "commandId": "velocity-2@3",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 2.5819999999998267,
+              "displacementMeters": 0.15280463659230828,
+              "yawRadians": -0.02714351233537888,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.15274954699894314
+            }
+          },
+          {
+            "commandId": "velocity-3@4",
+            "sourceBlockId": "increment",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "program-evaluation",
+              "timeSeconds": 2.5849999999998263,
+              "variableChange": {
+                "name": "contador",
+                "value": 1
+              }
+            }
+          },
+          {
+            "commandId": "velocity-4@5",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 2.585999999999826,
+              "displacementMeters": 0.0000018196431923332832,
+              "yawRadians": -0.0000135908948000682
+            }
+          },
+          {
+            "commandId": "velocity-1@6",
+            "sourceBlockId": "compare",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "program-evaluation",
+              "timeSeconds": 2.5899999999998258,
+              "decision": {
+                "condition": {
+                  "sourceBlockId": "compare",
+                  "comparison": "eq",
+                  "left": {
+                    "kind": "variable",
+                    "name": "contador"
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "value": 2
+                  }
+                },
+                "value": false,
+                "variables": [["contador", 1]]
+              }
+            }
+          },
+          {
+            "commandId": "velocity-2@7",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 5.178000000000064,
+              "displacementMeters": 0.1444800118365906,
+              "yawRadians": 0.028228456174422375,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14440001986525194
+            }
+          },
+          {
+            "commandId": "velocity-3@8",
+            "sourceBlockId": "increment",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "program-evaluation",
+              "timeSeconds": 5.1800000000000646,
+              "variableChange": {
+                "name": "contador",
+                "value": 2
+              }
+            }
+          },
+          {
+            "commandId": "velocity-4@9",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 5.181000000000065,
+              "displacementMeters": 0.00000199207654931693,
+              "yawRadians": -0.000009782579060644767
+            }
+          },
+          {
+            "commandId": "velocity-1@10",
+            "sourceBlockId": "compare",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "program-evaluation",
+              "timeSeconds": 5.185000000000066,
+              "decision": {
+                "condition": {
+                  "sourceBlockId": "compare",
+                  "comparison": "eq",
+                  "left": {
+                    "kind": "variable",
+                    "name": "contador"
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "value": 2
+                  }
+                },
+                "value": true,
+                "variables": [["contador", 2]]
+              }
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-e2fb8f66-49d6b9f7-81a3c7b6-ca35daeb-mujoco-program-1",
+          "program": {
+            "programId": "jumper-web-walking",
+            "targetId": "jumper-web-walking",
+            "revision": "{\"commands\":[{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"set-number\",\"id\":\"velocity-0\",\"inputs\":{\"expression\":{\"kind\":\"literal\",\"value\":0},\"name\":\"contador\"},\"sourceBlockId\":\"initialize\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"condition\",\"flow\":{\"whenFalse\":2,\"whenTrue\":5},\"id\":\"velocity-1\",\"inputs\":{\"condition\":{\"comparison\":\"eq\",\"left\":{\"kind\":\"variable\",\"name\":\"contador\"},\"right\":{\"kind\":\"literal\",\"value\":2},\"sourceBlockId\":\"compare\"}},\"sourceBlockId\":\"compare\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"distance-value\",\"id\":\"velocity-2\",\"inputs\":{\"expression\":{\"kind\":\"add\",\"left\":{\"kind\":\"literal\",\"value\":10},\"right\":{\"kind\":\"literal\",\"value\":5}},\"speed\":0.24},\"sourceBlockId\":\"advance\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"change-number\",\"id\":\"velocity-3\",\"inputs\":{\"expression\":{\"kind\":\"literal\",\"value\":1},\"name\":\"contador\"},\"sourceBlockId\":\"increment\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"wait\",\"flow\":{\"next\":1},\"id\":\"velocity-4\",\"inputs\":{\"durationSeconds\":0},\"sourceBlockId\":\"until\",\"targetId\":\"jumper-web-walking\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:34:32.696Z"
+      },
+      "rerunVariables": [0, 1, 2]
+    }
+  ],
+  "errors": []
+}

@@ -24,7 +24,7 @@ Run `nx test botlab-model` to execute the unit tests via [Vitest](https://vitest
 
 <!-- bounded conditional instructions from src/lib/velocity-program.ts and src/lib/botlab-model.ts -->
 
-Walking programs also accept `until` and `if` nodes with a `ProximityCondition` and optional else body for `if`. The complete source, including unselected branches, is validated before lowering. `ExpandedWalkingStep` retains branch offsets through `CommandFlow`: either `next` or `whenTrue`/`whenFalse`, bounded to the command list or its exit. Conditions lower to the shared `proximityCommandSchema` (5–400 cm in SI inputs). Dynamic execution remains in the runtime; the adapter still supplies robot-specific movement limits and speeds. General expressions remain outside this subset.
+Walking programs also accept `until` and `if` nodes with a `WalkingCondition` and optional else body for `if`. The complete source, including unselected branches, is validated before lowering. `ExpandedWalkingStep` retains branch offsets through `CommandFlow`: either `next` or `whenTrue`/`whenFalse`, bounded to the command list or its exit. Conditions lower to the shared `proximityCommandSchema` (5–400 cm in SI inputs). Dynamic execution remains in the runtime; the adapter still supplies robot-specific movement limits and speeds. Compound predicates use the shared condition schema. Numeric comparisons may use variables and sensor values.
 
 `wait-until` lowers to a fresh predicate followed by half-second balance waits. Its explicit 0.5–30 s timeout becomes `maxFalseChecks` on the condition branch; the whole-program budget remains in force.
 
@@ -37,3 +37,7 @@ Walking programs also accept `until` and `if` nodes with a `ProximityCondition` 
 Conditions also support optional sit/stand/transitioning observations. `walkingConditionRequirements` determines whether distance and/or posture is required; unknown required data fails before boolean evaluation, including unused OR operands. `describeWalkingCondition` accepts localized posture labels.
 
 The shared walking action model includes explicit `posture` requests and measured `rest`; adapters restrict posture capabilities per robot.
+
+<!-- numeric expression contracts from src/lib/numeric-expression.ts and src/lib/velocity-program.ts -->
+
+`NumericExpression` supports finite literals, named numeric variables, frontal distance in cm and addition/subtraction/multiplication/division. `NumericVariables` requires explicit initialization, limits names to 40 characters and storage to 64 variables, and validates snapshots. Expressions are limited to 16 levels, 128 nodes and values within ±1e9; division by zero fails. Conditions add numeric `<`, `>` and `=` comparisons and evaluate all operands, including logical branches. `set-number`, `change-number`, `distance-value` and `wait-value` preserve expressions until dispatch. Computed movement and wait bounds are checked before issuing a physical command. Repeat counts remain literal.

@@ -1,6 +1,9 @@
 import type * as ScratchBlocks from 'scratch-blocks';
 import {
   walkingProgramLimits,
+  validateNumericExpression,
+  validateVariableName,
+  type NumericExpression,
   type WalkingCondition,
   type WalkingProgramStep,
 } from '@botlab/model';
@@ -24,6 +27,11 @@ export function applyWebWalkingLocale(
       'centro',
       'derecha',
       'detener movimiento',
+      'distancia frontal (cm)',
+      'valor de %1',
+      'fijar %1 a %2',
+      'cambiar %1 por %2',
+      'Variables',
     ],
     ca: [
       'Avançat',
@@ -37,6 +45,11 @@ export function applyWebWalkingLocale(
       'centre',
       'dreta',
       'aturar moviment',
+      'distància frontal (cm)',
+      'valor de %1',
+      'fixa %1 a %2',
+      'canvia %1 per %2',
+      'Variables',
     ],
     en: [
       'Advanced',
@@ -50,6 +63,11 @@ export function applyWebWalkingLocale(
       'centre',
       'right',
       'stop movement',
+      'front distance (cm)',
+      'value of %1',
+      'set %1 to %2',
+      'change %1 by %2',
+      'Variables',
     ],
   }[locale];
   for (const [i, key] of [
@@ -64,12 +82,47 @@ export function applyWebWalkingLocale(
     'CENTRE',
     'RIGHT',
     'REST',
+    'DISTANCE_VALUE',
+    'NUMBER',
+    'SET_NUMBER',
+    'CHANGE_NUMBER',
+    'VARIABLES',
   ].entries())
     api.Msg[`BOTLAB_WEB_${key}`] = copy[i];
 }
 export function registerMicroduckMujocoBlocks(api: typeof ScratchBlocks) {
   if (api.Blocks['botlab_web_velocity']) return;
   api.defineBlocksWithJsonArray([
+    {
+      type: 'botlab_web_distance_cm',
+      message0: '%{BKY_BOTLAB_WEB_DISTANCE_VALUE}',
+      style: 'sensing',
+      extensions: ['output_number'],
+    },
+    {
+      type: 'botlab_web_number',
+      message0: '%{BKY_BOTLAB_WEB_NUMBER}',
+      args0: [{ type: 'field_input', name: 'NAME', text: 'contador' }],
+      style: 'data',
+      extensions: ['output_number'],
+    },
+    ...['set', 'change'].map((operation) => ({
+      type: `botlab_web_${operation}_number`,
+      message0: `%{BKY_BOTLAB_WEB_${operation.toUpperCase()}_NUMBER}`,
+      args0: [
+        { type: 'field_input', name: 'NAME', text: 'contador' },
+        { type: 'input_value', name: 'VALUE', check: 'Number' },
+      ],
+      style: 'data',
+      extensions: ['shape_statement'],
+    })),
+    {
+      type: 'botlab_web_advance_value',
+      message0: '%{BKY_BOTLAB_WEB_CENTIMETRES}',
+      args0: [{ type: 'input_value', name: 'CM', check: 'Number' }],
+      style: 'motion',
+      extensions: ['shape_statement'],
+    },
     {
       type: 'botlab_web_rest',
       message0: '%{BKY_BOTLAB_WEB_REST}',
@@ -169,6 +222,18 @@ const commonWalkingBlockTypes = [
   'botlab_web_advance_cm',
   'botlab_web_rest',
   'botlab_web_obstacle',
+  'botlab_web_distance_cm',
+  'botlab_web_number',
+  'botlab_web_set_number',
+  'botlab_web_change_number',
+  'botlab_web_advance_value',
+  'operator_lt',
+  'operator_gt',
+  'operator_equals',
+  'operator_add',
+  'operator_subtract',
+  'operator_multiply',
+  'operator_divide',
   'operator_and',
   'operator_or',
   'operator_not',
@@ -214,7 +279,7 @@ export const microduckWalkingExample: BlocksWorkspaceArtifact = {
   ),
 };
 
-/** Bounded sequences with literal waits/repeats; expressions remain unsupported. */
+/** Bounded sequences, numeric expressions and explicit per-run variables. */
 export function readMicroduckWalkingProgram(
   artifact: BlocksWorkspaceArtifact,
 ): WalkingProgramStep[] {
@@ -281,6 +346,90 @@ function readWalkingProgram(
     visited.add(value);
     return number(value, 'NUM');
   };
+  const variableName = (e: Element) => {
+    const fields = children(e, 'field').filter(
+      (f) => f.getAttribute('name') === 'NAME',
+    );
+    const name = fields[0]?.textContent;
+    if (fields.length !== 1) throw new Error('Nombre de variable no válido.');
+    validateVariableName(name);
+    return name;
+  };
+  function expression(e: Element, name: string, depth = 0): NumericExpression {
+    if (depth > 16) throw new Error('Expresión demasiado profunda.');
+    const values = children(e, 'value').filter(
+      (v) => v.getAttribute('name') === name,
+    );
+    const container = values[0];
+    if (values.length !== 1) throw new Error('Conecta un valor numérico.');
+    const blocks = children(container, 'block'),
+      shadows = children(container, 'shadow');
+    if (
+      blocks.length > 1 ||
+      shadows.length > 1 ||
+      container.children.length !== blocks.length + shadows.length
+    )
+      throw new Error('Entrada numérica no válida.');
+    const block = blocks[0] ?? shadows[0];
+    if (!block || block.getAttribute('disabled') === 'true')
+      throw new Error('Conecta un valor numérico activo.');
+    visited.add(container);
+    visited.add(block);
+    if (blocks.length && shadows.length) {
+      const shadow = shadows[0];
+      if (
+        ![
+          'math_number',
+          'math_positive_number',
+          'math_whole_number',
+          'math_integer',
+          'text',
+        ].includes(shadow.getAttribute('type') ?? '') ||
+        Array.from(shadow.children).some((c) => c.localName !== 'field')
+      )
+        throw new Error('Valor alternativo no válido.');
+      visited.add(shadow);
+    }
+    const type = block.getAttribute('type') ?? '';
+    let result: NumericExpression;
+    if (
+      [
+        'math_number',
+        'math_positive_number',
+        'math_whole_number',
+        'math_integer',
+        'text',
+      ].includes(type)
+    )
+      result = {
+        kind: 'literal',
+        value: number(block, type === 'text' ? 'TEXT' : 'NUM'),
+      };
+    else {
+      if (!allowedTypes.includes(type))
+        throw new Error('Expresión no compatible con este robot.');
+      if (type === 'botlab_web_number')
+        result = { kind: 'variable', name: variableName(block) };
+      else if (type === 'botlab_web_distance_cm')
+        result = { kind: 'distance-cm' };
+      else if (
+        [
+          'operator_add',
+          'operator_subtract',
+          'operator_multiply',
+          'operator_divide',
+        ].includes(type)
+      )
+        result = {
+          kind: type.slice(9) as 'add' | 'subtract' | 'multiply' | 'divide',
+          left: expression(block, 'NUM1', depth + 1),
+          right: expression(block, 'NUM2', depth + 1),
+        };
+      else throw new Error('Conecta una expresión numérica.');
+    }
+    validateNumericExpression(result);
+    return result;
+  }
   const link = (e: Element, tag: string, name?: string) => {
     const links = children(e, tag).filter(
       (c) => !name || c.getAttribute('name') === name,
@@ -333,6 +482,14 @@ function readWalkingProgram(
       };
     if (type === 'botlab_web_obstacle')
       return { sourceBlockId, thresholdMeters: number(block, 'CM') / 100 };
+    if (['operator_lt', 'operator_gt', 'operator_equals'].includes(type ?? ''))
+      return {
+        sourceBlockId,
+        comparison:
+          type === 'operator_lt' ? 'lt' : type === 'operator_gt' ? 'gt' : 'eq',
+        left: expression(block, 'OPERAND1'),
+        right: expression(block, 'OPERAND2'),
+      };
     if (type === 'operator_not')
       return {
         sourceBlockId,
@@ -369,6 +526,27 @@ function readWalkingProgram(
           'Bloque de movimiento no compatible o más de 256 bloques.',
         );
       const sourceBlockId = current.getAttribute('id') ?? '';
+      if (
+        type === 'botlab_web_set_number' ||
+        type === 'botlab_web_change_number'
+      ) {
+        steps.push({
+          sourceBlockId,
+          kind:
+            type === 'botlab_web_set_number' ? 'set-number' : 'change-number',
+          name: variableName(current),
+          expression: expression(current, 'VALUE'),
+        });
+        continue;
+      }
+      if (type === 'botlab_web_advance_value') {
+        steps.push({
+          sourceBlockId,
+          kind: 'distance-value',
+          expression: expression(current, 'CM'),
+        });
+        continue;
+      }
       if (type === 'botlab_web_rest') {
         steps.push({ sourceBlockId, kind: 'rest' });
         continue;
@@ -424,6 +602,8 @@ function readWalkingProgram(
         });
       } else if (
         type === 'botlab_web_obstacle' ||
+        type === 'botlab_web_number' ||
+        type === 'botlab_web_distance_cm' ||
         type.startsWith('botlab_microduck_is_') ||
         type.startsWith('operator_')
       ) {
@@ -458,11 +638,12 @@ function readWalkingProgram(
           durationSeconds: number(current, 'SECONDS'),
         });
       } else if (type === 'control_wait') {
-        steps.push({
-          sourceBlockId,
-          kind: 'wait',
-          durationSeconds: literal(current, 'DURATION'),
-        });
+        const value = expression(current, 'DURATION');
+        steps.push(
+          value.kind === 'literal'
+            ? { sourceBlockId, kind: 'wait', durationSeconds: value.value }
+            : { sourceBlockId, kind: 'wait-value', expression: value },
+        );
       } else if (
         type === 'botlab_microduck_walk_steps' ||
         type === 'botlab_microduck_walk_distance'

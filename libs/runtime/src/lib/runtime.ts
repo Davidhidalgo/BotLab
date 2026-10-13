@@ -1,3 +1,4 @@
+import { NumericVariables } from '@botlab/model';
 import { createExecutionLifecycle } from './execution';
 import type {
   Artifact,
@@ -187,7 +188,7 @@ export interface RuntimeCommandDispatcher {
   targetId: string;
   dispatch(
     command: CompiledCommand,
-    context: { signal: AbortSignal },
+    context: { signal: AbortSignal; variables: NumericVariables },
   ): RuntimeCommandDispatchResult | Promise<RuntimeCommandDispatchResult>;
 }
 
@@ -293,6 +294,7 @@ interface RuntimeSession {
 }
 
 interface RuntimeActiveRun {
+  variables: NumericVariables;
   controller: AbortController;
   wake?: () => void;
 }
@@ -1121,7 +1123,10 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
 
       removeQueuedSession(session);
       const artifact = session.loadedArtifact;
-      const run: RuntimeActiveRun = { controller: new AbortController() };
+      const run: RuntimeActiveRun = {
+        controller: new AbortController(),
+        variables: new NumericVariables(),
+      };
       session.activeRun = run;
       session.state = 'running';
       lifecycle.update({ ...lifecycle.snapshot(), status: 'running' });
@@ -1207,6 +1212,7 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
           try {
             const result = await dispatcher.dispatch(command, {
               signal: run.controller.signal,
+              variables: run.variables,
             });
             if (result.commandId !== command.id)
               throw new Error(

@@ -90,3 +90,53 @@ it('restores zero-repeat outcomes without fabricating physical evidence', () => 
     decode({ ...zero, outcome: { ...zero.outcome, evidence: 'simulator' } }),
   ).toThrow();
 });
+
+it('restores numeric decisions with their validated snapshot, without executing them', () => {
+  const result = {
+    status: 'completed',
+    evidence: 'simulator',
+    level: 'program-evaluation',
+    timeSeconds: 1,
+    variableChange: { name: 'contador', value: 2 },
+    decision: {
+      condition: {
+        sourceBlockId: 'compare',
+        comparison: 'eq',
+        left: { kind: 'variable', name: 'contador' },
+        right: { kind: 'literal', value: 2 },
+      },
+      value: true,
+      variables: [['contador', 2]],
+    },
+  };
+  const report = { ...saved, trace: [{ sourceBlockId: 'compare', result }] };
+  expect(decode(report).trace[0].result).toEqual(result);
+  expect(() =>
+    decode({
+      ...report,
+      trace: [
+        {
+          sourceBlockId: 'compare',
+          result: {
+            ...result,
+            decision: { ...result.decision, variables: [] },
+          },
+        },
+      ],
+    }),
+  ).toThrow();
+  expect(() =>
+    decode({
+      ...report,
+      trace: [
+        {
+          sourceBlockId: 'compare',
+          result: {
+            ...result,
+            variableChange: { name: 'contador', value: Infinity },
+          },
+        },
+      ],
+    }),
+  ).toThrow();
+});

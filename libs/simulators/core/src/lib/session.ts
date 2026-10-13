@@ -136,7 +136,12 @@ export interface SimulationCommandResult {
     observed: 'sit' | 'stand';
     heightMeters: number;
   };
-  decision?: { condition: WalkingCondition; value: boolean };
+  decision?: {
+    condition: WalkingCondition;
+    value: boolean;
+    variables?: Array<[string, number]>;
+  };
+  variableChange?: { name: string; value: number };
   proximity?: {
     value: boolean;
     distanceMeters: number;
@@ -146,7 +151,7 @@ export interface SimulationCommandResult {
   };
   status: 'completed';
   evidence: 'simulator';
-  level: 'physics' | 'closed-loop-policy';
+  level: 'physics' | 'closed-loop-policy' | 'program-evaluation';
   finalErrorRadians?: number;
   headYaw?: { targetRadians: number; observedRadians: number };
   displacementMeters?: number;

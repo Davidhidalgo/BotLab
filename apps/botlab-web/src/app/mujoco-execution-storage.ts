@@ -2,6 +2,7 @@ import {
   walkingProgramLimits,
   validateWalkingCondition,
   evaluateWalkingCondition,
+  NumericVariables,
   type ExecutionResult,
   type ProgramIteration,
 } from '@botlab/model';
@@ -134,7 +135,9 @@ export function decodeMujocoExecution(
       if (
         result.status !== 'completed' ||
         result.evidence !== 'simulator' ||
-        !['physics', 'closed-loop-policy'].includes(String(result.level)) ||
+        !['physics', 'closed-loop-policy', 'program-evaluation'].includes(
+          String(result.level),
+        ) ||
         typeof result.timeSeconds !== 'number' ||
         !Number.isFinite(result.timeSeconds) ||
         result.timeSeconds < 0
@@ -258,6 +261,17 @@ export function decodeMujocoExecution(
           capturedAtSeconds: p.capturedAtSeconds,
         };
       }
+      if (result.variableChange !== undefined) {
+        const v = result.variableChange;
+        if (
+          !record(v) ||
+          typeof v.name !== 'string' ||
+          typeof v.value !== 'number'
+        )
+          throw new Error('Invalid saved variable.');
+        new NumericVariables().set(v.name, v.value);
+        checked.variableChange = { name: v.name, value: v.value };
+      }
       if (result.decision !== undefined) {
         const d = result.decision;
         if (!record(d) || typeof d.value !== 'boolean')
@@ -268,10 +282,17 @@ export function decodeMujocoExecution(
             d.condition,
             checked.proximity?.distanceMeters,
             checked.postureObservation?.state,
+            new NumericVariables(d.variables),
           ) !== d.value
         )
           throw new Error('Inconsistent saved condition.');
-        checked.decision = { condition: d.condition, value: d.value };
+        checked.decision = {
+          condition: d.condition,
+          value: d.value,
+          ...(d.variables !== undefined
+            ? { variables: new NumericVariables(d.variables).snapshot() }
+            : {}),
+        };
       }
       return {
         ...(entry.commandId !== undefined

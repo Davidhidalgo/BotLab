@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "locale": "es",
+  "targetId": "microduck-mujoco-web",
+  "simulatorBackend": "mujoco",
+  "workspace": {
+    "id": "microduck-numbers-workspace",
+    "behaviorId": "microduck-web-walking",
+    "kind": "blocks",
+    "label": "Contar dos avances calculados",
+    "format": "scratch-xml",
+    "engine": "scratch-blocks",
+    "status": "loaded",
+    "validationErrors": [],
+    "createdAt": "1970-01-01T00:00:00.000Z",
+    "content": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"botlab_web_set_number\" id=\"initialize\"><field name=\"NAME\">contador</field><value name=\"VALUE\"><shadow type=\"math_number\"><field name=\"NUM\">0</field></shadow></value><next><block type=\"control_repeat_until\" id=\"until\"><value name=\"CONDITION\"><block type=\"operator_equals\" id=\"compare\"><value name=\"OPERAND1\"><shadow type=\"math_number\"><field name=\"NUM\">0</field></shadow><block type=\"botlab_web_number\" id=\"counter-value\"><field name=\"NAME\">contador</field></block></value><value name=\"OPERAND2\"><shadow type=\"math_number\"><field name=\"NUM\">2</field></shadow></value></block></value><statement name=\"SUBSTACK\"><block type=\"botlab_web_advance_value\" id=\"advance\"><value name=\"CM\"><shadow type=\"math_number\"><field name=\"NUM\">15</field></shadow><block type=\"operator_add\" id=\"sum\"><value name=\"NUM1\"><shadow type=\"math_number\"><field name=\"NUM\">10</field></shadow></value><value name=\"NUM2\"><shadow type=\"math_number\"><field name=\"NUM\">5</field></shadow></value></block></value><next><block type=\"botlab_web_change_number\" id=\"increment\"><field name=\"NAME\">contador</field><value name=\"VALUE\"><shadow type=\"math_number\"><field name=\"NUM\">1</field></shadow></value></block></next></block></statement></block></next></block></next></block></xml>"
+  },
+  "simulationScene": "flat"
+}

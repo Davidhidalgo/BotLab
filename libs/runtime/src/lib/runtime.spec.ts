@@ -1204,3 +1204,30 @@ describe('bounded conditional command flow', () => {
     expect(seen).toEqual(['condition']);
   });
 });
+
+it('creates independent numeric variables for each new run', async () => {
+  const values: number[] = [];
+  const runtime = createTestRuntime({
+    dispatch(command, { variables }) {
+      expect(variables.snapshot()).toEqual([]);
+      variables.set('contador', 1);
+      values.push(variables.get('contador'));
+      return {
+        commandId: command.id,
+        status: 'completed',
+        message: 'Calculated',
+        evidence: 'simulator',
+      };
+    },
+  });
+  const session = runtime.createSession({ id: 'variables' });
+  for (let i = 0; i < 2; i++) {
+    runtime.loadCompiledBehavior(
+      session.id,
+      sampleMicroDuckCompiledBehaviorArtifact,
+    );
+    runtime.confirmPolicy(session.id);
+    await runtime.startSession(session.id);
+  }
+  expect(values).toEqual([1, 1]);
+});

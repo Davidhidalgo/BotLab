@@ -1,4 +1,9 @@
 import {
+  type NumericExpression,
+  validateNumericExpression,
+  validateVariableName,
+} from './numeric-expression';
+import {
   validateWalkingCondition,
   type WalkingCondition,
 } from './walking-condition';
@@ -15,6 +20,17 @@ export interface VelocityProgramStep {
 
 /** Educational goals retain their meaning independently of a robot's speed. */
 export type WalkingActionStep =
+  | {
+      sourceBlockId: string;
+      kind: 'set-number' | 'change-number';
+      name: string;
+      expression: NumericExpression;
+    }
+  | {
+      sourceBlockId: string;
+      kind: 'distance-value' | 'wait-value';
+      expression: NumericExpression;
+    }
   | { sourceBlockId: string; kind: 'rest' }
   | { sourceBlockId: string; kind: 'posture'; posture: 'sit' | 'stand' }
   | { sourceBlockId: string; kind: 'head-yaw'; angleRadians: number }
@@ -82,6 +98,33 @@ export const walkingConditionCommandSchema: CapabilityCommandSchema = {
   description: 'Evalúa la expresión con una lectura frontal confirmada.',
   inputs: [{ name: 'condition', type: 'object', required: true }],
 };
+export const numericCommandSchemas: CapabilityCommandSchema[] = [
+  'set-number',
+  'change-number',
+  'distance-value',
+  'wait-value',
+].map((id) => ({
+  id,
+  name: id,
+  description: 'Evaluación numérica acotada.',
+  inputs: [
+    { name: 'expression', type: 'object', required: true },
+    ...(id === 'distance-value'
+      ? [
+          {
+            name: 'speed',
+            type: 'number' as const,
+            required: true,
+            min: 0.01,
+            max: 0.3,
+          },
+        ]
+      : []),
+    ...(['set-number', 'change-number'].includes(id)
+      ? [{ name: 'name', type: 'string' as const, required: true }]
+      : []),
+  ],
+}));
 export const walkingProgramLimits = {
   count: 100,
   depth: 16,
@@ -140,6 +183,18 @@ export function expandWalkingProgram(
         )
           throw new Error('Repetir necesita un número entero de 0 a 100.');
         validate(step.body, depth + 1);
+      } else if (
+        'kind' in step &&
+        [
+          'set-number',
+          'change-number',
+          'distance-value',
+          'wait-value',
+        ].includes(step.kind)
+      ) {
+        if (!('expression' in step)) throw new Error('Falta la expresión.');
+        validateNumericExpression(step.expression);
+        if ('name' in step) validateVariableName(step.name);
       } else validateAction(step);
     }
   }
@@ -168,7 +223,9 @@ export function expandWalkingProgram(
         append(
           {
             sourceBlockId: step.condition.sourceBlockId,
-            ...('operator' in step.condition || 'posture' in step.condition
+            ...('operator' in step.condition ||
+            'posture' in step.condition ||
+            'comparison' in step.condition
               ? { kind: 'condition' as const, condition: step.condition }
               : {
                   kind: 'proximity' as const,

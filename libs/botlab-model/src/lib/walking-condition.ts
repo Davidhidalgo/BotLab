@@ -1,5 +1,19 @@
+import {
+  NumericVariables,
+  type NumericExpression,
+  validateNumericExpression,
+  numericExpressionNeedsDistance,
+  evaluateNumericExpression,
+  describeNumericExpression,
+} from './numeric-expression';
 /** Boolean expressions over one confirmed frontal distance, shared by robot targets. */
 export type WalkingCondition =
+  | {
+      sourceBlockId: string;
+      comparison: 'lt' | 'gt' | 'eq';
+      left: NumericExpression;
+      right: NumericExpression;
+    }
   | { sourceBlockId: string; posture: 'sit' | 'stand' | 'transitioning' }
   | { sourceBlockId: string; thresholdMeters: number }
   | { sourceBlockId: string; operator: 'not'; operand: WalkingCondition }
@@ -26,7 +40,12 @@ export function validateWalkingCondition(
     throw new Error('Cada condición necesita un identificador distinto.');
   ids.add(c['sourceBlockId']);
   if (ids.size > 256) throw new Error('Usa como máximo 256 bloques.');
-  if ('posture' in c) {
+  if ('comparison' in c) {
+    if (!['lt', 'gt', 'eq'].includes(String(c['comparison'])))
+      throw new Error('Comparación no válida.');
+    validateNumericExpression(c['left']);
+    validateNumericExpression(c['right']);
+  } else if ('posture' in c) {
     if (!['sit', 'stand', 'transitioning'].includes(String(c['posture'])))
       throw new Error('Postura no válida.');
   } else if (!('operator' in c)) {
@@ -49,6 +68,7 @@ export function evaluateWalkingCondition(
   condition: WalkingCondition,
   distanceMeters?: number,
   posture?: 'sit' | 'stand' | 'transitioning',
+  variables = new NumericVariables(),
 ): boolean {
   validateWalkingCondition(condition);
   const needs = walkingConditionRequirements(condition);
@@ -65,12 +85,21 @@ export function evaluateWalkingCondition(
   )
     throw new Error('Distancia frontal desconocida.');
   function evaluate(c: WalkingCondition): boolean {
+    if ('comparison' in c) {
+      const a = evaluateNumericExpression(c.left, variables, distanceMeters),
+        b = evaluateNumericExpression(c.right, variables, distanceMeters);
+      return c.comparison === 'lt'
+        ? a < b
+        : c.comparison === 'gt'
+          ? a > b
+          : a === b;
+    }
     if ('posture' in c) return posture === c.posture;
     if (!('operator' in c)) return distanceMeters! < c.thresholdMeters;
     if (c.operator === 'not') return !evaluate(c.operand);
-    return c.operator === 'and'
-      ? evaluate(c.left) && evaluate(c.right)
-      : evaluate(c.left) || evaluate(c.right);
+    const left = evaluate(c.left),
+      right = evaluate(c.right);
+    return c.operator === 'and' ? left && right : left || right;
   }
   return evaluate(condition);
 }
@@ -83,6 +112,8 @@ export function describeWalkingCondition(
     transitioning: 'cambiando de postura',
   },
 ): string {
+  if ('comparison' in condition)
+    return `${describeNumericExpression(condition.left)} ${{ lt: '<', gt: '>', eq: '=' }[condition.comparison]} ${describeNumericExpression(condition.right)}`;
   if ('posture' in condition) return `¿${postures[condition.posture]}?`;
   if (!('operator' in condition))
     return `d < ${condition.thresholdMeters * 100} cm`;
@@ -97,6 +128,13 @@ export function walkingConditionRequirements(condition: unknown): {
 } {
   validateWalkingCondition(condition);
   function needs(c: WalkingCondition): { distance: boolean; posture: boolean } {
+    if ('comparison' in c)
+      return {
+        distance:
+          numericExpressionNeedsDistance(c.left) ||
+          numericExpressionNeedsDistance(c.right),
+        posture: false,
+      };
     if ('posture' in c) return { distance: false, posture: true };
     if (!('operator' in c)) return { distance: true, posture: false };
     if (c.operator === 'not') return needs(c.operand);

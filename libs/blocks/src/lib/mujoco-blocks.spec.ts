@@ -198,3 +198,27 @@ describe('shared proximity blocks', () => {
       ).toThrow('condición');
   });
 });
+
+it('reads connected numeric expressions over fallback shadows for both robots', () => {
+  const content =
+    '<xml><block type="event_whenflagclicked" id="flag"><next><block type="botlab_web_advance_value" id="move"><value name="CM"><shadow type="math_number"><field name="NUM">10</field></shadow><block type="operator_add" id="sum"><value name="NUM1"><shadow type="math_number"><field name="NUM">10</field></shadow></value><value name="NUM2"><block type="botlab_web_number" id="v"><field name="NAME">extra</field></block></value></block></value></block></next></block></xml>';
+  for (const read of [readMicroduckWalkingProgram, readJumperWalkingProgram]) {
+    expect(read({ ...microduckWalkingExample, content })).toEqual([
+      {
+        sourceBlockId: 'move',
+        kind: 'distance-value',
+        expression: {
+          kind: 'add',
+          left: { kind: 'literal', value: 10 },
+          right: { kind: 'variable', name: 'extra' },
+        },
+      },
+    ]);
+    expect(() =>
+      read({
+        ...microduckWalkingExample,
+        content: content.replace('name="NUM1"', 'name="NUM2"'),
+      }),
+    ).toThrow();
+  }
+});

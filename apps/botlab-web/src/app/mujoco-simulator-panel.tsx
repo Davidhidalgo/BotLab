@@ -1,9 +1,8 @@
 import {
-  evaluateWalkingCondition,
-  walkingConditionRequirements,
-  describeWalkingCondition,
-  validateWalkingCondition,
-} from '@botlab/model';
+  evaluateProgramCommand,
+  programCommandNeedsDistance,
+} from './mujoco-program-evaluation';
+import { describeWalkingCondition } from '@botlab/model';
 import {
   createMicroduckWalkingAdapter,
   compileMicroduckWalkingProgram,
@@ -133,26 +132,22 @@ export default function MujocoSimulatorPanel({
               ? microduckMujocoTargetId
               : jumperWalkingTargetId
             : jumperJointTargetId,
-          async dispatch(command, { signal }) {
+          async dispatch(command, { signal, variables }) {
             setActiveCommand(command);
-            if (command.commandId === 'condition')
-              validateWalkingCondition(command.inputs['condition']);
-            const needs =
-              command.commandId === 'condition'
-                ? walkingConditionRequirements(command.inputs['condition'])
-                : undefined;
-            const result = await session.command(
-              needs && !needs.distance
-                ? { kind: 'observe-posture' }
-                : walking
-                  ? command.commandId === 'proximity' ||
-                    command.commandId === 'condition'
+            const result =
+              (await evaluateProgramCommand(
+                command,
+                session,
+                variables,
+                signal,
+              )) ??
+              (await session.command(
+                walking
+                  ? command.commandId === 'proximity'
                     ? {
                         kind: 'proximity',
                         thresholdMeters: Number(
-                          command.commandId === 'condition'
-                            ? 0.3
-                            : command.inputs['thresholdMeters'],
+                          command.inputs['thresholdMeters'],
                         ),
                       }
                     : command.commandId === 'rest'
@@ -218,27 +213,8 @@ export default function MujocoSimulatorPanel({
                       toleranceRadians: 0.02,
                       timeoutSeconds: 5,
                     },
-              signal,
-            );
-            if (command.commandId === 'condition') {
-              const condition = command.inputs['condition'];
-              validateWalkingCondition(condition);
-              if (needs?.posture && !result.postureObservation) {
-                const observed = await session.command(
-                  { kind: 'observe-posture' },
-                  signal,
-                );
-                result.postureObservation = observed.postureObservation;
-              }
-              result.decision = {
-                condition,
-                value: evaluateWalkingCondition(
-                  condition,
-                  result.proximity?.distanceMeters,
-                  result.postureObservation?.state,
-                ),
-              };
-            }
+                signal,
+              ));
             setReport((current) =>
               current
                 ? {
@@ -321,12 +297,7 @@ export default function MujocoSimulatorPanel({
             manifest.joints,
           );
       if (
-        compiled.commands.some(
-          (c) =>
-            c.commandId === 'proximity' ||
-            (c.commandId === 'condition' &&
-              walkingConditionRequirements(c.inputs['condition']).distance),
-        ) &&
+        compiled.commands.some(programCommandNeedsDistance) &&
         !manifest.depthSensor
       )
         throw new Error(copy.sensorRequired);
@@ -695,7 +666,12 @@ export default function MujocoSimulatorPanel({
         {report?.status === 'interrupted'
           ? copy.interrupted
           : execution?.status === 'completed'
-            ? copy.completed
+            ? report?.trace.length &&
+              report.trace.every(
+                (entry) => entry.result.level === 'program-evaluation',
+              )
+              ? copy.computed
+              : copy.completed
             : execution?.status === 'no-work'
               ? copy.noWork
               : execution?.status === 'running'
@@ -706,6 +682,18 @@ export default function MujocoSimulatorPanel({
                     ? copy.failed
                     : copy.idle}
       </p>
+      {report?.trace.some((entry) => entry.result.variableChange) && (
+        <ul className="px-4 text-sm" aria-label={copy.variables}>
+          {report.trace
+            .filter((entry) => entry.result.variableChange)
+            .map((entry, index) => (
+              <li key={index}>
+                {entry.result.variableChange?.name} ={' '}
+                {entry.result.variableChange?.value}
+              </li>
+            ))}
+        </ul>
+      )}
       {executing && activeCommand && (
         <p
           aria-label={copy.progress}

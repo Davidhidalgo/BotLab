@@ -728,7 +728,11 @@ function createBotLabToolbox(
           'turn_left',
           'turn_right',
           'turn_around',
-        ].map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` })),
+        ].map((type) => ({
+          kind: 'block',
+          type: `botlab_microduck_${type}`,
+          inputs: {},
+        })),
       },
       {
         kind: 'category',
@@ -738,7 +742,11 @@ function createBotLabToolbox(
           'walk_until_obstacle',
           'turn_left_until_clear',
           'turn_right_until_clear',
-        ].map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` })),
+        ].map((type) => ({
+          kind: 'block',
+          type: `botlab_microduck_${type}`,
+          inputs: {},
+        })),
       },
       {
         kind: 'category',
@@ -754,11 +762,22 @@ function createBotLabToolbox(
           'kick_right',
           'community_skill',
         ]
-          .map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` }))
+          .map((type) => ({
+            kind: 'block',
+            type: `botlab_microduck_${type}`,
+            inputs: {},
+          }))
           .concat([
-            { kind: 'block', type: 'botlab_web_advance_cm' },
-            { kind: 'block', type: 'botlab_web_rest' },
-            { kind: 'block', type: 'botlab_web_head_yaw' },
+            { kind: 'block', type: 'botlab_web_advance_cm', inputs: {} },
+            {
+              kind: 'block',
+              type: 'botlab_web_advance_value',
+              inputs: {
+                CM: { shadow: { type: 'math_number', fields: { NUM: 15 } } },
+              },
+            },
+            { kind: 'block', type: 'botlab_web_rest', inputs: {} },
+            { kind: 'block', type: 'botlab_web_head_yaw', inputs: {} },
           ]),
       },
       {
@@ -767,6 +786,7 @@ function createBotLabToolbox(
         categorystyle: 'sensing_category',
         contents: [
           { kind: 'block', type: 'botlab_web_obstacle' },
+          { kind: 'block', type: 'botlab_web_distance_cm' },
           ...['sit', 'stand', 'transitioning'].map((posture) => ({
             kind: 'block',
             type: `botlab_microduck_is_${posture}`,
@@ -812,9 +832,56 @@ function createBotLabToolbox(
         kind: 'category',
         name: scratchBlocks.Msg['CATEGORY_OPERATORS'],
         categorystyle: 'operators_category',
-        contents: ['operator_and', 'operator_or', 'operator_not'].map(
-          (type) => ({ kind: 'block', type }),
-        ),
+        contents: [
+          'operator_and',
+          'operator_or',
+          'operator_not',
+          'operator_lt',
+          'operator_gt',
+          'operator_equals',
+          'operator_add',
+          'operator_subtract',
+          'operator_multiply',
+          'operator_divide',
+        ].map((type) => ({
+          kind: 'block',
+          type,
+          ...(['operator_and', 'operator_or', 'operator_not'].includes(type)
+            ? {}
+            : {
+                inputs: Object.fromEntries(
+                  (['operator_lt', 'operator_gt', 'operator_equals'].includes(
+                    type,
+                  )
+                    ? ['OPERAND1', 'OPERAND2']
+                    : ['NUM1', 'NUM2']
+                  ).map((name) => [
+                    name,
+                    { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+                  ]),
+                ),
+              }),
+        })),
+      },
+      {
+        kind: 'category',
+        name: scratchBlocks.Msg['BOTLAB_WEB_VARIABLES'],
+        categorystyle: 'data_category',
+        contents: [
+          { kind: 'block', type: 'botlab_web_number' },
+          ...['set', 'change'].map((operation) => ({
+            kind: 'block',
+            type: `botlab_web_${operation}_number`,
+            inputs: {
+              VALUE: {
+                shadow: {
+                  type: 'math_number',
+                  fields: { NUM: operation === 'set' ? 0 : 1 },
+                },
+              },
+            },
+          })),
+        ],
       },
       {
         kind: 'category',

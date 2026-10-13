@@ -197,3 +197,7 @@ Run `node tools/mujoco/verify-wait-until.mjs` against the static preview on port
 <!-- acceptance implemented by verify-rest.mjs -->
 
 `node tools/mujoco/verify-rest.mjs` verifies timed walking → measured rest → 15 cm advance for both robots, including result restoration.
+
+<!-- numeric acceptance implemented by verify-numbers.mjs and examples/*-mujoco-numbers.botlab.json -->
+
+`node tools/mujoco/verify-numbers.mjs` exercises an explicit counter and two calculated 15 cm movements in both robots, validates physical arrival, decisions and variable snapshots, then reloads and reruns to check fresh initialization. Examples are `examples/jumper-mujoco-numbers.botlab.json` and `examples/microduck-mujoco-numbers.botlab.json`.

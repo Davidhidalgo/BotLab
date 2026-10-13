@@ -107,4 +107,8 @@ Estas entradas conservan líneas del proyecto fuera del incremento inmediato. Ca
 
 **Estado:** Hecha; petición global del usuario 2026-10-13. **Objetivo:** bloque común de detener movimiento que mantenga equilibrio y termine con reposo observado, sin confundirlo con detener el programa o pausar física. **Cierre:** ventana estable de 0,8 s, deriva ≤1 cm y giro ≤0,05 rad, límite de 5 s, avance posterior y restauración de resultados en ambos robots verificados. [Aceptación](evidence/mujoco-rest-workbench.json).
 
-Siguiente identificador disponible: **BL-031**. Los hitos anteriores conservan sus resultados y fechas en el [plan general](implementation-plan.md) y sus informes; sus listas históricas no sustituyen la prioridad actual de este registro.
+### BL-031 Cálculos y variables para construir actividades
+
+**Estado:** Hecha; petición global del usuario 2026-10-13, continuación de BL-007. **Objetivo:** operaciones y comparaciones numéricas, distancia frontal en centímetros, contadores explícitos y avances/esperas calculados para ambos robots. Variables nuevas en cada ejecución, errores antes del movimiento y resultados calculados diferenciados de evidencia física. **Cierre:** límites, XML, aislamiento, resultados guardados, editor compilado y dos avances calculados de 15 cm por robot validados; recarga y nueva ejecución reinician el contador. [Evidencia](evidence/mujoco-numbers-workbench.json). Los conteos de repetir N siguen siendo literales; eventos y lenguaje general no se declaran terminados.
+
+Siguiente identificador disponible: **BL-032**. Los hitos anteriores conservan sus resultados y fechas en el [plan general](implementation-plan.md) y sus informes; sus listas históricas no sustituyen la prioridad actual de este registro.

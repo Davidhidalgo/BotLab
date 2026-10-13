@@ -424,7 +424,9 @@ describe('createLocalScratchBlocksEditorBridge', () => {
       await new Promise((resolve) => setTimeout(resolve, 20));
       workspace.clearUndo();
       workspace.getBlockById('botlab-walk')!.setFieldValue('7.5', 'DISTANCE');
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      await vi.waitFor(() =>
+        expect(workspace.getUndoStack().length).toBeGreaterThan(0),
+      );
       const xml = result.handle.exportWorkspace().content;
       const undoCount = workspace.getUndoStack().length;
       expect(undoCount).toBeGreaterThan(0);

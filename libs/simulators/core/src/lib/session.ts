@@ -1,3 +1,4 @@
+import type { WalkingCondition } from '@botlab/model';
 /** Browser-independent contracts. All distances/times/angles use m/s/rad. */
 export type SimulationEvidenceLevel =
   | 'command-validation'
@@ -121,6 +122,7 @@ export interface SimulationJointCommand {
 }
 
 export interface SimulationCommandResult {
+  decision?: { condition: WalkingCondition; value: boolean };
   proximity?: {
     value: boolean;
     distanceMeters: number;

@@ -1,5 +1,9 @@
 import type * as ScratchBlocks from 'scratch-blocks';
-import { walkingProgramLimits, type WalkingProgramStep } from '@botlab/model';
+import {
+  walkingProgramLimits,
+  type WalkingCondition,
+  type WalkingProgramStep,
+} from '@botlab/model';
 import type { BlocksWorkspaceArtifact } from './blocks-contract';
 import type { BlocksLocale } from './block-messages';
 
@@ -121,6 +125,9 @@ const commonWalkingBlockTypes = [
   'control_if_else',
   'botlab_web_advance_cm',
   'botlab_web_obstacle',
+  'operator_and',
+  'operator_or',
+  'operator_not',
   'botlab_web_velocity',
 ];
 export const jumperWalkingBlockTypes = [
@@ -240,25 +247,46 @@ function readWalkingProgram(
       throw new Error('Secuencia no válida.');
     return blocks[0];
   };
-  function condition(e: Element) {
-    const values = children(e, 'value');
+  function condition(
+    e: Element,
+    inputName = 'CONDITION',
+    depth = 0,
+  ): WalkingCondition {
+    const values = children(e, 'value').filter(
+      (v) => v.getAttribute('name') === inputName,
+    );
     const container = values[0],
       block = container?.children[0];
     if (
+      depth > 16 ||
       values.length !== 1 ||
-      container.getAttribute('name') !== 'CONDITION' ||
       container.children.length !== 1 ||
       block?.localName !== 'block' ||
-      block.getAttribute('type') !== 'botlab_web_obstacle' ||
       block.getAttribute('disabled') === 'true'
     )
-      throw new Error('Conecta una condición de obstáculo delante.');
+      throw new Error(
+        'Conecta una condición válida, con un máximo de 16 niveles.',
+      );
     visited.add(container);
     visited.add(block);
-    return {
-      sourceBlockId: block.getAttribute('id') ?? '',
-      thresholdMeters: number(block, 'CM') / 100,
-    };
+    const sourceBlockId = block.getAttribute('id') ?? '';
+    const type = block.getAttribute('type');
+    if (type === 'botlab_web_obstacle')
+      return { sourceBlockId, thresholdMeters: number(block, 'CM') / 100 };
+    if (type === 'operator_not')
+      return {
+        sourceBlockId,
+        operator: 'not',
+        operand: condition(block, 'OPERAND', depth + 1),
+      };
+    if (type === 'operator_and' || type === 'operator_or')
+      return {
+        sourceBlockId,
+        operator: type === 'operator_and' ? 'and' : 'or',
+        left: condition(block, 'OPERAND1', depth + 1),
+        right: condition(block, 'OPERAND2', depth + 1),
+      };
+    throw new Error('Conecta una condición de obstáculo delante.');
   }
   let nodes = 0;
   function sequence(
@@ -305,7 +333,10 @@ function readWalkingProgram(
               }
             : {}),
         });
-      } else if (type === 'botlab_web_obstacle') {
+      } else if (
+        type === 'botlab_web_obstacle' ||
+        type.startsWith('operator_')
+      ) {
         throw new Error(
           'La condición debe estar conectada a un bloque de control.',
         );

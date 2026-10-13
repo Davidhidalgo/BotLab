@@ -4,3 +4,5 @@ export * from './lib/execution';
 export * from './lib/stackchan-program';
 export * from './lib/joint-program';
 export * from './lib/velocity-program';
+
+export * from './lib/walking-condition';

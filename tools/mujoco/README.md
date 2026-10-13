@@ -173,3 +173,7 @@ The physical probe needs Vite development serving (`https://botlab.localhost` by
 <!-- acceptance implemented by verify-wait-until.mjs -->
 
 Run `node tools/mujoco/verify-wait-until.mjs` against the static preview on port 4230 (`BOTLAB_TEST_URL` overrides it). It checks immediate success without advancing and a one-second timeout with three fresh readings for both robots.
+
+<!-- acceptance implemented by verify-logical-conditions.mjs -->
+
+`node tools/mujoco/verify-logical-conditions.mjs` checks a nested AND/NOT condition in both walking destinations, branch selection without an unintended advance, displayed expression and saved decision after reload.

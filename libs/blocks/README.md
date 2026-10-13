@@ -116,3 +116,5 @@ A mounted native editor forwards change notifications to the latest React `onArt
 Mount generations exclude notifications from replaced or unmounted workspaces. A pending mount suppresses duplicate automatic mounts, and a handle returned after cancellation is disposed immediately. The local bridge also ignores queued changes after disposal, preventing late editor events from replacing an imported project.
 
 Both walking palettes include **wait until [condition], at most [seconds]**. The timeout is explicit (0.5–30 s in half-second increments); the existing proximity condition connects to it. The robot balances while observing, and no forward action is inserted.
+
+The walking palettes also expose **and / or / not**. Nested proximity conditions connect to if, repeat-until and bounded wait-until. The XML parser preserves operand structure and rejects disconnected inputs.

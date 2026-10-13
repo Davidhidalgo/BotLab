@@ -15,3 +15,5 @@ Build with `pnpm nx build jumper`; test with `pnpm nx test jumper`. See [the MuJ
 The walking adapter supplies the validated goal speed and simulated timeout in compiled command inputs; the app dispatcher only transports them to the shared worker.
 
 The walking adapter optionally advertises the shared proximity command when the loaded scene has a sensor. Its compiler preserves bounded `until`/`if` control-flow instructions with fresh condition evaluation at runtime. Source branches are all validated; movement units/speed/control stay robot-specific.
+
+The optional proximity capability also compiles compound `condition` commands. Evaluation semantics and expression validation are shared with MicroDuck.

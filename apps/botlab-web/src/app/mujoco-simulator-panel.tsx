@@ -1,4 +1,9 @@
 import {
+  evaluateWalkingCondition,
+  describeWalkingCondition,
+  validateWalkingCondition,
+} from '@botlab/model';
+import {
   createMicroduckWalkingAdapter,
   compileMicroduckWalkingProgram,
   microduckWalkingBehavior,
@@ -129,13 +134,18 @@ export default function MujocoSimulatorPanel({
             : jumperJointTargetId,
           async dispatch(command, { signal }) {
             setActiveCommand(command);
+            if (command.commandId === 'condition')
+              validateWalkingCondition(command.inputs['condition']);
             const result = await session.command(
               walking
-                ? command.commandId === 'proximity'
+                ? command.commandId === 'proximity' ||
+                  command.commandId === 'condition'
                   ? {
                       kind: 'proximity',
                       thresholdMeters: Number(
-                        command.inputs['thresholdMeters'],
+                        command.commandId === 'condition'
+                          ? 0.3
+                          : command.inputs['thresholdMeters'],
                       ),
                     }
                   : command.commandId === 'distance'
@@ -183,6 +193,19 @@ export default function MujocoSimulatorPanel({
                   },
               signal,
             );
+            if (command.commandId === 'condition') {
+              const condition = command.inputs['condition'];
+              validateWalkingCondition(condition);
+              if (!result.proximity)
+                throw new Error('Distancia frontal desconocida.');
+              result.decision = {
+                condition,
+                value: evaluateWalkingCondition(
+                  condition,
+                  result.proximity.distanceMeters,
+                ),
+              };
+            }
             setReport((current) =>
               current
                 ? {
@@ -201,7 +224,7 @@ export default function MujocoSimulatorPanel({
             );
             return {
               commandId: command.id,
-              condition: result.proximity?.value,
+              condition: result.decision?.value ?? result.proximity?.value,
               status: result.status,
               evidence: result.evidence,
               message: result.proximity
@@ -265,7 +288,9 @@ export default function MujocoSimulatorPanel({
             manifest.joints,
           );
       if (
-        compiled.commands.some((c) => c.commandId === 'proximity') &&
+        compiled.commands.some(
+          (c) => c.commandId === 'proximity' || c.commandId === 'condition',
+        ) &&
         !manifest.depthSensor
       )
         throw new Error(copy.sensorRequired);
@@ -652,7 +677,8 @@ export default function MujocoSimulatorPanel({
           data-command-id={activeCommand.id}
           data-block-id={activeBlock}
         >
-          {activeCommand.commandId === 'proximity'
+          {activeCommand.commandId === 'proximity' ||
+          activeCommand.commandId === 'condition'
             ? copy.checking
             : activeCommand.commandId === 'distance'
               ? copy.advancing
@@ -673,10 +699,15 @@ export default function MujocoSimulatorPanel({
             .map((entry, index) => (
               <li key={entry.commandId}>
                 {index + 1}.{' '}
+                {entry.result.decision
+                  ? describeWalkingCondition(entry.result.decision.condition)
+                  : `d < ${(entry.result.proximity!.thresholdMeters * 100).toFixed(0)} cm`}
+                :{' '}
+                {(entry.result.decision?.value ?? entry.result.proximity!.value)
+                  ? copy.yes
+                  : copy.no}
+                {' · d = '}
                 {(entry.result.proximity!.distanceMeters * 100).toFixed(1)} cm
-                &lt;{' '}
-                {(entry.result.proximity!.thresholdMeters * 100).toFixed(0)} cm:{' '}
-                {entry.result.proximity!.value ? copy.yes : copy.no}
               </li>
             ))}
         </ol>

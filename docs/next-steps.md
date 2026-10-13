@@ -95,4 +95,12 @@ Estas entradas conservan líneas del proyecto fuera del incremento inmediato. Ca
 
 **Estado:** Hecha; petición global del usuario 2026-10-13. **Objetivo:** observar una condición sin avanzar hasta que se cumpla, con tiempo máximo explícito, muestreo reciente y cancelación. **Cierre:** ambos robots, cumplimiento inicial y timeout observables; pruebas compartidas y del editor pasan. [Evidencia](evidence/mujoco-wait-until.json).
 
-Siguiente identificador disponible: **BL-028**. Los hitos anteriores conservan sus resultados y fechas en el [plan general](implementation-plan.md) y sus informes; sus listas históricas no sustituyen la prioridad actual de este registro.
+### BL-028 Componer condiciones con operadores lógicos
+
+**Estado:** Hecha; petición global del usuario 2026-10-13, subconjunto adicional de BL-007. **Objetivo:** combinar proximidad con y/o/no en si, repetir hasta y esperar hasta. Una decisión usa una única lectura confirmada; ambas ramas se validan antes de mover y la expresión queda en el resultado guardado. **Cierre:** lógica anidada, lectura desconocida y persistencia verificadas en ambos robots. [Aceptación](evidence/mujoco-logical-conditions.json).
+
+### BL-029 Trasladar habilidades propias con evidencia
+
+**Estado:** En curso de auditoría; petición global del usuario 2026-10-13, desarrollo de BL-024/BL-008. **Resultado buscado:** cabeza y posturas de MicroDuck, después habilidades propias de ambos, según contratos y modelos reales. **Hallazgo:** hay políticas MicroDuck locales para sentarse/levantarse, patadas, tocar suelo, voltereta y ruedas; la marcha actual solo carga alpha-walking. Cabeza dispone de cuatro canales en la observación upstream. Jumper requiere los modos/controladores del bundle oficial. **Cierre por capacidad:** secuencia física, llegada observada, estabilidad y cancelación; no cerrar por encontrar un archivo.
+
+Siguiente identificador disponible: **BL-030**. Los hitos anteriores conservan sus resultados y fechas en el [plan general](implementation-plan.md) y sus informes; sus listas históricas no sustituyen la prioridad actual de este registro.

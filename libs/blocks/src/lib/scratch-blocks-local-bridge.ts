@@ -806,6 +806,14 @@ function createBotLabToolbox(
       },
       {
         kind: 'category',
+        name: scratchBlocks.Msg['CATEGORY_OPERATORS'],
+        categorystyle: 'operators_category',
+        contents: ['operator_and', 'operator_or', 'operator_not'].map(
+          (type) => ({ kind: 'block', type }),
+        ),
+      },
+      {
+        kind: 'category',
         name: scratchBlocks.Msg['BOTLAB_WEB_ADVANCED'],
         categorystyle: 'motion_category',
         contents: [{ kind: 'block', type: 'botlab_web_velocity' }],

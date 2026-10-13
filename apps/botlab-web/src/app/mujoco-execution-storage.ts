@@ -1,5 +1,7 @@
 import {
   walkingProgramLimits,
+  validateWalkingCondition,
+  evaluateWalkingCondition,
   type ExecutionResult,
   type ProgramIteration,
 } from '@botlab/model';
@@ -187,6 +189,20 @@ export function decodeMujocoExecution(
           capturedAtSeconds: p.capturedAtSeconds as number,
           sequence: p.sequence as number,
         };
+      }
+      if (result.decision !== undefined) {
+        const d = result.decision;
+        if (!record(d) || !checked.proximity || typeof d.value !== 'boolean')
+          throw new Error('Invalid saved condition.');
+        validateWalkingCondition(d.condition);
+        if (
+          evaluateWalkingCondition(
+            d.condition,
+            checked.proximity.distanceMeters,
+          ) !== d.value
+        )
+          throw new Error('Inconsistent saved condition.');
+        checked.decision = { condition: d.condition, value: d.value };
       }
       return {
         ...(entry.commandId !== undefined

@@ -1,4 +1,8 @@
-import { expandWalkingProgram, proximityCommandSchema } from '@botlab/model';
+import {
+  expandWalkingProgram,
+  walkingConditionCommandSchema,
+  proximityCommandSchema,
+} from '@botlab/model';
 import type {
   Behavior,
   BotLabAdapter,
@@ -152,7 +156,9 @@ export function createJumperWalkingAdapter(
         targetIds: [jumperWalkingTargetId],
         schema: {
           commands: [
-            ...(hasProximity ? [proximityCommandSchema] : []),
+            ...(hasProximity
+              ? [proximityCommandSchema, walkingConditionCommandSchema]
+              : []),
             {
               id: 'turn',
               name: 'Girar 90°',
@@ -304,17 +310,23 @@ export function compileJumperWalkingProgram(
       commandId: 'kind' in s ? s.kind : 'velocity',
       inputs:
         'kind' in s
-          ? s.kind === 'proximity'
-            ? { thresholdMeters: s.thresholdMeters }
-            : s.kind === 'distance'
-              ? {
-                  distanceMeters: s.distanceMeters,
-                  speed: 0.24,
-                  timeoutSeconds: 15 + s.distanceMeters / 0.04,
-                }
-              : s.kind === 'turn'
-                ? { angleRadians: s.angleRadians, speed: 1, timeoutSeconds: 45 }
-                : { durationSeconds: s.durationSeconds }
+          ? s.kind === 'condition'
+            ? { condition: s.condition }
+            : s.kind === 'proximity'
+              ? { thresholdMeters: s.thresholdMeters }
+              : s.kind === 'distance'
+                ? {
+                    distanceMeters: s.distanceMeters,
+                    speed: 0.24,
+                    timeoutSeconds: 15 + s.distanceMeters / 0.04,
+                  }
+                : s.kind === 'turn'
+                  ? {
+                      angleRadians: s.angleRadians,
+                      speed: 1,
+                      timeoutSeconds: 45,
+                    }
+                  : { durationSeconds: s.durationSeconds }
           : {
               forward: s.forward,
               yaw: s.yaw,

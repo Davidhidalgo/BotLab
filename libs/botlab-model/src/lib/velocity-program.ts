@@ -1,3 +1,7 @@
+import {
+  validateWalkingCondition,
+  type WalkingCondition,
+} from './walking-condition';
 import type { ProgramIteration } from './program';
 import type { CommandFlow, CapabilityCommandSchema } from './botlab-model';
 
@@ -24,20 +28,20 @@ export type WalkingProgramStep =
   | {
       sourceBlockId: string;
       kind: 'wait-until';
-      condition: ProximityCondition;
+      condition: WalkingCondition;
       timeoutSeconds: number;
     }
   | {
       sourceBlockId: string;
       kind: 'until';
-      condition: ProximityCondition;
+      condition: WalkingCondition;
       body: WalkingProgramStep[];
       otherwise?: WalkingProgramStep[];
     }
   | {
       sourceBlockId: string;
       kind: 'if';
-      condition: ProximityCondition;
+      condition: WalkingCondition;
       body: WalkingProgramStep[];
       otherwise?: WalkingProgramStep[];
     }
@@ -52,6 +56,7 @@ export type WalkingProgramStep =
 export type ExpandedWalkingStep = (
   | WalkingActionStep
   | { sourceBlockId: string; kind: 'proximity'; thresholdMeters: number }
+  | { sourceBlockId: string; kind: 'condition'; condition: WalkingCondition }
 ) & { iterations?: ProgramIteration[]; flow?: CommandFlow };
 
 export const proximityCommandSchema: CapabilityCommandSchema = {
@@ -67,6 +72,12 @@ export const proximityCommandSchema: CapabilityCommandSchema = {
       max: 4,
     },
   ],
+};
+export const walkingConditionCommandSchema: CapabilityCommandSchema = {
+  id: 'condition',
+  name: 'Condición de distancia',
+  description: 'Evalúa la expresión con una lectura frontal confirmada.',
+  inputs: [{ name: 'condition', type: 'object', required: true }],
 };
 export const walkingProgramLimits = {
   count: 100,
@@ -114,21 +125,7 @@ export function expandWalkingProgram(
         }
         if (step.kind === 'until' && step.otherwise !== undefined)
           throw new Error('Repetir hasta no admite una rama alternativa.');
-        const c = step.condition;
-        if (
-          !c ||
-          !c.sourceBlockId?.trim() ||
-          ids.has(c.sourceBlockId) ||
-          !Number.isFinite(c.thresholdMeters) ||
-          c.thresholdMeters < 0.05 ||
-          c.thresholdMeters > 4
-        )
-          throw new Error(
-            'La condición necesita un identificador propio y distancia de 5–400 cm.',
-          );
-        ids.add(c.sourceBlockId);
-        if (ids.size > walkingProgramLimits.sourceSteps)
-          throw new Error('Usa como máximo 256 bloques.');
+        validateWalkingCondition(step.condition, ids);
         if (step.kind === 'wait-until') continue;
         validate(step.body, depth + 1);
         if (step.otherwise) validate(step.otherwise, depth + 1);
@@ -168,8 +165,12 @@ export function expandWalkingProgram(
         append(
           {
             sourceBlockId: step.condition.sourceBlockId,
-            kind: 'proximity',
-            thresholdMeters: step.condition.thresholdMeters,
+            ...('operator' in step.condition
+              ? { kind: 'condition' as const, condition: step.condition }
+              : {
+                  kind: 'proximity' as const,
+                  thresholdMeters: step.condition.thresholdMeters,
+                }),
           },
           iterations,
         );

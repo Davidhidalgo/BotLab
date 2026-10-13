@@ -1,0 +1,177 @@
+{
+  "date": "2026-10-13T00:13:48.118Z",
+  "browser": "154.0.8037.98",
+  "results": [
+    {
+      "robot": "microduck",
+      "run": {
+        "targetId": "microduck-mujoco-web",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"10\" y=\"10\"><next><block type=\"control_if_else\" id=\"if\"><value name=\"CONDITION\"><block type=\"operator_and\" id=\"and\"><value name=\"OPERAND1\"><block type=\"botlab_web_obstacle\" id=\"far\"><field name=\"CM\">200</field></block></value><value name=\"OPERAND2\"><block type=\"operator_not\" id=\"not\"><value name=\"OPERAND\"><block type=\"botlab_web_obstacle\" id=\"near\"><field name=\"CM\">30</field></block></value></block></value></block></value><statement name=\"SUBSTACK\"><block type=\"control_wait\" id=\"true-wait\"><value name=\"DURATION\"><shadow type=\"math_positive_number\" id=\"#s]RXI+.M[fEh0a;7I*g\"><field name=\"NUM\">0.5</field></shadow></value></block></statement><statement name=\"SUBSTACK2\"><block type=\"botlab_web_advance_cm\" id=\"wrong-branch\"><field name=\"CM\">15</field></block></statement></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:13:36.722Z",
+        "manifestId": "microduck-obstacles-tof",
+        "modelRevision": "363b7effd4eae9f24dd1bb8bf647aef4d74edca9",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@1",
+            "sourceBlockId": "and",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 0,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 1.4592142649310205,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 0,
+                "sequence": 1
+              },
+              "decision": {
+                "condition": {
+                  "sourceBlockId": "and",
+                  "operator": "and",
+                  "left": {
+                    "sourceBlockId": "far",
+                    "thresholdMeters": 2
+                  },
+                  "right": {
+                    "sourceBlockId": "not",
+                    "operator": "not",
+                    "operand": {
+                      "sourceBlockId": "near",
+                      "thresholdMeters": 0.3
+                    }
+                  }
+                },
+                "value": true
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@2",
+            "sourceBlockId": "true-wait",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 0.5000000000000003,
+              "displacementMeters": 0.0016640625246686226,
+              "yawRadians": -0.003954602782731619
+            }
+          },
+          {
+            "commandId": "velocity-2@3",
+            "sourceBlockId": "if",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 0.5050000000000003,
+              "displacementMeters": 0.000010724143389526536,
+              "yawRadians": -0.00004611725924003919
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-9c21eae-2ba4faa5-2e2badda-7e354f08-mujoco-program-1",
+          "program": {
+            "programId": "microduck-web-walking",
+            "targetId": "microduck-mujoco-web",
+            "revision": "{\"commands\":[{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"condition\",\"flow\":{\"whenFalse\":3,\"whenTrue\":1},\"id\":\"velocity-0\",\"inputs\":{\"condition\":{\"left\":{\"sourceBlockId\":\"far\",\"thresholdMeters\":2},\"operator\":\"and\",\"right\":{\"operand\":{\"sourceBlockId\":\"near\",\"thresholdMeters\":0.3},\"operator\":\"not\",\"sourceBlockId\":\"not\"},\"sourceBlockId\":\"and\"}},\"sourceBlockId\":\"and\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"wait\",\"id\":\"velocity-1\",\"inputs\":{\"durationSeconds\":0.5},\"sourceBlockId\":\"true-wait\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"wait\",\"flow\":{\"next\":4},\"id\":\"velocity-2\",\"inputs\":{\"durationSeconds\":0},\"sourceBlockId\":\"if\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-3\",\"inputs\":{\"distanceMeters\":0.15,\"speed\":0.25,\"timeoutSeconds\":18.75},\"sourceBlockId\":\"wrong-branch\",\"targetId\":\"microduck-mujoco-web\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:13:37.245Z"
+      }
+    },
+    {
+      "robot": "jumper",
+      "run": {
+        "targetId": "jumper-web-walking",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"10\" y=\"10\"><next><block type=\"control_if_else\" id=\"if\"><value name=\"CONDITION\"><block type=\"operator_and\" id=\"and\"><value name=\"OPERAND1\"><block type=\"botlab_web_obstacle\" id=\"far\"><field name=\"CM\">200</field></block></value><value name=\"OPERAND2\"><block type=\"operator_not\" id=\"not\"><value name=\"OPERAND\"><block type=\"botlab_web_obstacle\" id=\"near\"><field name=\"CM\">30</field></block></value></block></value></block></value><statement name=\"SUBSTACK\"><block type=\"control_wait\" id=\"true-wait\"><value name=\"DURATION\"><shadow type=\"math_positive_number\" id=\"winNX7;5(kO~F37b4;Z1\"><field name=\"NUM\">0.5</field></shadow></value></block></statement><statement name=\"SUBSTACK2\"><block type=\"botlab_web_advance_cm\" id=\"wrong-branch\"><field name=\"CM\">15</field></block></statement></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:13:47.204Z",
+        "manifestId": "jumper-obstacles-tof",
+        "modelRevision": "78966f45de6f2b6de3f7cea017f32a39f8b993e6",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@1",
+            "sourceBlockId": "and",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 0,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 1.425322,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 0,
+                "sequence": 1
+              },
+              "decision": {
+                "condition": {
+                  "sourceBlockId": "and",
+                  "operator": "and",
+                  "left": {
+                    "sourceBlockId": "far",
+                    "thresholdMeters": 2
+                  },
+                  "right": {
+                    "sourceBlockId": "not",
+                    "operator": "not",
+                    "operand": {
+                      "sourceBlockId": "near",
+                      "thresholdMeters": 0.3
+                    }
+                  }
+                },
+                "value": true
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@2",
+            "sourceBlockId": "true-wait",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 0.5000000000000003,
+              "displacementMeters": 0.003243026413099445,
+              "yawRadians": 0.0005735455138783206
+            }
+          },
+          {
+            "commandId": "velocity-2@3",
+            "sourceBlockId": "if",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 0.5010000000000003,
+              "displacementMeters": 0.000026088854935771108,
+              "yawRadians": 0.0001397870242044266
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-dc6a2f27-104ed64c-842b4820-64f9436c-mujoco-program-1",
+          "program": {
+            "programId": "jumper-web-walking",
+            "targetId": "jumper-web-walking",
+            "revision": "{\"commands\":[{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"condition\",\"flow\":{\"whenFalse\":3,\"whenTrue\":1},\"id\":\"velocity-0\",\"inputs\":{\"condition\":{\"left\":{\"sourceBlockId\":\"far\",\"thresholdMeters\":2},\"operator\":\"and\",\"right\":{\"operand\":{\"sourceBlockId\":\"near\",\"thresholdMeters\":0.3},\"operator\":\"not\",\"sourceBlockId\":\"not\"},\"sourceBlockId\":\"and\"}},\"sourceBlockId\":\"and\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"wait\",\"id\":\"velocity-1\",\"inputs\":{\"durationSeconds\":0.5},\"sourceBlockId\":\"true-wait\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"wait\",\"flow\":{\"next\":4},\"id\":\"velocity-2\",\"inputs\":{\"durationSeconds\":0},\"sourceBlockId\":\"if\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-3\",\"inputs\":{\"distanceMeters\":0.15,\"speed\":0.24,\"timeoutSeconds\":18.75},\"sourceBlockId\":\"wrong-branch\",\"targetId\":\"jumper-web-walking\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:13:47.785Z"
+      }
+    }
+  ],
+  "errors": []
+}

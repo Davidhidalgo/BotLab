@@ -150,3 +150,29 @@ describe('walking conditional lowering', () => {
     ).toThrow('identificador');
   });
 });
+
+describe('conditional waiting', () => {
+  const step: WalkingProgramStep = {
+    sourceBlockId: 'await',
+    kind: 'wait-until',
+    condition: { sourceBlockId: 'sensor', thresholdMeters: 0.3 },
+    timeoutSeconds: 2,
+  };
+  it('checks immediately and waits half a simulated second between fresh checks', () => {
+    const result = expand([step, wait]);
+    expect(result[0].flow).toEqual({
+      whenTrue: 3,
+      whenFalse: 1,
+      maxFalseChecks: 5,
+    });
+    expect(result[1]).toMatchObject({ kind: 'wait', durationSeconds: 0.5 });
+    expect(result[2].flow).toEqual({ next: 0 });
+    expect(result[3]).toEqual(wait);
+  });
+  it('rejects invalid deadlines before running', () => {
+    for (const timeoutSeconds of [0, 0.6, 31, Infinity, NaN])
+      expect(() => expand([{ ...step, timeoutSeconds }])).toThrow(
+        /espera máxima/,
+      );
+  });
+});

@@ -545,7 +545,7 @@ Plan solicitado por el usuario al adoptar MuJoCo web como único destino visible
 | ---------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
 | Distancia al obstáculo [zona]                  | Número con unidad y validez                            | Distancias conocidas, orientación del sensor, alcance, objetos que ocultan otros y ausencia de impacto                      |
 | ¿Obstáculo a menos de [distancia]?             | Condición sobre lecturas confirmadas                   | Filtrado temporal e histéresis; distinguir espacio libre, fuera de alcance y fallo de lectura                               |
-| Repetir hasta [condición] + avanzar [15] cm     | El alumno compone avance y comprobación de proximidad | Evaluar antes de entrar y después de cada avance terminado; lectura reciente, límite de iteraciones/tiempo y cancelación |
+| Repetir hasta [condición] + avanzar [15] cm    | El alumno compone avance y comprobación de proximidad  | Evaluar antes de entrar y después de cada avance terminado; lectura reciente, límite de iteraciones/tiempo y cancelación    |
 | Girar [dirección] hasta encontrar paso libre   | Buscar apertura observada                              | Giro mínimo significativo, confirmación de apertura y revisión después de parar; respetar direcciones de marcha disponibles |
 | ¿Está [postura]? / ¿está cambiando de postura? | Observación estable, transición conocida o desconocido | No deducir «sentado» de una caída ni «transición» de cualquier desequilibrio                                                |
 
@@ -599,7 +599,6 @@ al pulsar la bandera
 ```
 
 Evaluar la condición antes del primer avance y después de que termine cada movimiento, con una lectura reciente correspondiente a la nueva pose. Si ya hay un obstáculo cercano, ejecutar cero avances. Lectura inválida, caducada o sin retorno no equivale automáticamente a «no hay obstáculo»: definir y mostrar su significado antes de autorizar otro movimiento. La traza debe mostrar distancia observada, decisión e iteración, para relacionar causa y efecto. El bucle debe ser cancelable y acotado, incluido si nunca se satisface la condición. Validar avances repetidos de 15 cm, tolerancia, margen, condición inicial verdadera/falsa y pérdida de lectura; no inferir esa aceptación de la marcha de 0,5 m ya medida. Es una decisión de diseño registrada, todavía sin bloques nuevos implementados.
-
 
 ### Resultado de la composición — 2026-10-13
 

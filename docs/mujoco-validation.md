@@ -240,7 +240,6 @@ Run `node tools/mujoco/verify-tof.mjs` for the browser workflow and `node tools/
 
 Remaining scope at the end of this first increment (completed in the following section): reusable proximity conditions, stale-reading handling for decisions, an explicit conditional loop with 15 cm advances, a dedicated Jumper sensor configuration and navigation acceptance. The assistant’s proposed composite “advance until obstacle” block is superseded by this educational composition. No automatic avoidance, sensor blocks, hardware validation, Safari or mobile acceptance is claimed here. Obstacle collisions remain possible; the existing policy receives no depth input.
 
-
 ## Shared proximity conditions — 2026-10-13
 
 BL-026 now provides the same educational composition in both MuJoCo walking destinations: `repeat until <obstacle closer than 30 cm>` with an explicit `advance 15 cm` body. The predicate also works in `if` and `if/else`. Both branches are validated before execution; the shared model compiles branch offsets and the shared runtime executes them. This is a bounded condition subset, not the general expression interpreter of BL-007. Existing metre/step blocks retain their units.
@@ -258,3 +257,9 @@ Model, blocks, runtime, adapters, simulator and editor tests passed, as did conf
 Examples: [MicroDuck](../examples/microduck-mujoco-proximity.botlab.json), [Jumper](../examples/jumper-mujoco-proximity.botlab.json). Reproduce using the [MuJoCo tool instructions](../tools/mujoco/README.md#conditions-and-15-cm-advances).
 
 Limits: the predicate observes a narrow frontal region, including ground/self intersections as appropriate to pose. It does not establish that the whole path is clear. Motion is evaluated after each complete advance, with no hidden continuous obstacle avoidance. No hardware, Safari, mobile or classroom validation is claimed.
+
+## Bounded conditional waiting — 2026-10-13
+
+BL-027 adds a shared wait-until block with an explicit 0.5–30 simulated-second deadline. It checks immediately, balances for 0.5 s between false readings and fails visibly at the deadline. True conditions take no waiting action. The runtime retains its global instruction budget and resets false-check counters for each run. Model/runtime tests cover lowering, deadline validation and counter isolation. [Chrome acceptance](evidence/mujoco-wait-until.json) exercises both walking robots from the compiled editor, with an initially true 200 cm threshold and a false 30 cm threshold timing out after one second.
+
+The first hosted run after the accumulated push found formatting differences in evidence JSON and plan Markdown. Formatting was corrected without changing numerical evidence. Local full checks use the pinned pnpm 10 via Corepack; unrelated untracked output/Blender files are excluded from tracked-file formatting checks, not rewritten.

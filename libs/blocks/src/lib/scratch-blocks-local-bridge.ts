@@ -790,6 +790,7 @@ function createBotLabToolbox(
             },
           },
           { kind: 'block', type: 'control_repeat_until' },
+          { kind: 'block', type: 'botlab_web_wait_until' },
           { kind: 'block', type: 'control_if' },
           { kind: 'block', type: 'control_if_else' },
           {

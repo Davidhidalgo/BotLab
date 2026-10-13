@@ -5,11 +5,7 @@
     {
       "robot": "microduck",
       "manifestId": "microduck-obstacles-tof",
-      "initial": [
-        0,
-        0,
-        0.12
-      ],
+      "initial": [0, 0, 0.12],
       "trace": [
         {
           "status": "completed",
@@ -213,11 +209,7 @@
     {
       "robot": "jumper",
       "manifestId": "jumper-obstacles-tof",
-      "initial": [
-        0,
-        0,
-        0.10647
-      ],
+      "initial": [0, 0, 0.10647],
       "trace": [
         {
           "status": "completed",

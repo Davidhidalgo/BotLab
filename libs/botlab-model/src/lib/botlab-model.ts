@@ -233,7 +233,7 @@ export interface BehaviorArtifact extends Artifact {
 
 export type CommandFlow =
   | { next: number }
-  | { whenTrue: number; whenFalse: number };
+  | { whenTrue: number; whenFalse: number; maxFalseChecks?: number };
 export interface CompiledCommand {
   /** Explicit instruction offsets; commands.length is the program exit. */
   flow?: CommandFlow;
@@ -616,10 +616,16 @@ export function validateCompiledBehaviorArtifact(
         Array.isArray(flow) ||
         !(
           Object.keys(flow).sort().join(',') === 'next' ||
-          Object.keys(flow).sort().join(',') === 'whenFalse,whenTrue'
+          Object.keys(flow).sort().join(',') === 'whenFalse,whenTrue' ||
+          Object.keys(flow).sort().join(',') ===
+            'maxFalseChecks,whenFalse,whenTrue'
         ) ||
-        Object.values(flow).some(
-          (n) => !Number.isInteger(n) || n < 0 || n > artifact.commands.length,
+        Object.entries(flow).some(
+          ([key, n]) =>
+            !Number.isInteger(n) ||
+            (key === 'maxFalseChecks'
+              ? n < 1 || n > 61
+              : n < 0 || n > artifact.commands.length),
         )
       )
         errors.push(`Invalid control flow for ${command.id}.`);

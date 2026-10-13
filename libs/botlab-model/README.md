@@ -25,3 +25,5 @@ Run `nx test botlab-model` to execute the unit tests via [Vitest](https://vitest
 <!-- bounded conditional instructions from src/lib/velocity-program.ts and src/lib/botlab-model.ts -->
 
 Walking programs also accept `until` and `if` nodes with a `ProximityCondition` and optional else body for `if`. The complete source, including unselected branches, is validated before lowering. `ExpandedWalkingStep` retains branch offsets through `CommandFlow`: either `next` or `whenTrue`/`whenFalse`, bounded to the command list or its exit. Conditions lower to the shared `proximityCommandSchema` (5–400 cm in SI inputs). Dynamic execution remains in the runtime; the adapter still supplies robot-specific movement limits and speeds. General expressions remain outside this subset.
+
+`wait-until` lowers to a fresh predicate followed by half-second balance waits. Its explicit 0.5–30 s timeout becomes `maxFalseChecks` on the condition branch; the whole-program budget remains in force.

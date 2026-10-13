@@ -23,6 +23,12 @@ export interface ProximityCondition {
 export type WalkingProgramStep =
   | {
       sourceBlockId: string;
+      kind: 'wait-until';
+      condition: ProximityCondition;
+      timeoutSeconds: number;
+    }
+  | {
+      sourceBlockId: string;
       kind: 'until';
       condition: ProximityCondition;
       body: WalkingProgramStep[];
@@ -89,7 +95,23 @@ export function expandWalkingProgram(
       ids.add(step.sourceBlockId);
       if (ids.size > walkingProgramLimits.sourceSteps)
         throw new Error('Usa como máximo 256 bloques.');
-      if ('kind' in step && (step.kind === 'until' || step.kind === 'if')) {
+      if (
+        'kind' in step &&
+        (step.kind === 'until' ||
+          step.kind === 'if' ||
+          step.kind === 'wait-until')
+      ) {
+        if (step.kind === 'wait-until') {
+          if (
+            !Number.isFinite(step.timeoutSeconds) ||
+            step.timeoutSeconds < 0.5 ||
+            step.timeoutSeconds > 30 ||
+            !Number.isInteger(step.timeoutSeconds * 2)
+          )
+            throw new Error(
+              'La espera máxima debe ser de 0,5–30 s, en intervalos de 0,5 s.',
+            );
+        }
         if (step.kind === 'until' && step.otherwise !== undefined)
           throw new Error('Repetir hasta no admite una rama alternativa.');
         const c = step.condition;
@@ -107,6 +129,7 @@ export function expandWalkingProgram(
         ids.add(c.sourceBlockId);
         if (ids.size > walkingProgramLimits.sourceSteps)
           throw new Error('Usa como máximo 256 bloques.');
+        if (step.kind === 'wait-until') continue;
         validate(step.body, depth + 1);
         if (step.otherwise) validate(step.otherwise, depth + 1);
       } else if ('kind' in step && step.kind === 'repeat') {
@@ -135,7 +158,12 @@ export function expandWalkingProgram(
     iterations: ProgramIteration[] = [],
   ) {
     for (const step of steps) {
-      if ('kind' in step && (step.kind === 'until' || step.kind === 'if')) {
+      if (
+        'kind' in step &&
+        (step.kind === 'until' ||
+          step.kind === 'if' ||
+          step.kind === 'wait-until')
+      ) {
         const check = expanded.length;
         append(
           {
@@ -146,7 +174,16 @@ export function expandWalkingProgram(
           iterations,
         );
         const bodyStart = expanded.length;
-        lower(step.body, iterations);
+        if (step.kind === 'wait-until')
+          append(
+            {
+              sourceBlockId: step.sourceBlockId,
+              kind: 'wait',
+              durationSeconds: 0.5,
+            },
+            iterations,
+          );
+        else lower(step.body, iterations);
         const jump = expanded.length;
         append(
           {
@@ -160,10 +197,16 @@ export function expandWalkingProgram(
         if (step.kind === 'if') lower(step.otherwise ?? [], iterations);
         const end = expanded.length;
         expanded[check].flow =
-          step.kind === 'until'
-            ? { whenTrue: end, whenFalse: bodyStart }
+          step.kind !== 'if'
+            ? {
+                whenTrue: end,
+                whenFalse: bodyStart,
+                ...(step.kind === 'wait-until'
+                  ? { maxFalseChecks: step.timeoutSeconds * 2 + 1 }
+                  : {}),
+              }
             : { whenTrue: bodyStart, whenFalse: otherwise };
-        expanded[jump].flow = { next: step.kind === 'until' ? check : end };
+        expanded[jump].flow = { next: step.kind !== 'if' ? check : end };
       } else if ('kind' in step && step.kind === 'repeat') {
         for (let iteration = 1; iteration <= step.count; iteration++) {
           const path = [

@@ -14,6 +14,7 @@ export function applyWebWalkingLocale(
       'Control por velocidad y tiempo. La distancia y el giro reales pueden variar.',
       'avanzar %1 cm',
       '¿obstáculo delante a menos de %1 cm?',
+      'esperar hasta %1 máximo %2 s',
     ],
     ca: [
       'Avançat',
@@ -21,6 +22,7 @@ export function applyWebWalkingLocale(
       'Control per velocitat i temps. La distància i el gir reals poden variar.',
       'avançar %1 cm',
       'obstacle davant a menys de %1 cm?',
+      'espera fins a %1 màxim %2 s',
     ],
     en: [
       'Advanced',
@@ -28,6 +30,7 @@ export function applyWebWalkingLocale(
       'Control by speed and time. Actual distance and turn can vary.',
       'advance %1 cm',
       'obstacle ahead closer than %1 cm?',
+      'wait until %1 at most %2 s',
     ],
   }[locale];
   for (const [i, key] of [
@@ -36,12 +39,30 @@ export function applyWebWalkingLocale(
     'HELP',
     'CENTIMETRES',
     'PROXIMITY',
+    'WAIT_UNTIL',
   ].entries())
     api.Msg[`BOTLAB_WEB_${key}`] = copy[i];
 }
 export function registerMicroduckMujocoBlocks(api: typeof ScratchBlocks) {
   if (api.Blocks['botlab_web_velocity']) return;
   api.defineBlocksWithJsonArray([
+    {
+      type: 'botlab_web_wait_until',
+      message0: '%{BKY_BOTLAB_WEB_WAIT_UNTIL}',
+      args0: [
+        { type: 'input_value', name: 'CONDITION', check: 'Boolean' },
+        {
+          type: 'field_number',
+          name: 'SECONDS',
+          value: 5,
+          min: 0.5,
+          max: 30,
+          precision: 0.5,
+        },
+      ],
+      style: 'control',
+      extensions: ['shape_statement'],
+    },
     {
       type: 'botlab_web_advance_cm',
       message0: '%{BKY_BOTLAB_WEB_CENTIMETRES}',
@@ -95,6 +116,7 @@ const commonWalkingBlockTypes = [
   'control_wait',
   'control_repeat',
   'control_repeat_until',
+  'botlab_web_wait_until',
   'control_if',
   'control_if_else',
   'botlab_web_advance_cm',
@@ -259,7 +281,14 @@ function readWalkingProgram(
           'Bloque de movimiento no compatible o más de 256 bloques.',
         );
       const sourceBlockId = current.getAttribute('id') ?? '';
-      if (
+      if (type === 'botlab_web_wait_until') {
+        steps.push({
+          sourceBlockId,
+          kind: 'wait-until',
+          condition: condition(current),
+          timeoutSeconds: number(current, 'SECONDS'),
+        });
+      } else if (
         ['control_repeat_until', 'control_if', 'control_if_else'].includes(type)
       ) {
         steps.push({

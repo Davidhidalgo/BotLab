@@ -1,0 +1,351 @@
+{
+  "date": "2026-10-13T00:10:43.040Z",
+  "browser": "154.0.8037.98",
+  "results": [
+    {
+      "robot": "microduck",
+      "expected": "completed",
+      "run": {
+        "targetId": "microduck-mujoco-web",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"10\" y=\"10\"><next><block type=\"botlab_web_wait_until\" id=\"await\"><field name=\"SECONDS\">1</field><value name=\"CONDITION\"><block type=\"botlab_web_obstacle\" id=\"sensor\"><field name=\"CM\">200</field></block></value></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:10:12.142Z",
+        "manifestId": "microduck-obstacles-tof",
+        "modelRevision": "363b7effd4eae9f24dd1bb8bf647aef4d74edca9",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@1",
+            "sourceBlockId": "sensor",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 0,
+              "proximity": {
+                "value": true,
+                "distanceMeters": 1.4592142649310205,
+                "thresholdMeters": 2,
+                "capturedAtSeconds": 0,
+                "sequence": 1
+              }
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-a22bc754-b749a79a-f0e6fceb-5ebc246a-mujoco-program-1",
+          "program": {
+            "programId": "microduck-web-walking",
+            "targetId": "microduck-mujoco-web",
+            "revision": "{\"commands\":[{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"proximity\",\"flow\":{\"maxFalseChecks\":3,\"whenFalse\":1,\"whenTrue\":3},\"id\":\"velocity-0\",\"inputs\":{\"thresholdMeters\":2},\"sourceBlockId\":\"sensor\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"wait\",\"id\":\"velocity-1\",\"inputs\":{\"durationSeconds\":0.5},\"sourceBlockId\":\"await\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"wait\",\"flow\":{\"next\":0},\"id\":\"velocity-2\",\"inputs\":{\"durationSeconds\":0},\"sourceBlockId\":\"await\",\"targetId\":\"microduck-mujoco-web\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:10:12.155Z"
+      }
+    },
+    {
+      "robot": "microduck",
+      "expected": "failed",
+      "run": {
+        "targetId": "microduck-mujoco-web",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"10\" y=\"10\"><next><block type=\"botlab_web_wait_until\" id=\"await\"><field name=\"SECONDS\">1</field><value name=\"CONDITION\"><block type=\"botlab_web_obstacle\" id=\"sensor\"><field name=\"CM\">30</field></block></value></block></next></block></xml>",
+        "status": "failed",
+        "startedAt": "2026-10-13T00:10:19.256Z",
+        "manifestId": "microduck-obstacles-tof",
+        "modelRevision": "363b7effd4eae9f24dd1bb8bf647aef4d74edca9",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@1",
+            "sourceBlockId": "sensor",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 0,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 1.4592142649310205,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 0,
+                "sequence": 1
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@2",
+            "sourceBlockId": "await",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 0.5000000000000003,
+              "displacementMeters": 0.0016640625246686226,
+              "yawRadians": -0.003954602782731619
+            }
+          },
+          {
+            "commandId": "velocity-2@3",
+            "sourceBlockId": "await",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 0.5050000000000003,
+              "displacementMeters": 0.000010724143389526536,
+              "yawRadians": -0.00004611725924003919
+            }
+          },
+          {
+            "commandId": "velocity-0@4",
+            "sourceBlockId": "sensor",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 0.5200000000000004,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 1.0100650986273292,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 0.5200000000000004,
+                "sequence": 9
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@5",
+            "sourceBlockId": "await",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 1.0200000000000002,
+              "displacementMeters": 0.00014179725083313436,
+              "yawRadians": -0.00042520943012063937
+            }
+          },
+          {
+            "commandId": "velocity-2@6",
+            "sourceBlockId": "await",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 1.0250000000000001,
+              "displacementMeters": 3.8813516819493455e-7,
+              "yawRadians": -0.00003904139886880178
+            }
+          },
+          {
+            "commandId": "velocity-0@7",
+            "sourceBlockId": "sensor",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 1.0399999999999998,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 0.9925903321177839,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 1.0399999999999998,
+                "sequence": 18
+              }
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-5e8bc9e7-f5cf613e-f223d80f-c66773c9-mujoco-program-1",
+          "program": {
+            "programId": "microduck-web-walking",
+            "targetId": "microduck-mujoco-web",
+            "revision": "{\"commands\":[{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"proximity\",\"flow\":{\"maxFalseChecks\":3,\"whenFalse\":1,\"whenTrue\":3},\"id\":\"velocity-0\",\"inputs\":{\"thresholdMeters\":0.3},\"sourceBlockId\":\"sensor\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"wait\",\"id\":\"velocity-1\",\"inputs\":{\"durationSeconds\":0.5},\"sourceBlockId\":\"await\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"wait\",\"flow\":{\"next\":0},\"id\":\"velocity-2\",\"inputs\":{\"durationSeconds\":0},\"sourceBlockId\":\"await\",\"targetId\":\"microduck-mujoco-web\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "failed",
+          "evidence": "none",
+          "diagnostic": {
+            "code": "dispatcher-threw",
+            "message": "La condición no se cumplió dentro del tiempo máximo de espera."
+          }
+        },
+        "finishedAt": "2026-10-13T00:10:20.294Z"
+      }
+    },
+    {
+      "robot": "jumper",
+      "expected": "completed",
+      "run": {
+        "targetId": "jumper-web-walking",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"10\" y=\"10\"><next><block type=\"botlab_web_wait_until\" id=\"await\"><field name=\"SECONDS\">1</field><value name=\"CONDITION\"><block type=\"botlab_web_obstacle\" id=\"sensor\"><field name=\"CM\">200</field></block></value></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:10:31.324Z",
+        "manifestId": "jumper-obstacles-tof",
+        "modelRevision": "78966f45de6f2b6de3f7cea017f32a39f8b993e6",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@1",
+            "sourceBlockId": "sensor",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 0,
+              "proximity": {
+                "value": true,
+                "distanceMeters": 1.425322,
+                "thresholdMeters": 2,
+                "capturedAtSeconds": 0,
+                "sequence": 1
+              }
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-155a6615-c8f767c-ff3f9bd8-afc50c40-mujoco-program-1",
+          "program": {
+            "programId": "jumper-web-walking",
+            "targetId": "jumper-web-walking",
+            "revision": "{\"commands\":[{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"proximity\",\"flow\":{\"maxFalseChecks\":3,\"whenFalse\":1,\"whenTrue\":3},\"id\":\"velocity-0\",\"inputs\":{\"thresholdMeters\":2},\"sourceBlockId\":\"sensor\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"wait\",\"id\":\"velocity-1\",\"inputs\":{\"durationSeconds\":0.5},\"sourceBlockId\":\"await\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"wait\",\"flow\":{\"next\":0},\"id\":\"velocity-2\",\"inputs\":{\"durationSeconds\":0},\"sourceBlockId\":\"await\",\"targetId\":\"jumper-web-walking\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:10:31.340Z"
+      }
+    },
+    {
+      "robot": "jumper",
+      "expected": "failed",
+      "run": {
+        "targetId": "jumper-web-walking",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"10\" y=\"10\"><next><block type=\"botlab_web_wait_until\" id=\"await\"><field name=\"SECONDS\">1</field><value name=\"CONDITION\"><block type=\"botlab_web_obstacle\" id=\"sensor\"><field name=\"CM\">30</field></block></value></block></next></block></xml>",
+        "status": "failed",
+        "startedAt": "2026-10-13T00:10:41.138Z",
+        "manifestId": "jumper-obstacles-tof",
+        "modelRevision": "78966f45de6f2b6de3f7cea017f32a39f8b993e6",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@1",
+            "sourceBlockId": "sensor",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 0,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 1.425322,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 0,
+                "sequence": 1
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@2",
+            "sourceBlockId": "await",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 0.5000000000000003,
+              "displacementMeters": 0.003243026413099445,
+              "yawRadians": 0.0005735455138783206
+            }
+          },
+          {
+            "commandId": "velocity-2@3",
+            "sourceBlockId": "await",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 0.5010000000000003,
+              "displacementMeters": 0.000026088854935771108,
+              "yawRadians": 0.0001397870242044266
+            }
+          },
+          {
+            "commandId": "velocity-0@4",
+            "sourceBlockId": "sensor",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 0.5100000000000003,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 1.4220932796680268,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 0.5100000000000003,
+                "sequence": 9
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@5",
+            "sourceBlockId": "await",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 1.0099999999999996,
+              "displacementMeters": 0.0012374984673101542,
+              "yawRadians": -0.001024030825285288
+            }
+          },
+          {
+            "commandId": "velocity-2@6",
+            "sourceBlockId": "await",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 1.015999999999999,
+              "displacementMeters": 1.1713324536213031e-7,
+              "yawRadians": -0.000004525265713246126
+            }
+          },
+          {
+            "commandId": "velocity-0@7",
+            "sourceBlockId": "sensor",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 1.0199999999999985,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 1.4224551338427032,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 1.0199999999999985,
+                "sequence": 18
+              }
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-99a1e05a-cf2d8fb8-75ea0a2c-ce044b1-mujoco-program-1",
+          "program": {
+            "programId": "jumper-web-walking",
+            "targetId": "jumper-web-walking",
+            "revision": "{\"commands\":[{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"proximity\",\"flow\":{\"maxFalseChecks\":3,\"whenFalse\":1,\"whenTrue\":3},\"id\":\"velocity-0\",\"inputs\":{\"thresholdMeters\":0.3},\"sourceBlockId\":\"sensor\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"wait\",\"id\":\"velocity-1\",\"inputs\":{\"durationSeconds\":0.5},\"sourceBlockId\":\"await\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"wait\",\"flow\":{\"next\":0},\"id\":\"velocity-2\",\"inputs\":{\"durationSeconds\":0},\"sourceBlockId\":\"await\",\"targetId\":\"jumper-web-walking\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "failed",
+          "evidence": "none",
+          "diagnostic": {
+            "code": "dispatcher-threw",
+            "message": "La condición no se cumplió dentro del tiempo máximo de espera."
+          }
+        },
+        "finishedAt": "2026-10-13T00:10:42.238Z"
+      }
+    }
+  ],
+  "errors": []
+}

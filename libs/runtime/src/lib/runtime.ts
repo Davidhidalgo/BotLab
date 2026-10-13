@@ -1151,6 +1151,7 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
           session.id,
         );
         let instruction = 0;
+        const falseChecks = new Map<number, number>();
         const boundedFlow = artifact.commands.some((c) => c.flow !== undefined);
         for (; instruction < artifact.commands.length;) {
           if (boundedFlow && dispatchResults.length >= 256) {
@@ -1239,6 +1240,17 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
                 throw new Error(
                   'La condición requiere una lectura confirmada.',
                 );
+              if (flow && 'whenTrue' in flow && flow.maxFalseChecks) {
+                if (result.condition) falseChecks.delete(instruction);
+                else {
+                  const count = (falseChecks.get(instruction) ?? 0) + 1;
+                  falseChecks.set(instruction, count);
+                  if (count >= flow.maxFalseChecks)
+                    throw new Error(
+                      'La condición no se cumplió dentro del tiempo máximo de espera.',
+                    );
+                }
+              }
               instruction = !flow
                 ? instruction + 1
                 : 'next' in flow

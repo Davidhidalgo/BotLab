@@ -114,3 +114,5 @@ The web walking examples use the existing educational movement blocks: advance i
 A mounted native editor forwards change notifications to the latest React `onArtifactChange` callback without remounting the workspace. Hosts can therefore react to the current execution/session when cancelling a run after edits.
 
 Mount generations exclude notifications from replaced or unmounted workspaces. A pending mount suppresses duplicate automatic mounts, and a handle returned after cancellation is disposed immediately. The local bridge also ignores queued changes after disposal, preventing late editor events from replacing an imported project.
+
+Both walking palettes include **wait until [condition], at most [seconds]**. The timeout is explicit (0.5–30 s in half-second increments); the existing proximity condition connects to it. The robot balances while observing, and no forward action is inserted.

@@ -1137,6 +1137,39 @@ describe('bounded conditional command flow', () => {
       false,
     );
   });
+  it('fails at the configured false-check limit and resets counters on a new run', async () => {
+    let checks = 0;
+    const runtime = createTestRuntime(
+      {
+        dispatch: (command) => {
+          if (command.id === 'condition') checks++;
+          return {
+            commandId: command.id,
+            status: 'completed',
+            evidence: 'hardware',
+            condition: false,
+            message: 'observed',
+          };
+        },
+      },
+      [],
+    );
+    const session = runtime.createSession({ id: 'timeout' });
+    const artifact = plan();
+    artifact.commands[0] = {
+      ...artifact.commands[0],
+      flow: { ...artifact.commands[0].flow, maxFalseChecks: 3 },
+    } as (typeof artifact.commands)[0];
+    for (let i = 1; i <= 2; i++) {
+      expect(
+        runtime.loadCompiledBehavior(session.id, artifact).validation.valid,
+      ).toBe(true);
+      const result = await runtime.startSession(session.id);
+      expect(result.outcome.status).toBe('failed');
+      expect(result.outcome.diagnostic?.message).toContain('tiempo máximo');
+      expect(checks).toBe(i * 3);
+    }
+  });
   it('cancels after an in-flight condition without starting the next action', async () => {
     let release!: () => void;
     const pending = new Promise<void>((r) => {

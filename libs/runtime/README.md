@@ -32,3 +32,5 @@ Run `pnpm nx test runtime --run` from the repository root. Regression tests use 
 <!-- conditional control flow from src/lib/runtime.ts and ../../botlab-model/src/lib/botlab-model.ts -->
 
 `CompiledCommand.flow` optionally selects the next instruction. Conditional branches require a completed dispatcher result with target evidence and a boolean `condition`; missing/unknown values fail before the next movement. The runtime validates all command schemas/branch targets before execution, retains cancellation and exclusive ownership, and limits programs containing control flow to 256 dispatched instructions (including condition checks and checkpoints). Completion means reaching the declared exit, not executing every static branch. Program identity includes the flow metadata. Plain sequential artifacts keep their previous behavior.
+
+Conditional flow may declare `maxFalseChecks` (1–61). Consecutive false decisions fail with a visible timeout diagnostic at that limit; a true decision resets the counter. Counters belong to one run and cannot leak into a rerun.

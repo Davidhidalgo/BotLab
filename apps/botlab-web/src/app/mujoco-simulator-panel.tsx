@@ -1,5 +1,6 @@
 import {
   evaluateWalkingCondition,
+  walkingConditionRequirements,
   describeWalkingCondition,
   validateWalkingCondition,
 } from '@botlab/model';
@@ -136,85 +137,105 @@ export default function MujocoSimulatorPanel({
             setActiveCommand(command);
             if (command.commandId === 'condition')
               validateWalkingCondition(command.inputs['condition']);
+            const needs =
+              command.commandId === 'condition'
+                ? walkingConditionRequirements(command.inputs['condition'])
+                : undefined;
             const result = await session.command(
-              walking
-                ? command.commandId === 'proximity' ||
-                  command.commandId === 'condition'
-                  ? {
-                      kind: 'proximity',
-                      thresholdMeters: Number(
-                        command.commandId === 'condition'
-                          ? 0.3
-                          : command.inputs['thresholdMeters'],
-                      ),
-                    }
-                  : command.commandId === 'posture'
+              needs && !needs.distance
+                ? { kind: 'observe-posture' }
+                : walking
+                  ? command.commandId === 'proximity' ||
+                    command.commandId === 'condition'
                     ? {
-                        kind: 'posture',
-                        posture: command.inputs['posture'] as 'sit' | 'stand',
+                        kind: 'proximity',
+                        thresholdMeters: Number(
+                          command.commandId === 'condition'
+                            ? 0.3
+                            : command.inputs['thresholdMeters'],
+                        ),
                       }
-                    : command.commandId === 'head-yaw'
-                      ? {
-                          kind: 'head-yaw',
-                          angleRadians: Number(command.inputs['angleRadians']),
-                        }
-                      : command.commandId === 'distance'
+                    : command.commandId === 'rest'
+                      ? { kind: 'rest' }
+                      : command.commandId === 'posture'
                         ? {
-                            kind: 'distance',
-                            distanceMeters: Number(
-                              command.inputs['distanceMeters'],
-                            ),
-                            speed: Number(command.inputs['speed']),
-                            timeoutSeconds: Number(
-                              command.inputs['timeoutSeconds'],
-                            ),
+                            kind: 'posture',
+                            posture: command.inputs['posture'] as
+                              | 'sit'
+                              | 'stand',
                           }
-                        : command.commandId === 'turn'
+                        : command.commandId === 'head-yaw'
                           ? {
-                              kind: 'turn',
+                              kind: 'head-yaw',
                               angleRadians: Number(
                                 command.inputs['angleRadians'],
                               ),
-                              speed: Number(command.inputs['speed']),
-                              timeoutSeconds: Number(
-                                command.inputs['timeoutSeconds'],
-                              ),
                             }
-                          : command.commandId === 'wait'
+                          : command.commandId === 'distance'
                             ? {
-                                kind: 'velocity',
-                                forward: 0,
-                                yaw: 0,
-                                durationSeconds: Number(
-                                  command.inputs['durationSeconds'],
+                                kind: 'distance',
+                                distanceMeters: Number(
+                                  command.inputs['distanceMeters'],
+                                ),
+                                speed: Number(command.inputs['speed']),
+                                timeoutSeconds: Number(
+                                  command.inputs['timeoutSeconds'],
                                 ),
                               }
-                            : {
-                                kind: 'velocity',
-                                forward: Number(command.inputs['forward']),
-                                yaw: Number(command.inputs['yaw']),
-                                durationSeconds: Number(
-                                  command.inputs['durationSeconds'],
-                                ),
-                              }
-                : {
-                    joint: String(command.inputs['joint']),
-                    positionRadians: Number(command.inputs['positionRadians']),
-                    toleranceRadians: 0.02,
-                    timeoutSeconds: 5,
-                  },
+                            : command.commandId === 'turn'
+                              ? {
+                                  kind: 'turn',
+                                  angleRadians: Number(
+                                    command.inputs['angleRadians'],
+                                  ),
+                                  speed: Number(command.inputs['speed']),
+                                  timeoutSeconds: Number(
+                                    command.inputs['timeoutSeconds'],
+                                  ),
+                                }
+                              : command.commandId === 'wait'
+                                ? {
+                                    kind: 'velocity',
+                                    forward: 0,
+                                    yaw: 0,
+                                    durationSeconds: Number(
+                                      command.inputs['durationSeconds'],
+                                    ),
+                                  }
+                                : {
+                                    kind: 'velocity',
+                                    forward: Number(command.inputs['forward']),
+                                    yaw: Number(command.inputs['yaw']),
+                                    durationSeconds: Number(
+                                      command.inputs['durationSeconds'],
+                                    ),
+                                  }
+                  : {
+                      joint: String(command.inputs['joint']),
+                      positionRadians: Number(
+                        command.inputs['positionRadians'],
+                      ),
+                      toleranceRadians: 0.02,
+                      timeoutSeconds: 5,
+                    },
               signal,
             );
             if (command.commandId === 'condition') {
               const condition = command.inputs['condition'];
               validateWalkingCondition(condition);
-              if (!result.proximity)
-                throw new Error('Distancia frontal desconocida.');
+              if (needs?.posture && !result.postureObservation) {
+                const observed = await session.command(
+                  { kind: 'observe-posture' },
+                  signal,
+                );
+                result.postureObservation = observed.postureObservation;
+              }
               result.decision = {
                 condition,
                 value: evaluateWalkingCondition(
                   condition,
-                  result.proximity.distanceMeters,
+                  result.proximity?.distanceMeters,
+                  result.postureObservation?.state,
                 ),
               };
             }
@@ -301,7 +322,10 @@ export default function MujocoSimulatorPanel({
           );
       if (
         compiled.commands.some(
-          (c) => c.commandId === 'proximity' || c.commandId === 'condition',
+          (c) =>
+            c.commandId === 'proximity' ||
+            (c.commandId === 'condition' &&
+              walkingConditionRequirements(c.inputs['condition']).distance),
         ) &&
         !manifest.depthSensor
       )
@@ -705,6 +729,15 @@ export default function MujocoSimulatorPanel({
         </p>
       )}
       {commandTrace
+        .filter((e) => e.result.rest)
+        .map((entry) => (
+          <p key={entry.commandId} className="px-4 text-sm">
+            {copy.restObserved}:{' '}
+            {(entry.result.rest!.driftMeters * 100).toFixed(2)} cm ·{' '}
+            {entry.result.rest!.durationSeconds.toFixed(1)} s
+          </p>
+        ))}
+      {commandTrace
         .filter((e) => e.result.posture)
         .map((entry) => (
           <p key={entry.commandId} className="px-4 text-sm">
@@ -728,22 +761,34 @@ export default function MujocoSimulatorPanel({
             °
           </p>
         ))}
-      {commandTrace.some((e) => e.result.proximity) && (
+      {commandTrace.some((e) => e.result.proximity || e.result.decision) && (
         <ol aria-label={copy.decisions} className="space-y-1 px-4 text-sm">
           {commandTrace
-            .filter((e) => e.result.proximity)
+            .filter((e) => e.result.proximity || e.result.decision)
             .map((entry, index) => (
               <li key={entry.commandId}>
                 {index + 1}.{' '}
                 {entry.result.decision
-                  ? describeWalkingCondition(entry.result.decision.condition)
+                  ? describeWalkingCondition(entry.result.decision.condition, {
+                      sit: copy.sitting,
+                      stand: copy.standing,
+                      transitioning: copy.changingPosture,
+                    })
                   : `d < ${(entry.result.proximity!.thresholdMeters * 100).toFixed(0)} cm`}
                 :{' '}
                 {(entry.result.decision?.value ?? entry.result.proximity!.value)
                   ? copy.yes
                   : copy.no}
-                {' · d = '}
-                {(entry.result.proximity!.distanceMeters * 100).toFixed(1)} cm
+                {entry.result.proximity && (
+                  <>
+                    {' '}
+                    · d ={' '}
+                    {(entry.result.proximity.distanceMeters * 100).toFixed(
+                      1,
+                    )}{' '}
+                    cm
+                  </>
+                )}
               </li>
             ))}
         </ol>

@@ -56,6 +56,12 @@ export function createMicroduckWalkingAdapter(
         schema: {
           commands: [
             {
+              id: 'rest',
+              name: 'Detener movimiento',
+              description: 'Mantener equilibrio y confirmar reposo observado.',
+              inputs: [],
+            },
+            {
               id: 'posture',
               name: 'Cambiar postura',
               description:
@@ -84,9 +90,8 @@ export function createMicroduckWalkingAdapter(
                 },
               ],
             },
-            ...(hasProximity
-              ? [proximityCommandSchema, walkingConditionCommandSchema]
-              : []),
+            walkingConditionCommandSchema,
+            ...(hasProximity ? [proximityCommandSchema] : []),
             {
               id: 'distance',
               name: 'Avanzar',
@@ -196,6 +201,7 @@ export function compileMicroduckWalkingProgram(
   steps: readonly WalkingProgramStep[],
 ): CompiledBehaviorArtifact {
   const expanded = expandWalkingProgram(steps, (s) => {
+    if ('kind' in s && s.kind === 'rest') return;
     if ('kind' in s && s.kind === 'posture') {
       if (!['sit', 'stand'].includes(s.posture))
         throw new Error('Postura no válida.');
@@ -248,27 +254,29 @@ export function compileMicroduckWalkingProgram(
       commandId: 'kind' in s ? s.kind : 'velocity',
       inputs:
         'kind' in s
-          ? s.kind === 'posture'
-            ? { posture: s.posture }
-            : s.kind === 'head-yaw'
-              ? { angleRadians: s.angleRadians }
-              : s.kind === 'condition'
-                ? { condition: s.condition }
-                : s.kind === 'proximity'
-                  ? { thresholdMeters: s.thresholdMeters }
-                  : s.kind === 'distance'
-                    ? {
-                        distanceMeters: s.distanceMeters,
-                        speed: 0.25,
-                        timeoutSeconds: 15 + s.distanceMeters / 0.04,
-                      }
-                    : s.kind === 'turn'
+          ? s.kind === 'rest'
+            ? {}
+            : s.kind === 'posture'
+              ? { posture: s.posture }
+              : s.kind === 'head-yaw'
+                ? { angleRadians: s.angleRadians }
+                : s.kind === 'condition'
+                  ? { condition: s.condition }
+                  : s.kind === 'proximity'
+                    ? { thresholdMeters: s.thresholdMeters }
+                    : s.kind === 'distance'
                       ? {
-                          angleRadians: s.angleRadians,
-                          speed: 1,
-                          timeoutSeconds: 45,
+                          distanceMeters: s.distanceMeters,
+                          speed: 0.25,
+                          timeoutSeconds: 15 + s.distanceMeters / 0.04,
                         }
-                      : { durationSeconds: s.durationSeconds }
+                      : s.kind === 'turn'
+                        ? {
+                            angleRadians: s.angleRadians,
+                            speed: 1,
+                            timeoutSeconds: 45,
+                          }
+                        : { durationSeconds: s.durationSeconds }
           : {
               forward: s.forward,
               yaw: s.yaw,

@@ -13,11 +13,13 @@ const es = {
 
   sensorRequired:
     'Selecciona Obstáculos + ToF y carga el robot antes de usar esta condición.',
+  restObserved: 'Reposo observado · desplazamiento',
   posture: 'Postura observada',
   sitting: 'sentado',
   standing: 'de pie',
   head: 'Cabeza · observado / objetivo',
-  checking: 'Comprobando distancia',
+  changingPosture: 'cambiando de postura',
+  checking: 'Comprobando condición',
   decisions: 'Comprobaciones de la condición',
   yes: 'sí',
   no: 'no',
@@ -94,11 +96,13 @@ const ca: typeof es = {
 
   sensorRequired:
     'Selecciona Obstacles + ToF i carrega el robot abans d’usar aquesta condició.',
+  restObserved: 'Repòs observat · desplaçament',
   posture: 'Postura observada',
   sitting: 'assegut',
   standing: 'dret',
   head: 'Cap · observat / objectiu',
-  checking: 'Comprovant distància',
+  changingPosture: 'canviant de postura',
+  checking: 'Comprovant condició',
   decisions: 'Comprovacions de la condició',
   yes: 'sí',
   no: 'no',
@@ -175,11 +179,13 @@ const en: typeof es = {
 
   sensorRequired:
     'Select Obstacles + ToF and load the robot before using this condition.',
+  restObserved: 'Observed rest · displacement',
   posture: 'Observed posture',
   sitting: 'sitting',
   standing: 'standing',
   head: 'Head · observed / target',
-  checking: 'Checking distance',
+  changingPosture: 'changing posture',
+  checking: 'Checking condition',
   decisions: 'Condition checks',
   yes: 'yes',
   no: 'no',

@@ -190,6 +190,25 @@ export function decodeMujocoExecution(
           sequence: p.sequence as number,
         };
       }
+      if (result.rest !== undefined) {
+        const r = result.rest;
+        if (
+          !record(r) ||
+          !['durationSeconds', 'driftMeters', 'rotationRadians'].every(
+            (k) =>
+              typeof r[k] === 'number' && Number.isFinite(r[k]) && r[k] >= 0,
+          ) ||
+          (r.durationSeconds as number) < 0.8 ||
+          (r.driftMeters as number) > 0.01 ||
+          (r.rotationRadians as number) > 0.05
+        )
+          throw new Error('Invalid saved rest observation.');
+        checked.rest = {
+          durationSeconds: r.durationSeconds as number,
+          driftMeters: r.driftMeters as number,
+          rotationRadians: r.rotationRadians as number,
+        };
+      }
       if (result.posture !== undefined) {
         const p = result.posture;
         if (
@@ -224,15 +243,31 @@ export function decodeMujocoExecution(
           observedRadians: head.observedRadians,
         };
       }
+      if (result.postureObservation !== undefined) {
+        const p = result.postureObservation;
+        if (
+          !record(p) ||
+          !['sit', 'stand', 'transitioning'].includes(String(p.state)) ||
+          typeof p.capturedAtSeconds !== 'number' ||
+          Math.abs(p.capturedAtSeconds - checked.timeSeconds) > 1e-6 ||
+          !Number.isFinite(p.capturedAtSeconds)
+        )
+          throw new Error('Invalid saved posture observation.');
+        checked.postureObservation = {
+          state: p.state as 'sit' | 'stand' | 'transitioning',
+          capturedAtSeconds: p.capturedAtSeconds,
+        };
+      }
       if (result.decision !== undefined) {
         const d = result.decision;
-        if (!record(d) || !checked.proximity || typeof d.value !== 'boolean')
+        if (!record(d) || typeof d.value !== 'boolean')
           throw new Error('Invalid saved condition.');
         validateWalkingCondition(d.condition);
         if (
           evaluateWalkingCondition(
             d.condition,
-            checked.proximity.distanceMeters,
+            checked.proximity?.distanceMeters,
+            checked.postureObservation?.state,
           ) !== d.value
         )
           throw new Error('Inconsistent saved condition.');

@@ -1,3 +1,4 @@
+import { RestGoal } from './rest-goal';
 import loadMujoco from '@mujoco/mujoco';
 import wasmUrl from '@mujoco/mujoco/mujoco.wasm?url';
 import type {
@@ -47,6 +48,7 @@ export function installSimulationWorker(createController?: ControllerFactory) {
   let postureCommand:
     | { request: WorkerRequest; target: 'sit' | 'stand'; start: number }
     | undefined;
+  let restGoal: { request: WorkerRequest; goal: RestGoal } | undefined;
   let motionGoal: { request: WorkerRequest; goal: MotionGoal } | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let lastPublish = 0;
@@ -72,6 +74,8 @@ export function installSimulationWorker(createController?: ControllerFactory) {
       reply(jointCommand.request, { error: 'Command cancelled.' });
     if (velocityCommand)
       reply(velocityCommand.request, { error: 'Command cancelled.' });
+    if (restGoal) reply(restGoal.request, { error: 'Command cancelled.' });
+    restGoal = undefined;
     if (postureCommand)
       reply(postureCommand.request, { error: 'Command cancelled.' });
     postureCommand = undefined;
@@ -91,6 +95,23 @@ export function installSimulationWorker(createController?: ControllerFactory) {
   function inspectCommand() {
     const current = frame();
     if (controller) controller.validateFeedback(world!.feedback());
+    if (restGoal) {
+      const active = restGoal;
+      try {
+        const result = active.goal.update(world!.feedback());
+        if (result) {
+          restGoal = undefined;
+          reply(active.request, { result });
+        }
+      } catch (error) {
+        restGoal = undefined;
+        halt();
+        reply(active.request, {
+          error: error instanceof Error ? error.message : String(error),
+          frame: frame(),
+        });
+      }
+    }
     if (postureCommand) {
       const active = postureCommand;
       const observed = controller?.getPosture?.();
@@ -329,6 +350,7 @@ export function installSimulationWorker(createController?: ControllerFactory) {
           case 'step':
             if (
               state === 'running' ||
+              restGoal ||
               postureCommand ||
               jointCommand ||
               velocityCommand ||
@@ -348,6 +370,7 @@ export function installSimulationWorker(createController?: ControllerFactory) {
             break;
           case 'command': {
             if (
+              restGoal ||
               postureCommand ||
               jointCommand ||
               velocityCommand ||
@@ -356,6 +379,26 @@ export function installSimulationWorker(createController?: ControllerFactory) {
             )
               throw new Error('Session already has a command or needs reset.');
             const c = request.command;
+            if (c && 'kind' in c && c.kind === 'observe-posture') {
+              if (!controller?.getPosture)
+                throw new Error('Posture observation unavailable.');
+              halt();
+              controller.validateFeedback(world.feedback());
+              reply(request, {
+                result: {
+                  status: 'completed',
+                  evidence: 'simulator',
+                  level: 'physics',
+                  timeSeconds: frame().timeSeconds,
+                  postureObservation: {
+                    state: controller.getPosture(),
+                    capturedAtSeconds: frame().timeSeconds,
+                  },
+                },
+                frame: frame(),
+              });
+              return;
+            }
             if (c && 'kind' in c && c.kind === 'proximity') {
               halt();
               const proximity = world.proximity(c.thresholdMeters);
@@ -371,7 +414,14 @@ export function installSimulationWorker(createController?: ControllerFactory) {
               });
               return;
             }
-            if (c && 'kind' in c && c.kind === 'posture') {
+            if (c && 'kind' in c && c.kind === 'rest') {
+              if (!controller)
+                throw new Error(
+                  'Rest observation requires a balancing controller.',
+                );
+              halt();
+              restGoal = { request, goal: new RestGoal(frame().timeSeconds) };
+            } else if (c && 'kind' in c && c.kind === 'posture') {
               if (
                 !controller?.setPosture ||
                 !['sit', 'stand'].includes(c.posture)

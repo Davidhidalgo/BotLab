@@ -757,6 +757,7 @@ function createBotLabToolbox(
           .map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` }))
           .concat([
             { kind: 'block', type: 'botlab_web_advance_cm' },
+            { kind: 'block', type: 'botlab_web_rest' },
             { kind: 'block', type: 'botlab_web_head_yaw' },
           ]),
       },

@@ -1,6 +1,7 @@
 import {
   expandWalkingProgram,
   walkingConditionCommandSchema,
+  walkingConditionRequirements,
   proximityCommandSchema,
 } from '@botlab/model';
 import type {
@@ -156,6 +157,12 @@ export function createJumperWalkingAdapter(
         targetIds: [jumperWalkingTargetId],
         schema: {
           commands: [
+            {
+              id: 'rest',
+              name: 'Detener movimiento',
+              description: 'Mantener equilibrio y confirmar reposo observado.',
+              inputs: [],
+            },
             ...(hasProximity
               ? [proximityCommandSchema, walkingConditionCommandSchema]
               : []),
@@ -262,6 +269,7 @@ export function compileJumperWalkingProgram(
   steps: readonly import('@botlab/model').WalkingProgramStep[],
 ): CompiledBehaviorArtifact {
   const expanded = expandWalkingProgram(steps, (s) => {
+    if ('kind' in s && s.kind === 'rest') return;
     if ('kind' in s && s.kind === 'posture') {
       throw new Error('Jumper no admite las posturas de MicroDuck.');
     }
@@ -295,6 +303,15 @@ export function compileJumperWalkingProgram(
       );
     }
   });
+  if (
+    expanded.some(
+      (s) =>
+        'kind' in s &&
+        s.kind === 'condition' &&
+        walkingConditionRequirements(s.condition).posture,
+    )
+  )
+    throw new Error('Jumper no dispone de estas condiciones de postura.');
   return {
     id: 'jumper-walking-compiled',
     kind: 'compiled-plan',
@@ -313,27 +330,29 @@ export function compileJumperWalkingProgram(
       commandId: 'kind' in s ? s.kind : 'velocity',
       inputs:
         'kind' in s
-          ? s.kind === 'posture'
-            ? { posture: s.posture }
-            : s.kind === 'head-yaw'
-              ? { angleRadians: s.angleRadians }
-              : s.kind === 'condition'
-                ? { condition: s.condition }
-                : s.kind === 'proximity'
-                  ? { thresholdMeters: s.thresholdMeters }
-                  : s.kind === 'distance'
-                    ? {
-                        distanceMeters: s.distanceMeters,
-                        speed: 0.24,
-                        timeoutSeconds: 15 + s.distanceMeters / 0.04,
-                      }
-                    : s.kind === 'turn'
+          ? s.kind === 'rest'
+            ? {}
+            : s.kind === 'posture'
+              ? { posture: s.posture }
+              : s.kind === 'head-yaw'
+                ? { angleRadians: s.angleRadians }
+                : s.kind === 'condition'
+                  ? { condition: s.condition }
+                  : s.kind === 'proximity'
+                    ? { thresholdMeters: s.thresholdMeters }
+                    : s.kind === 'distance'
                       ? {
-                          angleRadians: s.angleRadians,
-                          speed: 1,
-                          timeoutSeconds: 45,
+                          distanceMeters: s.distanceMeters,
+                          speed: 0.24,
+                          timeoutSeconds: 15 + s.distanceMeters / 0.04,
                         }
-                      : { durationSeconds: s.durationSeconds }
+                      : s.kind === 'turn'
+                        ? {
+                            angleRadians: s.angleRadians,
+                            speed: 1,
+                            timeoutSeconds: 45,
+                          }
+                        : { durationSeconds: s.durationSeconds }
           : {
               forward: s.forward,
               yaw: s.yaw,

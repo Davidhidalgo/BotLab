@@ -1,5 +1,6 @@
 /** Boolean expressions over one confirmed frontal distance, shared by robot targets. */
 export type WalkingCondition =
+  | { sourceBlockId: string; posture: 'sit' | 'stand' | 'transitioning' }
   | { sourceBlockId: string; thresholdMeters: number }
   | { sourceBlockId: string; operator: 'not'; operand: WalkingCondition }
   | {
@@ -25,7 +26,10 @@ export function validateWalkingCondition(
     throw new Error('Cada condición necesita un identificador distinto.');
   ids.add(c['sourceBlockId']);
   if (ids.size > 256) throw new Error('Usa como máximo 256 bloques.');
-  if (!('operator' in c)) {
+  if ('posture' in c) {
+    if (!['sit', 'stand', 'transitioning'].includes(String(c['posture'])))
+      throw new Error('Postura no válida.');
+  } else if (!('operator' in c)) {
     if (
       typeof c['thresholdMeters'] !== 'number' ||
       !Number.isFinite(c['thresholdMeters']) ||
@@ -43,13 +47,26 @@ export function validateWalkingCondition(
 
 export function evaluateWalkingCondition(
   condition: WalkingCondition,
-  distanceMeters: number,
+  distanceMeters?: number,
+  posture?: 'sit' | 'stand' | 'transitioning',
 ): boolean {
   validateWalkingCondition(condition);
-  if (!Number.isFinite(distanceMeters) || distanceMeters < 0)
+  const needs = walkingConditionRequirements(condition);
+  if (
+    needs.posture &&
+    !['sit', 'stand', 'transitioning'].includes(posture ?? '')
+  )
+    throw new Error('Postura desconocida.');
+  if (
+    needs.distance &&
+    (distanceMeters === undefined ||
+      !Number.isFinite(distanceMeters) ||
+      distanceMeters < 0)
+  )
     throw new Error('Distancia frontal desconocida.');
   function evaluate(c: WalkingCondition): boolean {
-    if (!('operator' in c)) return distanceMeters < c.thresholdMeters;
+    if ('posture' in c) return posture === c.posture;
+    if (!('operator' in c)) return distanceMeters! < c.thresholdMeters;
     if (c.operator === 'not') return !evaluate(c.operand);
     return c.operator === 'and'
       ? evaluate(c.left) && evaluate(c.right)
@@ -58,10 +75,37 @@ export function evaluateWalkingCondition(
   return evaluate(condition);
 }
 
-export function describeWalkingCondition(condition: WalkingCondition): string {
+export function describeWalkingCondition(
+  condition: WalkingCondition,
+  postures = {
+    sit: 'sentado',
+    stand: 'de pie',
+    transitioning: 'cambiando de postura',
+  },
+): string {
+  if ('posture' in condition) return `¿${postures[condition.posture]}?`;
   if (!('operator' in condition))
     return `d < ${condition.thresholdMeters * 100} cm`;
   if (condition.operator === 'not')
-    return `¬(${describeWalkingCondition(condition.operand)})`;
-  return `(${describeWalkingCondition(condition.left)} ${condition.operator === 'and' ? '∧' : '∨'} ${describeWalkingCondition(condition.right)})`;
+    return `¬(${describeWalkingCondition(condition.operand, postures)})`;
+  return `(${describeWalkingCondition(condition.left, postures)} ${condition.operator === 'and' ? '∧' : '∨'} ${describeWalkingCondition(condition.right, postures)})`;
+}
+
+export function walkingConditionRequirements(condition: unknown): {
+  distance: boolean;
+  posture: boolean;
+} {
+  validateWalkingCondition(condition);
+  function needs(c: WalkingCondition): { distance: boolean; posture: boolean } {
+    if ('posture' in c) return { distance: false, posture: true };
+    if (!('operator' in c)) return { distance: true, posture: false };
+    if (c.operator === 'not') return needs(c.operand);
+    const a = needs(c.left),
+      b = needs(c.right);
+    return {
+      distance: a.distance || b.distance,
+      posture: a.posture || b.posture,
+    };
+  }
+  return needs(condition);
 }

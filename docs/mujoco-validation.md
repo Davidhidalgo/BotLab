@@ -283,3 +283,15 @@ Confirmation requires the requested posture, angular speeds ≤0.15 rad/s and a 
 [Exploratory WASM evidence](evidence/microduck-posture-probe.json) repeats two sit/stand/walk-policy cycles: sitting height approximately 0.0595 m, standing approximately 0.116 m, maximum tilt <0.122 rad. [Compiled editor acceptance](evidence/microduck-posture-workbench.json) verifies sit → wait → stand → measured 15 cm advance, reload with historical evidence, mid-action cancellation, and rejection of sit → advance without stand. Model/controller/editor checks and production build pass. A retired-program test was updated to use unsupported kick-left now that sit is supported.
 
 Hosted CI also exposed a native unit test accidentally requiring cached robot geometry. The external-session reset fixture now substitutes scene preparation along with its mocked native session, verifies both starts and keeps the lifecycle assertions. All 47 Python unit tests pass (one existing optional test skipped). This fixes test isolation rather than removing native coverage.
+
+## Optional posture conditions — 2026-10-13
+
+BL-029 also exposes MicroDuck sitting, standing and transitioning predicates through the shared condition model. Boolean composition can combine posture and proximity. Requirements are resolved before execution: posture-only programs run on flat ground; required unknown data fails even behind an OR operand. Jumper rejects these predicates until its own observer exists. Observation pauses and checks current feedback without changing pose. Initial standing is known from the pinned keyframe; subsequent transitions use the measured stable-window observer. [Compiled Chrome acceptance](evidence/microduck-posture-condition.json) runs sit → if sitting then stand → 15 cm advance without ToF and verifies historical observation/decision after reload.
+
+Safari 26.3 (21623.2.7.11.6) was probed through the system SafariDriver for BL-005. Session creation is blocked by disabled “Allow remote automation” in Safari Developer settings. No Safari result is claimed; physical mobile testing also remains unavailable here.
+
+## Shared measured rest — 2026-10-13
+
+BL-030 adds an explicit stop-movement block for both walking robots. It requests zero motion while keeping the active balance policy, and completes only after a 0.8 s observed window with ≤1 cm planar drift, ≤0.05 rad heading change and angular speed ≤0.1 rad/s. A five-second deadline produces a visible failure if rest is not reached. It does not end the program or pause the simulation globally. [Compiled Chrome acceptance](evidence/mujoco-rest-workbench.json) runs timed motion → rest → measured 15 cm advance in both robots, verifies each measured criterion and restores the trace after reload. Unit tests cover continued drift, angular motion, timeout and invalid observations. Types, affected tests/lint and app build pass.
+
+Hosted CI is green at `ee352a5`: [Verify run](https://github.com/Davidhidalgo/BotLab/actions/runs/38326826152), confirming the isolated native fixture correction as well as the repository checks.

@@ -41,3 +41,9 @@ Obstacle activities select a rear camera view so an approaching wall does not hi
 An optional controller `setHeadYaw` channel uses observed joint arrival (0.07 rad, joint speed ≤0.05 rad/s for 0.1 s, eight-second timeout). The walking controller stays active; unsupported controllers reject the command. Stop freezes physics and reset clears the controller pose.
 
 Optional controller `setPosture` / `getPosture` methods support explicit, observed sit/stand transitions with a ten-second deadline. Posture requests share the command exclusivity and cancellation path with motion and joints.
+
+Posture observation pauses the worker, validates current feedback and reads the controller state; it never starts a transition or infers sitting solely from low height. The initial stand state comes from the pinned initial keyframe; subsequent transitions require stable physical confirmation.
+
+<!-- rest arrival tracked by src/lib/rest-goal.ts -->
+
+`RestGoal` confirms zero-intent balance with an observed 0.8 s window: ≤1 cm planar drift, ≤0.05 rad heading change and angular speed ≤0.1 rad/s. It times out after 5 s and uses the shared cancellation path.

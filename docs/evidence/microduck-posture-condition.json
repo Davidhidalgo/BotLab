@@ -1,0 +1,110 @@
+{
+  "date": "2026-10-13T00:23:21.187Z",
+  "browser": "154.0.8037.98",
+  "results": [
+    {
+      "robot": "microduck",
+      "run": {
+        "targetId": "microduck-mujoco-web",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"10\" y=\"10\"><next><block type=\"botlab_microduck_sit\" id=\"sit\"><next><block type=\"control_if\" id=\"if\"><value name=\"CONDITION\"><block type=\"botlab_microduck_is_sit\" id=\"is-sit\"></block></value><statement name=\"SUBSTACK\"><block type=\"botlab_microduck_stand\" id=\"stand\"></block></statement><next><block type=\"botlab_web_advance_cm\" id=\"move\"><field name=\"CM\">15</field></block></next></block></next></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:23:14.206Z",
+        "manifestId": "microduck-flat-ground-posture",
+        "modelRevision": "363b7effd4eae9f24dd1bb8bf647aef4d74edca9",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@1",
+            "sourceBlockId": "sit",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 1.449999999999991,
+              "posture": {
+                "target": "sit",
+                "observed": "sit",
+                "heightMeters": 0.05941186667426721
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@2",
+            "sourceBlockId": "is-sit",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 1.4599999999999909,
+              "postureObservation": {
+                "state": "sit",
+                "capturedAtSeconds": 1.4599999999999909
+              },
+              "decision": {
+                "condition": {
+                  "sourceBlockId": "is-sit",
+                  "posture": "sit"
+                },
+                "value": true
+              }
+            }
+          },
+          {
+            "commandId": "velocity-2@3",
+            "sourceBlockId": "stand",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 2.824999999999962,
+              "posture": {
+                "target": "stand",
+                "observed": "stand",
+                "heightMeters": 0.11598556711711355
+              }
+            }
+          },
+          {
+            "commandId": "velocity-3@4",
+            "sourceBlockId": "if",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 2.8449999999999616,
+              "displacementMeters": 0.000011239733302787652,
+              "yawRadians": 0.000005741271932258041
+            }
+          },
+          {
+            "commandId": "velocity-4@5",
+            "sourceBlockId": "move",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 6.399999999999886,
+              "displacementMeters": 0.15148331650473784,
+              "yawRadians": -0.02091781156300184,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.15014498701871415
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-6e50466b-d1adf156-92674dd2-2eacc43d-mujoco-program-1",
+          "program": {
+            "programId": "microduck-web-walking",
+            "targetId": "microduck-mujoco-web",
+            "revision": "{\"commands\":[{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"posture\",\"id\":\"velocity-0\",\"inputs\":{\"posture\":\"sit\"},\"sourceBlockId\":\"sit\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"condition\",\"flow\":{\"whenFalse\":4,\"whenTrue\":2},\"id\":\"velocity-1\",\"inputs\":{\"condition\":{\"posture\":\"sit\",\"sourceBlockId\":\"is-sit\"}},\"sourceBlockId\":\"is-sit\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"posture\",\"id\":\"velocity-2\",\"inputs\":{\"posture\":\"stand\"},\"sourceBlockId\":\"stand\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"wait\",\"flow\":{\"next\":4},\"id\":\"velocity-3\",\"inputs\":{\"durationSeconds\":0},\"sourceBlockId\":\"if\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-4\",\"inputs\":{\"distanceMeters\":0.15,\"speed\":0.25,\"timeoutSeconds\":18.75},\"sourceBlockId\":\"move\",\"targetId\":\"microduck-mujoco-web\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:23:20.588Z"
+      },
+      "flatScene": true
+    }
+  ],
+  "errors": []
+}

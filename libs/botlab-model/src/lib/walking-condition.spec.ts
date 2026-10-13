@@ -47,3 +47,20 @@ describe('shared walking conditions', () => {
     expect(() => validateWalkingCondition(loop)).toThrow(/identificador/);
   });
 });
+
+it('evaluates posture without requiring depth and fails unknown operands even behind OR', () => {
+  const seated: WalkingCondition = { sourceBlockId: 'sit', posture: 'sit' };
+  expect(evaluateWalkingCondition(seated, undefined, 'sit')).toBe(true);
+  expect(evaluateWalkingCondition(seated, undefined, 'stand')).toBe(false);
+  expect(() => evaluateWalkingCondition(seated)).toThrow(/Postura desconocida/);
+  const mixed: WalkingCondition = {
+    sourceBlockId: 'mixed',
+    operator: 'or',
+    left: seated,
+    right: near,
+  };
+  expect(() => evaluateWalkingCondition(mixed, undefined, 'sit')).toThrow(
+    /Distancia frontal desconocida/,
+  );
+  expect(evaluateWalkingCondition(mixed, 0.2, 'stand')).toBe(true);
+});

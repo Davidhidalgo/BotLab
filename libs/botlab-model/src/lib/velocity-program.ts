@@ -15,6 +15,7 @@ export interface VelocityProgramStep {
 
 /** Educational goals retain their meaning independently of a robot's speed. */
 export type WalkingActionStep =
+  | { sourceBlockId: string; kind: 'rest' }
   | { sourceBlockId: string; kind: 'posture'; posture: 'sit' | 'stand' }
   | { sourceBlockId: string; kind: 'head-yaw'; angleRadians: number }
   | VelocityProgramStep
@@ -167,7 +168,7 @@ export function expandWalkingProgram(
         append(
           {
             sourceBlockId: step.condition.sourceBlockId,
-            ...('operator' in step.condition
+            ...('operator' in step.condition || 'posture' in step.condition
               ? { kind: 'condition' as const, condition: step.condition }
               : {
                   kind: 'proximity' as const,

@@ -33,3 +33,7 @@ Walking programs also accept `until` and `if` nodes with a `ProximityCondition` 
 `WalkingCondition` represents proximity leaves and nested `and`, `or`, `not`. `validateWalkingCondition` bounds depth/size and checks every operand and identity. `evaluateWalkingCondition` evaluates one confirmed distance; `describeWalkingCondition` renders the saved expression.
 
 `WalkingActionStep` includes optional `head-yaw`; adapters decide availability and validate its discrete angles before compiling.
+
+Conditions also support optional sit/stand/transitioning observations. `walkingConditionRequirements` determines whether distance and/or posture is required; unknown required data fails before boolean evaluation, including unused OR operands. `describeWalkingCondition` accepts localized posture labels.
+
+The shared walking action model includes explicit `posture` requests and measured `rest`; adapters restrict posture capabilities per robot.

@@ -122,6 +122,15 @@ export interface SimulationJointCommand {
 }
 
 export interface SimulationCommandResult {
+  rest?: {
+    durationSeconds: number;
+    driftMeters: number;
+    rotationRadians: number;
+  };
+  postureObservation?: {
+    state: 'sit' | 'stand' | 'transitioning';
+    capturedAtSeconds: number;
+  };
   posture?: {
     target: 'sit' | 'stand';
     observed: 'sit' | 'stand';
@@ -170,6 +179,8 @@ export type SimulationMotionGoal =
       timeoutSeconds: number;
     };
 export type SimulationCommand =
+  | { kind: 'rest' }
+  | { kind: 'observe-posture' }
   | { kind: 'posture'; posture: 'sit' | 'stand' }
   | { kind: 'head-yaw'; angleRadians: number }
   | { kind: 'proximity'; thresholdMeters: number }

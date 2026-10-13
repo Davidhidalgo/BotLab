@@ -23,6 +23,7 @@ export function applyWebWalkingLocale(
       'izquierda',
       'centro',
       'derecha',
+      'detener movimiento',
     ],
     ca: [
       'Avançat',
@@ -35,6 +36,7 @@ export function applyWebWalkingLocale(
       'esquerra',
       'centre',
       'dreta',
+      'aturar moviment',
     ],
     en: [
       'Advanced',
@@ -47,6 +49,7 @@ export function applyWebWalkingLocale(
       'left',
       'centre',
       'right',
+      'stop movement',
     ],
   }[locale];
   for (const [i, key] of [
@@ -60,12 +63,19 @@ export function applyWebWalkingLocale(
     'LEFT',
     'CENTRE',
     'RIGHT',
+    'REST',
   ].entries())
     api.Msg[`BOTLAB_WEB_${key}`] = copy[i];
 }
 export function registerMicroduckMujocoBlocks(api: typeof ScratchBlocks) {
   if (api.Blocks['botlab_web_velocity']) return;
   api.defineBlocksWithJsonArray([
+    {
+      type: 'botlab_web_rest',
+      message0: '%{BKY_BOTLAB_WEB_REST}',
+      style: 'motion',
+      extensions: ['shape_statement'],
+    },
     {
       type: 'botlab_web_head_yaw',
       message0: '%{BKY_BOTLAB_WEB_HEAD}',
@@ -157,6 +167,7 @@ const commonWalkingBlockTypes = [
   'control_if',
   'control_if_else',
   'botlab_web_advance_cm',
+  'botlab_web_rest',
   'botlab_web_obstacle',
   'operator_and',
   'operator_or',
@@ -169,6 +180,9 @@ export const jumperWalkingBlockTypes = [
   'botlab_microduck_turn_right',
 ];
 export const microduckWalkingBlockTypes = [
+  'botlab_microduck_is_sit',
+  'botlab_microduck_is_stand',
+  'botlab_microduck_is_transitioning',
   'botlab_microduck_sit',
   'botlab_microduck_stand',
   'botlab_web_head_yaw',
@@ -307,6 +321,16 @@ function readWalkingProgram(
     visited.add(block);
     const sourceBlockId = block.getAttribute('id') ?? '';
     const type = block.getAttribute('type');
+    if (!allowedTypes.includes(type ?? ''))
+      throw new Error('La condición no es compatible con este robot.');
+    if (type?.startsWith('botlab_microduck_is_'))
+      return {
+        sourceBlockId,
+        posture: type.slice('botlab_microduck_is_'.length) as
+          | 'sit'
+          | 'stand'
+          | 'transitioning',
+      };
     if (type === 'botlab_web_obstacle')
       return { sourceBlockId, thresholdMeters: number(block, 'CM') / 100 };
     if (type === 'operator_not')
@@ -345,6 +369,10 @@ function readWalkingProgram(
           'Bloque de movimiento no compatible o más de 256 bloques.',
         );
       const sourceBlockId = current.getAttribute('id') ?? '';
+      if (type === 'botlab_web_rest') {
+        steps.push({ sourceBlockId, kind: 'rest' });
+        continue;
+      }
       if (
         type === 'botlab_microduck_sit' ||
         type === 'botlab_microduck_stand'
@@ -396,6 +424,7 @@ function readWalkingProgram(
         });
       } else if (
         type === 'botlab_web_obstacle' ||
+        type.startsWith('botlab_microduck_is_') ||
         type.startsWith('operator_')
       ) {
         throw new Error(

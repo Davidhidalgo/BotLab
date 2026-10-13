@@ -189,3 +189,11 @@ Run `node tools/mujoco/verify-wait-until.mjs` against the static preview on port
 <!-- preparation and validation in prepare-microduck-posture.py, posture-harness.ts and verify-posture.mjs -->
 
 `python3 tools/mujoco/prepare-microduck.py` now also prepares separate posture manifests through `prepare-microduck-posture.py`, pinning alpha_sitstand SHA-256 `c6c40e35e726eabd803d633e090d112994f469921152448367953fbaf9799bc8`. The helper reuses a verified native cache or downloads the pinned revision. `node tools/mujoco/probe-posture.mjs` probes repeated physical transitions on Vite port 4231; `node tools/mujoco/verify-posture.mjs` validates the compiled editor on port 4230, explicit stand before walking, observed height, reload and cancellation.
+
+<!-- acceptance implemented by verify-posture-condition.mjs -->
+
+`node tools/mujoco/verify-posture-condition.mjs` runs sit → if sitting then stand → advance on flat ground without ToF, checks the saved observation and restores it after reload.
+
+<!-- acceptance implemented by verify-rest.mjs -->
+
+`node tools/mujoco/verify-rest.mjs` verifies timed walking → measured rest → 15 cm advance for both robots, including result restoration.

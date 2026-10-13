@@ -21,3 +21,5 @@ The optional proximity capability also compiles compound `condition` commands. E
 Jumper rejects MicroDuck head-yaw steps; sharing program types does not inherit robot-specific capabilities.
 
 Jumper rejects MicroDuck sit/stand actions. Its body-height modes require their own controller contract and validation.
+
+Jumper compilation rejects posture predicates until its own posture observer is implemented.

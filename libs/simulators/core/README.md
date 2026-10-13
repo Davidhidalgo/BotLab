@@ -32,3 +32,7 @@ A command result may retain a `decision` with its shared walking condition and b
 `head-yaw` requests an optional head orientation in radians. Completed results retain `headYaw` target and observed angle, independently of body turns.
 
 A `posture` command requests sit or stand where supported. Results retain target, observed stable posture and body height in metres.
+
+`observe-posture` returns a timestamped posture observation without advancing physics. A saved compound decision can use distance, posture or both.
+
+`rest` requests observed balance without ending the program. Results retain measured window duration, drift and heading change.

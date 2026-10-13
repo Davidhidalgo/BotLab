@@ -53,3 +53,5 @@ The optional proximity capability also compiles compound `condition` commands. E
 MuJoCo head actions are left/centre/right at +0.3/0/−0.3 rad, with measured arrival. No arbitrary angle or neck inclination is advertised.
 
 The web walking adapter accepts explicit sit/stand actions using the pinned posture policy. It preserves source IDs and posture results; locomotion while sitting is rejected by the loaded controller.
+
+Posture conditions are available on flat and obstacle scenes; only conditions that use proximity require ToF.

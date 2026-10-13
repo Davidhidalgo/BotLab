@@ -100,3 +100,32 @@ describe('worker session ownership', () => {
     vi.useRealTimers();
   });
 });
+
+it('keeps long skills alive beyond the ordinary two-minute response deadline', async () => {
+  vi.useFakeTimers();
+  const f = fixture();
+  try {
+    let settled = false;
+    const command = f.session
+      .command({ kind: 'skill', name: 'dance-crab' })
+      .then((result) => {
+        settled = true;
+        return result;
+      });
+    await vi.advanceTimersByTimeAsync(240000);
+    expect(settled).toBe(false);
+    f.reply(f.requests[0], {
+      result: {
+        level: 'closed-loop-policy',
+        status: 'completed',
+        evidence: 'simulator',
+        timeSeconds: 238,
+      },
+    });
+    await command;
+    expect(settled).toBe(true);
+  } finally {
+    f.session.dispose();
+    vi.useRealTimers();
+  }
+});

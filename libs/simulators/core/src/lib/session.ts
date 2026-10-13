@@ -1,4 +1,4 @@
-import type { WalkingCondition } from '@botlab/model';
+import type { WalkingCondition, WalkingSkill } from '@botlab/model';
 /** Browser-independent contracts. All distances/times/angles use m/s/rad. */
 export type SimulationEvidenceLevel =
   | 'command-validation'
@@ -121,11 +121,7 @@ export interface SimulationJointCommand {
   timeoutSeconds: number;
 }
 
-export type SimulationSkill =
-  | 'kick-left'
-  | 'kick-right'
-  | 'ground-pick'
-  | 'jump';
+export type SimulationSkill = WalkingSkill;
 export interface SimulationCommandResult {
   bodyPitch?: { targetRadians: number; observedRadians: number };
   skill?: {

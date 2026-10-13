@@ -18,6 +18,10 @@ Build with `pnpm nx build simulators-jumper`; run manifest rejection tests with 
 
 <!-- jump controller and resources from src/lib/walking-controller.ts and tools/mujoco/prepare-jumper-jump.py -->
 
-Separately pinned manifests add the official 167D/20D jump policy and use the same Rust/WASM state machine, reference trajectory and mode gains. A jump has fixed upstream parameters; no user height is advertised. The shared goal checks contact-free flight, height gain, landing contact and settled upright return before continuing. Cancelling an active jump freezes physics and requires explicit reset before further movement; it does not silently recover or finish the jump. Other bundle modes remain probe-only.
+Separately pinned manifests add the official 167D/20D jump policy and use the same Rust/WASM state machine, reference trajectory and mode gains. A jump has fixed upstream parameters; no user height is advertised. The shared goal checks contact-free flight, height gain, landing contact and settled upright return before continuing. Cancelling an active jump freezes physics and requires explicit reset before further movement; it does not silently recover or finish the jump. The eight fixed gestures/dances are exposed separately; claw modes remain probe-only.
 
-The optional body-pitch channel exposes only backward (−0.1 rad) and level (0) through the adapter/worker. Positive targets failed stability calibration and remain probe-only. The target persists across ordinary pause/condition reads and movement; reset clears it. Jump requires explicit level first.
+The optional body-pitch channel exposes only backward (−0.1 rad) and level (0) through the adapter/worker. Positive targets failed stability calibration and remain probe-only. The target persists across ordinary pause/condition reads and movement; reset clears it. Jump, gestures and dances require explicit level first.
+
+<!-- performance registry from src/lib/performances.ts and tools/mujoco/prepare-jumper-performances.py -->
+
+Four gestures (hello, bow, paw, salute) and four dances (Brazilian, Crab, Maze, Dream Wings) use the original 209D/22D policies and full reference clips. Complete-cycle physics audits cover all eight; the worker confirms joint excursion and measured rest after the official state machine returns to locomotion. Per-skill deadlines range from 20 to 250 simulated seconds; the response deadline also accommodates long dances. Cancellation requires explicit reset, as for jump. Claw motion, uploaded skills and contact-based grasping are not enabled.

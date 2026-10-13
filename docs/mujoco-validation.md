@@ -327,3 +327,11 @@ BL-033 exposes backward tilt (−0.1 rad) and level (0), independently of head o
 Positive pitch is deliberately not exposed. [Exact-controller calibration](evidence/jumper-body-pitch-probe.json) tried 0.05, 0.08, 0.1 and 0.12 rad from cold start and 0.1 after balance. None reached the required stable window; the 0.1 trial oscillated materially despite a plausible single snapshot in the initial mode audit. No arrival tolerance or model physics was relaxed. This remains an unresolved direction of BL-033. The controller’s internal bounded posture input remains available to reproduce the probe; the public worker/adapter/XML path accepts only backward/level.
 
 Repeated invalidations now preserve Jumper’s interrupted-skill reset requirement: a second pause arriving before a cancelled inference settles cannot silently clear the latch.
+
+## Jumper complete gestures and dances — 2026-10-13
+
+BL-034 loads eight SHA-pinned 209D/22D policies through the official state machine: hello, bow, paw, salute, Brazilian, Crab, Maze and Dream Wings. [Full-cycle audit](evidence/jumper-complete-modes-probe.json) covers every reference to its end and return to locomotion, including Crab's 235.68-second clip. All remain inside the existing walking envelope; this supersedes the earlier entry-only audit for these eight modes.
+
+The editor offers separate gesture/dance selectors, approximate reference durations and per-skill deadlines. Completion also requires visible joint motion and the existing measured-rest window. A level body is an explicit precondition. Cancelling requires reset; no automatic recovery, shortened choreography or arbitrary policy imports are introduced. The worker response deadline accounts for the longer clips. Unit tests cover long-duration completion, timeout, saved evidence and robot-specific XML rejection.
+
+[Compiled-editor acceptance](evidence/jumper-performances-workbench.json) chains all four gestures, Maze and measured 15 cm advance. It confirms saved evidence after reload, cancellation, rejection before reset and a complete rerun after reset. The fixed-jump acceptance was rerun successfully with the expanded controller. Types, affected tests/lint, architecture checks and production build pass.

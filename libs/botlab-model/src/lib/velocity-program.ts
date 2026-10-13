@@ -18,12 +18,49 @@ export interface VelocityProgramStep {
   durationSeconds: number;
 }
 
+export type WalkingSkill =
+  | 'kick-left'
+  | 'kick-right'
+  | 'ground-pick'
+  | 'jump'
+  | 'gesture-hello'
+  | 'gesture-bow'
+  | 'gesture-paw'
+  | 'gesture-salute'
+  | 'dance-brazilian'
+  | 'dance-crab'
+  | 'dance-maze'
+  | 'dance-dream-wings';
+export const walkingSkillTimeouts: Record<WalkingSkill, number> = {
+  'kick-left': 10,
+  'kick-right': 10,
+  'ground-pick': 10,
+  jump: 10,
+  'gesture-hello': 20,
+  'gesture-bow': 20,
+  'gesture-paw': 20,
+  'gesture-salute': 20,
+  'dance-brazilian': 80,
+  'dance-crab': 250,
+  'dance-maze': 25,
+  'dance-dream-wings': 70,
+};
+export function validateWalkingSkill(
+  value: unknown,
+): asserts value is WalkingSkill {
+  if (
+    typeof value !== 'string' ||
+    !Object.prototype.hasOwnProperty.call(walkingSkillTimeouts, value)
+  )
+    throw new Error('Unsupported robot skill.');
+}
+
 /** Educational goals retain their meaning independently of a robot's speed. */
 export type WalkingActionStep =
   | {
       sourceBlockId: string;
       kind: 'skill';
-      skill: 'kick-left' | 'kick-right' | 'ground-pick' | 'jump';
+      skill: WalkingSkill;
     }
   | {
       sourceBlockId: string;

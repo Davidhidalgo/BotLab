@@ -1,3 +1,4 @@
+import { walkingSkillTimeouts, validateWalkingSkill } from '@botlab/model';
 import type {
   SimulationSkill,
   SimulationCommandResult,
@@ -14,7 +15,9 @@ export class SkillGoal {
   constructor(
     private name: SimulationSkill,
     private start: ControllerFeedback,
-  ) {}
+  ) {
+    validateWalkingSkill(name);
+  }
   update(
     feedback: ControllerFeedback,
     running: boolean,
@@ -26,7 +29,7 @@ export class SkillGoal {
     )
       throw new Error('No se puede observar la habilidad.');
     const duration = feedback.timeSeconds - this.start.timeSeconds;
-    if (duration >= 10)
+    if (duration >= walkingSkillTimeouts[this.name])
       throw new Error('La habilidad no terminó antes del tiempo máximo.');
     this.maxJointChange = Math.max(
       this.maxJointChange,

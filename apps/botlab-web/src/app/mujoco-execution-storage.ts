@@ -3,6 +3,8 @@ import {
   validateWalkingCondition,
   evaluateWalkingCondition,
   NumericVariables,
+  validateWalkingSkill,
+  walkingSkillTimeouts,
   type ExecutionResult,
   type ProgramIteration,
 } from '@botlab/model';
@@ -281,21 +283,21 @@ export function decodeMujocoExecution(
         const v = result.skill;
         if (
           !record(v) ||
-          !['kick-left', 'kick-right', 'ground-pick', 'jump'].includes(
-            String(v.name),
-          ) ||
           typeof v.durationSeconds !== 'number' ||
           !Number.isFinite(v.durationSeconds) ||
           v.durationSeconds <= 0 ||
-          v.durationSeconds >= 10 ||
+          v.durationSeconds >= 250 ||
           typeof v.maxJointChangeRadians !== 'number' ||
           !Number.isFinite(v.maxJointChangeRadians) ||
           v.maxJointChangeRadians < 0.15 ||
           !checked.rest
         )
           throw new Error('Invalid saved skill.');
+        validateWalkingSkill(v.name);
+        if (v.durationSeconds >= walkingSkillTimeouts[v.name])
+          throw new Error('Invalid skill duration.');
         checked.skill = {
-          name: v.name as 'kick-left' | 'kick-right' | 'ground-pick' | 'jump',
+          name: v.name,
           durationSeconds: v.durationSeconds,
           maxJointChangeRadians: v.maxJointChangeRadians,
         };

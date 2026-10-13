@@ -55,3 +55,19 @@ it('requires contact-free flight and height gain before confirming a jump landin
     new SkillGoal('jump', feedback(0)).update(feedback(0.1, 0.3), true),
   ).toThrow(/contactos/);
 });
+
+it('allows the full long dance but enforces its own deadline and measured return', () => {
+  const goal = new SkillGoal('dance-crab', feedback(0));
+  expect(goal.update(feedback(236, 0.5), true)).toBeUndefined();
+  let result;
+  for (let i = 0; i < 50; i++)
+    result = goal.update(feedback(237 + i * 0.02, 0.1), false) ?? result;
+  expect(result?.skill?.name).toBe('dance-crab');
+  expect(result?.rest?.durationSeconds).toBeGreaterThanOrEqual(0.8);
+  expect(() =>
+    new SkillGoal('dance-crab', feedback(0)).update(feedback(250, 0.5), true),
+  ).toThrow(/tiempo/);
+  expect(() =>
+    new SkillGoal('gesture-hello', feedback(0)).update(feedback(20, 0.5), true),
+  ).toThrow(/tiempo/);
+});

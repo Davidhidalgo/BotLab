@@ -1,6 +1,7 @@
 import type * as ScratchBlocks from 'scratch-blocks';
 import {
   walkingProgramLimits,
+  validateWalkingSkill,
   validateNumericExpression,
   validateVariableName,
   type NumericExpression,
@@ -38,6 +39,12 @@ export function applyWebWalkingLocale(
       'delante',
       'nivelado',
       'atrás',
+      'gesto %1',
+      'baile %1',
+      'saludar (7 s)',
+      'reverencia (9 s)',
+      'dar la pata (6 s)',
+      'saludo militar (6 s)',
     ],
     ca: [
       'Avançat',
@@ -62,6 +69,12 @@ export function applyWebWalkingLocale(
       'endavant',
       'anivellat',
       'enrere',
+      'gest %1',
+      'ball %1',
+      'saludar (7 s)',
+      'reverència (9 s)',
+      'donar la pota (6 s)',
+      'salutació militar (6 s)',
     ],
     en: [
       'Advanced',
@@ -86,6 +99,12 @@ export function applyWebWalkingLocale(
       'forward',
       'level',
       'back',
+      'gesture %1',
+      'dance %1',
+      'wave (7 s)',
+      'bow (9 s)',
+      'give paw (6 s)',
+      'salute (6 s)',
     ],
   }[locale];
   for (const [i, key] of [
@@ -111,12 +130,42 @@ export function applyWebWalkingLocale(
     'FORWARD',
     'LEVEL',
     'BACK',
+    'GESTURE',
+    'DANCE',
+    'HELLO',
+    'BOW',
+    'PAW',
+    'SALUTE',
   ].entries())
     api.Msg[`BOTLAB_WEB_${key}`] = copy[i];
 }
 export function registerMicroduckMujocoBlocks(api: typeof ScratchBlocks) {
   if (api.Blocks['botlab_web_velocity']) return;
   api.defineBlocksWithJsonArray([
+    ...(['gesture', 'dance'] as const).map((kind) => ({
+      type: `botlab_jumper_${kind}`,
+      message0: `%{BKY_BOTLAB_WEB_${kind.toUpperCase()}}`,
+      args0: [
+        {
+          type: 'field_dropdown',
+          name: 'SKILL',
+          options:
+            kind === 'gesture'
+              ? ['hello', 'bow', 'paw', 'salute'].map((name) => [
+                  `%{BKY_BOTLAB_WEB_${name.toUpperCase()}}`,
+                  `gesture-${name}`,
+                ])
+              : [
+                  ['Brazilian (66 s)', 'dance-brazilian'],
+                  ['Crab (3 min 56 s)', 'dance-crab'],
+                  ['Maze (10 s)', 'dance-maze'],
+                  ['Dream Wings (56 s)', 'dance-dream-wings'],
+                ],
+        },
+      ],
+      style: 'motion',
+      extensions: ['shape_statement'],
+    })),
     {
       type: 'botlab_web_body_pitch',
       message0: '%{BKY_BOTLAB_WEB_BODY_PITCH}',
@@ -292,6 +341,8 @@ const commonWalkingBlockTypes = [
   'botlab_web_velocity',
 ];
 export const jumperWalkingBlockTypes = [
+  'botlab_jumper_gesture',
+  'botlab_jumper_dance',
   'botlab_web_body_pitch',
   'botlab_jumper_jump',
   ...commonWalkingBlockTypes,
@@ -621,6 +672,20 @@ function readWalkingProgram(
                 ? 'kick-left'
                 : 'kick-right',
         });
+        continue;
+      }
+      if (type === 'botlab_jumper_gesture' || type === 'botlab_jumper_dance') {
+        const fields = children(current, 'field').filter(
+          (f) => f.getAttribute('name') === 'SKILL',
+        );
+        const skill = fields[0]?.textContent;
+        validateWalkingSkill(skill);
+        if (
+          fields.length !== 1 ||
+          !skill.startsWith(type.endsWith('gesture') ? 'gesture-' : 'dance-')
+        )
+          throw new Error('Habilidad no válida.');
+        steps.push({ sourceBlockId, kind: 'skill', skill });
         continue;
       }
       if (type === 'botlab_jumper_jump') {

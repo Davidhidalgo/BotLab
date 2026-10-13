@@ -1,3 +1,8 @@
+import {
+  jumperPerformances,
+  isJumperPerformance,
+  type JumperPerformance,
+} from './performances';
 import * as ort from 'onnxruntime-web/wasm';
 import ortWasmUrl from 'onnxruntime-web/ort-wasm-simd-threaded.wasm?url';
 import type {
@@ -62,17 +67,33 @@ export const createJumperWalkingController: ControllerFactory = async (
   const session = await ort.InferenceSession.create(files['locomotion.onnx'], {
     executionProviders: ['wasm'],
   });
-  let jumpSession: ort.InferenceSession | undefined;
+  const performanceSessions = new Map<
+    string,
+    { session: ort.InferenceSession; observations: number; actions: number }
+  >();
   try {
-    if (files['jump.onnx'])
-      jumpSession = await ort.InferenceSession.create(files['jump.onnx'], {
+    for (const meta of Object.values(jumperPerformances)) {
+      if (!files[meta.file]) continue;
+      const loaded = await ort.InferenceSession.create(files[meta.file], {
         executionProviders: ['wasm'],
       });
+      performanceSessions.set(meta.mode, {
+        session: loaded,
+        observations: meta.observations,
+        actions: meta.actions,
+      });
+      if (loaded.inputNames.length !== 1 || loaded.outputNames.length !== 1)
+        throw new Error('Unexpected performance policy interface.');
+    }
   } catch (error) {
     await session.release();
+    for (const loaded of performanceSessions.values())
+      await loaded.session.release();
     throw error;
   }
-  let jump: { sent: boolean; entered: boolean } | undefined;
+  let active:
+    | { name: JumperPerformance; sent: boolean; entered: boolean }
+    | undefined;
   let needsReset = false;
   let bodyPitch = 0;
   let fsm: Fsm | undefined,
@@ -81,7 +102,7 @@ export const createJumperWalkingController: ControllerFactory = async (
   function reset(preservePose = false) {
     if (!preservePose) bodyPitch = 0;
     version++;
-    jump = undefined;
+    active = undefined;
     needsReset = false;
     fsm?.free();
     fsm = undefined;
@@ -90,27 +111,35 @@ export const createJumperWalkingController: ControllerFactory = async (
   return {
     setBodyPitch(angle) {
       if (needsReset)
-        throw new Error('Reinicia Jumper después de interrumpir un salto.');
+        throw new Error(
+          'Reinicia Jumper después de interrumpir una habilidad.',
+        );
       if (!Number.isFinite(angle) || Math.abs(angle) > Math.PI / 9)
         throw new Error('Unsupported body pitch.');
       bodyPitch = angle;
     },
-    ...(jumpSession
+    ...(performanceSessions.size
       ? {
           setSkill(skill: import('@botlab/simulators-core').SimulationSkill) {
             if (needsReset)
               throw new Error(
-                'Reinicia Jumper después de interrumpir un salto.',
+                'Reinicia Jumper después de interrumpir una habilidad.',
               );
             if (bodyPitch !== 0)
-              throw new Error('Nivela el cuerpo de Jumper antes de saltar.');
-            if (skill !== 'jump') throw new Error('Unsupported Jumper skill.');
-            jump = { sent: false, entered: false };
+              throw new Error(
+                'Nivela el cuerpo de Jumper antes de iniciar la habilidad.',
+              );
+            if (
+              !isJumperPerformance(skill) ||
+              !performanceSessions.has(jumperPerformances[skill].mode)
+            )
+              throw new Error('Unsupported Jumper skill.');
+            active = { name: skill, sent: false, entered: false };
           },
-          isSkillRunning: () => jump !== undefined,
+          isSkillRunning: () => active !== undefined,
           cancelSkill() {
-            if (jump) {
-              jump = undefined;
+            if (active) {
+              active = undefined;
               needsReset = true;
             }
           },
@@ -129,12 +158,16 @@ export const createJumperWalkingController: ControllerFactory = async (
     },
     validateVelocity(v) {
       if (needsReset)
-        throw new Error('Reinicia Jumper después de interrumpir un salto.');
+        throw new Error(
+          'Reinicia Jumper después de interrumpir una habilidad.',
+        );
       jumperWalkingAxes(v);
     },
     async infer(feedback, velocity) {
       if (needsReset)
-        throw new Error('Reinicia Jumper después de interrumpir un salto.');
+        throw new Error(
+          'Reinicia Jumper después de interrumpir una habilidad.',
+        );
       const now = Math.round(feedback.timeSeconds * 1e6),
         token = version;
       fsm ??= new binding.WebFsm(
@@ -158,21 +191,28 @@ export const createJumperWalkingController: ControllerFactory = async (
       current.setAxis('Rx', axes.Rx);
       for (const axis of ['Lx', 'LT', 'RT']) current.setAxis(axis, 0);
       current.setAxis('Ry', -bodyPitch / (Math.PI / 9));
-      current.setKey('key_space', !!jump && !jump.sent);
-      if (jump) jump.sent = true;
+      const requested = active ? jumperPerformances[active.name] : undefined;
+      current.setKey('key_left_ctrl', requested?.ctrl ?? false);
+      for (const key of ['key_space', 'key_1', 'key_2', 'key_3', 'key_4'])
+        current.setKey(key, !!active && !active.sent && requested?.key === key);
+      if (active) active.sent = true;
       current.padFrame(now);
       current.set_command(0, 0, 0, now);
       const mode = current.tick(now);
-      if (jump && current.mode() === 'jump') jump.entered = true;
-      const jumpDone = jump?.entered && current.mode() === 'locomotion';
+      if (active && current.mode() === requested?.mode) active.entered = true;
+      const performanceDone =
+        active?.entered && current.mode() === 'locomotion';
       if (mode) {
-        if (mode !== 'locomotion' && !(mode === 'jump' && jumpSession))
-          throw new Error(`Unexposed Jumper mode: ${mode}`);
-        const selected = mode === 'jump' ? jumpSession! : session;
+        const loaded =
+          mode === 'locomotion'
+            ? { session, observations: 415, actions: 20 }
+            : performanceSessions.get(mode);
+        if (!loaded) throw new Error(`Unexposed Jumper mode: ${mode}`);
+        const selected = loaded.session;
         const tensor = new ort.Tensor(
           'float32',
           current.observation().slice(),
-          [1, mode === 'jump' ? 167 : 415],
+          [1, loaded.observations],
         );
         awaiting = true;
         try {
@@ -182,7 +222,7 @@ export const createJumperWalkingController: ControllerFactory = async (
             const action = out[selected.outputNames[0]];
             if (
               action.type !== 'float32' ||
-              action.dims.join(',') !== '1,20' ||
+              action.dims.join(',') !== `1,${loaded.actions}` ||
               !Array.from(action.data as Float32Array).every(Number.isFinite)
             )
               throw new Error('Invalid Jumper action.');
@@ -199,17 +239,17 @@ export const createJumperWalkingController: ControllerFactory = async (
         targets: Array.from(current.positions()),
         kp: Array.from(current.kp()),
         kd: Array.from(current.kd()),
-        state: [jumpDone ? 1 : 0],
+        state: [performanceDone ? 1 : 0],
       };
     },
     accept(output) {
-      if (output.state[0] === 1) jump = undefined;
+      if (output.state[0] === 1) active = undefined;
     },
     reset,
     invalidate() {
       if (awaiting) {
         // Repeated pause/stop requests must not clear an interrupted-skill latch.
-        const interrupted = needsReset || !!jump;
+        const interrupted = needsReset || !!active;
         reset(true);
         if (interrupted) needsReset = true;
       }
@@ -217,7 +257,8 @@ export const createJumperWalkingController: ControllerFactory = async (
     async dispose() {
       reset();
       await session.release();
-      await jumpSession?.release();
+      for (const loaded of performanceSessions.values())
+        await loaded.session.release();
     },
   };
 };

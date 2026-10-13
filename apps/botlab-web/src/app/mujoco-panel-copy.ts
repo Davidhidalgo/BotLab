@@ -54,7 +54,7 @@ const es = {
   jointHelp:
     'Base fija y contactos desactivados para aislar el control articular. Selecciona el destino de marcha para locomoción.',
   jumperHelp:
-    'Jumper puede avanzar, girar 90° a izquierda o derecha y esperar. El retroceso no está disponible.',
+    'Jumper puede avanzar, girar 90°, inclinarse atrás, saltar, hacer gestos y bailar. Nivela el cuerpo antes de iniciar una habilidad.',
   microduckHelp:
     'MicroDuck puede avanzar, girar a la izquierda, mirar, sentarse, levantarse y esperar. El giro a la derecha y el retroceso todavía no están disponibles.',
   physics: 'Estado de la física',
@@ -82,6 +82,14 @@ const es = {
     'kick-right': 'patada derecha',
     'ground-pick': 'inclinación hacia el suelo',
     jump: 'salto',
+    'gesture-hello': 'saludar',
+    'gesture-bow': 'reverencia',
+    'gesture-paw': 'dar la pata',
+    'gesture-salute': 'saludo militar',
+    'dance-brazilian': 'Brazilian',
+    'dance-crab': 'Crab',
+    'dance-maze': 'Maze',
+    'dance-dream-wings': 'Dream Wings',
   },
   variables: 'Variables',
   running: 'Ejecutando…',
@@ -151,7 +159,7 @@ const ca: typeof es = {
   jointHelp:
     'Base fixa i contactes desactivats per aïllar el control articular. Selecciona el destí de marxa per a locomoció.',
   jumperHelp:
-    'Jumper pot avançar, girar 90° a esquerra o dreta i esperar. El retrocés no està disponible.',
+    'Jumper pot avançar, girar 90°, inclinar-se enrere, saltar, fer gestos i ballar. Anivella el cos abans de començar una habilitat.',
   microduckHelp:
     'MicroDuck pot avançar, girar a l’esquerra, mirar, seure, aixecar-se i esperar. El gir a la dreta i el retrocés encara no estan disponibles.',
   physics: 'Estat de la física',
@@ -179,6 +187,14 @@ const ca: typeof es = {
     'kick-right': 'puntada dreta',
     'ground-pick': 'inclinació cap a terra',
     jump: 'salt',
+    'gesture-hello': 'saludar',
+    'gesture-bow': 'reverència',
+    'gesture-paw': 'donar la pota',
+    'gesture-salute': 'salutació militar',
+    'dance-brazilian': 'Brazilian',
+    'dance-crab': 'Crab',
+    'dance-maze': 'Maze',
+    'dance-dream-wings': 'Dream Wings',
   },
   variables: 'Variables',
   running: 'Executant…',
@@ -248,7 +264,7 @@ const en: typeof es = {
   jointHelp:
     'Fixed base with contacts disabled to isolate joint control. Select the walking destination for locomotion.',
   jumperHelp:
-    'Jumper can advance, turn 90° left or right and wait. Backward movement is not available.',
+    'Jumper can advance, turn 90°, lean back, jump, gesture and dance. Level the body before starting a skill.',
   microduckHelp:
     'MicroDuck can advance, turn left, look, sit, stand and wait. Right turns and backward movement are not available yet.',
   physics: 'Physics state',
@@ -276,6 +292,14 @@ const en: typeof es = {
     'kick-right': 'right kick',
     'ground-pick': 'bow towards the ground',
     jump: 'jump',
+    'gesture-hello': 'Hello',
+    'gesture-bow': 'Bow',
+    'gesture-paw': 'Paw',
+    'gesture-salute': 'Salute',
+    'dance-brazilian': 'Brazilian',
+    'dance-crab': 'Crab',
+    'dance-maze': 'Maze',
+    'dance-dream-wings': 'Dream Wings',
   },
   variables: 'Variables',
   running: 'Running…',

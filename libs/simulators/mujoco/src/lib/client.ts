@@ -1,3 +1,4 @@
+import { walkingSkillTimeouts } from '@botlab/model';
 import type {
   SimulationFrame,
   SimulationSession,
@@ -123,7 +124,12 @@ export function createMujocoSession(
                 120000,
                 Math.min(600, command.timeoutSeconds) * 2000 + 15000,
               )
-            : 120000;
+            : 'kind' in command && command.kind === 'skill'
+              ? Math.max(
+                  120000,
+                  walkingSkillTimeouts[command.name] * 2000 + 15000,
+                )
+              : 120000;
         const reply = await request('command', { command }, timeout);
         if (signal?.aborted) throw new Error('Command cancelled.');
         if (!reply.result) throw new Error('Worker omitted command evidence.');

@@ -6,7 +6,7 @@ import ortWasmUrl from 'onnxruntime-web/ort-wasm-simd-threaded.wasm?url';
 import { MujocoWorld } from '../../libs/simulators/mujoco/src/lib/world';
 import { fetchSimulationAssets } from '../../libs/simulators/mujoco/src/lib/assets';
 import { loadJumperWalkingManifest } from '@botlab/simulators-jumper';
-export async function probeJumperSkills(names?: string[]) {
+export async function probeJumperSkills(names?: string[], complete = false) {
   const mj = await loadMujoco({
     locateFile: (name) => (name.endsWith('.wasm') ? wasmUrl : name),
   });
@@ -50,7 +50,14 @@ export async function probeJumperSkills(names?: string[]) {
       ['pitch-negative', '', false],
     ] as const) {
       if (names && !names.includes(name)) continue;
+      const clawCycle = complete && name.startsWith('claw');
       const activationTick = name === 'jump-cold' ? 0 : 100;
+      const duration = config.contracts[name]?.reference?.duration;
+      const totalTicks = clawCycle
+        ? 1800
+        : complete && duration
+          ? activationTick + Math.ceil((duration + 4) / 0.005)
+          : 900;
       const world = new MujocoWorld(mj, manifest, files);
       const fsm = new binding.WebFsm(
         config.toml,
@@ -68,7 +75,7 @@ export async function probeJumperSkills(names?: string[]) {
         maxContactFreeSeconds = 0;
       const phases = [];
       try {
-        for (let tick = 0; tick < 900; tick++) {
+        for (let tick = 0; tick < totalTicks; tick++) {
           const f = world.feedback(),
             now = Math.round(f.timeSeconds * 1e6);
           fsm.set_state(
@@ -83,14 +90,21 @@ export async function probeJumperSkills(names?: string[]) {
             fsm.setAxis(axis, 0);
           if (tick >= 100 && tick < 600 && name.startsWith('pitch'))
             fsm.setAxis('Ry', name === 'pitch-positive' ? -0.3 : 0.3);
+          if (clawCycle)
+            fsm.setAxis(
+              name === 'claw_left' ? 'LT' : 'RT',
+              tick >= 400 && tick < 800 ? 1 : 0,
+            );
+          if (clawCycle && tick === 1200) fsm.setKey(key, true);
+          if (clawCycle && tick === 1201) fsm.setKey(key, false);
           if (tick === activationTick) {
             if (ctrl) fsm.setKey('key_left_ctrl', true);
             if (key) fsm.setKey(key, true);
           }
           if (tick === 101 && key) fsm.setKey(key, false);
-          if (tick === 599 && name.startsWith('gesture'))
+          if (!complete && tick === 599 && name.startsWith('gesture'))
             fsm.setKey('key_left_ctrl', true);
-          if (tick === 600) {
+          if (!complete && tick === 600) {
             if (name.startsWith('gesture')) fsm.setKey('key_left_ctrl', false);
             if (ctrl) fsm.setKey('key_left_ctrl', false);
             else if (name.startsWith('claw')) fsm.setKey(key, true);
@@ -151,16 +165,28 @@ export async function probeJumperSkills(names?: string[]) {
           minHeight = Math.min(minHeight, after.rootPosition[2]);
           maxHeight = Math.max(maxHeight, after.rootPosition[2]);
           maxTilt = Math.max(maxTilt, tilt);
-          if ([99, 599, 899].includes(tick))
+          if (
+            (clawCycle
+              ? [99, 399, 799, 1199, 1799]
+              : [99, totalTicks - 301, totalTicks - 1]
+            ).includes(tick)
+          )
             phases.push({ tick, mode: fsm.mode(), feedback: after });
           if (after.rootPosition[2] < 0.06 || tilt > 0.873)
             throw new Error('Outside validated envelope');
         }
+        if (complete && (!counts[name] || fsm.mode() !== 'locomotion'))
+          throw new Error(
+            'Expected mode did not complete and return to locomotion.',
+          );
       } catch (error) {
         failure = String(error);
       } finally {
         results.push({
           name,
+          complete,
+          referenceDurationSeconds: duration,
+          simulatedSeconds: world.feedback().timeSeconds,
           minHeight,
           maxHeight,
           maxTilt,

@@ -1,0 +1,149 @@
+{
+  "date": "2026-10-13T01:09:05.177Z",
+  "browser": "155.0.8059.40",
+  "results": [
+    {
+      "robot": "jumper",
+      "run": {
+        "targetId": "jumper-web-walking",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"botlab_jumper_gesture\" id=\"gesture-hello\"><field name=\"SKILL\">gesture-hello</field><next><block type=\"botlab_jumper_gesture\" id=\"gesture-bow\"><field name=\"SKILL\">gesture-bow</field><next><block type=\"botlab_jumper_gesture\" id=\"gesture-paw\"><field name=\"SKILL\">gesture-paw</field><next><block type=\"botlab_jumper_gesture\" id=\"gesture-salute\"><field name=\"SKILL\">gesture-salute</field><next><block type=\"botlab_jumper_dance\" id=\"dance-maze\"><field name=\"SKILL\">dance-maze</field><next><block type=\"botlab_web_advance_cm\" id=\"advance\"><field name=\"CM\">15</field></block></next></block></next></block></next></block></next></block></next></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T01:07:06.598Z",
+        "manifestId": "jumper-walking-jump-performances",
+        "modelRevision": "78966f45de6f2b6de3f7cea017f32a39f8b993e6",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@2",
+            "sourceBlockId": "gesture-hello",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 8.964000000000471,
+              "rest": {
+                "durationSeconds": 0.8009999999995561,
+                "driftMeters": 0.0012290217343149821,
+                "rotationRadians": 0.0029154542076731075
+              },
+              "skill": {
+                "name": "gesture-hello",
+                "durationSeconds": 8.964000000000471,
+                "maxJointChangeRadians": 1.6017274313158985
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@4",
+            "sourceBlockId": "gesture-bow",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 19.45200000000079,
+              "rest": {
+                "durationSeconds": 0.8000000000009777,
+                "driftMeters": 0.0006706368179359891,
+                "rotationRadians": 0.005077409321397743
+              },
+              "skill": {
+                "name": "gesture-bow",
+                "durationSeconds": 10.482000000000323,
+                "maxJointChangeRadians": 1.5210462119504122
+              }
+            }
+          },
+          {
+            "commandId": "velocity-2@6",
+            "sourceBlockId": "gesture-paw",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 27.76400000001095,
+              "rest": {
+                "durationSeconds": 0.8000000000009777,
+                "driftMeters": 0.0013264186110078882,
+                "rotationRadians": 0.0031927687478579565
+              },
+              "skill": {
+                "name": "gesture-paw",
+                "durationSeconds": 8.309000000010155,
+                "maxJointChangeRadians": 1.9579705909317213
+              }
+            }
+          },
+          {
+            "commandId": "velocity-3@8",
+            "sourceBlockId": "gesture-salute",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 36.08000000000661,
+              "rest": {
+                "durationSeconds": 0.8009999999981332,
+                "driftMeters": 0.0012524431546830383,
+                "rotationRadians": 0.0032890458228675493
+              },
+              "skill": {
+                "name": "gesture-salute",
+                "durationSeconds": 8.314999999995663,
+                "maxJointChangeRadians": 1.6075405489035535
+              }
+            }
+          },
+          {
+            "commandId": "velocity-4@10",
+            "sourceBlockId": "dance-maze",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 48.96799999997658,
+              "rest": {
+                "durationSeconds": 0.8009999999981332,
+                "driftMeters": 0.0021176504810538417,
+                "rotationRadians": 0.004248546251540787
+              },
+              "skill": {
+                "name": "dance-maze",
+                "durationSeconds": 12.882999999969975,
+                "maxJointChangeRadians": 1.9350139658135244
+              }
+            }
+          },
+          {
+            "commandId": "velocity-5@12",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 51.58399999997048,
+              "displacementMeters": 0.14108305694648945,
+              "yawRadians": -0.059301882445792306,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14085377328971166
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-8d7974-f631109f-f96f739f-9bb0af31-mujoco-program-1",
+          "program": {
+            "programId": "jumper-web-walking",
+            "targetId": "jumper-web-walking",
+            "revision": "{\"commands\":[{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"skill\",\"id\":\"velocity-0\",\"inputs\":{\"skill\":\"gesture-hello\"},\"sourceBlockId\":\"gesture-hello\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"skill\",\"id\":\"velocity-1\",\"inputs\":{\"skill\":\"gesture-bow\"},\"sourceBlockId\":\"gesture-bow\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"skill\",\"id\":\"velocity-2\",\"inputs\":{\"skill\":\"gesture-paw\"},\"sourceBlockId\":\"gesture-paw\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"skill\",\"id\":\"velocity-3\",\"inputs\":{\"skill\":\"gesture-salute\"},\"sourceBlockId\":\"gesture-salute\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"skill\",\"id\":\"velocity-4\",\"inputs\":{\"skill\":\"dance-maze\"},\"sourceBlockId\":\"dance-maze\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-5\",\"inputs\":{\"distanceMeters\":0.15,\"speed\":0.24,\"timeoutSeconds\":18.75},\"sourceBlockId\":\"advance\",\"targetId\":\"jumper-web-walking\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T01:07:58.274Z"
+      },
+      "cancellation": "cancelled",
+      "resetRequiredAfterCancellation": true,
+      "rerunCompleted": true
+    }
+  ],
+  "errors": []
+}

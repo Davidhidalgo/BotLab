@@ -215,3 +215,7 @@ Normal Jumper preparation adds a separate pinned jump manifest. `node tools/mujo
 <!-- body-pitch calibration and acceptance from body-pitch-harness.ts, probe-body-pitch.mjs and verify-body-pitch.mjs -->
 
 `node tools/mujoco/probe-body-pitch.mjs` reproduces positive/negative exact-controller calibration. `node tools/mujoco/verify-body-pitch.mjs` checks the supported backward/level sequence, later advance, persistence/cancellation and the explicit level precondition for jumping. Positive pitch remains outside the public palette.
+
+<!-- performances from prepare-jumper-performances.py, probe-jumper-skills.mjs and verify-performances.mjs -->
+
+Jumper preparation also adds SHA-pinned gesture/dance manifests. `BOTLAB_PROBE_COMPLETE=1 BOTLAB_PROBE_SKILLS=gesture_hello,gesture_bow,gesture_paw,gesture_salute,dance_brazilian,dance_crab,dance_maze,dance_dream_wings node tools/mujoco/probe-jumper-skills.mjs` runs complete reference cycles against the dev server. `node tools/mujoco/verify-performances.mjs` verifies the compiled editor, measured completion, persistence and reset after cancellation. Crab runs its full 235.68-second reference, not a shortened preview.

@@ -267,3 +267,31 @@ it('keeps body tilt distinct from head orientation and robot capability', () => 
     expect(() => readMicroduckWalkingProgram(artifact)).toThrow(/compatible/);
   }
 });
+
+it('keeps gestures and dances exclusive to Jumper and rejects mismatched selections', () => {
+  for (const skill of [
+    'gesture-hello',
+    'gesture-bow',
+    'gesture-paw',
+    'gesture-salute',
+    'dance-brazilian',
+    'dance-crab',
+    'dance-maze',
+    'dance-dream-wings',
+  ]) {
+    const doc = {
+      ...microduckWalkingExample,
+      content: `<xml><block type="event_whenflagclicked" id="start"><next><block type="botlab_jumper_${skill.split('-')[0]}" id="skill"><field name="SKILL">${skill}</field></block></next></block></xml>`,
+    };
+    expect(readJumperWalkingProgram(doc)).toEqual([
+      { sourceBlockId: 'skill', kind: 'skill', skill },
+    ]);
+    expect(() => readMicroduckWalkingProgram(doc)).toThrow(/compatible/);
+    expect(() =>
+      readJumperWalkingProgram({
+        ...doc,
+        content: doc.content.replace(`>${skill}<`, '>jump<'),
+      }),
+    ).toThrow();
+  }
+});

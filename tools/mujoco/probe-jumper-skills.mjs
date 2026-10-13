@@ -13,10 +13,12 @@ try {
   );
   await page.goto(base);
   const result = await page.evaluate(
-    async ({ path, names }) => (await import(path)).probeJumperSkills(names),
+    async ({ path, names, complete }) =>
+      (await import(path)).probeJumperSkills(names, complete),
     {
       path: '/@fs' + resolve('tools/mujoco/jumper-skills-harness.ts'),
       names: process.env.BOTLAB_PROBE_SKILLS?.split(','),
+      complete: process.env.BOTLAB_PROBE_COMPLETE === '1',
     },
   );
   await writeFile(

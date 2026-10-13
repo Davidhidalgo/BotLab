@@ -202,3 +202,31 @@ it('restores body pitch only when observation supports the target', () => {
     }),
   ).toThrow();
 });
+
+it('restores long dances while applying each skill deadline', () => {
+  const result = {
+    status: 'completed',
+    evidence: 'simulator',
+    level: 'closed-loop-policy',
+    timeSeconds: 238,
+    rest: { durationSeconds: 0.8, driftMeters: 0.001, rotationRadians: 0.01 },
+    skill: {
+      name: 'dance-crab',
+      durationSeconds: 238,
+      maxJointChangeRadians: 1,
+    },
+  };
+  const report = { ...saved, trace: [{ sourceBlockId: 'dance', result }] };
+  expect(decode(report).trace[0].result).toEqual(result);
+  for (const skill of [
+    { ...result.skill, name: 'gesture-hello' },
+    { ...result.skill, durationSeconds: 250 },
+    { ...result.skill, name: 'unknown' },
+  ])
+    expect(() =>
+      decode({
+        ...report,
+        trace: [{ sourceBlockId: 'dance', result: { ...result, skill } }],
+      }),
+    ).toThrow();
+});

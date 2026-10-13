@@ -32,4 +32,5 @@ def main():
     (dst/'manifest.json').write_text(json.dumps(m,indent=2)+'\n');print(json.dumps(dict(manifest=str(dst/'manifest.json'),sha256=sha(dst/'manifest.json'))))
     subprocess.run(['python3',str(ROOT/'tools/mujoco/prepare-jumper-depth.py')],check=True)
     subprocess.run(['python3',str(ROOT/'tools/mujoco/prepare-jumper-jump.py')],check=True)
+    subprocess.run(['python3',str(ROOT/'tools/mujoco/prepare-jumper-performances.py')],check=True)
 if __name__=='__main__':main()

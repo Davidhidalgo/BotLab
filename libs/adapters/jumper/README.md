@@ -27,3 +27,7 @@ Jumper compilation rejects posture predicates until its own posture observer is 
 The adapter also compiles numeric expressions/variables, measured rest and the fixed `jump` skill. MicroDuck-specific skills remain rejected. The worker must observe flight and landing before the jump command completes.
 
 Body-pitch compilation accepts only −0.1 and 0 rad. MicroDuck rejects the action; no forward-tilt capability is claimed.
+
+<!-- fixed Jumper skills from libs/blocks/src/lib/microduck-mujoco-blocks.ts and libs/adapters/jumper/src/lib/jumper.ts -->
+
+Jumper has separate gesture and dance dropdowns with four official choices each and approximate clip durations. Imported blocks remain incompatible with MicroDuck. Execution requires a level body and confirms measured rest before continuing; interrupted skills require explicit reset. Arbitrary uploaded policies remain unsupported.

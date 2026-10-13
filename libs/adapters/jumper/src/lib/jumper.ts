@@ -1,5 +1,6 @@
 import {
   expandWalkingProgram,
+  validateWalkingSkill,
   numericCommandSchemas,
   walkingConditionCommandSchema,
   walkingConditionRequirements,
@@ -175,14 +176,24 @@ export function createJumperWalkingAdapter(
             },
             {
               id: 'skill',
-              name: 'Salto',
+              name: 'Habilidad',
               description:
-                'Salto oficial fijo con despegue y aterrizaje observados.',
+                'Salto, gesto o baile oficial con retorno a reposo observado.',
               inputs: [
                 {
                   name: 'skill',
                   type: 'enum',
-                  enumValues: ['jump'],
+                  enumValues: [
+                    'jump',
+                    'gesture-hello',
+                    'gesture-bow',
+                    'gesture-paw',
+                    'gesture-salute',
+                    'dance-brazilian',
+                    'dance-crab',
+                    'dance-maze',
+                    'dance-dream-wings',
+                  ],
                   required: true,
                 },
               ],
@@ -305,7 +316,20 @@ export function compileJumperWalkingProgram(
       return;
     }
     if ('kind' in s && s.kind === 'skill') {
-      if (s.skill !== 'jump')
+      validateWalkingSkill(s.skill);
+      if (
+        ![
+          'jump',
+          'gesture-hello',
+          'gesture-bow',
+          'gesture-paw',
+          'gesture-salute',
+          'dance-brazilian',
+          'dance-crab',
+          'dance-maze',
+          'dance-dream-wings',
+        ].includes(s.skill)
+      )
         throw new Error('Jumper no dispone de las habilidades de MicroDuck.');
       return;
     }

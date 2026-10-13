@@ -39,7 +39,7 @@ export async function loadJumperWalkingManifest(
   scene: 'flat' | 'obstacles' = 'flat',
 ): Promise<SimulationManifest> {
   const response = await fetch(
-    `/simulation-assets/jumper-walking/${scene === 'obstacles' ? 'obstacles-manifest-jump' : 'manifest-jump'}.json`,
+    `/simulation-assets/jumper-walking/${scene === 'obstacles' ? 'obstacles-manifest-performances' : 'manifest-performances'}.json`,
     { signal },
   );
   if (!response.ok)
@@ -54,8 +54,8 @@ export async function loadJumperWalkingManifest(
   if (
     hash !==
     (scene === 'obstacles'
-      ? 'e0652b31c4fec859173aba82c55e9a5ecb514b0c04b794d377af355bb3d62833'
-      : '2d8e6b968b37276cbbadcd793ab1289e5086df13b81bcc7aea48a837ab32836d')
+      ? '70e7cde85317c0156b7a12b39dbc97905a6fc5b6439fa731a3d476f38645652a'
+      : '6cf3406e2e5d13e418241780411ea2283be0852c95591ee4164092a7c76c4d22')
   )
     throw new Error('Jumper walking manifest hash mismatch.');
   return JSON.parse(new TextDecoder().decode(bytes));

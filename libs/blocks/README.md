@@ -136,3 +136,7 @@ MicroDuck MuJoCo also offers left/right kicks and **bow towards the ground**, wi
 Jumper alone offers **jump**, using its fixed official controller motion. It completes after observed flight, landing and rest; cancelled jumps require reset before movement.
 
 Jumper offers **tilt body back / level**. Forward tilt remains unavailable after failing measured stability. Jumping while tilted requires an explicit level block.
+
+<!-- fixed Jumper skills from libs/blocks/src/lib/microduck-mujoco-blocks.ts and libs/adapters/jumper/src/lib/jumper.ts -->
+
+Jumper has separate gesture and dance dropdowns with four official choices each and approximate clip durations. Imported blocks remain incompatible with MicroDuck. Execution requires a level body and confirms measured rest before continuing; interrupted skills require explicit reset. Arbitrary uploaded policies remain unsupported.

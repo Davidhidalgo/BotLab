@@ -1,3 +1,4 @@
+import type { SimulationSkill } from '@botlab/simulators-core';
 import {
   evaluateProgramCommand,
   programCommandNeedsDistance,
@@ -153,11 +154,7 @@ export default function MujocoSimulatorPanel({
                     : command.commandId === 'skill'
                       ? {
                           kind: 'skill',
-                          name: command.inputs['skill'] as
-                            | 'kick-left'
-                            | 'kick-right'
-                            | 'ground-pick'
-                            | 'jump',
+                          name: command.inputs['skill'] as SimulationSkill,
                         }
                       : command.commandId === 'rest'
                         ? { kind: 'rest' }
@@ -757,11 +754,9 @@ export default function MujocoSimulatorPanel({
               ? copy.calculating
               : activeCommand.commandId === 'skill'
                 ? copy.skillNames[
-                    activeCommand.inputs['skill'] as
-                      | 'kick-left'
-                      | 'kick-right'
-                      | 'ground-pick'
-                      | 'jump'
+                    activeCommand.inputs[
+                      'skill'
+                    ] as keyof typeof copy.skillNames
                   ]
                 : ['distance', 'distance-value'].includes(
                       activeCommand.commandId,

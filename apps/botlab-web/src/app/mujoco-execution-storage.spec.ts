@@ -230,3 +230,32 @@ it('restores long dances while applying each skill deadline', () => {
       }),
     ).toThrow();
 });
+
+it('restores gripper evidence only for matching actions and measured arrival', () => {
+  const result = {
+    status: 'completed',
+    evidence: 'simulator',
+    level: 'closed-loop-policy',
+    timeSeconds: 3,
+    rest: { durationSeconds: 0.8, driftMeters: 0.001, rotationRadians: 0.01 },
+    gripper: {
+      action: 'prepare-left',
+      side: 'left',
+      position: 'open',
+      maxJointErrorRadians: 0.04,
+    },
+  };
+  const report = { ...saved, trace: [{ sourceBlockId: 'claw', result }] };
+  expect(decode(report).trace[0].result).toEqual(result);
+  for (const gripper of [
+    { ...result.gripper, side: 'right' },
+    { ...result.gripper, position: 'closed' },
+    { ...result.gripper, maxJointErrorRadians: 0.08 },
+  ])
+    expect(() =>
+      decode({
+        ...report,
+        trace: [{ sourceBlockId: 'claw', result: { ...result, gripper } }],
+      }),
+    ).toThrow();
+});

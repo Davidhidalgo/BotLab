@@ -384,3 +384,7 @@ Importa los archivos desde **Proyectos → Importar proyecto**. Las variables de
 <!-- activity from examples/jumper-mujoco-performances.botlab.json -->
 
 [Gestos y baile de Jumper](examples/jumper-mujoco-performances.botlab.json): saludar, reverencia, dar la pata, saludo militar y Maze, seguidos de 15 cm de avance. Cada habilidad espera a volver a reposo. El selector muestra la duración aproximada del clip; Crab dura casi cuatro minutos. Cancelar una habilidad exige reiniciar antes de ejecutar de nuevo.
+
+<!-- explicit claw activity from examples/jumper-mujoco-grippers.botlab.json -->
+
+[Pinzas de Jumper](examples/jumper-mujoco-grippers.botlab.json): preparar una pinza, cerrar, esperar, abrir y recoger; repetir con la otra y avanzar. Preparar cambia a apoyo sobre cinco patas. Cada acción confirma articulaciones y reposo. Se exige abrir antes de recoger y recoger antes de caminar, inclinarse o ejecutar otra habilidad. Es movimiento de pinza vacía; no se afirma agarre de objetos. Interrumpir una acción exige reiniciar.

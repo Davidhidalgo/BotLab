@@ -219,3 +219,7 @@ Normal Jumper preparation adds a separate pinned jump manifest. `node tools/mujo
 <!-- performances from prepare-jumper-performances.py, probe-jumper-skills.mjs and verify-performances.mjs -->
 
 Jumper preparation also adds SHA-pinned gesture/dance manifests. `BOTLAB_PROBE_COMPLETE=1 BOTLAB_PROBE_SKILLS=gesture_hello,gesture_bow,gesture_paw,gesture_salute,dance_brazilian,dance_crab,dance_maze,dance_dream_wings node tools/mujoco/probe-jumper-skills.mjs` runs complete reference cycles against the dev server. `node tools/mujoco/verify-performances.mjs` verifies the compiled editor, measured completion, persistence and reset after cancellation. Crab runs its full 235.68-second reference, not a shortened preview.
+
+<!-- claw acceptance from prepare-jumper-gripper.py and verify-grippers.mjs -->
+
+Jumper preparation adds the verified five-foot policy in separate gripper manifests. `node tools/mujoco/verify-grippers.mjs` tests both claws, holding through a wait, stowing, subsequent travel, reload, cancellation/reset and explicit rejection of walking while prepared or stowing while closed. The earlier raw cycle probe is retained as exploratory evidence.

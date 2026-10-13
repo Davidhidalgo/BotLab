@@ -2,6 +2,7 @@ import type * as ScratchBlocks from 'scratch-blocks';
 import {
   walkingProgramLimits,
   validateWalkingSkill,
+  validateGripperAction,
   validateNumericExpression,
   validateVariableName,
   type NumericExpression,
@@ -45,6 +46,12 @@ export function applyWebWalkingLocale(
       'reverencia (9 s)',
       'dar la pata (6 s)',
       'saludo militar (6 s)',
+      'pinza: %1',
+      'preparar izquierda',
+      'preparar derecha',
+      'abrir',
+      'cerrar',
+      'recoger',
     ],
     ca: [
       'Avançat',
@@ -75,6 +82,12 @@ export function applyWebWalkingLocale(
       'reverència (9 s)',
       'donar la pota (6 s)',
       'salutació militar (6 s)',
+      'pinça: %1',
+      'preparar esquerra',
+      'preparar dreta',
+      'obrir',
+      'tancar',
+      'recollir',
     ],
     en: [
       'Advanced',
@@ -105,6 +118,12 @@ export function applyWebWalkingLocale(
       'bow (9 s)',
       'give paw (6 s)',
       'salute (6 s)',
+      'claw: %1',
+      'prepare left',
+      'prepare right',
+      'open',
+      'close',
+      'stow',
     ],
   }[locale];
   for (const [i, key] of [
@@ -136,12 +155,37 @@ export function applyWebWalkingLocale(
     'BOW',
     'PAW',
     'SALUTE',
+    'GRIPPER',
+    'PREPARE_LEFT',
+    'PREPARE_RIGHT',
+    'OPEN',
+    'CLOSE',
+    'STOW',
   ].entries())
     api.Msg[`BOTLAB_WEB_${key}`] = copy[i];
 }
 export function registerMicroduckMujocoBlocks(api: typeof ScratchBlocks) {
   if (api.Blocks['botlab_web_velocity']) return;
   api.defineBlocksWithJsonArray([
+    {
+      type: 'botlab_jumper_gripper',
+      message0: '%{BKY_BOTLAB_WEB_GRIPPER}',
+      args0: [
+        {
+          type: 'field_dropdown',
+          name: 'ACTION',
+          options: [
+            ['%{BKY_BOTLAB_WEB_PREPARE_LEFT}', 'prepare-left'],
+            ['%{BKY_BOTLAB_WEB_PREPARE_RIGHT}', 'prepare-right'],
+            ['%{BKY_BOTLAB_WEB_OPEN}', 'open'],
+            ['%{BKY_BOTLAB_WEB_CLOSE}', 'close'],
+            ['%{BKY_BOTLAB_WEB_STOW}', 'stow'],
+          ],
+        },
+      ],
+      style: 'motion',
+      extensions: ['shape_statement'],
+    },
     ...(['gesture', 'dance'] as const).map((kind) => ({
       type: `botlab_jumper_${kind}`,
       message0: `%{BKY_BOTLAB_WEB_${kind.toUpperCase()}}`,
@@ -341,6 +385,7 @@ const commonWalkingBlockTypes = [
   'botlab_web_velocity',
 ];
 export const jumperWalkingBlockTypes = [
+  'botlab_jumper_gripper',
   'botlab_jumper_gesture',
   'botlab_jumper_dance',
   'botlab_web_body_pitch',
@@ -686,6 +731,16 @@ function readWalkingProgram(
         )
           throw new Error('Habilidad no válida.');
         steps.push({ sourceBlockId, kind: 'skill', skill });
+        continue;
+      }
+      if (type === 'botlab_jumper_gripper') {
+        const fields = children(current, 'field').filter(
+          (f) => f.getAttribute('name') === 'ACTION',
+        );
+        const action = fields[0]?.textContent;
+        validateGripperAction(action);
+        if (fields.length !== 1) throw new Error('Acción de pinza no válida.');
+        steps.push({ sourceBlockId, kind: 'gripper', action });
         continue;
       }
       if (type === 'botlab_jumper_jump') {

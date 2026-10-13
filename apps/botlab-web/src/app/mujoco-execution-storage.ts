@@ -1,3 +1,4 @@
+import { validateGripperAction } from '@botlab/model';
 import {
   walkingProgramLimits,
   validateWalkingCondition,
@@ -277,6 +278,35 @@ export function decodeMujocoExecution(
         checked.bodyPitch = {
           targetRadians: p.targetRadians,
           observedRadians: p.observedRadians,
+        };
+      }
+      if (result.gripper !== undefined) {
+        const g = result.gripper;
+        if (!record(g)) throw new Error('Invalid saved gripper.');
+        validateGripperAction(g.action);
+        const position =
+          g.action === 'stow'
+            ? 'stowed'
+            : g.action === 'close'
+              ? 'closed'
+              : 'open';
+        if (
+          !['left', 'right'].includes(g.side as string) ||
+          g.position !== position ||
+          (g.action === 'prepare-left' && g.side !== 'left') ||
+          (g.action === 'prepare-right' && g.side !== 'right') ||
+          typeof g.maxJointErrorRadians !== 'number' ||
+          !Number.isFinite(g.maxJointErrorRadians) ||
+          g.maxJointErrorRadians < 0 ||
+          g.maxJointErrorRadians > 0.07 ||
+          !checked.rest
+        )
+          throw new Error('Invalid saved gripper.');
+        checked.gripper = {
+          action: g.action,
+          side: g.side as 'left' | 'right',
+          position,
+          maxJointErrorRadians: g.maxJointErrorRadians,
         };
       }
       if (result.skill !== undefined) {

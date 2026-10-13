@@ -1,0 +1,352 @@
+{
+  "date": "2026-10-13T01:13:02.844Z",
+  "browser": "155.0.8059.40",
+  "results": [
+    {
+      "robot": "jumper",
+      "run": {
+        "targetId": "jumper-web-walking",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"botlab_jumper_gripper\" id=\"gripper-0\"><field name=\"ACTION\">prepare-left</field><next><block type=\"botlab_jumper_gripper\" id=\"gripper-1\"><field name=\"ACTION\">close</field><next><block type=\"control_wait\" id=\"hold-left\"><value name=\"DURATION\"><shadow type=\"math_positive_number\" id=\"![qv*+Hqu#BF9#(m.%]`\"><field name=\"NUM\">1</field></shadow></value><next><block type=\"botlab_jumper_gripper\" id=\"gripper-2\"><field name=\"ACTION\">open</field><next><block type=\"botlab_jumper_gripper\" id=\"gripper-3\"><field name=\"ACTION\">stow</field><next><block type=\"botlab_jumper_gripper\" id=\"gripper-4\"><field name=\"ACTION\">prepare-right</field><next><block type=\"botlab_jumper_gripper\" id=\"gripper-5\"><field name=\"ACTION\">close</field><next><block type=\"botlab_jumper_gripper\" id=\"gripper-6\"><field name=\"ACTION\">open</field><next><block type=\"botlab_jumper_gripper\" id=\"gripper-7\"><field name=\"ACTION\">stow</field><next><block type=\"botlab_web_advance_cm\" id=\"advance\"><field name=\"CM\">15</field></block></next></block></next></block></next></block></next></block></next></block></next></block></next></block></next></block></next></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T01:11:45.190Z",
+        "manifestId": "jumper-walking-jump-performances-gripper",
+        "modelRevision": "78966f45de6f2b6de3f7cea017f32a39f8b993e6",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@1",
+            "sourceBlockId": "gripper-0",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 2.0289999999998876,
+              "rest": {
+                "durationSeconds": 0.800999999999912,
+                "driftMeters": 0.003441372982928566,
+                "rotationRadians": 0.008924737758217347
+              },
+              "gripper": {
+                "action": "prepare-left",
+                "side": "left",
+                "position": "open",
+                "maxJointErrorRadians": 0.039682774790435804
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@2",
+            "sourceBlockId": "gripper-1",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 3.1849999999997602,
+              "rest": {
+                "durationSeconds": 0.8009999999999118,
+                "driftMeters": 0.0008125347695060973,
+                "rotationRadians": 0.0012966617010356195
+              },
+              "gripper": {
+                "action": "close",
+                "side": "left",
+                "position": "closed",
+                "maxJointErrorRadians": 0.04148096914142241
+              }
+            }
+          },
+          {
+            "commandId": "velocity-2@3",
+            "sourceBlockId": "hold-left",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 4.184999999999732,
+              "displacementMeters": 0.0006611703902059008,
+              "yawRadians": 0.0008067164960971554
+            }
+          },
+          {
+            "commandId": "velocity-3@4",
+            "sourceBlockId": "gripper-2",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 5.263000000000092,
+              "rest": {
+                "durationSeconds": 0.8000000000002672,
+                "driftMeters": 0.00023657205375838167,
+                "rotationRadians": 0.0014750790335100426
+              },
+              "gripper": {
+                "action": "open",
+                "side": "left",
+                "position": "open",
+                "maxJointErrorRadians": 0.038815817382033435
+              }
+            }
+          },
+          {
+            "commandId": "velocity-4@5",
+            "sourceBlockId": "gripper-3",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 7.715000000000911,
+              "rest": {
+                "durationSeconds": 0.8000000000002672,
+                "driftMeters": 0.0004897689958326717,
+                "rotationRadians": 0.00538122883733372
+              },
+              "gripper": {
+                "action": "stow",
+                "side": "left",
+                "position": "stowed",
+                "maxJointErrorRadians": 0.000336657751322548
+              }
+            }
+          },
+          {
+            "commandId": "velocity-5@6",
+            "sourceBlockId": "gripper-4",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 9.736000000000043,
+              "rest": {
+                "durationSeconds": 0.8009999999995561,
+                "driftMeters": 0.0036812198263550177,
+                "rotationRadians": 0.00817277033541656
+              },
+              "gripper": {
+                "action": "prepare-right",
+                "side": "right",
+                "position": "open",
+                "maxJointErrorRadians": 0.039772679577003034
+              }
+            }
+          },
+          {
+            "commandId": "velocity-6@7",
+            "sourceBlockId": "gripper-5",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 10.899999999999398,
+              "rest": {
+                "durationSeconds": 0.8009999999995561,
+                "driftMeters": 0.0011580115872375548,
+                "rotationRadians": 0.001414881420824421
+              },
+              "gripper": {
+                "action": "close",
+                "side": "right",
+                "position": "closed",
+                "maxJointErrorRadians": 0.041483861001619715
+              }
+            }
+          },
+          {
+            "commandId": "velocity-7@8",
+            "sourceBlockId": "gripper-6",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 11.9789999999988,
+              "rest": {
+                "durationSeconds": 0.8009999999995561,
+                "driftMeters": 0.0003764566736895889,
+                "rotationRadians": 0.0010621301568445574
+              },
+              "gripper": {
+                "action": "open",
+                "side": "right",
+                "position": "open",
+                "maxJointErrorRadians": 0.03880579160372921
+              }
+            }
+          },
+          {
+            "commandId": "velocity-8@9",
+            "sourceBlockId": "gripper-7",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 14.347999999997487,
+              "rest": {
+                "durationSeconds": 0.8009999999995561,
+                "driftMeters": 0.0013030528463856697,
+                "rotationRadians": 0.0032068409161441786
+              },
+              "gripper": {
+                "action": "stow",
+                "side": "right",
+                "position": "stowed",
+                "maxJointErrorRadians": 0.0004706284236082297
+              }
+            }
+          },
+          {
+            "commandId": "velocity-9@10",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 16.960999999997746,
+              "displacementMeters": 0.14219705661544604,
+              "yawRadians": -0.056841002848407096,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.1420069457772683
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-559e5476-70506b85-ecab97df-314e99ed-mujoco-program-1",
+          "program": {
+            "programId": "jumper-web-walking",
+            "targetId": "jumper-web-walking",
+            "revision": "{\"commands\":[{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"gripper\",\"id\":\"velocity-0\",\"inputs\":{\"action\":\"prepare-left\"},\"sourceBlockId\":\"gripper-0\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"gripper\",\"id\":\"velocity-1\",\"inputs\":{\"action\":\"close\"},\"sourceBlockId\":\"gripper-1\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"wait\",\"id\":\"velocity-2\",\"inputs\":{\"durationSeconds\":1},\"sourceBlockId\":\"hold-left\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"gripper\",\"id\":\"velocity-3\",\"inputs\":{\"action\":\"open\"},\"sourceBlockId\":\"gripper-2\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"gripper\",\"id\":\"velocity-4\",\"inputs\":{\"action\":\"stow\"},\"sourceBlockId\":\"gripper-3\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"gripper\",\"id\":\"velocity-5\",\"inputs\":{\"action\":\"prepare-right\"},\"sourceBlockId\":\"gripper-4\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"gripper\",\"id\":\"velocity-6\",\"inputs\":{\"action\":\"close\"},\"sourceBlockId\":\"gripper-5\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"gripper\",\"id\":\"velocity-7\",\"inputs\":{\"action\":\"open\"},\"sourceBlockId\":\"gripper-6\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"gripper\",\"id\":\"velocity-8\",\"inputs\":{\"action\":\"stow\"},\"sourceBlockId\":\"gripper-7\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-9\",\"inputs\":{\"distanceMeters\":0.15,\"speed\":0.24,\"timeoutSeconds\":18.75},\"sourceBlockId\":\"advance\",\"targetId\":\"jumper-web-walking\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T01:12:02.207Z"
+      },
+      "cancellation": "cancelled",
+      "resetRequiredAfterCancellation": true,
+      "rerunCompleted": true,
+      "rejections": [
+        {
+          "action": "walk",
+          "report": {
+            "targetId": "jumper-web-walking",
+            "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"10\" y=\"10\"><next><block type=\"botlab_jumper_gripper\" id=\"prepare\"><field name=\"ACTION\">prepare-left</field><next><block type=\"botlab_web_advance_cm\" id=\"invalid\"><field name=\"CM\">15</field></block></next></block></next></block></xml>",
+            "status": "failed",
+            "startedAt": "2026-10-13T01:12:45.071Z",
+            "manifestId": "jumper-walking-jump-performances-gripper",
+            "modelRevision": "78966f45de6f2b6de3f7cea017f32a39f8b993e6",
+            "mujocoVersion": "3.11.0",
+            "trace": [
+              {
+                "commandId": "velocity-0@1",
+                "sourceBlockId": "prepare",
+                "result": {
+                  "status": "completed",
+                  "evidence": "simulator",
+                  "level": "closed-loop-policy",
+                  "timeSeconds": 2.0289999999998876,
+                  "rest": {
+                    "durationSeconds": 0.800999999999912,
+                    "driftMeters": 0.003441372982928566,
+                    "rotationRadians": 0.008924737758217347
+                  },
+                  "gripper": {
+                    "action": "prepare-left",
+                    "side": "left",
+                    "position": "open",
+                    "maxJointErrorRadians": 0.039682774790435804
+                  }
+                }
+              }
+            ],
+            "outcome": {
+              "executionId": "runtime-f2d66aff-d1d086be-9dd4cbbd-b4046620-mujoco-program-1",
+              "program": {
+                "programId": "jumper-web-walking",
+                "targetId": "jumper-web-walking",
+                "revision": "{\"commands\":[{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"gripper\",\"id\":\"velocity-0\",\"inputs\":{\"action\":\"prepare-left\"},\"sourceBlockId\":\"prepare\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-1\",\"inputs\":{\"distanceMeters\":0.15,\"speed\":0.24,\"timeoutSeconds\":18.75},\"sourceBlockId\":\"invalid\",\"targetId\":\"jumper-web-walking\"}],\"requiredPolicyIds\":[]}"
+              },
+              "status": "failed",
+              "evidence": "none",
+              "diagnostic": {
+                "code": "dispatcher-threw",
+                "message": "Recoge la pinza antes de caminar o girar."
+              }
+            },
+            "finishedAt": "2026-10-13T01:12:47.159Z"
+          }
+        },
+        {
+          "action": "closed-stow",
+          "report": {
+            "targetId": "jumper-web-walking",
+            "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"10\" y=\"10\"><next><block type=\"botlab_jumper_gripper\" id=\"prepare\"><field name=\"ACTION\">prepare-left</field><next><block type=\"botlab_jumper_gripper\" id=\"close\"><field name=\"ACTION\">close</field><next><block type=\"botlab_jumper_gripper\" id=\"invalid\"><field name=\"ACTION\">stow</field></block></next></block></next></block></next></block></xml>",
+            "status": "failed",
+            "startedAt": "2026-10-13T01:12:59.535Z",
+            "manifestId": "jumper-walking-jump-performances-gripper",
+            "modelRevision": "78966f45de6f2b6de3f7cea017f32a39f8b993e6",
+            "mujocoVersion": "3.11.0",
+            "trace": [
+              {
+                "commandId": "velocity-0@1",
+                "sourceBlockId": "prepare",
+                "result": {
+                  "status": "completed",
+                  "evidence": "simulator",
+                  "level": "closed-loop-policy",
+                  "timeSeconds": 2.0289999999998876,
+                  "rest": {
+                    "durationSeconds": 0.800999999999912,
+                    "driftMeters": 0.003441372982928566,
+                    "rotationRadians": 0.008924737758217347
+                  },
+                  "gripper": {
+                    "action": "prepare-left",
+                    "side": "left",
+                    "position": "open",
+                    "maxJointErrorRadians": 0.039682774790435804
+                  }
+                }
+              },
+              {
+                "commandId": "velocity-1@2",
+                "sourceBlockId": "close",
+                "result": {
+                  "status": "completed",
+                  "evidence": "simulator",
+                  "level": "closed-loop-policy",
+                  "timeSeconds": 3.204999999999758,
+                  "rest": {
+                    "durationSeconds": 0.8009999999999118,
+                    "driftMeters": 0.0007996958718623539,
+                    "rotationRadians": 0.0012852412819241849
+                  },
+                  "gripper": {
+                    "action": "close",
+                    "side": "left",
+                    "position": "closed",
+                    "maxJointErrorRadians": 0.04147367625468901
+                  }
+                }
+              }
+            ],
+            "outcome": {
+              "executionId": "runtime-780b7ca1-7a869370-1c6ee10c-6c5dee4f-mujoco-program-1",
+              "program": {
+                "programId": "jumper-web-walking",
+                "targetId": "jumper-web-walking",
+                "revision": "{\"commands\":[{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"gripper\",\"id\":\"velocity-0\",\"inputs\":{\"action\":\"prepare-left\"},\"sourceBlockId\":\"prepare\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"gripper\",\"id\":\"velocity-1\",\"inputs\":{\"action\":\"close\"},\"sourceBlockId\":\"close\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"gripper\",\"id\":\"velocity-2\",\"inputs\":{\"action\":\"stow\"},\"sourceBlockId\":\"invalid\",\"targetId\":\"jumper-web-walking\"}],\"requiredPolicyIds\":[]}"
+              },
+              "status": "failed",
+              "evidence": "none",
+              "diagnostic": {
+                "code": "dispatcher-threw",
+                "message": "Abre la pinza antes de recogerla."
+              }
+            },
+            "finishedAt": "2026-10-13T01:13:02.795Z"
+          }
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

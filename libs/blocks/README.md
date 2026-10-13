@@ -140,3 +140,7 @@ Jumper offers **tilt body back / level**. Forward tilt remains unavailable after
 <!-- fixed Jumper skills from libs/blocks/src/lib/microduck-mujoco-blocks.ts and libs/adapters/jumper/src/lib/jumper.ts -->
 
 Jumper has separate gesture and dance dropdowns with four official choices each and approximate clip durations. Imported blocks remain incompatible with MicroDuck. Execution requires a level body and confirms measured rest before continuing; interrupted skills require explicit reset. Arbitrary uploaded policies remain unsupported.
+
+<!-- claw actions from libs/botlab-model/src/lib/gripper.ts and libs/blocks/src/lib/microduck-mujoco-blocks.ts -->
+
+Jumper exposes `gripper` with `prepare-left`, `prepare-right`, `open`, `close` and `stow`. The editor keeps posture changes explicit; MicroDuck rejects this block. Walking requires stowed, stow requires open, and results include action, side, position, maximum observed joint error and measured rest. This does not claim object grasping.

@@ -33,4 +33,5 @@ def main():
     subprocess.run(['python3',str(ROOT/'tools/mujoco/prepare-jumper-depth.py')],check=True)
     subprocess.run(['python3',str(ROOT/'tools/mujoco/prepare-jumper-jump.py')],check=True)
     subprocess.run(['python3',str(ROOT/'tools/mujoco/prepare-jumper-performances.py')],check=True)
+    subprocess.run(['python3',str(ROOT/'tools/mujoco/prepare-jumper-gripper.py')],check=True)
 if __name__=='__main__':main()

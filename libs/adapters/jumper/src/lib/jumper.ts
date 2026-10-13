@@ -1,6 +1,7 @@
 import {
   expandWalkingProgram,
   validateWalkingSkill,
+  validateGripperAction,
   numericCommandSchemas,
   walkingConditionCommandSchema,
   walkingConditionRequirements,
@@ -159,6 +160,26 @@ export function createJumperWalkingAdapter(
         targetIds: [jumperWalkingTargetId],
         schema: {
           commands: [
+            {
+              id: 'gripper',
+              name: 'Pinza',
+              description:
+                'Preparar, abrir/cerrar y recoger con llegada observada.',
+              inputs: [
+                {
+                  name: 'action',
+                  type: 'enum',
+                  required: true,
+                  enumValues: [
+                    'prepare-left',
+                    'prepare-right',
+                    'open',
+                    'close',
+                    'stow',
+                  ],
+                },
+              ],
+            },
             ...numericCommandSchemas,
             {
               id: 'body-pitch',
@@ -310,6 +331,10 @@ export function compileJumperWalkingProgram(
 ): CompiledBehaviorArtifact {
   const expanded = expandWalkingProgram(steps, (s) => {
     if ('expression' in s) return;
+    if ('kind' in s && s.kind === 'gripper') {
+      validateGripperAction(s.action);
+      return;
+    }
     if ('kind' in s && s.kind === 'body-pitch') {
       if (![0, -0.1].includes(s.angleRadians))
         throw new Error('Unsupported body pitch.');
@@ -400,31 +425,33 @@ export function compileJumperWalkingProgram(
                 ...(s.kind === 'distance-value' ? { speed: 0.24 } : {}),
                 ...('name' in s ? { name: s.name } : {}),
               }
-            : s.kind === 'skill'
-              ? { skill: s.skill }
-              : s.kind === 'rest'
-                ? {}
-                : s.kind === 'posture'
-                  ? { posture: s.posture }
-                  : s.kind === 'head-yaw' || s.kind === 'body-pitch'
-                    ? { angleRadians: s.angleRadians }
-                    : s.kind === 'condition'
-                      ? { condition: s.condition }
-                      : s.kind === 'proximity'
-                        ? { thresholdMeters: s.thresholdMeters }
-                        : s.kind === 'distance'
-                          ? {
-                              distanceMeters: s.distanceMeters,
-                              speed: 0.24,
-                              timeoutSeconds: 15 + s.distanceMeters / 0.04,
-                            }
-                          : s.kind === 'turn'
+            : s.kind === 'gripper'
+              ? { action: s.action }
+              : s.kind === 'skill'
+                ? { skill: s.skill }
+                : s.kind === 'rest'
+                  ? {}
+                  : s.kind === 'posture'
+                    ? { posture: s.posture }
+                    : s.kind === 'head-yaw' || s.kind === 'body-pitch'
+                      ? { angleRadians: s.angleRadians }
+                      : s.kind === 'condition'
+                        ? { condition: s.condition }
+                        : s.kind === 'proximity'
+                          ? { thresholdMeters: s.thresholdMeters }
+                          : s.kind === 'distance'
                             ? {
-                                angleRadians: s.angleRadians,
-                                speed: 1,
-                                timeoutSeconds: 45,
+                                distanceMeters: s.distanceMeters,
+                                speed: 0.24,
+                                timeoutSeconds: 15 + s.distanceMeters / 0.04,
                               }
-                            : { durationSeconds: s.durationSeconds }
+                            : s.kind === 'turn'
+                              ? {
+                                  angleRadians: s.angleRadians,
+                                  speed: 1,
+                                  timeoutSeconds: 45,
+                                }
+                              : { durationSeconds: s.durationSeconds }
           : {
               forward: s.forward,
               yaw: s.yaw,

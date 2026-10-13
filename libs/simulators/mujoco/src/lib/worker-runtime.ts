@@ -1,3 +1,4 @@
+import { GripperGoal } from './gripper-goal';
 import { BodyPitchGoal } from './body-pitch-goal';
 import { SkillGoal } from './skill-goal';
 import { RestGoal } from './rest-goal';
@@ -53,6 +54,7 @@ export function installSimulationWorker(createController?: ControllerFactory) {
   let bodyPitchGoal:
     | { request: WorkerRequest; goal: BodyPitchGoal }
     | undefined;
+  let gripperGoal: { request: WorkerRequest; goal: GripperGoal } | undefined;
   let skillGoal: { request: WorkerRequest; goal: SkillGoal } | undefined;
   let restGoal: { request: WorkerRequest; goal: RestGoal } | undefined;
   let motionGoal: { request: WorkerRequest; goal: MotionGoal } | undefined;
@@ -76,6 +78,11 @@ export function installSimulationWorker(createController?: ControllerFactory) {
     return Math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z));
   }
   function cancelCommand() {
+    if (gripperGoal) {
+      reply(gripperGoal.request, { error: 'Command cancelled.' });
+      controller?.cancelGripper?.();
+    }
+    gripperGoal = undefined;
     if (bodyPitchGoal)
       reply(bodyPitchGoal.request, { error: 'Command cancelled.' });
     bodyPitchGoal = undefined;
@@ -117,6 +124,28 @@ export function installSimulationWorker(createController?: ControllerFactory) {
         }
       } catch (error) {
         bodyPitchGoal = undefined;
+        halt();
+        reply(active.request, {
+          error: error instanceof Error ? error.message : String(error),
+          frame: frame(),
+        });
+      }
+    }
+    if (gripperGoal) {
+      const active = gripperGoal;
+      try {
+        const result = active.goal.update(
+          world!.feedback(),
+          controller?.isGripperReady?.() ?? false,
+        );
+        if (result) {
+          gripperGoal = undefined;
+          controller?.completeGripper?.();
+          reply(active.request, { result });
+        }
+      } catch (error) {
+        gripperGoal = undefined;
+        controller?.cancelGripper?.();
         halt();
         reply(active.request, {
           error: error instanceof Error ? error.message : String(error),
@@ -401,6 +430,7 @@ export function installSimulationWorker(createController?: ControllerFactory) {
           case 'step':
             if (
               state === 'running' ||
+              gripperGoal ||
               bodyPitchGoal ||
               skillGoal ||
               restGoal ||
@@ -423,6 +453,7 @@ export function installSimulationWorker(createController?: ControllerFactory) {
             break;
           case 'command': {
             if (
+              gripperGoal ||
               bodyPitchGoal ||
               skillGoal ||
               restGoal ||
@@ -479,6 +510,23 @@ export function installSimulationWorker(createController?: ControllerFactory) {
               halt();
               controller.setBodyPitch(c.angleRadians);
               bodyPitchGoal = { request, goal };
+            } else if (c && 'kind' in c && c.kind === 'gripper') {
+              if (!controller?.setGripper || !controller.isGripperReady)
+                throw new Error('Gripper unavailable for this robot.');
+              halt();
+              controller.validateFeedback(world.feedback());
+              const target = controller.setGripper(c.action);
+              gripperGoal = {
+                request,
+                goal: new GripperGoal(
+                  c.action,
+                  target,
+                  target.joints.map((j) =>
+                    world!.manifest.joints.findIndex((m) => m.name === j.name),
+                  ),
+                  world.feedback().timeSeconds,
+                ),
+              };
             } else if (c && 'kind' in c && c.kind === 'skill') {
               if (!controller?.setSkill || !controller.isSkillRunning)
                 throw new Error('Skill is unavailable for this robot.');

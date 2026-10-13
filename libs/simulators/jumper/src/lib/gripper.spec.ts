@@ -1,0 +1,22 @@
+import { it, expect } from 'vitest';
+import { JumperGripper } from './gripper';
+it('requires explicit preparation, opening before stowing, and stowing before switching sides', () => {
+  const g = new JumperGripper();
+  expect(() => g.target('close')).toThrow(/Prepara/);
+  const left = g.target('prepare-left');
+  expect(left.joints[4].radians).toBeCloseTo(0.1 - Math.PI / 3);
+  expect(g.keys().find((k) => k.key === 'key_v')?.down).toBe(true);
+  expect(g.keys().every((k) => !k.down)).toBe(true);
+  expect(() => g.target('prepare-right')).toThrow(/Recoge/);
+  expect(g.target('close').joints[4].radians).toBe(0.1);
+  expect(() => g.target('stow')).toThrow(/Abre/);
+  g.target('open');
+  g.target('stow');
+  g.complete();
+  const right = g.target('prepare-right');
+  expect(right.joints[4].radians).toBeCloseTo(Math.PI / 3 - 0.1);
+  expect(right.joints[1].radians).toBe(-1.5708);
+  expect(right.joints[3].radians).toBe(1.309);
+  g.reset();
+  expect(g.side).toBeUndefined();
+});

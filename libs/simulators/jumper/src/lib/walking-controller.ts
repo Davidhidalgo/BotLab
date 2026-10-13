@@ -1,3 +1,5 @@
+import type { GripperAction } from '@botlab/model';
+import { JumperGripper } from './gripper';
 import {
   jumperPerformances,
   isJumperPerformance,
@@ -85,15 +87,36 @@ export const createJumperWalkingController: ControllerFactory = async (
       if (loaded.inputNames.length !== 1 || loaded.outputNames.length !== 1)
         throw new Error('Unexpected performance policy interface.');
     }
+    if (files['claw_left.onnx']) {
+      const clawSession = await ort.InferenceSession.create(
+        files['claw_left.onnx'],
+        { executionProviders: ['wasm'] },
+      );
+      for (const mode of ['claw_left', 'claw_right'])
+        performanceSessions.set(mode, {
+          session: clawSession,
+          observations: 407,
+          actions: 16,
+        });
+      if (
+        clawSession.inputNames.length !== 1 ||
+        clawSession.outputNames.length !== 1
+      )
+        throw new Error('Unexpected claw policy interface.');
+    }
   } catch (error) {
     await session.release();
-    for (const loaded of performanceSessions.values())
-      await loaded.session.release();
+    for (const loaded of new Set(
+      Array.from(performanceSessions.values(), (v) => v.session),
+    ))
+      await loaded.release();
     throw error;
   }
   let active:
     | { name: JumperPerformance; sent: boolean; entered: boolean }
     | undefined;
+  const gripper = new JumperGripper();
+  let gripperMoving = false;
   let needsReset = false;
   let bodyPitch = 0;
   let fsm: Fsm | undefined,
@@ -103,13 +126,45 @@ export const createJumperWalkingController: ControllerFactory = async (
     if (!preservePose) bodyPitch = 0;
     version++;
     active = undefined;
+    gripper.reset();
+    gripperMoving = false;
     needsReset = false;
     fsm?.free();
     fsm = undefined;
   }
   const empty: ControllerOutput = { targets: [], state: [] };
   return {
+    ...(performanceSessions.has('claw_left')
+      ? {
+          setGripper(action: GripperAction) {
+            if (needsReset)
+              throw new Error(
+                'Reinicia Jumper después de interrumpir una habilidad.',
+              );
+            if (bodyPitch !== 0 || active)
+              throw new Error(
+                'Nivela el cuerpo y termina la habilidad antes de usar la pinza.',
+              );
+            const target = gripper.target(action);
+            gripperMoving = true;
+            return target;
+          },
+          isGripperReady: () => fsm?.mode() === gripper.desiredMode,
+          completeGripper() {
+            gripperMoving = false;
+            gripper.complete();
+          },
+          cancelGripper() {
+            if (gripperMoving) {
+              gripperMoving = false;
+              needsReset = true;
+            }
+          },
+        }
+      : {}),
     setBodyPitch(angle) {
+      if (gripper.side)
+        throw new Error('Recoge la pinza antes de inclinar el cuerpo.');
       if (needsReset)
         throw new Error(
           'Reinicia Jumper después de interrumpir una habilidad.',
@@ -121,6 +176,10 @@ export const createJumperWalkingController: ControllerFactory = async (
     ...(performanceSessions.size
       ? {
           setSkill(skill: import('@botlab/simulators-core').SimulationSkill) {
+            if (gripper.side)
+              throw new Error(
+                'Recoge la pinza antes de iniciar una habilidad.',
+              );
             if (needsReset)
               throw new Error(
                 'Reinicia Jumper después de interrumpir una habilidad.',
@@ -157,6 +216,8 @@ export const createJumperWalkingController: ControllerFactory = async (
         throw new Error('Jumper left the validated walking envelope.');
     },
     validateVelocity(v) {
+      if (gripper.side && (v.forward !== 0 || v.yaw !== 0))
+        throw new Error('Recoge la pinza antes de caminar o girar.');
       if (needsReset)
         throw new Error(
           'Reinicia Jumper después de interrumpir una habilidad.',
@@ -191,6 +252,12 @@ export const createJumperWalkingController: ControllerFactory = async (
       current.setAxis('Rx', axes.Rx);
       for (const axis of ['Lx', 'LT', 'RT']) current.setAxis(axis, 0);
       current.setAxis('Ry', -bodyPitch / (Math.PI / 9));
+      if (gripper.side)
+        current.setAxis(
+          gripper.side === 'left' ? 'LT' : 'RT',
+          gripper.closed ? 1 : 0,
+        );
+      for (const { key, down } of gripper.keys()) current.setKey(key, down);
       const requested = active ? jumperPerformances[active.name] : undefined;
       current.setKey('key_left_ctrl', requested?.ctrl ?? false);
       for (const key of ['key_space', 'key_1', 'key_2', 'key_3', 'key_4'])
@@ -249,7 +316,8 @@ export const createJumperWalkingController: ControllerFactory = async (
     invalidate() {
       if (awaiting) {
         // Repeated pause/stop requests must not clear an interrupted-skill latch.
-        const interrupted = needsReset || !!active;
+        const interrupted =
+          needsReset || !!active || !!gripper.side || gripperMoving;
         reset(true);
         if (interrupted) needsReset = true;
       }
@@ -257,8 +325,10 @@ export const createJumperWalkingController: ControllerFactory = async (
     async dispose() {
       reset();
       await session.release();
-      for (const loaded of performanceSessions.values())
-        await loaded.session.release();
+      for (const loaded of new Set(
+        Array.from(performanceSessions.values(), (v) => v.session),
+      ))
+        await loaded.release();
     },
   };
 };

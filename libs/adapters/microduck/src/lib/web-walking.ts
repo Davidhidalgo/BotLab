@@ -217,6 +217,8 @@ export function compileMicroduckWalkingProgram(
 ): CompiledBehaviorArtifact {
   const expanded = expandWalkingProgram(steps, (s) => {
     if ('expression' in s) return;
+    if ('kind' in s && s.kind === 'gripper')
+      throw new Error('MicroDuck no dispone de pinzas.');
     if ('kind' in s && s.kind === 'body-pitch')
       throw new Error('MicroDuck no tiene inclinación corporal validada.');
     if ('kind' in s && s.kind === 'skill') {
@@ -283,31 +285,33 @@ export function compileMicroduckWalkingProgram(
                 ...(s.kind === 'distance-value' ? { speed: 0.25 } : {}),
                 ...('name' in s ? { name: s.name } : {}),
               }
-            : s.kind === 'skill'
-              ? { skill: s.skill }
-              : s.kind === 'rest'
-                ? {}
-                : s.kind === 'posture'
-                  ? { posture: s.posture }
-                  : s.kind === 'head-yaw' || s.kind === 'body-pitch'
-                    ? { angleRadians: s.angleRadians }
-                    : s.kind === 'condition'
-                      ? { condition: s.condition }
-                      : s.kind === 'proximity'
-                        ? { thresholdMeters: s.thresholdMeters }
-                        : s.kind === 'distance'
-                          ? {
-                              distanceMeters: s.distanceMeters,
-                              speed: 0.25,
-                              timeoutSeconds: 15 + s.distanceMeters / 0.04,
-                            }
-                          : s.kind === 'turn'
+            : s.kind === 'gripper'
+              ? { action: s.action }
+              : s.kind === 'skill'
+                ? { skill: s.skill }
+                : s.kind === 'rest'
+                  ? {}
+                  : s.kind === 'posture'
+                    ? { posture: s.posture }
+                    : s.kind === 'head-yaw' || s.kind === 'body-pitch'
+                      ? { angleRadians: s.angleRadians }
+                      : s.kind === 'condition'
+                        ? { condition: s.condition }
+                        : s.kind === 'proximity'
+                          ? { thresholdMeters: s.thresholdMeters }
+                          : s.kind === 'distance'
                             ? {
-                                angleRadians: s.angleRadians,
-                                speed: 1,
-                                timeoutSeconds: 45,
+                                distanceMeters: s.distanceMeters,
+                                speed: 0.25,
+                                timeoutSeconds: 15 + s.distanceMeters / 0.04,
                               }
-                            : { durationSeconds: s.durationSeconds }
+                            : s.kind === 'turn'
+                              ? {
+                                  angleRadians: s.angleRadians,
+                                  speed: 1,
+                                  timeoutSeconds: 45,
+                                }
+                              : { durationSeconds: s.durationSeconds }
           : {
               forward: s.forward,
               yaw: s.yaw,

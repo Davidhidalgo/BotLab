@@ -295,3 +295,28 @@ it('keeps gestures and dances exclusive to Jumper and rejects mismatched selecti
     ).toThrow();
   }
 });
+
+it('parses explicit claw actions for Jumper and keeps them unavailable to MicroDuck', () => {
+  for (const action of [
+    'prepare-left',
+    'prepare-right',
+    'open',
+    'close',
+    'stow',
+  ]) {
+    const doc = {
+      ...microduckWalkingExample,
+      content: `<xml><block type="event_whenflagclicked" id="start"><next><block type="botlab_jumper_gripper" id="claw"><field name="ACTION">${action}</field></block></next></block></xml>`,
+    };
+    expect(readJumperWalkingProgram(doc)).toEqual([
+      { sourceBlockId: 'claw', kind: 'gripper', action },
+    ]);
+    expect(() => readMicroduckWalkingProgram(doc)).toThrow(/compatible/);
+    expect(() =>
+      readJumperWalkingProgram({
+        ...doc,
+        content: doc.content.replace(`>${action}<`, '>grasp-object<'),
+      }),
+    ).toThrow();
+  }
+});

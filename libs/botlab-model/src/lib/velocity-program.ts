@@ -1,3 +1,4 @@
+import type { GripperAction } from './gripper';
 import {
   type NumericExpression,
   validateNumericExpression,
@@ -57,6 +58,7 @@ export function validateWalkingSkill(
 
 /** Educational goals retain their meaning independently of a robot's speed. */
 export type WalkingActionStep =
+  | { sourceBlockId: string; kind: 'gripper'; action: GripperAction }
   | {
       sourceBlockId: string;
       kind: 'skill';

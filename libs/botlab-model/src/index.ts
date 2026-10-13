@@ -7,3 +7,5 @@ export * from './lib/velocity-program';
 
 export * from './lib/walking-condition';
 export * from './lib/numeric-expression';
+
+export * from './lib/gripper';

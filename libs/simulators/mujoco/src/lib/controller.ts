@@ -1,3 +1,4 @@
+import type { GripperAction, GripperTarget } from '@botlab/model';
 import type {
   SimulationManifest,
   SimulationSkill,
@@ -20,6 +21,10 @@ export interface ControllerOutput {
   kd?: number[];
 }
 export interface SimulationController {
+  setGripper?(action: GripperAction): GripperTarget;
+  isGripperReady?(): boolean;
+  completeGripper?(): void;
+  cancelGripper?(): void;
   setSkill?(skill: SimulationSkill): void;
   isSkillRunning?(): boolean;
   cancelSkill?(): void;

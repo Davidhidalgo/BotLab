@@ -1,3 +1,4 @@
+import type { GripperAction } from '@botlab/model';
 import type { SimulationSkill } from '@botlab/simulators-core';
 import {
   evaluateProgramCommand,
@@ -151,75 +152,80 @@ export default function MujocoSimulatorPanel({
                           command.inputs['thresholdMeters'],
                         ),
                       }
-                    : command.commandId === 'skill'
+                    : command.commandId === 'gripper'
                       ? {
-                          kind: 'skill',
-                          name: command.inputs['skill'] as SimulationSkill,
+                          kind: 'gripper',
+                          action: command.inputs['action'] as GripperAction,
                         }
-                      : command.commandId === 'rest'
-                        ? { kind: 'rest' }
-                        : command.commandId === 'posture'
-                          ? {
-                              kind: 'posture',
-                              posture: command.inputs['posture'] as
-                                | 'sit'
-                                | 'stand',
-                            }
-                          : command.commandId === 'body-pitch'
+                      : command.commandId === 'skill'
+                        ? {
+                            kind: 'skill',
+                            name: command.inputs['skill'] as SimulationSkill,
+                          }
+                        : command.commandId === 'rest'
+                          ? { kind: 'rest' }
+                          : command.commandId === 'posture'
                             ? {
-                                kind: 'body-pitch',
-                                angleRadians: Number(
-                                  command.inputs['angleRadians'],
-                                ),
+                                kind: 'posture',
+                                posture: command.inputs['posture'] as
+                                  | 'sit'
+                                  | 'stand',
                               }
-                            : command.commandId === 'head-yaw'
+                            : command.commandId === 'body-pitch'
                               ? {
-                                  kind: 'head-yaw',
+                                  kind: 'body-pitch',
                                   angleRadians: Number(
                                     command.inputs['angleRadians'],
                                   ),
                                 }
-                              : command.commandId === 'distance'
+                              : command.commandId === 'head-yaw'
                                 ? {
-                                    kind: 'distance',
-                                    distanceMeters: Number(
-                                      command.inputs['distanceMeters'],
-                                    ),
-                                    speed: Number(command.inputs['speed']),
-                                    timeoutSeconds: Number(
-                                      command.inputs['timeoutSeconds'],
+                                    kind: 'head-yaw',
+                                    angleRadians: Number(
+                                      command.inputs['angleRadians'],
                                     ),
                                   }
-                                : command.commandId === 'turn'
+                                : command.commandId === 'distance'
                                   ? {
-                                      kind: 'turn',
-                                      angleRadians: Number(
-                                        command.inputs['angleRadians'],
+                                      kind: 'distance',
+                                      distanceMeters: Number(
+                                        command.inputs['distanceMeters'],
                                       ),
                                       speed: Number(command.inputs['speed']),
                                       timeoutSeconds: Number(
                                         command.inputs['timeoutSeconds'],
                                       ),
                                     }
-                                  : command.commandId === 'wait'
+                                  : command.commandId === 'turn'
                                     ? {
-                                        kind: 'velocity',
-                                        forward: 0,
-                                        yaw: 0,
-                                        durationSeconds: Number(
-                                          command.inputs['durationSeconds'],
+                                        kind: 'turn',
+                                        angleRadians: Number(
+                                          command.inputs['angleRadians'],
+                                        ),
+                                        speed: Number(command.inputs['speed']),
+                                        timeoutSeconds: Number(
+                                          command.inputs['timeoutSeconds'],
                                         ),
                                       }
-                                    : {
-                                        kind: 'velocity',
-                                        forward: Number(
-                                          command.inputs['forward'],
-                                        ),
-                                        yaw: Number(command.inputs['yaw']),
-                                        durationSeconds: Number(
-                                          command.inputs['durationSeconds'],
-                                        ),
-                                      }
+                                    : command.commandId === 'wait'
+                                      ? {
+                                          kind: 'velocity',
+                                          forward: 0,
+                                          yaw: 0,
+                                          durationSeconds: Number(
+                                            command.inputs['durationSeconds'],
+                                          ),
+                                        }
+                                      : {
+                                          kind: 'velocity',
+                                          forward: Number(
+                                            command.inputs['forward'],
+                                          ),
+                                          yaw: Number(command.inputs['yaw']),
+                                          durationSeconds: Number(
+                                            command.inputs['durationSeconds'],
+                                          ),
+                                        }
                   : {
                       joint: String(command.inputs['joint']),
                       positionRadians: Number(
@@ -715,6 +721,19 @@ export default function MujocoSimulatorPanel({
             ))}
         </ul>
       )}
+      {report?.trace.some((entry) => entry.result.gripper) && (
+        <ul className="px-4 text-sm" aria-label={copy.gripper}>
+          {report.trace
+            .filter((entry) => entry.result.gripper)
+            .map((entry, index) => (
+              <li key={index}>
+                {copy.gripperActions[entry.result.gripper!.action]} ·{' '}
+                {copy.stable} · Δ{' '}
+                {entry.result.gripper!.maxJointErrorRadians.toFixed(3)} rad
+              </li>
+            ))}
+        </ul>
+      )}
       {report?.trace.some((entry) => entry.result.skill) && (
         <ul className="px-4 text-sm" aria-label={copy.skills}>
           {report.trace
@@ -752,21 +771,23 @@ export default function MujocoSimulatorPanel({
             ? copy.checking
             : ['set-number', 'change-number'].includes(activeCommand.commandId)
               ? copy.calculating
-              : activeCommand.commandId === 'skill'
-                ? copy.skillNames[
-                    activeCommand.inputs[
-                      'skill'
-                    ] as keyof typeof copy.skillNames
-                  ]
-                : ['distance', 'distance-value'].includes(
-                      activeCommand.commandId,
-                    )
-                  ? copy.advancing
-                  : activeCommand.commandId === 'turn'
-                    ? copy.turning
-                    : ['wait', 'wait-value'].includes(activeCommand.commandId)
-                      ? copy.waiting
-                      : copy.moving}
+              : activeCommand.commandId === 'gripper'
+                ? `${copy.gripper}: ${copy.gripperActions[activeCommand.inputs['action'] as GripperAction]}`
+                : activeCommand.commandId === 'skill'
+                  ? copy.skillNames[
+                      activeCommand.inputs[
+                        'skill'
+                      ] as keyof typeof copy.skillNames
+                    ]
+                  : ['distance', 'distance-value'].includes(
+                        activeCommand.commandId,
+                      )
+                    ? copy.advancing
+                    : activeCommand.commandId === 'turn'
+                      ? copy.turning
+                      : ['wait', 'wait-value'].includes(activeCommand.commandId)
+                        ? copy.waiting
+                        : copy.moving}
           {activeCommand.iterations?.length
             ? ` · ${iterationLabel(activeCommand.iterations)}`
             : ''}

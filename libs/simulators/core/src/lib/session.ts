@@ -1,3 +1,4 @@
+import type { GripperAction } from '@botlab/model';
 import type { WalkingCondition, WalkingSkill } from '@botlab/model';
 /** Browser-independent contracts. All distances/times/angles use m/s/rad. */
 export type SimulationEvidenceLevel =
@@ -123,6 +124,12 @@ export interface SimulationJointCommand {
 
 export type SimulationSkill = WalkingSkill;
 export interface SimulationCommandResult {
+  gripper?: {
+    action: GripperAction;
+    side: 'left' | 'right';
+    position: 'open' | 'closed' | 'stowed';
+    maxJointErrorRadians: number;
+  };
   bodyPitch?: { targetRadians: number; observedRadians: number };
   skill?: {
     name: SimulationSkill;
@@ -192,6 +199,7 @@ export type SimulationMotionGoal =
       timeoutSeconds: number;
     };
 export type SimulationCommand =
+  | { kind: 'gripper'; action: GripperAction }
   | { kind: 'body-pitch'; angleRadians: number }
   | { kind: 'skill'; name: SimulationSkill }
   | { kind: 'rest' }

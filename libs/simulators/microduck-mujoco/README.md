@@ -8,7 +8,7 @@ MicroDuck alpha walking on the shared MuJoCo browser backend. This is a separate
 
 <!-- observation and inference contracts from src/lib/observations.ts and src/lib/controller.ts -->
 
-The policy runs at 50 Hz with four 5 ms MuJoCo steps per inference. Observations are gyro, body-frame gravity, joint positions relative to the float32 home pose, joint velocities, previous actions and 13 command slots. Action scale is 1; targets pass through the model's position actuators and force limits. ONNX Runtime Web uses one WASM thread. Zero velocity retains balance; unsupported posture, recovery and hardware are not advertised. The optional obstacle scene reads geometric ToF from the model’s `tof` site: 8×8, 45° per axis, 4 m maximum range and 15 simulated Hz. The walking policy is unchanged and does not consume depth.
+The policy runs at 50 Hz with four 5 ms MuJoCo steps per inference. Observations are gyro, body-frame gravity, joint positions relative to the float32 home pose, joint velocities, previous actions and 13 command slots. Action scale is 1; targets pass through the model's position actuators and force limits. ONNX Runtime Web uses one WASM thread. Zero velocity retains balance; unsupported recovery and hardware are not advertised. The optional obstacle scene reads geometric ToF from the model’s `tof` site: 8×8, 45° per axis, 4 m maximum range and 15 simulated Hz. The walking policy is unchanged and does not consume depth.
 
 <!-- build/test commands from project.json and vitest.config.mts -->
 
@@ -21,3 +21,7 @@ The alpha walker now supports measured head yaw at −0.3, 0 and +0.3 rad, throu
 <!-- posture policies and observation from src/lib/controller.ts and src/lib/posture.ts -->
 
 The loader now pins separate `manifest-posture.json` / `obstacles-manifest-posture.json` variants adding the verified alpha sit/stand policy. Original manifests remain reproducible. `MicroduckPostureTracker` confirms the requested posture with 0.6 s of low angular speed and stable height (sit ≤0.085 m, stand ≥0.095 m, variation <0.004 m). Locomotion from sitting/transitioning fails and requires an explicit stand action; no automatic stand or recovery is inserted. Zero-velocity waits maintain the current posture policy.
+
+<!-- bounded skill policies from src/lib/controller.ts and src/lib/skill.ts -->
+
+Pinned left/right kicks run for 25 accepted 50 Hz ticks, preserving previous actions across the policy swap. The ground gesture uses `[cos(phase), sin(phase), 0]` with a four-second period ending at phase 0.7 (140 ticks); its other command slots are zero. Both return to the walking balance controller, then the shared worker confirms visible joint motion and upright measured rest. Starting while seated fails explicitly. Cancellation clears the skill clock and freezes physics; it does not claim recovery. Roll remains a probe only because interruption/recovery across inverted poses is unvalidated.

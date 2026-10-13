@@ -22,6 +22,11 @@ export interface VelocityProgramStep {
 export type WalkingActionStep =
   | {
       sourceBlockId: string;
+      kind: 'skill';
+      skill: 'kick-left' | 'kick-right' | 'ground-pick';
+    }
+  | {
+      sourceBlockId: string;
       kind: 'set-number' | 'change-number';
       name: string;
       expression: NumericExpression;

@@ -58,6 +58,19 @@ export function createMicroduckWalkingAdapter(
           commands: [
             ...numericCommandSchemas,
             {
+              id: 'skill',
+              name: 'Habilidad propia',
+              description: 'Gesto con retorno observado a reposo.',
+              inputs: [
+                {
+                  name: 'skill',
+                  type: 'enum',
+                  required: true,
+                  enumValues: ['kick-left', 'kick-right', 'ground-pick'],
+                },
+              ],
+            },
+            {
               id: 'rest',
               name: 'Detener movimiento',
               description: 'Mantener equilibrio y confirmar reposo observado.',
@@ -204,6 +217,11 @@ export function compileMicroduckWalkingProgram(
 ): CompiledBehaviorArtifact {
   const expanded = expandWalkingProgram(steps, (s) => {
     if ('expression' in s) return;
+    if ('kind' in s && s.kind === 'skill') {
+      if (!['kick-left', 'kick-right', 'ground-pick'].includes(s.skill))
+        throw new Error('Unsupported skill.');
+      return;
+    }
     if ('kind' in s && s.kind === 'rest') return;
     if ('kind' in s && s.kind === 'posture') {
       if (!['sit', 'stand'].includes(s.posture))
@@ -263,29 +281,31 @@ export function compileMicroduckWalkingProgram(
                 ...(s.kind === 'distance-value' ? { speed: 0.25 } : {}),
                 ...('name' in s ? { name: s.name } : {}),
               }
-            : s.kind === 'rest'
-              ? {}
-              : s.kind === 'posture'
-                ? { posture: s.posture }
-                : s.kind === 'head-yaw'
-                  ? { angleRadians: s.angleRadians }
-                  : s.kind === 'condition'
-                    ? { condition: s.condition }
-                    : s.kind === 'proximity'
-                      ? { thresholdMeters: s.thresholdMeters }
-                      : s.kind === 'distance'
-                        ? {
-                            distanceMeters: s.distanceMeters,
-                            speed: 0.25,
-                            timeoutSeconds: 15 + s.distanceMeters / 0.04,
-                          }
-                        : s.kind === 'turn'
+            : s.kind === 'skill'
+              ? { skill: s.skill }
+              : s.kind === 'rest'
+                ? {}
+                : s.kind === 'posture'
+                  ? { posture: s.posture }
+                  : s.kind === 'head-yaw'
+                    ? { angleRadians: s.angleRadians }
+                    : s.kind === 'condition'
+                      ? { condition: s.condition }
+                      : s.kind === 'proximity'
+                        ? { thresholdMeters: s.thresholdMeters }
+                        : s.kind === 'distance'
                           ? {
-                              angleRadians: s.angleRadians,
-                              speed: 1,
-                              timeoutSeconds: 45,
+                              distanceMeters: s.distanceMeters,
+                              speed: 0.25,
+                              timeoutSeconds: 15 + s.distanceMeters / 0.04,
                             }
-                          : { durationSeconds: s.durationSeconds }
+                          : s.kind === 'turn'
+                            ? {
+                                angleRadians: s.angleRadians,
+                                speed: 1,
+                                timeoutSeconds: 45,
+                              }
+                            : { durationSeconds: s.durationSeconds }
           : {
               forward: s.forward,
               yaw: s.yaw,

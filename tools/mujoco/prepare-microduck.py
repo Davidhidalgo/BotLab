@@ -73,3 +73,4 @@ if __name__=='__main__':
     main()
     import runpy
     runpy.run_path(str(Path(__file__).with_name('prepare-microduck-posture.py')), run_name='__main__')
+    runpy.run_path(str(Path(__file__).with_name('prepare-microduck-skills.py')), run_name='__main__')

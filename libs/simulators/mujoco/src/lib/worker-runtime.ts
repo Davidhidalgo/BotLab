@@ -1,3 +1,4 @@
+import { SkillGoal } from './skill-goal';
 import { RestGoal } from './rest-goal';
 import loadMujoco from '@mujoco/mujoco';
 import wasmUrl from '@mujoco/mujoco/mujoco.wasm?url';
@@ -48,6 +49,7 @@ export function installSimulationWorker(createController?: ControllerFactory) {
   let postureCommand:
     | { request: WorkerRequest; target: 'sit' | 'stand'; start: number }
     | undefined;
+  let skillGoal: { request: WorkerRequest; goal: SkillGoal } | undefined;
   let restGoal: { request: WorkerRequest; goal: RestGoal } | undefined;
   let motionGoal: { request: WorkerRequest; goal: MotionGoal } | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -70,6 +72,9 @@ export function installSimulationWorker(createController?: ControllerFactory) {
     return Math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z));
   }
   function cancelCommand() {
+    if (skillGoal) reply(skillGoal.request, { error: 'Command cancelled.' });
+    skillGoal = undefined;
+    controller?.cancelSkill?.();
     if (jointCommand)
       reply(jointCommand.request, { error: 'Command cancelled.' });
     if (velocityCommand)
@@ -95,6 +100,27 @@ export function installSimulationWorker(createController?: ControllerFactory) {
   function inspectCommand() {
     const current = frame();
     if (controller) controller.validateFeedback(world!.feedback());
+    if (skillGoal) {
+      const active = skillGoal;
+      try {
+        const result = active.goal.update(
+          world!.feedback(),
+          controller?.isSkillRunning?.() ?? false,
+        );
+        if (result) {
+          skillGoal = undefined;
+          reply(active.request, { result });
+        }
+      } catch (error) {
+        skillGoal = undefined;
+        controller?.cancelSkill?.();
+        halt();
+        reply(active.request, {
+          error: error instanceof Error ? error.message : String(error),
+          frame: frame(),
+        });
+      }
+    }
     if (restGoal) {
       const active = restGoal;
       try {
@@ -350,6 +376,7 @@ export function installSimulationWorker(createController?: ControllerFactory) {
           case 'step':
             if (
               state === 'running' ||
+              skillGoal ||
               restGoal ||
               postureCommand ||
               jointCommand ||
@@ -370,6 +397,7 @@ export function installSimulationWorker(createController?: ControllerFactory) {
             break;
           case 'command': {
             if (
+              skillGoal ||
               restGoal ||
               postureCommand ||
               jointCommand ||
@@ -414,7 +442,17 @@ export function installSimulationWorker(createController?: ControllerFactory) {
               });
               return;
             }
-            if (c && 'kind' in c && c.kind === 'rest') {
+            if (c && 'kind' in c && c.kind === 'skill') {
+              if (!controller?.setSkill || !controller.isSkillRunning)
+                throw new Error('Skill is unavailable for this robot.');
+              halt();
+              controller.validateFeedback(world.feedback());
+              controller.setSkill(c.name);
+              skillGoal = {
+                request,
+                goal: new SkillGoal(c.name, world.feedback()),
+              };
+            } else if (c && 'kind' in c && c.kind === 'rest') {
               if (!controller)
                 throw new Error(
                   'Rest observation requires a balancing controller.',

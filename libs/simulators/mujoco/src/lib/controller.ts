@@ -1,4 +1,7 @@
-import type { SimulationManifest } from '@botlab/simulators-core';
+import type {
+  SimulationManifest,
+  SimulationSkill,
+} from '@botlab/simulators-core';
 
 /** A controller only sees copied feedback. The host commits its output after cancellation checks. */
 export interface ControllerFeedback {
@@ -17,6 +20,9 @@ export interface ControllerOutput {
   kd?: number[];
 }
 export interface SimulationController {
+  setSkill?(skill: SimulationSkill): void;
+  isSkillRunning?(): boolean;
+  cancelSkill?(): void;
   /** Optional robot-specific head channel, distinct from body turning. */
   setPosture?(posture: 'sit' | 'stand'): void;
   getPosture?(): 'sit' | 'stand' | 'transitioning';

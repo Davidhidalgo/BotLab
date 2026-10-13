@@ -222,3 +222,20 @@ it('reads connected numeric expressions over fallback shadows for both robots', 
     ).toThrow();
   }
 });
+
+it('allows verified skills only in the MicroDuck walking palette', () => {
+  for (const type of [
+    'botlab_microduck_kick_left',
+    'botlab_microduck_kick_right',
+    'botlab_web_ground_pick',
+  ]) {
+    const artifact = {
+      ...microduckWalkingExample,
+      content: `<xml><block type="event_whenflagclicked" id="start"><next><block type="${type}" id="skill"/></next></block></xml>`,
+    };
+    expect(readMicroduckWalkingProgram(artifact)[0]).toMatchObject({
+      kind: 'skill',
+    });
+    expect(() => readJumperWalkingProgram(artifact)).toThrow(/compatible/);
+  }
+});

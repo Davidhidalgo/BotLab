@@ -1,0 +1,108 @@
+{
+  "date": "2026-10-13T00:39:54.025Z",
+  "browser": "154.0.8037.98",
+  "results": [
+    {
+      "robot": "microduck",
+      "run": {
+        "targetId": "microduck-mujoco-web",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"botlab_microduck_kick_left\" id=\"left\"><next><block type=\"botlab_microduck_kick_right\" id=\"right\"><next><block type=\"botlab_web_ground_pick\" id=\"ground\"><next><block type=\"botlab_web_advance_cm\" id=\"advance\"><field name=\"CM\">15</field></block></next></block></next></block></next></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:39:25.344Z",
+        "manifestId": "microduck-flat-ground-posture-skills",
+        "modelRevision": "363b7effd4eae9f24dd1bb8bf647aef4d74edca9",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@1",
+            "sourceBlockId": "left",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 1.6799999999999862,
+              "rest": {
+                "durationSeconds": 0.8049999999999855,
+                "driftMeters": 0.0018086649585011974,
+                "rotationRadians": 0.011762949549143975
+              },
+              "skill": {
+                "name": "kick-left",
+                "durationSeconds": 1.6799999999999862,
+                "maxJointChangeRadians": 0.49194560739205767
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@2",
+            "sourceBlockId": "right",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 3.249999999999953,
+              "rest": {
+                "durationSeconds": 0.8049999999999828,
+                "driftMeters": 0.0015452585232466733,
+                "rotationRadians": 0.004385723968825084
+              },
+              "skill": {
+                "name": "kick-right",
+                "durationSeconds": 1.5699999999999668,
+                "maxJointChangeRadians": 0.5401811554305249
+              }
+            }
+          },
+          {
+            "commandId": "velocity-2@3",
+            "sourceBlockId": "ground",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 7.029999999999872,
+              "rest": {
+                "durationSeconds": 0.8049999999999828,
+                "driftMeters": 0.0009093842186951891,
+                "rotationRadians": 0.013816799222615223
+              },
+              "skill": {
+                "name": "ground-pick",
+                "durationSeconds": 3.7699999999999196,
+                "maxJointChangeRadians": 1.8036990228634846
+              }
+            }
+          },
+          {
+            "commandId": "velocity-3@4",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 10.670000000000268,
+              "displacementMeters": 0.14974137602618634,
+              "yawRadians": -0.18298503741190972,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14955277329909564
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-e49ff8c4-31c76bb7-d0dac3a4-fe34dc5d-mujoco-program-1",
+          "program": {
+            "programId": "microduck-web-walking",
+            "targetId": "microduck-mujoco-web",
+            "revision": "{\"commands\":[{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"skill\",\"id\":\"velocity-0\",\"inputs\":{\"skill\":\"kick-left\"},\"sourceBlockId\":\"left\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"skill\",\"id\":\"velocity-1\",\"inputs\":{\"skill\":\"kick-right\"},\"sourceBlockId\":\"right\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"skill\",\"id\":\"velocity-2\",\"inputs\":{\"skill\":\"ground-pick\"},\"sourceBlockId\":\"ground\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-3\",\"inputs\":{\"distanceMeters\":0.15,\"speed\":0.25,\"timeoutSeconds\":18.75},\"sourceBlockId\":\"advance\",\"targetId\":\"microduck-mujoco-web\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:39:35.991Z"
+      },
+      "cancellation": "cancelled",
+      "seatedSkillRejected": "failed"
+    }
+  ],
+  "errors": []
+}

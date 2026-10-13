@@ -271,6 +271,8 @@ export function compileJumperWalkingProgram(
 ): CompiledBehaviorArtifact {
   const expanded = expandWalkingProgram(steps, (s) => {
     if ('expression' in s) return;
+    if ('kind' in s && s.kind === 'skill')
+      throw new Error('Jumper no dispone de las habilidades de MicroDuck.');
     if ('kind' in s && s.kind === 'rest') return;
     if ('kind' in s && s.kind === 'posture') {
       throw new Error('Jumper no admite las posturas de MicroDuck.');
@@ -338,29 +340,31 @@ export function compileJumperWalkingProgram(
                 ...(s.kind === 'distance-value' ? { speed: 0.24 } : {}),
                 ...('name' in s ? { name: s.name } : {}),
               }
-            : s.kind === 'rest'
-              ? {}
-              : s.kind === 'posture'
-                ? { posture: s.posture }
-                : s.kind === 'head-yaw'
-                  ? { angleRadians: s.angleRadians }
-                  : s.kind === 'condition'
-                    ? { condition: s.condition }
-                    : s.kind === 'proximity'
-                      ? { thresholdMeters: s.thresholdMeters }
-                      : s.kind === 'distance'
-                        ? {
-                            distanceMeters: s.distanceMeters,
-                            speed: 0.24,
-                            timeoutSeconds: 15 + s.distanceMeters / 0.04,
-                          }
-                        : s.kind === 'turn'
+            : s.kind === 'skill'
+              ? { skill: s.skill }
+              : s.kind === 'rest'
+                ? {}
+                : s.kind === 'posture'
+                  ? { posture: s.posture }
+                  : s.kind === 'head-yaw'
+                    ? { angleRadians: s.angleRadians }
+                    : s.kind === 'condition'
+                      ? { condition: s.condition }
+                      : s.kind === 'proximity'
+                        ? { thresholdMeters: s.thresholdMeters }
+                        : s.kind === 'distance'
                           ? {
-                              angleRadians: s.angleRadians,
-                              speed: 1,
-                              timeoutSeconds: 45,
+                              distanceMeters: s.distanceMeters,
+                              speed: 0.24,
+                              timeoutSeconds: 15 + s.distanceMeters / 0.04,
                             }
-                          : { durationSeconds: s.durationSeconds }
+                          : s.kind === 'turn'
+                            ? {
+                                angleRadians: s.angleRadians,
+                                speed: 1,
+                                timeoutSeconds: 45,
+                              }
+                            : { durationSeconds: s.durationSeconds }
           : {
               forward: s.forward,
               yaw: s.yaw,

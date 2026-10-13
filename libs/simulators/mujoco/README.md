@@ -47,3 +47,7 @@ Posture observation pauses the worker, validates current feedback and reads the 
 <!-- rest arrival tracked by src/lib/rest-goal.ts -->
 
 `RestGoal` confirms zero-intent balance with an observed 0.8 s window: ≤1 cm planar drift, ≤0.05 rad heading change and angular speed ≤0.1 rad/s. It times out after 5 s and uses the shared cancellation path.
+
+<!-- bounded optional skills from src/lib/skill-goal.ts and worker-runtime.ts -->
+
+Optional controller skill hooks run under the same exclusive/cancellable command lifecycle. `SkillGoal` requires at least 0.15 rad joint excursion, completion of the policy window, upright return and `RestGoal` confirmation; its total deadline is ten seconds. Results identify the skill and observed duration/excursion, without claiming contact with a ball or pickup of an object.

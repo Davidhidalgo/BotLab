@@ -201,3 +201,7 @@ Run `node tools/mujoco/verify-wait-until.mjs` against the static preview on port
 <!-- numeric acceptance implemented by verify-numbers.mjs and examples/*-mujoco-numbers.botlab.json -->
 
 `node tools/mujoco/verify-numbers.mjs` exercises an explicit counter and two calculated 15 cm movements in both robots, validates physical arrival, decisions and variable snapshots, then reloads and reruns to check fresh initialization. Examples are `examples/jumper-mujoco-numbers.botlab.json` and `examples/microduck-mujoco-numbers.botlab.json`.
+
+<!-- skill preparation and probes from prepare-microduck-skills.py, skill-harness.ts, probe-skills.mjs and verify-skills.mjs -->
+
+MicroDuck preparation now adds separately pinned skill manifests with kick-left, kick-right and ground-pick policies. `node tools/mujoco/probe-skills.mjs` compares startup and balanced-entry states, return to walking and later movement; its exploratory roll case is not exposed. `node tools/mujoco/verify-skills.mjs` checks the compiled editor, stored physical results, cancellation and explicit standing preconditions. The example is `examples/microduck-mujoco-skills.botlab.json`.

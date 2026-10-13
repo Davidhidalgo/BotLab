@@ -134,7 +134,7 @@ describe('MuJoCo in the primary workspace', () => {
 });
 
 const retiredSource =
-  '<xml><block type="event_whenflagclicked" id="flag"><next><block type="botlab_microduck_kick_left" id="sit"/></next></block></xml>';
+  '<xml><block type="event_whenflagclicked" id="flag"><next><block type="botlab_microduck_community_skill" id="sit"/></next></block></xml>';
 const retiredDocument = (simulatorBackend: 'browser' | 'native') => ({
   schemaVersion: 1 as const,
   locale: 'es' as const,

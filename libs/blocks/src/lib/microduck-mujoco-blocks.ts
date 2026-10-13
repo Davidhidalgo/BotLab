@@ -32,6 +32,7 @@ export function applyWebWalkingLocale(
       'fijar %1 a %2',
       'cambiar %1 por %2',
       'Variables',
+      'inclinarse hacia el suelo',
     ],
     ca: [
       'Avançat',
@@ -50,6 +51,7 @@ export function applyWebWalkingLocale(
       'fixa %1 a %2',
       'canvia %1 per %2',
       'Variables',
+      'inclinar-se cap a terra',
     ],
     en: [
       'Advanced',
@@ -68,6 +70,7 @@ export function applyWebWalkingLocale(
       'set %1 to %2',
       'change %1 by %2',
       'Variables',
+      'bow towards the ground',
     ],
   }[locale];
   for (const [i, key] of [
@@ -87,12 +90,19 @@ export function applyWebWalkingLocale(
     'SET_NUMBER',
     'CHANGE_NUMBER',
     'VARIABLES',
+    'GROUND_PICK',
   ].entries())
     api.Msg[`BOTLAB_WEB_${key}`] = copy[i];
 }
 export function registerMicroduckMujocoBlocks(api: typeof ScratchBlocks) {
   if (api.Blocks['botlab_web_velocity']) return;
   api.defineBlocksWithJsonArray([
+    {
+      type: 'botlab_web_ground_pick',
+      message0: '%{BKY_BOTLAB_WEB_GROUND_PICK}',
+      style: 'motion',
+      extensions: ['shape_statement'],
+    },
     {
       type: 'botlab_web_distance_cm',
       message0: '%{BKY_BOTLAB_WEB_DISTANCE_VALUE}',
@@ -245,6 +255,9 @@ export const jumperWalkingBlockTypes = [
   'botlab_microduck_turn_right',
 ];
 export const microduckWalkingBlockTypes = [
+  'botlab_microduck_kick_left',
+  'botlab_microduck_kick_right',
+  'botlab_web_ground_pick',
   'botlab_microduck_is_sit',
   'botlab_microduck_is_stand',
   'botlab_microduck_is_transitioning',
@@ -544,6 +557,25 @@ function readWalkingProgram(
           sourceBlockId,
           kind: 'distance-value',
           expression: expression(current, 'CM'),
+        });
+        continue;
+      }
+      if (
+        [
+          'botlab_microduck_kick_left',
+          'botlab_microduck_kick_right',
+          'botlab_web_ground_pick',
+        ].includes(type)
+      ) {
+        steps.push({
+          sourceBlockId,
+          kind: 'skill',
+          skill:
+            type === 'botlab_web_ground_pick'
+              ? 'ground-pick'
+              : type.endsWith('_left')
+                ? 'kick-left'
+                : 'kick-right',
         });
         continue;
       }

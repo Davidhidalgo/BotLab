@@ -55,3 +55,5 @@ MuJoCo head actions are left/centre/right at +0.3/0/−0.3 rad, with measured ar
 The web walking adapter accepts explicit sit/stand actions using the pinned posture policy. It preserves source IDs and posture results; locomotion while sitting is rejected by the loaded controller.
 
 Posture conditions are available on flat and obstacle scenes; only conditions that use proximity require ToF.
+
+The web adapter advertises verified left/right kicks and the ground gesture. Each compiles to a bounded `skill` command; the controller enforces explicit standing and the worker confirms motion and settled return. Jumper rejects these robot-specific actions.

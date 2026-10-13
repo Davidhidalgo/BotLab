@@ -36,3 +36,7 @@ A `posture` command requests sit or stand where supported. Results retain target
 `observe-posture` returns a timestamped posture observation without advancing physics. A saved compound decision can use distance, posture or both.
 
 `rest` requests observed balance without ending the program. Results retain measured window duration, drift and heading change.
+
+<!-- software evaluation and optional skill results from src/lib/session.ts -->
+
+Pure program evaluations use `program-evaluation`; variable changes and decision snapshots are stored separately from physical measurements. Optional `skill` commands identify left/right kick or the ground gesture, retaining duration and joint excursion alongside measured rest.

@@ -301,3 +301,11 @@ Hosted CI is green at `ee352a5`: [Verify run](https://github.com/Davidhidalgo/Bo
 BL-031 adds shared numeric comparisons, arithmetic, explicit set/change/read variables, frontal distance in cm and calculated advance/wait inputs. Both robots executed a counter-controlled loop with two `10 + 5` cm advances within the existing 2.5 cm tolerance. Decisions were false/false/true; variable results were 0/1/2. Reload preserves evidence; rerunning starts with a fresh store. [Compiled-editor acceptance](evidence/mujoco-numbers-workbench.json).
 
 Pure calculations have `program-evaluation` results and a distinct completion label. Reading distance requires a fresh geometric observation; missing data fails. Undefined variables, division by zero, nonfinite/oversized results and out-of-range movement fail before motion. Names, store size and expression depth/size are bounded. Shared model, runtime, XML, adapters, persistence and dispatch tests cover these contracts. Repeat counts remain literal; no general events or implicit initialization are introduced.
+
+## MicroDuck bounded skills — 2026-10-13
+
+The left/right kick and ground gesture policies are verified by SHA-256 in separate skill manifests. Both kicks preserve previous actions across their 25-tick policy window; ground-pick uses the upstream phase encoding for 140 ticks. [Exploratory physics](evidence/microduck-skills-probe.json) covers immediate and balanced entry, return to walking, forward motion and later rest.
+
+[Compiled-editor acceptance](evidence/microduck-skills-workbench.json) confirms left kick (1.68 s), right kick (1.57 s), ground gesture (3.77 s), then a measured 15 cm advance. These durations include observed settling, not just the policy window. Results survive reload; cancellation stops the run, and a kick requested after sitting fails without an automatic stand. The worker requires joint excursion ≥0.15 rad and an upright stable return using the shared rest criterion. No ball contact or object pickup is claimed.
+
+The roll probe reaches an upright final state but passes through ~3 rad tilt and ~4.6 cm body height. It remains unavailable because interrupted/inverted recovery and cancellation have not been validated. Its successful uninterrupted probe does not satisfy the public-block acceptance criteria.

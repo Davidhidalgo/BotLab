@@ -150,61 +150,71 @@ export default function MujocoSimulatorPanel({
                           command.inputs['thresholdMeters'],
                         ),
                       }
-                    : command.commandId === 'rest'
-                      ? { kind: 'rest' }
-                      : command.commandId === 'posture'
-                        ? {
-                            kind: 'posture',
-                            posture: command.inputs['posture'] as
-                              | 'sit'
-                              | 'stand',
-                          }
-                        : command.commandId === 'head-yaw'
+                    : command.commandId === 'skill'
+                      ? {
+                          kind: 'skill',
+                          name: command.inputs['skill'] as
+                            | 'kick-left'
+                            | 'kick-right'
+                            | 'ground-pick',
+                        }
+                      : command.commandId === 'rest'
+                        ? { kind: 'rest' }
+                        : command.commandId === 'posture'
                           ? {
-                              kind: 'head-yaw',
-                              angleRadians: Number(
-                                command.inputs['angleRadians'],
-                              ),
+                              kind: 'posture',
+                              posture: command.inputs['posture'] as
+                                | 'sit'
+                                | 'stand',
                             }
-                          : command.commandId === 'distance'
+                          : command.commandId === 'head-yaw'
                             ? {
-                                kind: 'distance',
-                                distanceMeters: Number(
-                                  command.inputs['distanceMeters'],
-                                ),
-                                speed: Number(command.inputs['speed']),
-                                timeoutSeconds: Number(
-                                  command.inputs['timeoutSeconds'],
+                                kind: 'head-yaw',
+                                angleRadians: Number(
+                                  command.inputs['angleRadians'],
                                 ),
                               }
-                            : command.commandId === 'turn'
+                            : command.commandId === 'distance'
                               ? {
-                                  kind: 'turn',
-                                  angleRadians: Number(
-                                    command.inputs['angleRadians'],
+                                  kind: 'distance',
+                                  distanceMeters: Number(
+                                    command.inputs['distanceMeters'],
                                   ),
                                   speed: Number(command.inputs['speed']),
                                   timeoutSeconds: Number(
                                     command.inputs['timeoutSeconds'],
                                   ),
                                 }
-                              : command.commandId === 'wait'
+                              : command.commandId === 'turn'
                                 ? {
-                                    kind: 'velocity',
-                                    forward: 0,
-                                    yaw: 0,
-                                    durationSeconds: Number(
-                                      command.inputs['durationSeconds'],
+                                    kind: 'turn',
+                                    angleRadians: Number(
+                                      command.inputs['angleRadians'],
+                                    ),
+                                    speed: Number(command.inputs['speed']),
+                                    timeoutSeconds: Number(
+                                      command.inputs['timeoutSeconds'],
                                     ),
                                   }
-                                : {
-                                    kind: 'velocity',
-                                    forward: Number(command.inputs['forward']),
-                                    yaw: Number(command.inputs['yaw']),
-                                    durationSeconds: Number(
-                                      command.inputs['durationSeconds'],
-                                    ),
-                                  }
+                                : command.commandId === 'wait'
+                                  ? {
+                                      kind: 'velocity',
+                                      forward: 0,
+                                      yaw: 0,
+                                      durationSeconds: Number(
+                                        command.inputs['durationSeconds'],
+                                      ),
+                                    }
+                                  : {
+                                      kind: 'velocity',
+                                      forward: Number(
+                                        command.inputs['forward'],
+                                      ),
+                                      yaw: Number(command.inputs['yaw']),
+                                      durationSeconds: Number(
+                                        command.inputs['durationSeconds'],
+                                      ),
+                                    }
                   : {
                       joint: String(command.inputs['joint']),
                       positionRadians: Number(
@@ -236,11 +246,17 @@ export default function MujocoSimulatorPanel({
               condition: result.decision?.value ?? result.proximity?.value,
               status: result.status,
               evidence: result.evidence,
-              message: result.proximity
-                ? `Distancia frontal: ${(result.proximity.distanceMeters * 100).toFixed(1)} cm; condición: ${result.proximity.value}.`
-                : walking
-                  ? `Movimiento completado; desplazamiento ${result.displacementMeters?.toFixed(3)} m.`
-                  : `Articulación alcanzada; error ${result.finalErrorRadians?.toFixed(4)} rad.`,
+              message: result.variableChange
+                ? `${result.variableChange.name} = ${result.variableChange.value}`
+                : result.skill
+                  ? `${result.skill.name}: ${result.skill.durationSeconds.toFixed(1)} s, reposo confirmado.`
+                  : result.decision
+                    ? `Condición: ${result.decision.value}.`
+                    : result.proximity
+                      ? `Distancia frontal: ${(result.proximity.distanceMeters * 100).toFixed(1)} cm; condición: ${result.proximity.value}.`
+                      : walking
+                        ? `Movimiento completado; desplazamiento ${result.displacementMeters?.toFixed(3)} m.`
+                        : `Articulación alcanzada; error ${result.finalErrorRadians?.toFixed(4)} rad.`,
             };
           },
         },
@@ -694,6 +710,19 @@ export default function MujocoSimulatorPanel({
             ))}
         </ul>
       )}
+      {report?.trace.some((entry) => entry.result.skill) && (
+        <ul className="px-4 text-sm" aria-label={copy.skills}>
+          {report.trace
+            .filter((entry) => entry.result.skill)
+            .map((entry, index) => (
+              <li key={index}>
+                {copy.skillNames[entry.result.skill!.name]} ·{' '}
+                {entry.result.skill!.durationSeconds.toFixed(1)} s ·{' '}
+                {copy.stable}
+              </li>
+            ))}
+        </ul>
+      )}
       {executing && activeCommand && (
         <p
           aria-label={copy.progress}
@@ -704,13 +733,24 @@ export default function MujocoSimulatorPanel({
           {activeCommand.commandId === 'proximity' ||
           activeCommand.commandId === 'condition'
             ? copy.checking
-            : activeCommand.commandId === 'distance'
-              ? copy.advancing
-              : activeCommand.commandId === 'turn'
-                ? copy.turning
-                : activeCommand.commandId === 'wait'
-                  ? copy.waiting
-                  : copy.moving}
+            : ['set-number', 'change-number'].includes(activeCommand.commandId)
+              ? copy.calculating
+              : activeCommand.commandId === 'skill'
+                ? copy.skillNames[
+                    activeCommand.inputs['skill'] as
+                      | 'kick-left'
+                      | 'kick-right'
+                      | 'ground-pick'
+                  ]
+                : ['distance', 'distance-value'].includes(
+                      activeCommand.commandId,
+                    )
+                  ? copy.advancing
+                  : activeCommand.commandId === 'turn'
+                    ? copy.turning
+                    : ['wait', 'wait-value'].includes(activeCommand.commandId)
+                      ? copy.waiting
+                      : copy.moving}
           {activeCommand.iterations?.length
             ? ` · ${iterationLabel(activeCommand.iterations)}`
             : ''}

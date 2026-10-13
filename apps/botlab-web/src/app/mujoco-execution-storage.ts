@@ -261,6 +261,29 @@ export function decodeMujocoExecution(
           capturedAtSeconds: p.capturedAtSeconds,
         };
       }
+      if (result.skill !== undefined) {
+        const v = result.skill;
+        if (
+          !record(v) ||
+          !['kick-left', 'kick-right', 'ground-pick'].includes(
+            String(v.name),
+          ) ||
+          typeof v.durationSeconds !== 'number' ||
+          !Number.isFinite(v.durationSeconds) ||
+          v.durationSeconds <= 0 ||
+          v.durationSeconds >= 10 ||
+          typeof v.maxJointChangeRadians !== 'number' ||
+          !Number.isFinite(v.maxJointChangeRadians) ||
+          v.maxJointChangeRadians < 0.15 ||
+          !checked.rest
+        )
+          throw new Error('Invalid saved skill.');
+        checked.skill = {
+          name: v.name as 'kick-left' | 'kick-right' | 'ground-pick',
+          durationSeconds: v.durationSeconds,
+          maxJointChangeRadians: v.maxJointChangeRadians,
+        };
+      }
       if (result.variableChange !== undefined) {
         const v = result.variableChange;
         if (

@@ -1,3 +1,5 @@
+import { MicroduckSkillClock } from './skill';
+import type { SimulationSkill } from '@botlab/simulators-core';
 import { MicroduckPostureTracker } from './posture';
 import * as ort from 'onnxruntime-web/wasm';
 import ortWasmUrl from 'onnxruntime-web/ort-wasm-simd-threaded.wasm?url';
@@ -28,7 +30,22 @@ export const createWalkingController: ControllerFactory = async (
     throw new Error('Unexpected ONNX tensor interface.');
   }
   let postureSession: ort.InferenceSession | undefined;
+  const skillSessions = new Map<SimulationSkill, ort.InferenceSession>();
   try {
+    for (const [skill, name] of [
+      ['kick-left', 'ball_kick_left.onnx'],
+      ['kick-right', 'ball_kick_right.onnx'],
+      ['ground-pick', 'alpha_ground_pick.onnx'],
+    ] as const) {
+      if (files[name]) {
+        const loaded = await ort.InferenceSession.create(files[name], {
+          executionProviders: ['wasm'],
+        });
+        skillSessions.set(skill, loaded);
+        if (loaded.inputNames.length !== 1 || loaded.outputNames.length !== 1)
+          throw new Error('Unexpected skill tensor interface.');
+      }
+    }
     if (files['alpha-sitstand.onnx']) {
       postureSession = await ort.InferenceSession.create(
         files['alpha-sitstand.onnx'],
@@ -43,16 +60,36 @@ export const createWalkingController: ControllerFactory = async (
   } catch (error) {
     await session.release();
     await postureSession?.release();
+    for (const loaded of skillSessions.values()) await loaded.release();
     throw error;
   }
   const posture = new MicroduckPostureTracker();
   let mode: 'walk' | 'posture' = 'walk';
+  const skillClock = new MicroduckSkillClock();
   // Upstream constants use Float32Array, including the default pose rounding.
   const home = Array.from(new Float32Array(manifest.joints.map((j) => j.home)));
   let previous = Array<number>(14).fill(0);
   let headTarget = 0,
     headCurrent = 0;
   return {
+    ...(skillSessions.size
+      ? {
+          setSkill(skill: SimulationSkill) {
+            if (!skillSessions.has(skill))
+              throw new Error('Skill is unavailable.');
+            if (posture.state !== 'stand')
+              throw new Error(
+                'Levanta a MicroDuck antes de iniciar la habilidad.',
+              );
+            mode = 'walk';
+            skillClock.begin(skill);
+          },
+          isSkillRunning: () => skillClock.active !== undefined,
+          cancelSkill() {
+            skillClock.cancel();
+          },
+        }
+      : {}),
     ...(postureSession
       ? {
           setPosture(target: 'sit' | 'stand') {
@@ -112,10 +149,19 @@ export const createWalkingController: ControllerFactory = async (
         mode === 'posture'
           ? { forward: posture.target === 'sit' ? 1 : 0, yaw: 0 }
           : velocity,
-        [0, 0, nextHead, 0],
+        skillClock.active ? [0, 0, 0, 0] : [0, 0, nextHead, 0],
       );
+      if (skillClock.active) obs.fill(0, 48);
+      if (skillClock.active === 'ground-pick') {
+        obs[48] = Math.cos(skillClock.phase());
+        obs[49] = Math.sin(skillClock.phase());
+      }
       const input = new ort.Tensor('float32', obs, [1, 61]);
-      const selected = mode === 'posture' ? postureSession! : session;
+      const selected = skillClock.active
+        ? skillSessions.get(skillClock.active)!
+        : mode === 'posture'
+          ? postureSession!
+          : session;
       const outputs = await selected.run({ [selected.inputNames[0]]: input });
       try {
         const tensor = outputs[selected.outputNames[0]];
@@ -138,16 +184,19 @@ export const createWalkingController: ControllerFactory = async (
     accept(output) {
       previous = output.state.slice(0, 14);
       headCurrent = output.state[14];
+      skillClock.accept();
     },
     reset() {
       previous = Array<number>(14).fill(0);
       headTarget = headCurrent = 0;
       mode = 'walk';
+      skillClock.cancel();
       posture.reset();
     },
     async dispose() {
       await session.release();
       await postureSession?.release();
+      for (const loaded of skillSessions.values()) await loaded.release();
     },
   };
 };

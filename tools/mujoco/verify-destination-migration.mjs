@@ -6,7 +6,7 @@ const modern = JSON.parse(
   await readFile('examples/microduck-mujoco-first-steps.botlab.json', 'utf8'),
 );
 const originalXml =
-  '<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_whenflagclicked" id="old-start"><next><block type="botlab_microduck_kick_left" id="old-sit"/></next></block></xml>';
+  '<xml xmlns="https://developers.google.com/blockly/xml"><block type="event_whenflagclicked" id="old-start"><next><block type="botlab_microduck_community_skill" id="old-sit"/></next></block></xml>';
 const results = [];
 try {
   for (const backend of ['browser', 'native']) {

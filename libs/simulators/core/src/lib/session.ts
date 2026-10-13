@@ -121,7 +121,13 @@ export interface SimulationJointCommand {
   timeoutSeconds: number;
 }
 
+export type SimulationSkill = 'kick-left' | 'kick-right' | 'ground-pick';
 export interface SimulationCommandResult {
+  skill?: {
+    name: SimulationSkill;
+    durationSeconds: number;
+    maxJointChangeRadians: number;
+  };
   rest?: {
     durationSeconds: number;
     driftMeters: number;
@@ -184,6 +190,7 @@ export type SimulationMotionGoal =
       timeoutSeconds: number;
     };
 export type SimulationCommand =
+  | { kind: 'skill'; name: SimulationSkill }
   | { kind: 'rest' }
   | { kind: 'observe-posture' }
   | { kind: 'posture'; posture: 'sit' | 'stand' }

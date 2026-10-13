@@ -14,6 +14,16 @@ export function depthDirections(sensor: SimulationDepthSensor): number[][] {
       (0.5 - (col + 0.5) / sensor.columns) * sensor.horizontalFovRadians;
     const elevation =
       (0.5 - (row + 0.5) / sensor.rows) * sensor.verticalFovRadians;
+    if (sensor.projection === 'pinhole') {
+      const y =
+        (1 - (2 * (col + 0.5)) / sensor.columns) *
+        Math.tan(sensor.horizontalFovRadians / 2);
+      const z =
+        (1 - (2 * (row + 0.5)) / sensor.rows) *
+        Math.tan(sensor.verticalFovRadians / 2);
+      const norm = Math.hypot(1, y, z);
+      return [1 / norm, y / norm, z / norm];
+    }
     return [
       Math.cos(elevation) * Math.cos(azimuth),
       Math.cos(elevation) * Math.sin(azimuth),
@@ -42,10 +52,10 @@ export class MujocoDepthSensor {
       throw new Error(`Missing depth sensor site: ${config.site}`);
     this.data = new mj.MjData(model);
   }
-  sample(state: MjData): SimulationDepthFrame {
+  sample(state: MjData, force = false): SimulationDepthFrame {
     if (this.disposed) throw new Error('Depth sensor is disposed.');
     const slot = Math.floor(state.time * this.config.frequencyHz + 1e-9);
-    if (this.last && slot === this.lastSlot) return this.last;
+    if (!force && this.last && slot === this.lastSlot) return this.last;
     const begin = performance.now();
     this.data.qpos.set(state.qpos);
     this.data.mocap_pos.set(state.mocap_pos);
@@ -82,7 +92,8 @@ export class MujocoDepthSensor {
       const status =
         !Number.isFinite(distance) || distance < -1
           ? 'invalid'
-          : distance < 0 || distance > this.config.maxRangeMeters
+          : distance < (this.config.minRangeMeters ?? 0) ||
+              distance > this.config.maxRangeMeters
             ? 'no-return'
             : 'hit';
       statuses.push(status);

@@ -3,7 +3,7 @@ const es = {
   flat: 'Suelo libre',
   obstacles: 'Obstáculos + ToF',
   tofHelp:
-    'Profundidad geométrica en metros: 45°, hasta 4 m, 15 lecturas por segundo simulado. No evita obstáculos automáticamente.',
+    'Profundidad geométrica en metros; configuración propia del robot. No evita obstáculos automáticamente.',
   tofTime: 'Lectura en tiempo simulado',
   depthMap: 'Mapa de profundidad: arriba y a la izquierda del sensor',
   noReturn: 'Sin retorno',
@@ -11,6 +11,12 @@ const es = {
   tofLegend:
     'Vista desde detrás del sensor. — sin retorno; ? lectura inválida. Cierra la sesión para cambiar de escena.',
 
+  sensorRequired:
+    'Selecciona Obstáculos + ToF y carga el robot antes de usar esta condición.',
+  checking: 'Comprobando distancia',
+  decisions: 'Comprobaciones de la condición',
+  yes: 'sí',
+  no: 'no',
   iteration: 'Repetición',
   of: 'de',
   progress: 'Progreso del programa',
@@ -74,7 +80,7 @@ const ca: typeof es = {
   flat: 'Terra lliure',
   obstacles: 'Obstacles + ToF',
   tofHelp:
-    'Profunditat geomètrica en metres: 45°, fins a 4 m, 15 lectures per segon simulat. No evita obstacles automàticament.',
+    'Profunditat geomètrica en metres; configuració pròpia del robot. No evita obstacles automàticament.',
   tofTime: 'Lectura en temps simulat',
   depthMap: 'Mapa de profunditat: a dalt i a l’esquerra del sensor',
   noReturn: 'Sense retorn',
@@ -82,6 +88,12 @@ const ca: typeof es = {
   tofLegend:
     'Vista des de darrere del sensor. — sense retorn; ? lectura invàlida. Tanca la sessió per canviar d’escena.',
 
+  sensorRequired:
+    'Selecciona Obstacles + ToF i carrega el robot abans d’usar aquesta condició.',
+  checking: 'Comprovant distància',
+  decisions: 'Comprovacions de la condició',
+  yes: 'sí',
+  no: 'no',
   iteration: 'Repetició',
   of: 'de',
   progress: 'Progrés del programa',
@@ -145,7 +157,7 @@ const en: typeof es = {
   flat: 'Open floor',
   obstacles: 'Obstacles + ToF',
   tofHelp:
-    'Geometric depth in metres: 45°, up to 4 m, 15 readings per simulated second. No automatic obstacle avoidance.',
+    'Geometric depth in metres; robot-specific configuration. No automatic obstacle avoidance.',
   tofTime: 'Reading at simulated time',
   depthMap: 'Depth map: sensor up and left',
   noReturn: 'No return',
@@ -153,6 +165,12 @@ const en: typeof es = {
   tofLegend:
     'View from behind the sensor. — no return; ? invalid reading. Close the session to change scenes.',
 
+  sensorRequired:
+    'Select Obstacles + ToF and load the robot before using this condition.',
+  checking: 'Checking distance',
+  decisions: 'Condition checks',
+  yes: 'yes',
+  no: 'no',
   iteration: 'Repeat',
   of: 'of',
   progress: 'Program progress',

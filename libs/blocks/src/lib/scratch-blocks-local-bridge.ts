@@ -753,16 +753,21 @@ function createBotLabToolbox(
           'kick_left',
           'kick_right',
           'community_skill',
-        ].map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` })),
+        ]
+          .map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` }))
+          .concat([{ kind: 'block', type: 'botlab_web_advance_cm' }]),
       },
       {
         kind: 'category',
         name: scratchBlocks.Msg['CATEGORY_SENSING'],
         categorystyle: 'sensing_category',
-        contents: ['sit', 'stand', 'transitioning'].map((posture) => ({
-          kind: 'block',
-          type: `botlab_microduck_is_${posture}`,
-        })),
+        contents: [
+          { kind: 'block', type: 'botlab_web_obstacle' },
+          ...['sit', 'stand', 'transitioning'].map((posture) => ({
+            kind: 'block',
+            type: `botlab_microduck_is_${posture}`,
+          })),
+        ],
       },
       {
         kind: 'category',
@@ -784,6 +789,7 @@ function createBotLabToolbox(
               },
             },
           },
+          { kind: 'block', type: 'control_repeat_until' },
           { kind: 'block', type: 'control_if' },
           { kind: 'block', type: 'control_if_else' },
           {

@@ -73,6 +73,8 @@ export interface SimulationDepthSensor {
   site: string;
   rows: number;
   columns: number;
+  projection?: 'angular' | 'pinhole';
+  minRangeMeters?: number;
   horizontalFovRadians: number;
   verticalFovRadians: number;
   maxRangeMeters: number;
@@ -119,6 +121,13 @@ export interface SimulationJointCommand {
 }
 
 export interface SimulationCommandResult {
+  proximity?: {
+    value: boolean;
+    distanceMeters: number;
+    thresholdMeters: number;
+    capturedAtSeconds: number;
+    sequence: number;
+  };
   status: 'completed';
   evidence: 'simulator';
   level: 'physics' | 'closed-loop-policy';
@@ -153,6 +162,7 @@ export type SimulationMotionGoal =
       timeoutSeconds: number;
     };
 export type SimulationCommand =
+  | { kind: 'proximity'; thresholdMeters: number }
   | SimulationJointCommand
   | SimulationVelocityCommand
   | SimulationMotionGoal;

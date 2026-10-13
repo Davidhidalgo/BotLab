@@ -313,6 +313,21 @@ export function installSimulationWorker(createController?: ControllerFactory) {
             )
               throw new Error('Session already has a command or needs reset.');
             const c = request.command;
+            if (c && 'kind' in c && c.kind === 'proximity') {
+              halt();
+              const proximity = world.proximity(c.thresholdMeters);
+              reply(request, {
+                result: {
+                  status: 'completed',
+                  evidence: 'simulator',
+                  level: 'physics',
+                  timeSeconds: frame().timeSeconds,
+                  proximity,
+                },
+                frame: frame(),
+              });
+              return;
+            }
             if (
               c &&
               'kind' in c &&

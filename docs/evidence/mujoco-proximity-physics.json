@@ -1,0 +1,422 @@
+{
+  "date": "2026-10-12T23:59:47.048Z",
+  "browser": "154.0.8037.98",
+  "results": [
+    {
+      "robot": "microduck",
+      "manifestId": "microduck-obstacles-tof",
+      "initial": [
+        0,
+        0,
+        0.12
+      ],
+      "trace": [
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 0,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 1.4592142649310205,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 0,
+            "sequence": 1
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 3.5399999999999467,
+          "displacementMeters": 0.15136846669526036,
+          "yawRadians": -0.04610426334250334,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.14990138734462066
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 3.5399999999999467,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 0.9863413538778324,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 3.5399999999999467,
+            "sequence": 55
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 7.089999999999871,
+          "displacementMeters": 0.15078611129750663,
+          "yawRadians": -0.03661864640038798,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.14916790334360047
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 7.099999999999871,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 0.9867284327193786,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 7.099999999999871,
+            "sequence": 109
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 10.625000000000261,
+          "displacementMeters": 0.15020363787484087,
+          "yawRadians": 0.06391385771778371,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.14918739529774133
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 10.640000000000263,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 0.986012966740921,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 10.640000000000263,
+            "sequence": 163
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 14.110000000000806,
+          "displacementMeters": 0.14665512194893698,
+          "yawRadians": 0.009052227618489145,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.1455179575301674
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 14.120000000000807,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 0.8551815161124303,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 14.120000000000807,
+            "sequence": 216
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 17.67000000000077,
+          "displacementMeters": 0.15191847379862045,
+          "yawRadians": -0.04834160676867449,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.15096623668964865
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 17.680000000000767,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 0.7009402857021917,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 17.680000000000767,
+            "sequence": 271
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 21.170000000000073,
+          "displacementMeters": 0.14857371496416952,
+          "yawRadians": 0.00474160723319232,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.1473732454980075
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 21.18000000000007,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 0.5514217466012722,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 21.18000000000007,
+            "sequence": 324
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 24.669999999999376,
+          "displacementMeters": 0.1471245428999558,
+          "yawRadians": -0.04398362170014504,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.14620487873041724
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 24.679999999999374,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 0.40250890676319556,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 24.679999999999374,
+            "sequence": 378
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 28.209999999998672,
+          "displacementMeters": 0.1515958285865221,
+          "yawRadians": -0.016990566601274397,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.1499545993701752
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 28.21999999999867,
+          "proximity": {
+            "value": true,
+            "distanceMeters": 0.2494493555437055,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 28.21999999999867,
+            "sequence": 432
+          }
+        }
+      ]
+    },
+    {
+      "robot": "jumper",
+      "manifestId": "jumper-obstacles-tof",
+      "initial": [
+        0,
+        0,
+        0.10647
+      ],
+      "trace": [
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 0,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 1.425322,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 0,
+            "sequence": 1
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 2.5819999999998267,
+          "displacementMeters": 0.15280463659230828,
+          "yawRadians": -0.02714351233537888,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.15274954699894314
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 2.5849999999998263,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 1.2701178717825428,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 2.5849999999998263,
+            "sequence": 40
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 5.169000000000061,
+          "displacementMeters": 0.14585091292714084,
+          "yawRadians": 0.026567941715624523,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.1457910871914291
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 5.170000000000061,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 1.1243368460948655,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 5.170000000000061,
+            "sequence": 80
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 7.786000000000935,
+          "displacementMeters": 0.14783793036445558,
+          "yawRadians": 0.024035029378713862,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.1477900512678702
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 7.790000000000936,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 0.9759493806717618,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 7.790000000000936,
+            "sequence": 120
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 10.352999999999701,
+          "displacementMeters": 0.15226075980489445,
+          "yawRadians": -0.006969578014909116,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.1522514458871337
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 10.3549999999997,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 0.8249718647401633,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 10.3549999999997,
+            "sequence": 160
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 12.95499999999826,
+          "displacementMeters": 0.14349641687649714,
+          "yawRadians": -0.044132424325085545,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.1432601066014021
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 12.95499999999826,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 0.6808047782988382,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 12.95499999999826,
+            "sequence": 200
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 15.561999999996814,
+          "displacementMeters": 0.1519003368269016,
+          "yawRadians": -0.027519333863321255,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.15185200926948056
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 15.564999999996813,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 0.5297134381315076,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 15.564999999996813,
+            "sequence": 240
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 18.122999999999166,
+          "displacementMeters": 0.14892544951242012,
+          "yawRadians": 0.00918829478133764,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.14891496816965633
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 18.12499999999917,
+          "proximity": {
+            "value": false,
+            "distanceMeters": 0.38149347113452886,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 18.12499999999917,
+            "sequence": 279
+          }
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "closed-loop-policy",
+          "timeSeconds": 20.73500000000236,
+          "displacementMeters": 0.13892589418247614,
+          "yawRadians": 0.034258385908541855,
+          "targetDistanceMeters": 0.15,
+          "forwardDisplacementMeters": 0.13883533327215597
+        },
+        {
+          "status": "completed",
+          "evidence": "simulator",
+          "level": "physics",
+          "timeSeconds": 20.73500000000236,
+          "proximity": {
+            "value": true,
+            "distanceMeters": 0.24012695673711437,
+            "thresholdMeters": 0.3,
+            "capturedAtSeconds": 20.73500000000236,
+            "sequence": 320
+          }
+        }
+      ]
+    }
+  ]
+}

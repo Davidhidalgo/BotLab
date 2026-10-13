@@ -1038,3 +1038,133 @@ const microDuckAdapter: BotLabAdapter = {
     },
   ],
 };
+
+describe('bounded conditional command flow', () => {
+  const plan = () => ({
+    ...sampleMicroDuckCompiledBehaviorArtifact,
+    requiredPolicyIds: [],
+    commands: [
+      {
+        ...sampleMicroDuckCompiledBehaviorArtifact.commands[0],
+        id: 'condition',
+        flow: { whenTrue: 2, whenFalse: 1 },
+      },
+      {
+        ...sampleMicroDuckCompiledBehaviorArtifact.commands[0],
+        id: 'move',
+        flow: { next: 0 },
+      },
+    ],
+  });
+  it('checks before moving, reevaluates each iteration and finishes after a branch exit', async () => {
+    for (const moves of [0, 2]) {
+      const seen: string[] = [];
+      let checks = 0;
+      const runtime = createTestRuntime(
+        {
+          dispatch: (command) => {
+            seen.push(command.id);
+            return {
+              commandId: command.id,
+              status: 'completed',
+              evidence: 'hardware',
+              condition:
+                command.id === 'condition' ? checks++ >= moves : undefined,
+              message: 'observed',
+            };
+          },
+        },
+        [],
+      );
+      const session = runtime.createSession({ id: 'conditional' });
+      expect(
+        runtime.loadCompiledBehavior(session.id, plan()).validation.valid,
+      ).toBe(true);
+      expect((await runtime.startSession(session.id)).outcome.status).toBe(
+        'completed',
+      );
+      expect(seen.filter((id) => id === 'move')).toHaveLength(moves);
+      expect(seen.at(-1)).toBe('condition');
+    }
+  });
+  it('fails unknown conditions without dispatching movement', async () => {
+    const seen: string[] = [];
+    const runtime = createTestRuntime(
+      {
+        dispatch: (command) => {
+          seen.push(command.id);
+          return {
+            commandId: command.id,
+            status: 'completed',
+            evidence: 'hardware',
+            message: 'unknown',
+          };
+        },
+      },
+      [],
+    );
+    const s = runtime.createSession({ id: 'unknown' });
+    runtime.loadCompiledBehavior(s.id, plan());
+    expect((await runtime.startSession(s.id)).outcome.status).toBe('failed');
+    expect(seen).toEqual(['condition']);
+  });
+  it('bounds a never-satisfied loop and rejects invalid branch targets before running', async () => {
+    let count = 0;
+    const runtime = createTestRuntime(
+      {
+        dispatch: (command) => {
+          count++;
+          return {
+            commandId: command.id,
+            status: 'completed',
+            evidence: 'hardware',
+            condition: false,
+            message: 'observed',
+          };
+        },
+      },
+      [],
+    );
+    const s = runtime.createSession({ id: 'bounded' });
+    runtime.loadCompiledBehavior(s.id, plan());
+    const result = await runtime.startSession(s.id);
+    expect(result.outcome.status).toBe('failed');
+    expect(result.outcome.diagnostic?.message).toContain('256');
+    expect(count).toBe(256);
+    const invalid = plan();
+    invalid.commands[0].flow = { whenTrue: 99, whenFalse: 1 };
+    expect(runtime.loadCompiledBehavior(s.id, invalid).validation.valid).toBe(
+      false,
+    );
+  });
+  it('cancels after an in-flight condition without starting the next action', async () => {
+    let release!: () => void;
+    const pending = new Promise<void>((r) => {
+      release = r;
+    });
+    const seen: string[] = [];
+    const runtime = createTestRuntime(
+      {
+        dispatch: async (command) => {
+          seen.push(command.id);
+          await pending;
+          return {
+            commandId: command.id,
+            status: 'completed',
+            evidence: 'hardware',
+            condition: false,
+            message: 'observed',
+          };
+        },
+      },
+      [],
+    );
+    const s = runtime.createSession({ id: 'cancel-condition' });
+    runtime.loadCompiledBehavior(s.id, plan());
+    const run = runtime.startSession(s.id);
+    runtime.stopSession(s.id);
+    release();
+    expect((await run).outcome.status).toBe('cancelled');
+    expect(seen).toEqual(['condition']);
+  });
+});

@@ -599,3 +599,8 @@ al pulsar la bandera
 ```
 
 Evaluar la condición antes del primer avance y después de que termine cada movimiento, con una lectura reciente correspondiente a la nueva pose. Si ya hay un obstáculo cercano, ejecutar cero avances. Lectura inválida, caducada o sin retorno no equivale automáticamente a «no hay obstáculo»: definir y mostrar su significado antes de autorizar otro movimiento. La traza debe mostrar distancia observada, decisión e iteración, para relacionar causa y efecto. El bucle debe ser cancelable y acotado, incluido si nunca se satisface la condición. Validar avances repetidos de 15 cm, tolerancia, margen, condición inicial verdadera/falsa y pérdida de lectura; no inferir esa aceptación de la marcha de 0,5 m ya medida. Es una decisión de diseño registrada, todavía sin bloques nuevos implementados.
+
+
+### Resultado de la composición — 2026-10-13
+
+Implementado y validado BL-026 en ambos destinos MuJoCo: condición frontal, `si` / `si…si no`, `repetir hasta` y avance explícito de 15 cm. La actividad con umbral de 30 cm completó ocho avances en cada robot, comprobando antes del primero y después de cada avance. La evaluación y el control son comunes; los perfiles de sensor y los controladores son propios. Jumper usa una previsualización geométrica 9×7 derivada de su cámara 54×42, no una copia del sensor de MicroDuck ni una emulación completa. Lecturas desconocidas fallan, las decisiones quedan visibles y los bucles están limitados y se pueden cancelar. [Aceptación, ejemplos y límites](mujoco-validation.md#shared-proximity-conditions--2026-10-13). Las propuestas anteriores quedan como historia; las expresiones generales siguen en BL-007.

@@ -6,7 +6,7 @@ Optional shared MuJoCo 3.11.0 backend. This package owns physics and rendering, 
 
 <!-- public API from src/index.ts, src/worker.ts and src/lib/controller.ts -->
 
-`createMujocoSession()` starts one dedicated worker; load a verified `SimulationManifest` before stepping or executing commands. `createSimulationRenderer(container, geometry)` consumes copied geometry/frame data. `validateManifest` rejects unresolved versions, paths, hashes and invalid joint metadata. The separate `@botlab/simulators-mujoco/worker` entry exports `installSimulationWorker(factory?)`; it must only be imported by worker modules. Controllers implement feedback, velocity validation, inference and explicit state commit/reset/disposal. Optional `turnProfile` (`constant` or default `tapered`) and `turnStopFraction` (default 0.45, bounded above zero through 1) tune approach speed and the inner braking band without widening final angle tolerance.
+`createMujocoSession()` starts one dedicated worker; load a verified `SimulationManifest` before stepping or executing commands. `createSimulationRenderer(container, geometry, { rearView? })` consumes copied geometry/frame data. `validateManifest` rejects unresolved versions, paths, hashes and invalid joint metadata. The separate `@botlab/simulators-mujoco/worker` entry exports `installSimulationWorker(factory?)`; it must only be imported by worker modules. Controllers implement feedback, velocity validation, inference and explicit state commit/reset/disposal. Optional `turnProfile` (`constant` or default `tapered`) and `turnStopFraction` (default 0.45, bounded above zero through 1) tune approach speed and the inner braking band without widening final angle tolerance.
 
 <!-- lifecycle from src/lib/client.ts and src/lib/worker-runtime.ts -->
 
@@ -31,3 +31,9 @@ Resources are verified by size/SHA-256 before entering the MuJoCo VFS. Host/brow
 <!-- geometric depth ownership and sampling from src/lib/depth.ts, assets.ts and world.ts -->
 
 Optional geometric depth samples `mj_ray` from a named site's pose, using normalized rays at zone centres. All geometry groups, static geometry and self intersections are included. A separate kinematic `MjData` copies joint/mocap poses so observations never alter the running solver or controller state. Simulated time limits sampling; pause reuses the last sample, reset restarts it, and world disposal frees the scratch data. No optical noise or automatic avoidance is implemented. Real-WASM tests cover distance, occlusion, range/no return, pose, self intersections, cadence and dynamics independence.
+
+<!-- condition sampling from src/lib/worker-runtime.ts, world.ts and depth.ts -->
+
+A proximity command pauses the simulation loop, invalidates pending inference and forces a new geometric sample from the current pose before comparison. It never advances the robot. The normal display uses configured sampling frequency; explicit condition queries refresh even within the same sampling slot. Angular and pinhole zone-centre patterns are supported, with range limits per robot. Subsequent movement resumes through the existing controller lifecycle.
+
+Obstacle activities select a rear camera view so an approaching wall does not hide the robot; OrbitControls still allows manual orbit. This changes presentation only.

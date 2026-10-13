@@ -5,6 +5,7 @@ import type { RenderGeometry, SimulationFrame } from '@botlab/simulators-core';
 export function createSimulationRenderer(
   container: HTMLElement,
   description: RenderGeometry[],
+  options: { rearView?: boolean } = {},
 ) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -14,7 +15,7 @@ export function createSimulationRenderer(
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(40, 1, 0.005, 50);
   camera.up.set(0, 0, 1);
-  camera.position.set(0.65, -0.7, 0.5);
+  camera.position.set(options.rearView ? -0.65 : 0.65, -0.7, 0.5);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 0, 0.08);
   controls.enableDamping = true;

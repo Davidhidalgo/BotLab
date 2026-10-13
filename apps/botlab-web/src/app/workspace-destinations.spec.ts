@@ -72,7 +72,7 @@ describe('per-destination project documents', () => {
     ).toThrow('Invalid simulation scene');
     expect(() =>
       decodeWorkspaceDocument(
-        JSON.stringify({ ...doc, targetId: 'jumper-web-walking' }),
+        JSON.stringify({ ...doc, targetId: 'jumper-web-joint-probe' }),
       ),
     ).toThrow('Invalid simulation scene');
   });

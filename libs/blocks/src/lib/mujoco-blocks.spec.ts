@@ -148,3 +148,53 @@ it('rejects invalid counts, expressions, hidden structures and deep zero-count b
   for (let i = 0; i < 17; i++) nested = loop('0', nested, `r-${i}`);
   expect(() => readLoop(nested)).toThrow(/16 niveles/);
 });
+
+describe('shared proximity blocks', () => {
+  const sensor =
+    '<value name="CONDITION"><block type="botlab_web_obstacle" id="sensor"><field name="CM">30</field></block></value>';
+  const advance =
+    '<block type="botlab_web_advance_cm" id="advance"><field name="CM">15</field></block>';
+  const make = (body: string) => ({
+    ...microduckWalkingExample,
+    content: `<xml><block type="event_whenflagclicked" id="start"><next>${body}</next></block></xml>`,
+  });
+  it('reads the same condition and centimetre advance for either robot', () => {
+    const a = make(
+      `<block type="control_repeat_until" id="loop">${sensor}<statement name="SUBSTACK">${advance}</statement></block>`,
+    );
+    for (const read of [readMicroduckWalkingProgram, readJumperWalkingProgram])
+      expect(read(a)).toEqual([
+        {
+          sourceBlockId: 'loop',
+          kind: 'until',
+          condition: { sourceBlockId: 'sensor', thresholdMeters: 0.3 },
+          body: [
+            {
+              sourceBlockId: 'advance',
+              kind: 'distance',
+              distanceMeters: 0.15,
+            },
+          ],
+        },
+      ]);
+  });
+  it('keeps both branches for validation and rejects missing or malformed conditions', () => {
+    const a = make(
+      `<block type="control_if_else" id="choice">${sensor}<statement name="SUBSTACK">${advance}</statement><statement name="SUBSTACK2">${advance.replace('id="advance"', 'id="other"')}</statement></block>`,
+    );
+    expect(readMicroduckWalkingProgram(a)[0]).toMatchObject({
+      kind: 'if',
+      otherwise: [{ sourceBlockId: 'other', distanceMeters: 0.15 }],
+    });
+    for (const bad of [
+      sensor.replace('botlab_web_obstacle', 'math_number'),
+      sensor.replace('id="sensor"', 'id="sensor" disabled="true"'),
+      '',
+    ])
+      expect(() =>
+        readMicroduckWalkingProgram(
+          make(`<block type="control_repeat_until" id="loop">${bad}</block>`),
+        ),
+      ).toThrow('condición');
+  });
+});

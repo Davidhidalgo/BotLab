@@ -36,6 +36,49 @@ function fixture(geoms = '', sensorGeom = '') {
 }
 const wall = '<geom type="box" pos="2 0 0" size=".1 10 10"/>';
 describe('geometric ToF with the real MuJoCo WASM engine', () => {
+  it('forces a current-pose decision sample between display captures', () => {
+    const f = fixture(wall);
+    try {
+      const first = f.sensor.sample(f.data);
+      f.data.time = 0.01;
+      f.data.qpos[0] = 0.5;
+      expect(f.sensor.sample(f.data)).toBe(first);
+      const current = f.sensor.sample(f.data, true);
+      expect(current.distancesMeters[0]).toBeCloseTo(1.4, 8);
+      expect(current.capturedAtSeconds).toBe(0.01);
+      expect(current.sequence).toBe(first.sequence + 1);
+      expect(f.data.time).toBe(0.01);
+    } finally {
+      f.dispose();
+    }
+  });
+  it('projects pinhole zone centres and rejects returns below the sensor minimum', () => {
+    const dirs = depthDirections({
+      ...config,
+      rows: 7,
+      columns: 9,
+      projection: 'pinhole',
+    });
+    expect(dirs[31]).toEqual([1, 0, 0]);
+    expect(dirs[0][1] / dirs[0][0]).toBeCloseTo(
+      (8 / 9) * Math.tan(Math.PI / 8),
+    );
+    expect(dirs[0][2] / dirs[0][0]).toBeCloseTo(
+      (6 / 7) * Math.tan(Math.PI / 8),
+    );
+    const f = fixture('<geom type="box" pos=".04 0 0" size=".01 1 1"/>');
+    const sensor = new MujocoDepthSensor(mj, f.model, {
+      ...config,
+      minRangeMeters: 0.05,
+    });
+    try {
+      expect(sensor.sample(f.data).statuses).toEqual(['no-return']);
+      expect(sensor.sample(f.data).distancesMeters).toEqual([null]);
+    } finally {
+      sensor.dispose();
+      f.dispose();
+    }
+  });
   it('measures nearest surfaces, range limits and no return without zero distances', () => {
     const f = fixture(wall + '<geom type="box" pos="1 0 0" size=".1 .2 .2"/>');
     try {

@@ -84,3 +84,69 @@ describe('bounded walking repeats', () => {
     ).toThrow(/256 bloques/);
   });
 });
+
+describe('walking conditional lowering', () => {
+  const condition = { sourceBlockId: 'sensor', thresholdMeters: 0.3 };
+  it('preserves nested branch and loop exits with following actions', () => {
+    const p = expand([
+      {
+        sourceBlockId: 'loop',
+        kind: 'until',
+        condition,
+        body: [
+          {
+            sourceBlockId: 'choice',
+            kind: 'if',
+            condition: { ...condition, sourceBlockId: 'inner' },
+            body: [wait],
+            otherwise: [{ ...wait, sourceBlockId: 'other' }],
+          },
+        ],
+      },
+      { ...wait, sourceBlockId: 'after' },
+    ]);
+    expect(p[0].flow).toEqual({ whenTrue: 6, whenFalse: 1 });
+    expect(p[1].flow).toEqual({ whenTrue: 2, whenFalse: 4 });
+    expect(p[3].flow).toEqual({ next: 5 });
+    expect(p[5].flow).toEqual({ next: 0 });
+    expect(p[6].sourceBlockId).toBe('after');
+  });
+  it('validates unselected branches and conditions before expansion', () => {
+    expect(() =>
+      expandWalkingProgram(
+        [
+          {
+            sourceBlockId: 'if',
+            kind: 'if',
+            condition,
+            body: [],
+            otherwise: [wait],
+          },
+        ],
+        () => {
+          throw new Error('invalid hidden branch');
+        },
+      ),
+    ).toThrow('invalid hidden branch');
+    expect(() =>
+      expand([
+        {
+          sourceBlockId: 'loop',
+          kind: 'until',
+          condition: { ...condition, thresholdMeters: NaN },
+          body: [],
+        },
+      ]),
+    ).toThrow('condición');
+    expect(() =>
+      expand([
+        {
+          sourceBlockId: 'loop',
+          kind: 'until',
+          condition,
+          body: [{ ...wait, sourceBlockId: 'sensor' }],
+        },
+      ]),
+    ).toThrow('identificador');
+  });
+});

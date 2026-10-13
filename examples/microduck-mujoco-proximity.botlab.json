@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "locale": "es",
+  "targetId": "microduck-mujoco-web",
+  "simulatorBackend": "mujoco",
+  "workspace": {
+    "id": "microduck-proximity-workspace",
+    "behaviorId": "microduck-web-walking",
+    "kind": "blocks",
+    "label": "Avanzar 15 cm y comprobar distancia",
+    "format": "scratch-xml",
+    "engine": "scratch-blocks",
+    "status": "loaded",
+    "validationErrors": [],
+    "createdAt": "1970-01-01T00:00:00.000Z",
+    "content": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"control_repeat_until\" id=\"until\"><value name=\"CONDITION\"><block type=\"botlab_web_obstacle\" id=\"front\"><field name=\"CM\">30</field></block></value><statement name=\"SUBSTACK\"><block type=\"botlab_web_advance_cm\" id=\"advance\"><field name=\"CM\">15</field></block></statement></block></next></block></xml>"
+  },
+  "simulationScene": "obstacles"
+}

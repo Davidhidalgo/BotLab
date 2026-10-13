@@ -170,7 +170,9 @@ export function decodeWorkspaceDocument(text: string): WorkspaceDocument {
     throw new Error('Invalid MuJoCo destination.');
   if (data.simulationScene !== undefined) {
     if (
-      result.targetId !== 'microduck-mujoco-web' ||
+      !['microduck-mujoco-web', 'jumper-web-walking'].includes(
+        result.targetId ?? '',
+      ) ||
       typeof data.simulationScene !== 'string' ||
       !['flat', 'obstacles'].includes(String(data.simulationScene))
     )

@@ -102,6 +102,12 @@ export async function fetchSimulationAssets(
 
 export function validateDepthSensor(sensor: SimulationDepthSensor) {
   if (
+    (sensor.projection !== undefined &&
+      !['angular', 'pinhole'].includes(sensor.projection)) ||
+    (sensor.minRangeMeters !== undefined &&
+      (!Number.isFinite(sensor.minRangeMeters) ||
+        sensor.minRangeMeters < 0 ||
+        sensor.minRangeMeters >= sensor.maxRangeMeters)) ||
     typeof sensor.id !== 'string' ||
     !sensor.id ||
     typeof sensor.site !== 'string' ||

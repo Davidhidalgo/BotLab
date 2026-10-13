@@ -1,3 +1,4 @@
+import { evaluateFrontProximity } from '@botlab/simulators-core';
 import { MujocoDepthSensor } from './depth';
 import type { MainModule, MjModel, MjData } from '@mujoco/mujoco';
 import type {
@@ -104,6 +105,14 @@ export class MujocoWorld {
     this.mj.mj_forward(this.model, this.data);
   }
 
+  proximity(thresholdMeters: number) {
+    this.assertActive();
+    return evaluateFrontProximity(
+      this.depth?.sample(this.data, true),
+      this.data.time,
+      thresholdMeters,
+    );
+  }
   hold() {
     this.assertActive();
     this.mapping.forEach((m, i) => {

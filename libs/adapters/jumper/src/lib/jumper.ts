@@ -1,4 +1,4 @@
-import { expandWalkingProgram } from '@botlab/model';
+import { expandWalkingProgram, proximityCommandSchema } from '@botlab/model';
 import type {
   Behavior,
   BotLabAdapter,
@@ -127,7 +127,9 @@ export const jumperWalkingBehavior: Behavior = {
   description:
     'Avance y giros de 90° con controlador upstream sobre suelo plano.',
 };
-export function createJumperWalkingAdapter(): BotLabAdapter {
+export function createJumperWalkingAdapter(
+  hasProximity = false,
+): BotLabAdapter {
   return {
     id: 'jumper-walking',
     name: 'Jumper · marcha',
@@ -150,6 +152,7 @@ export function createJumperWalkingAdapter(): BotLabAdapter {
         targetIds: [jumperWalkingTargetId],
         schema: {
           commands: [
+            ...(hasProximity ? [proximityCommandSchema] : []),
             {
               id: 'turn',
               name: 'Girar 90°',
@@ -293,6 +296,7 @@ export function compileJumperWalkingProgram(
     requiredPolicyIds: [],
     commands: expanded.map((s, i) => ({
       id: `velocity-${i}`,
+      ...(s.flow ? { flow: s.flow } : {}),
       sourceBlockId: s.sourceBlockId,
       ...(s.iterations ? { iterations: s.iterations } : {}),
       targetId: jumperWalkingTargetId,
@@ -300,15 +304,17 @@ export function compileJumperWalkingProgram(
       commandId: 'kind' in s ? s.kind : 'velocity',
       inputs:
         'kind' in s
-          ? s.kind === 'distance'
-            ? {
-                distanceMeters: s.distanceMeters,
-                speed: 0.24,
-                timeoutSeconds: 15 + s.distanceMeters / 0.04,
-              }
-            : s.kind === 'turn'
-              ? { angleRadians: s.angleRadians, speed: 1, timeoutSeconds: 45 }
-              : { durationSeconds: s.durationSeconds }
+          ? s.kind === 'proximity'
+            ? { thresholdMeters: s.thresholdMeters }
+            : s.kind === 'distance'
+              ? {
+                  distanceMeters: s.distanceMeters,
+                  speed: 0.24,
+                  timeoutSeconds: 15 + s.distanceMeters / 0.04,
+                }
+              : s.kind === 'turn'
+                ? { angleRadians: s.angleRadians, speed: 1, timeoutSeconds: 45 }
+                : { durationSeconds: s.durationSeconds }
           : {
               forward: s.forward,
               yaw: s.yaw,

@@ -176,6 +176,7 @@ export type RuntimeCommandDispatchStatus =
 
 export type RuntimeCommandDispatchResult = {
   commandId: string;
+  condition?: boolean;
   message: string;
 } & (
   | { status: 'dispatched' | 'failed'; evidence?: never }
@@ -1001,7 +1002,15 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
                   ? 'hardware'
                   : 'simulator'
                 : 'none',
-          diagnostic: code ? { code } : undefined,
+          diagnostic: code
+            ? {
+                code,
+                message: session.diagnostics
+                  .slice()
+                  .reverse()
+                  .find((d) => d.code === code)?.message,
+              }
+            : undefined,
         });
         return {
           snapshot: snapshot(session),
@@ -1141,7 +1150,20 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
           `Runtime session ${session.id} started.`,
           session.id,
         );
-        for (const command of artifact.commands) {
+        let instruction = 0;
+        const boundedFlow = artifact.commands.some((c) => c.flow !== undefined);
+        for (; instruction < artifact.commands.length;) {
+          if (boundedFlow && dispatchResults.length >= 256) {
+            failureCode = 'dispatcher-failed';
+            recordDiagnostic(
+              session,
+              'adapter',
+              failureCode,
+              'El programa alcanzó el límite de 256 evaluaciones/acciones. Revisa la condición y el avance.',
+            );
+            break;
+          }
+          const command = artifact.commands[instruction];
           if (isPaused()) await waitForResume();
           if (run.controller.signal.aborted || session.state !== 'running')
             break;
@@ -1207,6 +1229,23 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
               session.dispatchedCommandCount += 1;
               appendTrace(session, 'dispatch', result.message, command.id);
               emit('command-dispatched', result.message, session.id);
+              const flow = command.flow;
+              if (
+                flow &&
+                'whenTrue' in flow &&
+                (result.status !== 'completed' ||
+                  typeof result.condition !== 'boolean')
+              )
+                throw new Error(
+                  'La condición requiere una lectura confirmada.',
+                );
+              instruction = !flow
+                ? instruction + 1
+                : 'next' in flow
+                  ? flow.next
+                  : result.condition
+                    ? flow.whenTrue
+                    : flow.whenFalse;
             } else {
               failureCode = 'dispatcher-failed';
               recordDiagnostic(
@@ -1251,7 +1290,7 @@ export function createBotLabRuntime(config: RuntimeConfig): BotLabRuntime {
           return finish('cancelled', dispatchResults, 'execution-cancelled');
         }
         session.state =
-          dispatchResults.length === artifact.commands.length &&
+          instruction === artifact.commands.length &&
           dispatchResults.every((result) => result.status !== 'failed')
             ? 'stopped'
             : 'error';

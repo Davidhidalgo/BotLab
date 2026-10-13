@@ -345,3 +345,16 @@ BotLab uses Nx 23.2.1, pnpm 10.34.5, TypeScript 6.0.3, Oxlint 1.83.0 and Oxfmt 0
 `pnpm run format --all` and `pnpm run format:check --all` use Nx's Oxfmt integration. Sources synced from ChatGPT, downloaded simulators, build outputs and the generated lockfile are excluded. Nx currently labels its Oxlint integration experimental, so Oxlint and Oxfmt are pinned. TypeScript 6 uses the official Nx compatibility migration (`ignoreDeprecations: "6.0"`) to preserve the existing CommonJS library emission and path aliases. Migrating those options is deferred to a future TypeScript 7 upgrade.
 
 The upstream MicroDuck simulator checkout still uses its own npm installation internally; BotLab commands use pnpm. See [the migration record](docs/toolchain-migration.md) for the applied generators and validation.
+
+### Actividad: avanzar y comprobar una condición
+
+<!-- shared conditional activity from examples/microduck-mujoco-proximity.botlab.json, examples/jumper-mujoco-proximity.botlab.json and libs/blocks/src/lib/microduck-mujoco-blocks.ts -->
+
+Importa el ejemplo de [MicroDuck](examples/microduck-mujoco-proximity.botlab.json) o [Jumper](examples/jumper-mujoco-proximity.botlab.json) desde **Proyectos → Importar proyecto** y carga el robot en **Obstáculos + ToF**. Ambos usan los mismos bloques:
+
+```text
+repetir hasta <¿obstáculo delante a menos de 30 cm?>
+    avanzar 15 cm
+```
+
+Predice cuántos avances hará y compara las distancias y decisiones que aparecen al ejecutar. Se comprueba antes de avanzar y después de cada movimiento terminado; si la condición ya es verdadera, no avanza. La condición también sirve dentro de «si» y «si…si no». Una lectura desconocida detiene el programa con una explicación. Los pasos antiguos siguen midiendo 0,5 m. [Alcance y límites](tools/mujoco/README.md#conditions-and-15-cm-advances).

@@ -12,24 +12,68 @@ export function applyWebWalkingLocale(
       'Avanzado',
       'marchar %1 m/s y girar %2 rad/s durante %3 s',
       'Control por velocidad y tiempo. La distancia y el giro reales pueden variar.',
+      'avanzar %1 cm',
+      '¿obstáculo delante a menos de %1 cm?',
     ],
     ca: [
       'Avançat',
       'camina a %1 m/s i gira a %2 rad/s durant %3 s',
       'Control per velocitat i temps. La distància i el gir reals poden variar.',
+      'avançar %1 cm',
+      'obstacle davant a menys de %1 cm?',
     ],
     en: [
       'Advanced',
       'walk at %1 m/s and turn at %2 rad/s for %3 s',
       'Control by speed and time. Actual distance and turn can vary.',
+      'advance %1 cm',
+      'obstacle ahead closer than %1 cm?',
     ],
   }[locale];
-  for (const [i, key] of ['ADVANCED', 'VELOCITY', 'HELP'].entries())
+  for (const [i, key] of [
+    'ADVANCED',
+    'VELOCITY',
+    'HELP',
+    'CENTIMETRES',
+    'PROXIMITY',
+  ].entries())
     api.Msg[`BOTLAB_WEB_${key}`] = copy[i];
 }
 export function registerMicroduckMujocoBlocks(api: typeof ScratchBlocks) {
   if (api.Blocks['botlab_web_velocity']) return;
   api.defineBlocksWithJsonArray([
+    {
+      type: 'botlab_web_advance_cm',
+      message0: '%{BKY_BOTLAB_WEB_CENTIMETRES}',
+      args0: [
+        {
+          type: 'field_number',
+          name: 'CM',
+          value: 15,
+          text: '15',
+          min: 0,
+          max: 2000,
+        },
+      ],
+      style: 'motion',
+      extensions: ['shape_statement'],
+    },
+    {
+      type: 'botlab_web_obstacle',
+      message0: '%{BKY_BOTLAB_WEB_PROXIMITY}',
+      args0: [
+        {
+          type: 'field_number',
+          name: 'CM',
+          value: 30,
+          text: '30',
+          min: 5,
+          max: 400,
+        },
+      ],
+      style: 'sensing',
+      extensions: ['output_boolean'],
+    },
     {
       type: 'botlab_web_velocity',
       message0: '%{BKY_BOTLAB_WEB_VELOCITY}',
@@ -50,6 +94,11 @@ const commonWalkingBlockTypes = [
   'botlab_microduck_walk_distance',
   'control_wait',
   'control_repeat',
+  'control_repeat_until',
+  'control_if',
+  'control_if_else',
+  'botlab_web_advance_cm',
+  'botlab_web_obstacle',
   'botlab_web_velocity',
 ];
 export const jumperWalkingBlockTypes = [
@@ -154,7 +203,9 @@ function readWalkingProgram(
     return number(value, 'NUM');
   };
   const link = (e: Element, tag: string, name?: string) => {
-    const links = children(e, tag);
+    const links = children(e, tag).filter(
+      (c) => !name || c.getAttribute('name') === name,
+    );
     if (!links.length) return undefined;
     const container = links[0];
     if (links.length !== 1 || (name && container.getAttribute('name') !== name))
@@ -167,6 +218,26 @@ function readWalkingProgram(
       throw new Error('Secuencia no válida.');
     return blocks[0];
   };
+  function condition(e: Element) {
+    const values = children(e, 'value');
+    const container = values[0],
+      block = container?.children[0];
+    if (
+      values.length !== 1 ||
+      container.getAttribute('name') !== 'CONDITION' ||
+      container.children.length !== 1 ||
+      block?.localName !== 'block' ||
+      block.getAttribute('type') !== 'botlab_web_obstacle' ||
+      block.getAttribute('disabled') === 'true'
+    )
+      throw new Error('Conecta una condición de obstáculo delante.');
+    visited.add(container);
+    visited.add(block);
+    return {
+      sourceBlockId: block.getAttribute('id') ?? '',
+      thresholdMeters: number(block, 'CM') / 100,
+    };
+  }
   let nodes = 0;
   function sequence(
     first: Element | undefined,
@@ -188,7 +259,34 @@ function readWalkingProgram(
           'Bloque de movimiento no compatible o más de 256 bloques.',
         );
       const sourceBlockId = current.getAttribute('id') ?? '';
-      if (type === 'control_repeat') {
+      if (
+        ['control_repeat_until', 'control_if', 'control_if_else'].includes(type)
+      ) {
+        steps.push({
+          sourceBlockId,
+          kind: type === 'control_repeat_until' ? 'until' : 'if',
+          condition: condition(current),
+          body: sequence(link(current, 'statement', 'SUBSTACK'), depth + 1),
+          ...(type === 'control_if_else'
+            ? {
+                otherwise: sequence(
+                  link(current, 'statement', 'SUBSTACK2'),
+                  depth + 1,
+                ),
+              }
+            : {}),
+        });
+      } else if (type === 'botlab_web_obstacle') {
+        throw new Error(
+          'La condición debe estar conectada a un bloque de control.',
+        );
+      } else if (type === 'botlab_web_advance_cm') {
+        steps.push({
+          sourceBlockId,
+          kind: 'distance',
+          distanceMeters: number(current, 'CM') / 100,
+        });
+      } else if (type === 'control_repeat') {
         const count = literal(current, 'TIMES');
         if (
           !Number.isInteger(count) ||

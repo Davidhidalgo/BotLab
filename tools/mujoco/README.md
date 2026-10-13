@@ -150,3 +150,20 @@ node tools/mujoco/verify-tof-physics.mjs
 ```
 
 Both accept `BOTLAB_TEST_URL` and default to `https://botlab.localhost`. The physics comparison requires Vite development mode; the UI check also runs on a static preview. Reports: `docs/evidence/mujoco-tof-web.json` and `docs/evidence/mujoco-tof-physics.json`.
+
+## Conditions and 15 cm advances
+
+<!-- shared activity from examples/*-mujoco-proximity.botlab.json, prepare-jumper-depth.py, verify-proximity-physics.mjs and verify-proximity-workbench.mjs -->
+
+Both walking targets offer **avanzar [15] cm**, **¿obstáculo delante a menos de [30] cm?**, **repetir hasta**, **si** and **si…si no**. Import [MicroDuck](../../examples/microduck-mujoco-proximity.botlab.json) or [Jumper](../../examples/jumper-mujoco-proximity.botlab.json), select **Obstáculos + ToF** and load. The sample checks before its first move and after each finished 15 cm advance. Decisions list the observed centimetres, threshold and boolean result. Try a threshold that is already true to observe zero advances. Existing steps still mean 0.5 m.
+
+Missing/invalid/no-return front readings fail the condition rather than authorize movement. This is a central distance predicate, not a claim that the whole path is clear; floor/self intersections may be seen if the sensor points at them. The loop checks between completed advances, not continuously during one advance, so step size and threshold matter. Programs with control flow stop after at most 256 dispatched checks/actions/checkpoints. Stop, source editing and target disposal retain cancellation behavior.
+
+Jumper's normal walking preparer now invokes `prepare-jumper-depth.py`. With base resources already prepared, `python3 tools/mujoco/prepare-jumper-depth.py` creates only its separate obstacle profile. It derives a 9×7 geometric preview from the 54×42 reference camera, with its own mounting/FOV and 0.05–8.8 m range at 15 simulated Hz. MicroDuck retains 8×8, 45° and 4 m. Neither profile adds sensor input to the walking policy.
+
+```sh
+node tools/mujoco/verify-proximity-physics.mjs
+BOTLAB_TEST_URL=http://127.0.0.1:4230 node tools/mujoco/verify-proximity-workbench.mjs
+```
+
+The physical probe needs Vite development serving (`https://botlab.localhost` by default); the editor check defaults to static preview port 4230. Both use installed Chrome and isolated browser storage. Evidence is saved as `docs/evidence/mujoco-proximity-physics.json` and `docs/evidence/mujoco-proximity-workbench.json`.

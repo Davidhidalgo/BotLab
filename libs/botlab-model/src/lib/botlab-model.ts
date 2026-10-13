@@ -231,7 +231,12 @@ export interface BehaviorArtifact extends Artifact {
   content: string;
 }
 
+export type CommandFlow =
+  | { next: number }
+  | { whenTrue: number; whenFalse: number };
 export interface CompiledCommand {
+  /** Explicit instruction offsets; commands.length is the program exit. */
+  flow?: CommandFlow;
   iterations?: ProgramIteration[];
   id: string;
   sourceBlockId?: string;
@@ -603,6 +608,22 @@ export function validateCompiledBehaviorArtifact(
   }
 
   for (const command of artifact.commands) {
+    if (command.flow !== undefined) {
+      const flow = command.flow;
+      if (
+        !flow ||
+        typeof flow !== 'object' ||
+        Array.isArray(flow) ||
+        !(
+          Object.keys(flow).sort().join(',') === 'next' ||
+          Object.keys(flow).sort().join(',') === 'whenFalse,whenTrue'
+        ) ||
+        Object.values(flow).some(
+          (n) => !Number.isInteger(n) || n < 0 || n > artifact.commands.length,
+        )
+      )
+        errors.push(`Invalid control flow for ${command.id}.`);
+    }
     if (command.targetId !== artifact.targetId) {
       errors.push(
         `Compiled command ${command.id} targets ${command.targetId}, not artifact target ${artifact.targetId}.`,

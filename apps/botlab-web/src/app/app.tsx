@@ -645,10 +645,11 @@ export function App() {
       lastExecution,
       targetId: selectedTargetId as WorkspaceTargetId,
       targetWorkspaces,
-      simulationScene:
-        selectedTargetId === 'microduck-mujoco-web'
-          ? simulationScene
-          : undefined,
+      simulationScene: ['microduck-mujoco-web', 'jumper-web-walking'].includes(
+        selectedTargetId,
+      )
+        ? simulationScene
+        : undefined,
       mujocoExecution:
         mujocoExecution?.sourceContent === workspaceArtifact.content
           ? mujocoExecution

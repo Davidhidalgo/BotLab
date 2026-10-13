@@ -1,4 +1,4 @@
-import { expandWalkingProgram } from '@botlab/model';
+import { expandWalkingProgram, proximityCommandSchema } from '@botlab/model';
 import type {
   Behavior,
   BotLabAdapter,
@@ -25,7 +25,9 @@ export const microduckWalkingBehavior: Behavior = {
   },
 };
 /** Advertise only after the pinned model and controller have loaded successfully. */
-export function createMicroduckWalkingAdapter(): BotLabAdapter {
+export function createMicroduckWalkingAdapter(
+  hasProximity = false,
+): BotLabAdapter {
   return {
     id: 'microduck-mujoco',
     name: 'MicroDuck · marcha web',
@@ -49,6 +51,7 @@ export function createMicroduckWalkingAdapter(): BotLabAdapter {
         targetIds: [microduckMujocoTargetId],
         schema: {
           commands: [
+            ...(hasProximity ? [proximityCommandSchema] : []),
             {
               id: 'distance',
               name: 'Avanzar',
@@ -196,6 +199,7 @@ export function compileMicroduckWalkingProgram(
     requiredPolicyIds: [],
     commands: expanded.map((s, i) => ({
       id: `velocity-${i}`,
+      ...(s.flow ? { flow: s.flow } : {}),
       sourceBlockId: s.sourceBlockId,
       ...(s.iterations ? { iterations: s.iterations } : {}),
       targetId: microduckMujocoTargetId,
@@ -203,15 +207,17 @@ export function compileMicroduckWalkingProgram(
       commandId: 'kind' in s ? s.kind : 'velocity',
       inputs:
         'kind' in s
-          ? s.kind === 'distance'
-            ? {
-                distanceMeters: s.distanceMeters,
-                speed: 0.25,
-                timeoutSeconds: 15 + s.distanceMeters / 0.04,
-              }
-            : s.kind === 'turn'
-              ? { angleRadians: s.angleRadians, speed: 1, timeoutSeconds: 45 }
-              : { durationSeconds: s.durationSeconds }
+          ? s.kind === 'proximity'
+            ? { thresholdMeters: s.thresholdMeters }
+            : s.kind === 'distance'
+              ? {
+                  distanceMeters: s.distanceMeters,
+                  speed: 0.25,
+                  timeoutSeconds: 15 + s.distanceMeters / 0.04,
+                }
+              : s.kind === 'turn'
+                ? { angleRadians: s.angleRadians, speed: 1, timeoutSeconds: 45 }
+                : { durationSeconds: s.durationSeconds }
           : {
               forward: s.forward,
               yaw: s.yaw,

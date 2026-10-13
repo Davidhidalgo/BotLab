@@ -1,0 +1,862 @@
+{
+  "date": "2026-10-13T00:07:33.520Z",
+  "browser": "154.0.8037.98",
+  "results": [
+    {
+      "robot": "microduck",
+      "run": {
+        "targetId": "microduck-mujoco-web",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"control_repeat_until\" id=\"until\"><value name=\"CONDITION\"><block type=\"botlab_web_obstacle\" id=\"front\"><field name=\"CM\">30</field></block></value><statement name=\"SUBSTACK\"><block type=\"botlab_web_advance_cm\" id=\"advance\"><field name=\"CM\">15</field></block></statement></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:05:52.956Z",
+        "manifestId": "microduck-obstacles-tof",
+        "modelRevision": "363b7effd4eae9f24dd1bb8bf647aef4d74edca9",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@2",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 0,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 1.4592142649310205,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 0,
+                "sequence": 1
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@4",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 3.5399999999999467,
+              "displacementMeters": 0.15136846669526036,
+              "yawRadians": -0.04610426334250334,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14990138734462066
+            }
+          },
+          {
+            "commandId": "velocity-2@5",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 3.5449999999999466,
+              "displacementMeters": 0.000008772204823434948,
+              "yawRadians": 0.00016622684745023347
+            }
+          },
+          {
+            "commandId": "velocity-0@7",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 3.5599999999999463,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 0.9856787856358185,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 3.5599999999999463,
+                "sequence": 55
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@9",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 7.084999999999871,
+              "displacementMeters": 0.1485191048452994,
+              "yawRadians": 0.03594197281640165,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14735727974244517
+            }
+          },
+          {
+            "commandId": "velocity-2@10",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 7.104999999999871,
+              "displacementMeters": 0.000013734677928350668,
+              "yawRadians": 0.00026059006735734214
+            }
+          },
+          {
+            "commandId": "velocity-0@12",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 7.11999999999987,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 1.0037247454661216,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 7.11999999999987,
+                "sequence": 109
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@14",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 10.650000000000265,
+              "displacementMeters": 0.15168964068630975,
+              "yawRadians": -0.011110967720942068,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.15032839157587813
+            }
+          },
+          {
+            "commandId": "velocity-2@15",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 10.665000000000267,
+              "displacementMeters": 0.000004463699711265544,
+              "yawRadians": 0.00039874983903047737
+            }
+          },
+          {
+            "commandId": "velocity-0@17",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 10.68000000000027,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 0.9774145229392796,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 10.68000000000027,
+                "sequence": 164
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@19",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 14.145000000000811,
+              "displacementMeters": 0.14902945046199145,
+              "yawRadians": 0.0477996238103411,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14849848030522872
+            }
+          },
+          {
+            "commandId": "velocity-2@20",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 14.165000000000814,
+              "displacementMeters": 0.000014466087198364531,
+              "yawRadians": 0.00008023164027841367
+            }
+          },
+          {
+            "commandId": "velocity-0@22",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 14.180000000000817,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 0.8522571083505789,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 14.180000000000817,
+                "sequence": 217
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@24",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 17.735000000000756,
+              "displacementMeters": 0.15113163296776705,
+              "yawRadians": -0.07932710653116853,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14986827903517902
+            }
+          },
+          {
+            "commandId": "velocity-2@25",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 17.745000000000754,
+              "displacementMeters": 0.000008189002721066369,
+              "yawRadians": 0.00003495090743890414
+            }
+          },
+          {
+            "commandId": "velocity-0@27",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 17.76000000000075,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 0.6985148736616327,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 17.76000000000075,
+                "sequence": 272
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@29",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 21.325000000000042,
+              "displacementMeters": 0.15016470609534677,
+              "yawRadians": -0.02714557399160123,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14891168910642072
+            }
+          },
+          {
+            "commandId": "velocity-2@30",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 21.345000000000038,
+              "displacementMeters": 0.000007920045285079897,
+              "yawRadians": 0.00004656341344358656
+            }
+          },
+          {
+            "commandId": "velocity-0@32",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 21.360000000000035,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 0.546363256057578,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 21.360000000000035,
+                "sequence": 327
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@34",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 24.829999999999345,
+              "displacementMeters": 0.1475919642828684,
+              "yawRadians": 0.02129424598325954,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14724879618289094
+            }
+          },
+          {
+            "commandId": "velocity-2@35",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 24.84499999999934,
+              "displacementMeters": 0.000005598557355751409,
+              "yawRadians": 0.00011217822034969434
+            }
+          },
+          {
+            "commandId": "velocity-0@37",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 24.85999999999934,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 0.3978999034412314,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 24.85999999999934,
+                "sequence": 380
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@39",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 28.399999999998634,
+              "displacementMeters": 0.15046574906528018,
+              "yawRadians": 0.00991421569004131,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14935600927880396
+            }
+          },
+          {
+            "commandId": "velocity-2@40",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 28.404999999998633,
+              "displacementMeters": 0.000008817480932702442,
+              "yawRadians": 0.00017329650430226992
+            }
+          },
+          {
+            "commandId": "velocity-0@42",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 28.41999999999863,
+              "proximity": {
+                "value": true,
+                "distanceMeters": 0.2465451429895394,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 28.41999999999863,
+                "sequence": 435
+              }
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-fda5c143-6ed83f03-6d7a5622-e047d6ec-mujoco-program-1",
+          "program": {
+            "programId": "microduck-web-walking",
+            "targetId": "microduck-mujoco-web",
+            "revision": "{\"commands\":[{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"proximity\",\"flow\":{\"whenFalse\":1,\"whenTrue\":3},\"id\":\"velocity-0\",\"inputs\":{\"thresholdMeters\":0.3},\"sourceBlockId\":\"front\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-1\",\"inputs\":{\"distanceMeters\":0.15,\"speed\":0.25,\"timeoutSeconds\":18.75},\"sourceBlockId\":\"advance\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"wait\",\"flow\":{\"next\":0},\"id\":\"velocity-2\",\"inputs\":{\"durationSeconds\":0},\"sourceBlockId\":\"until\",\"targetId\":\"microduck-mujoco-web\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:06:21.348Z"
+      },
+      "initialTrue": {
+        "targetId": "microduck-mujoco-web",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"control_repeat_until\" id=\"until\"><value name=\"CONDITION\"><block type=\"botlab_web_obstacle\" id=\"front\"><field name=\"CM\">30</field></block></value><statement name=\"SUBSTACK\"><block type=\"botlab_web_advance_cm\" id=\"advance\"><field name=\"CM\">15</field></block></statement></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:06:21.651Z",
+        "manifestId": "microduck-obstacles-tof",
+        "modelRevision": "363b7effd4eae9f24dd1bb8bf647aef4d74edca9",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@44",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 28.41999999999863,
+              "proximity": {
+                "value": true,
+                "distanceMeters": 0.2465451429895394,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 28.41999999999863,
+                "sequence": 436
+              }
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-fda5c143-6ed83f03-6d7a5622-e047d6ec-mujoco-program-2",
+          "program": {
+            "programId": "microduck-web-walking",
+            "targetId": "microduck-mujoco-web",
+            "revision": "{\"commands\":[{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"proximity\",\"flow\":{\"whenFalse\":1,\"whenTrue\":3},\"id\":\"velocity-0\",\"inputs\":{\"thresholdMeters\":0.3},\"sourceBlockId\":\"front\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-1\",\"inputs\":{\"distanceMeters\":0.15,\"speed\":0.25,\"timeoutSeconds\":18.75},\"sourceBlockId\":\"advance\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"wait\",\"flow\":{\"next\":0},\"id\":\"velocity-2\",\"inputs\":{\"durationSeconds\":0},\"sourceBlockId\":\"until\",\"targetId\":\"microduck-mujoco-web\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:06:21.671Z"
+      },
+      "cancelled": true,
+      "missingSensorRejected": true
+    },
+    {
+      "robot": "jumper",
+      "run": {
+        "targetId": "jumper-web-walking",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"control_repeat_until\" id=\"until\"><value name=\"CONDITION\"><block type=\"botlab_web_obstacle\" id=\"front\"><field name=\"CM\">30</field></block></value><statement name=\"SUBSTACK\"><block type=\"botlab_web_advance_cm\" id=\"advance\"><field name=\"CM\">15</field></block></statement></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:06:45.735Z",
+        "manifestId": "jumper-obstacles-tof",
+        "modelRevision": "78966f45de6f2b6de3f7cea017f32a39f8b993e6",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@2",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 0,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 1.425322,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 0,
+                "sequence": 1
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@4",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 2.5819999999998267,
+              "displacementMeters": 0.15280463659230828,
+              "yawRadians": -0.02714351233537888,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.15274954699894314
+            }
+          },
+          {
+            "commandId": "velocity-2@5",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 2.585999999999826,
+              "displacementMeters": 0.0000018196431923332832,
+              "yawRadians": -0.0000135908948000682
+            }
+          },
+          {
+            "commandId": "velocity-0@7",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 2.5899999999998258,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 1.2701300410662586,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 2.5899999999998258,
+                "sequence": 40
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@9",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 5.178000000000064,
+              "displacementMeters": 0.1444800118365906,
+              "yawRadians": 0.028228456174422375,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14440001986525194
+            }
+          },
+          {
+            "commandId": "velocity-2@10",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 5.186000000000067,
+              "displacementMeters": 0.0000021720766695473776,
+              "yawRadians": -0.000009315826430292013
+            }
+          },
+          {
+            "commandId": "velocity-0@12",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 5.190000000000068,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 1.1255410237404544,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 5.190000000000068,
+                "sequence": 80
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@14",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 7.804000000000941,
+              "displacementMeters": 0.1485653791247964,
+              "yawRadians": 0.020521192303430788,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.1485483879065995
+            }
+          },
+          {
+            "commandId": "velocity-2@15",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 7.811000000000943,
+              "displacementMeters": 0.000003807133845457546,
+              "yawRadians": 0.0000030029356169331
+            }
+          },
+          {
+            "commandId": "velocity-0@17",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 7.8150000000009445,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 0.977098114770517,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 7.8150000000009445,
+                "sequence": 121
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@19",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 10.380999999999686,
+              "displacementMeters": 0.14782804584539194,
+              "yawRadians": -0.018289835065861047,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14773005324655034
+            }
+          },
+          {
+            "commandId": "velocity-2@20",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 10.385999999999683,
+              "displacementMeters": 0.0000194942364043202,
+              "yawRadians": -6.0229716200089e-7
+            }
+          },
+          {
+            "commandId": "velocity-0@22",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 10.394999999999678,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 0.829468534150593,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 10.394999999999678,
+                "sequence": 160
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@24",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 13.013999999998227,
+              "displacementMeters": 0.14107680357490246,
+              "yawRadians": -0.04925402551816527,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14090850768416982
+            }
+          },
+          {
+            "commandId": "velocity-2@25",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 13.015999999998225,
+              "displacementMeters": 0.00000431695001042218,
+              "yawRadians": -0.0000027514992336913346
+            }
+          },
+          {
+            "commandId": "velocity-0@27",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 13.02499999999822,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 0.6875281212595576,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 13.02499999999822,
+                "sequence": 201
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@29",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 15.580999999996804,
+              "displacementMeters": 0.1516149207669621,
+              "yawRadians": -0.002340251795126605,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.15159964584849028
+            }
+          },
+          {
+            "commandId": "velocity-2@31",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 15.585999999996801,
+              "displacementMeters": 0.0000010536114184188784,
+              "yawRadians": -0.000016098894796638674
+            }
+          },
+          {
+            "commandId": "velocity-0@33",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 15.594999999996796,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 0.5369465132048956,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 15.594999999996796,
+                "sequence": 240
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@35",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 18.177999999999233,
+              "displacementMeters": 0.14452581997156017,
+              "yawRadians": 0.028470895247089286,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14445037415481282
+            }
+          },
+          {
+            "commandId": "velocity-2@37",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 18.180999999999237,
+              "displacementMeters": 0.000002925887151485133,
+              "yawRadians": -0.000015615569352429862
+            }
+          },
+          {
+            "commandId": "velocity-0@39",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 18.184999999999242,
+              "proximity": {
+                "value": false,
+                "distanceMeters": 0.39198050104721294,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 18.184999999999242,
+                "sequence": 280
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@41",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 20.799000000002437,
+              "displacementMeters": 0.14958108866650777,
+              "yawRadians": 0.022990594686406747,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14956087516957334
+            }
+          },
+          {
+            "commandId": "velocity-2@42",
+            "sourceBlockId": "until",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 20.806000000002445,
+              "displacementMeters": 0.000003781323144032117,
+              "yawRadians": 0.000008858379013494569
+            }
+          },
+          {
+            "commandId": "velocity-0@44",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 20.81000000000245,
+              "proximity": {
+                "value": true,
+                "distanceMeters": 0.24220022961470306,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 20.81000000000245,
+                "sequence": 321
+              }
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-8e7006d2-df9969de-e486dddc-2dd19fe9-mujoco-program-1",
+          "program": {
+            "programId": "jumper-web-walking",
+            "targetId": "jumper-web-walking",
+            "revision": "{\"commands\":[{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"proximity\",\"flow\":{\"whenFalse\":1,\"whenTrue\":3},\"id\":\"velocity-0\",\"inputs\":{\"thresholdMeters\":0.3},\"sourceBlockId\":\"front\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-1\",\"inputs\":{\"distanceMeters\":0.15,\"speed\":0.24,\"timeoutSeconds\":18.75},\"sourceBlockId\":\"advance\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"wait\",\"flow\":{\"next\":0},\"id\":\"velocity-2\",\"inputs\":{\"durationSeconds\":0},\"sourceBlockId\":\"until\",\"targetId\":\"jumper-web-walking\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:07:06.664Z"
+      },
+      "initialTrue": {
+        "targetId": "jumper-web-walking",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"control_repeat_until\" id=\"until\"><value name=\"CONDITION\"><block type=\"botlab_web_obstacle\" id=\"front\"><field name=\"CM\">30</field></block></value><statement name=\"SUBSTACK\"><block type=\"botlab_web_advance_cm\" id=\"advance\"><field name=\"CM\">15</field></block></statement></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:07:06.815Z",
+        "manifestId": "jumper-obstacles-tof",
+        "modelRevision": "78966f45de6f2b6de3f7cea017f32a39f8b993e6",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@46",
+            "sourceBlockId": "front",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "timeSeconds": 20.81000000000245,
+              "proximity": {
+                "value": true,
+                "distanceMeters": 0.24220022961470306,
+                "thresholdMeters": 0.3,
+                "capturedAtSeconds": 20.81000000000245,
+                "sequence": 322
+              }
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-8e7006d2-df9969de-e486dddc-2dd19fe9-mujoco-program-2",
+          "program": {
+            "programId": "jumper-web-walking",
+            "targetId": "jumper-web-walking",
+            "revision": "{\"commands\":[{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"proximity\",\"flow\":{\"whenFalse\":1,\"whenTrue\":3},\"id\":\"velocity-0\",\"inputs\":{\"thresholdMeters\":0.3},\"sourceBlockId\":\"front\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-1\",\"inputs\":{\"distanceMeters\":0.15,\"speed\":0.24,\"timeoutSeconds\":18.75},\"sourceBlockId\":\"advance\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"wait\",\"flow\":{\"next\":0},\"id\":\"velocity-2\",\"inputs\":{\"durationSeconds\":0},\"sourceBlockId\":\"until\",\"targetId\":\"jumper-web-walking\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:07:06.834Z"
+      },
+      "cancelled": true,
+      "missingSensorRejected": true
+    }
+  ],
+  "emptyLoopBounded": true,
+  "errors": []
+}

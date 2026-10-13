@@ -74,7 +74,7 @@ export const mujocoSessionMachine = setup({
         input.robot === 'jumper'
           ? loadJumperJointManifest(abort.signal)
           : input.robot === 'jumper-walking'
-            ? loadJumperWalkingManifest(abort.signal)
+            ? loadJumperWalkingManifest(abort.signal, input.scene)
             : loadMicroduckMujocoManifest(abort.signal, input.scene)
       )
         .then(async (manifest) => {
@@ -114,7 +114,7 @@ export const mujocoSessionMachine = setup({
   actions: {
     begin: assign(({ context, event }) => ({
       scene:
-        event.type === 'load' && context.robot === 'microduck'
+        event.type === 'load' && context.robot !== 'jumper'
           ? event.scene
           : undefined,
       session:

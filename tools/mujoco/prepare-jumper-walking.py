@@ -30,4 +30,5 @@ def main():
     joints=[dict(name=n,min=c['joint_limits'][n][0],max=c['joint_limits'][n][1],home=c['default_joint_pos'][n],kp=c['control']['kp'],kd=c['control']['kd'],effortLimit=c['control']['effort_limit']) for n in names]
     m=dict(schemaVersion=1,id='jumper-walking',robotId='jumper',revision=REV,mujocoVersion='3.11.0',scene='walking.xml',assets=assets,joints=joints,servoCurve=jointProbe['servoCurve'],initialKeyframe='init_state',rootBody='base_link',gyroSensor='gyro',evidenceLevel='closed-loop-policy',variant='flat-ground-locomotion',limitations=['Forward walking and measured 90-degree turns on flat ground; no strafe, reverse, jump or other modes exposed.'],controller=dict(id='jumper-locomotion',model='locomotion.onnx',decimation=5,observationSize=415,actionSize=20))
     (dst/'manifest.json').write_text(json.dumps(m,indent=2)+'\n');print(json.dumps(dict(manifest=str(dst/'manifest.json'),sha256=sha(dst/'manifest.json'))))
+    subprocess.run(['python3',str(ROOT/'tools/mujoco/prepare-jumper-depth.py')],check=True)
 if __name__=='__main__':main()

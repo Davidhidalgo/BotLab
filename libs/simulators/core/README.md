@@ -22,3 +22,7 @@ Keep this package light. Robot-specific simulator dependencies, assets, and runt
 `SimulationMotionGoal` describes a measured distance or turn, a bounded controller speed and a simulated timeout. `SimulationCommandResult` can retain the requested distance/angle and measured forward displacement/unwrapped yaw; legacy timed velocity yaw remains the shortest signed heading change.
 
 `SimulationDepthSensor` optionally configures a named site, grid, field of view, range and simulated frequency. `SimulationDepthFrame` carries metre distances, per-zone hit/no-return/invalid status, simulated capture time, sequence, sensor pose and sampling cost; absent returns are `null`, never zero. Site axes are +X forward, +Y left, +Z up; grid row zero is up and column zero left.
+
+<!-- shared proximity semantics from src/lib/proximity.ts and session.ts -->
+
+`evaluateFrontProximity(depth, timeSeconds, thresholdMeters)` compares the minimum radial hit in the central quarter of each grid axis against a strict threshold (5–400 cm). Every selected zone must have a valid hit; no return, invalid values, missing sensors and samples over 0.1 simulated seconds old are errors, never “clear”. It returns value, distance, threshold, capture time and sequence. `SimulationCommand` supports `kind: 'proximity'`; `SimulationCommandResult.proximity` retains this decision evidence. Sensor configuration optionally selects pinhole projection and a minimum range.

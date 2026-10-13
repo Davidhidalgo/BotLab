@@ -97,14 +97,15 @@ export default function MujocoSimulatorPanel({
     snapshot.matches({ active: 'ready' }) ||
     snapshot.matches({ active: 'paused' }) ||
     snapshot.matches({ active: 'running' });
+  const dispatchSequence = useRef(0);
   const runtime = useMemo(() => {
     if (!manifest || !session) return undefined;
     return createBotLabRuntime({
       adapters: [
         walking
           ? duck
-            ? createMicroduckWalkingAdapter()
-            : createJumperWalkingAdapter()
+            ? createMicroduckWalkingAdapter(!!manifest.depthSensor)
+            : createJumperWalkingAdapter(!!manifest.depthSensor)
           : createJumperAdapter(manifest.joints),
       ],
       simulators: [],
@@ -130,39 +131,50 @@ export default function MujocoSimulatorPanel({
             setActiveCommand(command);
             const result = await session.command(
               walking
-                ? command.commandId === 'distance'
+                ? command.commandId === 'proximity'
                   ? {
-                      kind: 'distance',
-                      distanceMeters: Number(command.inputs['distanceMeters']),
-                      speed: Number(command.inputs['speed']),
-                      timeoutSeconds: Number(command.inputs['timeoutSeconds']),
+                      kind: 'proximity',
+                      thresholdMeters: Number(
+                        command.inputs['thresholdMeters'],
+                      ),
                     }
-                  : command.commandId === 'turn'
+                  : command.commandId === 'distance'
                     ? {
-                        kind: 'turn',
-                        angleRadians: Number(command.inputs['angleRadians']),
+                        kind: 'distance',
+                        distanceMeters: Number(
+                          command.inputs['distanceMeters'],
+                        ),
                         speed: Number(command.inputs['speed']),
                         timeoutSeconds: Number(
                           command.inputs['timeoutSeconds'],
                         ),
                       }
-                    : command.commandId === 'wait'
+                    : command.commandId === 'turn'
                       ? {
-                          kind: 'velocity',
-                          forward: 0,
-                          yaw: 0,
-                          durationSeconds: Number(
-                            command.inputs['durationSeconds'],
+                          kind: 'turn',
+                          angleRadians: Number(command.inputs['angleRadians']),
+                          speed: Number(command.inputs['speed']),
+                          timeoutSeconds: Number(
+                            command.inputs['timeoutSeconds'],
                           ),
                         }
-                      : {
-                          kind: 'velocity',
-                          forward: Number(command.inputs['forward']),
-                          yaw: Number(command.inputs['yaw']),
-                          durationSeconds: Number(
-                            command.inputs['durationSeconds'],
-                          ),
-                        }
+                      : command.commandId === 'wait'
+                        ? {
+                            kind: 'velocity',
+                            forward: 0,
+                            yaw: 0,
+                            durationSeconds: Number(
+                              command.inputs['durationSeconds'],
+                            ),
+                          }
+                        : {
+                            kind: 'velocity',
+                            forward: Number(command.inputs['forward']),
+                            yaw: Number(command.inputs['yaw']),
+                            durationSeconds: Number(
+                              command.inputs['durationSeconds'],
+                            ),
+                          }
                 : {
                     joint: String(command.inputs['joint']),
                     positionRadians: Number(command.inputs['positionRadians']),
@@ -178,7 +190,7 @@ export default function MujocoSimulatorPanel({
                     trace: [
                       ...current.trace,
                       {
-                        commandId: command.id,
+                        commandId: `${command.id}@${++dispatchSequence.current}`,
                         sourceBlockId: command.sourceBlockId,
                         iterations: command.iterations,
                         result,
@@ -189,11 +201,14 @@ export default function MujocoSimulatorPanel({
             );
             return {
               commandId: command.id,
+              condition: result.proximity?.value,
               status: result.status,
               evidence: result.evidence,
-              message: walking
-                ? `Movimiento completado; desplazamiento ${result.displacementMeters?.toFixed(3)} m.`
-                : `Articulación alcanzada; error ${result.finalErrorRadians?.toFixed(4)} rad.`,
+              message: result.proximity
+                ? `Distancia frontal: ${(result.proximity.distanceMeters * 100).toFixed(1)} cm; condición: ${result.proximity.value}.`
+                : walking
+                  ? `Movimiento completado; desplazamiento ${result.displacementMeters?.toFixed(3)} m.`
+                  : `Articulación alcanzada; error ${result.finalErrorRadians?.toFixed(4)} rad.`,
             };
           },
         },
@@ -207,13 +222,15 @@ export default function MujocoSimulatorPanel({
 
   useEffect(() => {
     if (!geometry || !canvas.current) return;
-    const view = createSimulationRenderer(canvas.current, geometry);
+    const view = createSimulationRenderer(canvas.current, geometry, {
+      rearView: !!manifest?.depthSensor,
+    });
     renderer.current = view;
     return () => {
       renderer.current = undefined;
       view.dispose();
     };
-  }, [geometry]);
+  }, [geometry, manifest]);
   useEffect(() => {
     if (frame) renderer.current?.update(frame);
   }, [frame]);
@@ -247,6 +264,11 @@ export default function MujocoSimulatorPanel({
             readJumperJointProgram(artifact),
             manifest.joints,
           );
+      if (
+        compiled.commands.some((c) => c.commandId === 'proximity') &&
+        !manifest.depthSensor
+      )
+        throw new Error(copy.sensorRequired);
       const loaded = runtime.loadCompiledBehavior(runtimeSession.id, compiled);
       if (!loaded.validation.valid)
         throw new Error(loaded.validation.errors.join(' '));
@@ -270,6 +292,7 @@ export default function MujocoSimulatorPanel({
         },
       });
       const result = await runtime.startSession(runtimeSession.id);
+      if (result.outcome.status === 'failed') await session?.stop();
       if (generation === runGeneration.current) {
         setReport((current) =>
           sourceChanged.current || !current
@@ -390,7 +413,7 @@ export default function MujocoSimulatorPanel({
       </div>
       <section className="shrink-0 overflow-hidden rounded-xl border bg-white">
         <div className="flex flex-wrap gap-2 border-b p-3">
-          {duck && (
+          {walking && (
             <label className="text-sm">
               {copy.scene}
               <select
@@ -507,7 +530,20 @@ export default function MujocoSimulatorPanel({
               <h3 className="font-medium">
                 ToF · {frame.depth.rows} × {frame.depth.columns}
               </h3>
-              <p>{copy.tofHelp}</p>
+              <p>
+                {copy.tofHelp} ·{' '}
+                {Math.round(
+                  ((manifest?.depthSensor?.horizontalFovRadians ?? 0) * 180) /
+                    Math.PI,
+                )}
+                ° ×{' '}
+                {Math.round(
+                  ((manifest?.depthSensor?.verticalFovRadians ?? 0) * 180) /
+                    Math.PI,
+                )}
+                ° · {frame.depth.maxRangeMeters} m ·{' '}
+                {manifest?.depthSensor?.frequencyHz} Hz
+              </p>
               <p>
                 {copy.tofTime}:{' '}
                 <span data-testid="tof-time">
@@ -616,17 +652,34 @@ export default function MujocoSimulatorPanel({
           data-command-id={activeCommand.id}
           data-block-id={activeBlock}
         >
-          {activeCommand.commandId === 'distance'
-            ? copy.advancing
-            : activeCommand.commandId === 'turn'
-              ? copy.turning
-              : activeCommand.commandId === 'wait'
-                ? copy.waiting
-                : copy.moving}
+          {activeCommand.commandId === 'proximity'
+            ? copy.checking
+            : activeCommand.commandId === 'distance'
+              ? copy.advancing
+              : activeCommand.commandId === 'turn'
+                ? copy.turning
+                : activeCommand.commandId === 'wait'
+                  ? copy.waiting
+                  : copy.moving}
           {activeCommand.iterations?.length
             ? ` · ${iterationLabel(activeCommand.iterations)}`
             : ''}
         </p>
+      )}
+      {commandTrace.some((e) => e.result.proximity) && (
+        <ol aria-label={copy.decisions} className="space-y-1 px-4 text-sm">
+          {commandTrace
+            .filter((e) => e.result.proximity)
+            .map((entry, index) => (
+              <li key={entry.commandId}>
+                {index + 1}.{' '}
+                {(entry.result.proximity!.distanceMeters * 100).toFixed(1)} cm
+                &lt;{' '}
+                {(entry.result.proximity!.thresholdMeters * 100).toFixed(0)} cm:{' '}
+                {entry.result.proximity!.value ? copy.yes : copy.no}
+              </li>
+            ))}
+        </ol>
       )}
       {walking &&
         commandTrace.filter(

@@ -158,6 +158,36 @@ export function decodeMujocoExecution(
           checked[key] = result[key];
         }
       }
+      if (result.proximity !== undefined) {
+        const p = result.proximity;
+        if (
+          !record(p) ||
+          typeof p.value !== 'boolean' ||
+          ![
+            'distanceMeters',
+            'thresholdMeters',
+            'capturedAtSeconds',
+            'sequence',
+          ].every(
+            (k) =>
+              typeof p[k] === 'number' && Number.isFinite(p[k]) && p[k] >= 0,
+          ) ||
+          !Number.isSafeInteger(p.sequence) ||
+          (p.thresholdMeters as number) < 0.05 ||
+          (p.thresholdMeters as number) > 4 ||
+          p.value !==
+            (p.distanceMeters as number) < (p.thresholdMeters as number) ||
+          Math.abs((p.capturedAtSeconds as number) - checked.timeSeconds) > 0.1
+        )
+          throw new Error('Invalid saved proximity reading.');
+        checked.proximity = {
+          value: p.value,
+          distanceMeters: p.distanceMeters as number,
+          thresholdMeters: p.thresholdMeters as number,
+          capturedAtSeconds: p.capturedAtSeconds as number,
+          sequence: p.sequence as number,
+        };
+      }
       return {
         ...(entry.commandId !== undefined
           ? { commandId: entry.commandId as string }

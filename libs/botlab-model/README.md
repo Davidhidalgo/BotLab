@@ -31,3 +31,5 @@ Walking programs also accept `until` and `if` nodes with a `ProximityCondition` 
 <!-- walking conditions exported from src/lib/walking-condition.ts -->
 
 `WalkingCondition` represents proximity leaves and nested `and`, `or`, `not`. `validateWalkingCondition` bounds depth/size and checks every operand and identity. `evaluateWalkingCondition` evaluates one confirmed distance; `describeWalkingCondition` renders the saved expression.
+
+`WalkingActionStep` includes optional `head-yaw`; adapters decide availability and validate its discrete angles before compiling.

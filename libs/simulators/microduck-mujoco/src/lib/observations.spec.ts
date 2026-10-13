@@ -24,3 +24,33 @@ it('uses body-frame gravity and the pinned 61D ordering with separate command un
   expect(Array.from(obs.slice(48, 51))).toEqual([0.25, 0, 1]);
   expect(Array.from(obs.slice(51))).toEqual(Array(10).fill(0));
 });
+
+it('keeps head channels separate from body velocity and rejects incomplete commands', () => {
+  const feedback = {
+    rootPosition: [0, 0, 0.12],
+    quaternion: [1, 0, 0, 0],
+    angularVelocity: [0, 0, 0],
+    positions: Array(14).fill(0),
+    velocities: Array(14).fill(0),
+    efforts: Array(14).fill(0),
+    timeSeconds: 0,
+  };
+  const obs = walkingObservation(
+    feedback,
+    Array(14).fill(0),
+    Array(14).fill(0),
+    { forward: 0, yaw: 0 },
+    [0.1, 0.2, 0.3, 0.4],
+  );
+  expect(Array.from(obs.slice(48, 51))).toEqual([0, 0, 0]);
+  for (let i = 0; i < 4; i++) expect(obs[51 + i]).toBeCloseTo((i + 1) / 10);
+  expect(() =>
+    walkingObservation(
+      feedback,
+      Array(14).fill(0),
+      Array(14).fill(0),
+      { forward: 0, yaw: 0 },
+      [0],
+    ),
+  ).toThrow(/MicroDuck alpha/);
+});

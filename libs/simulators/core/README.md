@@ -28,3 +28,5 @@ Keep this package light. Robot-specific simulator dependencies, assets, and runt
 `evaluateFrontProximity(depth, timeSeconds, thresholdMeters)` compares the minimum radial hit in the central quarter of each grid axis against a strict threshold (5–400 cm). Every selected zone must have a valid hit; no return, invalid values, missing sensors and samples over 0.1 simulated seconds old are errors, never “clear”. It returns value, distance, threshold, capture time and sequence. `SimulationCommand` supports `kind: 'proximity'`; `SimulationCommandResult.proximity` retains this decision evidence. Sensor configuration optionally selects pinhole projection and a minimum range.
 
 A command result may retain a `decision` with its shared walking condition and boolean outcome, alongside the raw proximity observation. Restoration verifies that the decision agrees with the saved distance.
+
+`head-yaw` requests an optional head orientation in radians. Completed results retain `headYaw` target and observed angle, independently of body turns.

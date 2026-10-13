@@ -118,3 +118,5 @@ Mount generations exclude notifications from replaced or unmounted workspaces. A
 Both walking palettes include **wait until [condition], at most [seconds]**. The timeout is explicit (0.5–30 s in half-second increments); the existing proximity condition connects to it. The robot balances while observing, and no forward action is inserted.
 
 The walking palettes also expose **and / or / not**. Nested proximity conditions connect to if, repeat-until and bounded wait-until. The XML parser preserves operand structure and rejects disconnected inputs.
+
+Only MicroDuck’s MuJoCo palette offers **look left / centre / right**. This changes head orientation, not the body heading; Jumper rejects imported head blocks.

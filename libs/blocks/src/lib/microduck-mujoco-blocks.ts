@@ -19,6 +19,10 @@ export function applyWebWalkingLocale(
       'avanzar %1 cm',
       '¿obstáculo delante a menos de %1 cm?',
       'esperar hasta %1 máximo %2 s',
+      'mirar %1',
+      'izquierda',
+      'centro',
+      'derecha',
     ],
     ca: [
       'Avançat',
@@ -27,6 +31,10 @@ export function applyWebWalkingLocale(
       'avançar %1 cm',
       'obstacle davant a menys de %1 cm?',
       'espera fins a %1 màxim %2 s',
+      'mirar %1',
+      'esquerra',
+      'centre',
+      'dreta',
     ],
     en: [
       'Advanced',
@@ -35,6 +43,10 @@ export function applyWebWalkingLocale(
       'advance %1 cm',
       'obstacle ahead closer than %1 cm?',
       'wait until %1 at most %2 s',
+      'look %1',
+      'left',
+      'centre',
+      'right',
     ],
   }[locale];
   for (const [i, key] of [
@@ -44,12 +56,33 @@ export function applyWebWalkingLocale(
     'CENTIMETRES',
     'PROXIMITY',
     'WAIT_UNTIL',
+    'HEAD',
+    'LEFT',
+    'CENTRE',
+    'RIGHT',
   ].entries())
     api.Msg[`BOTLAB_WEB_${key}`] = copy[i];
 }
 export function registerMicroduckMujocoBlocks(api: typeof ScratchBlocks) {
   if (api.Blocks['botlab_web_velocity']) return;
   api.defineBlocksWithJsonArray([
+    {
+      type: 'botlab_web_head_yaw',
+      message0: '%{BKY_BOTLAB_WEB_HEAD}',
+      args0: [
+        {
+          type: 'field_dropdown',
+          name: 'DIRECTION',
+          options: [
+            ['%{BKY_BOTLAB_WEB_LEFT}', 'left'],
+            ['%{BKY_BOTLAB_WEB_CENTRE}', 'centre'],
+            ['%{BKY_BOTLAB_WEB_RIGHT}', 'right'],
+          ],
+        },
+      ],
+      style: 'motion',
+      extensions: ['shape_statement'],
+    },
     {
       type: 'botlab_web_wait_until',
       message0: '%{BKY_BOTLAB_WEB_WAIT_UNTIL}',
@@ -136,6 +169,7 @@ export const jumperWalkingBlockTypes = [
   'botlab_microduck_turn_right',
 ];
 export const microduckWalkingBlockTypes = [
+  'botlab_web_head_yaw',
   ...commonWalkingBlockTypes,
   'botlab_microduck_turn_left',
 ];
@@ -309,7 +343,23 @@ function readWalkingProgram(
           'Bloque de movimiento no compatible o más de 256 bloques.',
         );
       const sourceBlockId = current.getAttribute('id') ?? '';
-      if (type === 'botlab_web_wait_until') {
+      if (type === 'botlab_web_head_yaw') {
+        const fields = children(current, 'field').filter(
+          (f) => f.getAttribute('name') === 'DIRECTION',
+        );
+        const direction = fields[0]?.textContent;
+        if (
+          fields.length !== 1 ||
+          !['left', 'centre', 'right'].includes(direction ?? '')
+        )
+          throw new Error('Orientación de cabeza no válida.');
+        steps.push({
+          sourceBlockId,
+          kind: 'head-yaw',
+          angleRadians:
+            direction === 'left' ? 0.3 : direction === 'right' ? -0.3 : 0,
+        });
+      } else if (type === 'botlab_web_wait_until') {
         steps.push({
           sourceBlockId,
           kind: 'wait-until',

@@ -13,3 +13,7 @@ The policy runs at 50 Hz with four 5 ms MuJoCo steps per inference. Observations
 <!-- build/test commands from project.json and vitest.config.mts -->
 
 `pnpm nx build simulators-microduck-mujoco` and `pnpm nx test simulators-microduck-mujoco` validate the library. See [preparation and engine acceptance](../../../tools/mujoco/README.md) and [measured limits](../../../docs/mujoco-validation.md).
+
+<!-- head control implemented in src/lib/controller.ts and src/lib/observations.ts -->
+
+The alpha walker now supports measured head yaw at −0.3, 0 and +0.3 rad, through its own head observation channel (body yaw remains zero). The upstream 0.2 command smoothing commits only with accepted inference output. Orientation persists across subsequent motion and is cleared on reset. Neck pitch, head pitch and roll remain unavailable as public commands.

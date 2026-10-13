@@ -29,7 +29,14 @@ export const createWalkingController: ControllerFactory = async (
   // Upstream constants use Float32Array, including the default pose rounding.
   const home = Array.from(new Float32Array(manifest.joints.map((j) => j.home)));
   let previous = Array<number>(14).fill(0);
+  let headTarget = 0,
+    headCurrent = 0;
   return {
+    setHeadYaw(angleRadians) {
+      if (![0, -0.3, 0.3].includes(angleRadians))
+        throw new Error('Unsupported head orientation.');
+      headTarget = angleRadians;
+    },
     validateFeedback(feedback) {
       const [w, x, y, z] = feedback.quaternion;
       if (
@@ -50,7 +57,13 @@ export const createWalkingController: ControllerFactory = async (
         throw new Error('MicroDuck velocity outside its validated range.');
     },
     async infer(feedback, velocity) {
-      const obs = walkingObservation(feedback, home, previous, velocity);
+      const nextHead = headCurrent + 0.2 * (headTarget - headCurrent);
+      const obs = walkingObservation(feedback, home, previous, velocity, [
+        0,
+        0,
+        nextHead,
+        0,
+      ]);
       const input = new ort.Tensor('float32', obs, [1, 61]);
       const outputs = await session.run({ [session.inputNames[0]]: input });
       try {
@@ -62,17 +75,22 @@ export const createWalkingController: ControllerFactory = async (
           !action.every(Number.isFinite)
         )
           throw new Error('Invalid walking action tensor.');
-        return { targets: action.map((v, i) => home[i] + v), state: action };
+        return {
+          targets: action.map((v, i) => home[i] + v),
+          state: [...action, nextHead],
+        };
       } finally {
         input.dispose();
         for (const output of Object.values(outputs)) output.dispose();
       }
     },
     accept(output) {
-      previous = [...output.state];
+      previous = output.state.slice(0, 14);
+      headCurrent = output.state[14];
     },
     reset() {
       previous = Array<number>(14).fill(0);
+      headTarget = headCurrent = 0;
     },
     dispose: () => session.release(),
   };

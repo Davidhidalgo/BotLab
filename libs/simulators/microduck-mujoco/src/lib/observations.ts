@@ -6,8 +6,9 @@ export function walkingObservation(
   home: readonly number[],
   lastAction: readonly number[],
   velocity: { forward: number; yaw: number },
+  head: readonly number[] = [0, 0, 0, 0],
 ): Float32Array {
-  if (home.length !== 14 || lastAction.length !== 14)
+  if (home.length !== 14 || lastAction.length !== 14 || head.length !== 4)
     throw new Error('MicroDuck alpha requires 14 joints.');
   const [w, x, y, z] = feedback.quaternion;
   const gravity = [
@@ -24,10 +25,7 @@ export function walkingObservation(
     velocity.forward,
     0,
     velocity.yaw,
-    0,
-    0,
-    0,
-    0,
+    ...head,
     0,
     0,
     0,

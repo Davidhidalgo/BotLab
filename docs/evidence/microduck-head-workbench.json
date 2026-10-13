@@ -1,0 +1,92 @@
+{
+  "date": "2026-10-13T00:16:45.461Z",
+  "browser": "154.0.8037.98",
+  "results": [
+    {
+      "robot": "microduck",
+      "run": {
+        "targetId": "microduck-mujoco-web",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"botlab_web_head_yaw\" id=\"left\"><field name=\"DIRECTION\">left</field><next><block type=\"botlab_web_head_yaw\" id=\"right\"><field name=\"DIRECTION\">right</field><next><block type=\"botlab_web_head_yaw\" id=\"centre\"><field name=\"DIRECTION\">centre</field><next><block type=\"botlab_web_advance_cm\" id=\"advance\"><field name=\"CM\">15</field></block></next></block></next></block></next></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:16:32.173Z",
+        "manifestId": "microduck-obstacles-tof",
+        "modelRevision": "363b7effd4eae9f24dd1bb8bf647aef4d74edca9",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@1",
+            "sourceBlockId": "left",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "finalErrorRadians": 0.05388595323108941,
+              "headYaw": {
+                "targetRadians": 0.3,
+                "observedRadians": 0.24611404676891058
+              },
+              "timeSeconds": 0.6850000000000005
+            }
+          },
+          {
+            "commandId": "velocity-1@2",
+            "sourceBlockId": "right",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "finalErrorRadians": 0.010595128638596463,
+              "headYaw": {
+                "targetRadians": -0.3,
+                "observedRadians": -0.2894048713614035
+              },
+              "timeSeconds": 1.3799999999999926
+            }
+          },
+          {
+            "commandId": "velocity-2@3",
+            "sourceBlockId": "centre",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "physics",
+              "finalErrorRadians": 0.03984702630354703,
+              "headYaw": {
+                "targetRadians": 0,
+                "observedRadians": -0.03984702630354703
+              },
+              "timeSeconds": 2.0149999999999793
+            }
+          },
+          {
+            "commandId": "velocity-3@4",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 5.624999999999902,
+              "displacementMeters": 0.14914847147888913,
+              "yawRadians": -0.18758567712476645,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14845226272532808
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-7f27237f-727be56-3338a08b-14d7cd43-mujoco-program-1",
+          "program": {
+            "programId": "microduck-web-walking",
+            "targetId": "microduck-mujoco-web",
+            "revision": "{\"commands\":[{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"head-yaw\",\"id\":\"velocity-0\",\"inputs\":{\"angleRadians\":0.3},\"sourceBlockId\":\"left\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"head-yaw\",\"id\":\"velocity-1\",\"inputs\":{\"angleRadians\":-0.3},\"sourceBlockId\":\"right\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"head-yaw\",\"id\":\"velocity-2\",\"inputs\":{\"angleRadians\":0},\"sourceBlockId\":\"centre\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-3\",\"inputs\":{\"distanceMeters\":0.15,\"speed\":0.25,\"timeoutSeconds\":18.75},\"sourceBlockId\":\"advance\",\"targetId\":\"microduck-mujoco-web\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:16:37.778Z"
+      },
+      "cancelled": true
+    }
+  ],
+  "errors": []
+}

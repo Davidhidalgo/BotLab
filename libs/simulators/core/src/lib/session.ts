@@ -134,6 +134,7 @@ export interface SimulationCommandResult {
   evidence: 'simulator';
   level: 'physics' | 'closed-loop-policy';
   finalErrorRadians?: number;
+  headYaw?: { targetRadians: number; observedRadians: number };
   displacementMeters?: number;
   /** Unwrapped for measured goals; shortest signed heading change for timed velocity. */
   yawRadians?: number;
@@ -164,6 +165,7 @@ export type SimulationMotionGoal =
       timeoutSeconds: number;
     };
 export type SimulationCommand =
+  | { kind: 'head-yaw'; angleRadians: number }
   | { kind: 'proximity'; thresholdMeters: number }
   | SimulationJointCommand
   | SimulationVelocityCommand

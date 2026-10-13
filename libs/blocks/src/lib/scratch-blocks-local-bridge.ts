@@ -755,7 +755,10 @@ function createBotLabToolbox(
           'community_skill',
         ]
           .map((type) => ({ kind: 'block', type: `botlab_microduck_${type}` }))
-          .concat([{ kind: 'block', type: 'botlab_web_advance_cm' }]),
+          .concat([
+            { kind: 'block', type: 'botlab_web_advance_cm' },
+            { kind: 'block', type: 'botlab_web_head_yaw' },
+          ]),
       },
       {
         kind: 'category',

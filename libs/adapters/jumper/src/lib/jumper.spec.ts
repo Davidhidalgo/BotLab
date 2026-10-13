@@ -135,3 +135,11 @@ it('compiles repeated actions with unique execution IDs, source identity and ite
     ]),
   ).toThrow(/avance/);
 });
+
+it('does not inherit MicroDuck head capabilities', () => {
+  expect(() =>
+    compileJumperWalkingProgram([
+      { kind: 'head-yaw', sourceBlockId: 'h', angleRadians: 0 },
+    ]),
+  ).toThrow(/Jumper admite/);
+});

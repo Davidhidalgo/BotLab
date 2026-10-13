@@ -49,3 +49,5 @@ The walking adapter supplies the validated goal speed and simulated timeout in c
 The walking adapter optionally advertises the shared proximity command when the loaded scene has a sensor. Its compiler preserves bounded `until`/`if` control-flow instructions with fresh condition evaluation at runtime. Source branches are all validated; movement units/speed/control stay robot-specific.
 
 The optional proximity capability also compiles compound `condition` commands. Evaluation semantics and expression validation are shared with Jumper.
+
+MuJoCo head actions are left/centre/right at +0.3/0/−0.3 rad, with measured arrival. No arbitrary angle or neck inclination is advertised.

@@ -358,3 +358,7 @@ repetir hasta <¿obstáculo delante a menos de 30 cm?>
 ```
 
 Predice cuántos avances hará y compara las distancias y decisiones que aparecen al ejecutar. Se comprueba antes de avanzar y después de cada movimiento terminado; si la condición ya es verdadera, no avanza. La condición también sirve dentro de «si» y «si…si no». Una lectura desconocida detiene el programa con una explicación. Los pasos antiguos siguen midiendo 0,5 m. [Alcance y límites](tools/mujoco/README.md#conditions-and-15-cm-advances).
+
+<!-- activity implemented by examples/microduck-mujoco-head.botlab.json -->
+
+La actividad [Mirar y avanzar](examples/microduck-mujoco-head.botlab.json) orienta la cabeza de MicroDuck a izquierda, derecha y centro y después avanza 15 cm. Compara el movimiento de cabeza con el giro del cuerpo y observa cómo cambia el mapa ToF.

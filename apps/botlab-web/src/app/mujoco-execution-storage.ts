@@ -190,6 +190,22 @@ export function decodeMujocoExecution(
           sequence: p.sequence as number,
         };
       }
+      if (result.headYaw !== undefined) {
+        const head = result.headYaw;
+        if (
+          !record(head) ||
+          typeof head.targetRadians !== 'number' ||
+          ![0, -0.3, 0.3].includes(head.targetRadians) ||
+          typeof head.observedRadians !== 'number' ||
+          !Number.isFinite(head.observedRadians) ||
+          Math.abs(head.targetRadians - head.observedRadians) > 0.07
+        )
+          throw new Error('Invalid saved head orientation.');
+        checked.headYaw = {
+          targetRadians: head.targetRadians,
+          observedRadians: head.observedRadians,
+        };
+      }
       if (result.decision !== undefined) {
         const d = result.decision;
         if (!record(d) || !checked.proximity || typeof d.value !== 'boolean')

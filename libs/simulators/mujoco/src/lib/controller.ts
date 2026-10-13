@@ -17,6 +17,8 @@ export interface ControllerOutput {
   kd?: number[];
 }
 export interface SimulationController {
+  /** Optional robot-specific head channel, distinct from body turning. */
+  setHeadYaw?(angleRadians: number): void;
   /** Robot-specific approach speed; measured stopping and tolerances stay shared. */
   turnProfile?: 'constant' | 'tapered';
   /** Fraction of angular tolerance at which braking begins; default 0.45. */

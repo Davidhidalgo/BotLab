@@ -55,6 +55,21 @@ export function createMicroduckWalkingAdapter(
         targetIds: [microduckMujocoTargetId],
         schema: {
           commands: [
+            {
+              id: 'head-yaw',
+              name: 'Orientar cabeza',
+              description:
+                'Orientación medida de cabeza con equilibrio activo.',
+              inputs: [
+                {
+                  name: 'angleRadians',
+                  type: 'number',
+                  required: true,
+                  min: -0.3,
+                  max: 0.3,
+                },
+              ],
+            },
             ...(hasProximity
               ? [proximityCommandSchema, walkingConditionCommandSchema]
               : []),
@@ -171,14 +186,15 @@ export function compileMicroduckWalkingProgram(
       const value =
         s.kind === 'distance'
           ? s.distanceMeters
-          : s.kind === 'turn'
+          : s.kind === 'turn' || s.kind === 'head-yaw'
             ? s.angleRadians
             : s.durationSeconds;
       if (
-        !['distance', 'turn', 'wait'].includes(s.kind) ||
+        !['distance', 'turn', 'wait', 'head-yaw'].includes(s.kind) ||
         !Number.isFinite(value) ||
         (s.kind === 'distance' && (value < 0 || value > 20)) ||
         (s.kind === 'wait' && (value < 0 || value > 30)) ||
+        (s.kind === 'head-yaw' && ![0, -0.3, 0.3].includes(value)) ||
         (s.kind === 'turn' && (value < 0 || value > 2 * Math.PI))
       )
         throw new Error(
@@ -213,23 +229,25 @@ export function compileMicroduckWalkingProgram(
       commandId: 'kind' in s ? s.kind : 'velocity',
       inputs:
         'kind' in s
-          ? s.kind === 'condition'
-            ? { condition: s.condition }
-            : s.kind === 'proximity'
-              ? { thresholdMeters: s.thresholdMeters }
-              : s.kind === 'distance'
-                ? {
-                    distanceMeters: s.distanceMeters,
-                    speed: 0.25,
-                    timeoutSeconds: 15 + s.distanceMeters / 0.04,
-                  }
-                : s.kind === 'turn'
+          ? s.kind === 'head-yaw'
+            ? { angleRadians: s.angleRadians }
+            : s.kind === 'condition'
+              ? { condition: s.condition }
+              : s.kind === 'proximity'
+                ? { thresholdMeters: s.thresholdMeters }
+                : s.kind === 'distance'
                   ? {
-                      angleRadians: s.angleRadians,
-                      speed: 1,
-                      timeoutSeconds: 45,
+                      distanceMeters: s.distanceMeters,
+                      speed: 0.25,
+                      timeoutSeconds: 15 + s.distanceMeters / 0.04,
                     }
-                  : { durationSeconds: s.durationSeconds }
+                  : s.kind === 'turn'
+                    ? {
+                        angleRadians: s.angleRadians,
+                        speed: 1,
+                        timeoutSeconds: 45,
+                      }
+                    : { durationSeconds: s.durationSeconds }
           : {
               forward: s.forward,
               yaw: s.yaw,

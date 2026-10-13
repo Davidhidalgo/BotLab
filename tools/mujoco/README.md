@@ -177,3 +177,9 @@ Run `node tools/mujoco/verify-wait-until.mjs` against the static preview on port
 <!-- acceptance implemented by verify-logical-conditions.mjs -->
 
 `node tools/mujoco/verify-logical-conditions.mjs` checks a nested AND/NOT condition in both walking destinations, branch selection without an unintended advance, displayed expression and saved decision after reload.
+
+### MicroDuck head acceptance
+
+<!-- probes implemented by head-harness.ts, probe-head.mjs and verify-head.mjs -->
+
+`node tools/mujoco/probe-head.mjs` uses Vite on port 4231 (`BOTLAB_TEST_URL` overrides it) to measure the four upstream head channels without exposing unvalidated commands. `node tools/mujoco/verify-head.mjs` checks the accepted left/right/centre blocks in the static editor on port 4230, followed by a 15 cm advance, reload and cancellation. Only yaw passed the chosen public arrival contract; neck inclination is not enabled.

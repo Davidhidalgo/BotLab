@@ -13,6 +13,7 @@ const es = {
 
   sensorRequired:
     'Selecciona Obstáculos + ToF y carga el robot antes de usar esta condición.',
+  head: 'Cabeza · observado / objetivo',
   checking: 'Comprobando distancia',
   decisions: 'Comprobaciones de la condición',
   yes: 'sí',
@@ -90,6 +91,7 @@ const ca: typeof es = {
 
   sensorRequired:
     'Selecciona Obstacles + ToF i carrega el robot abans d’usar aquesta condició.',
+  head: 'Cap · observat / objectiu',
   checking: 'Comprovant distància',
   decisions: 'Comprovacions de la condició',
   yes: 'sí',
@@ -167,6 +169,7 @@ const en: typeof es = {
 
   sensorRequired:
     'Select Obstacles + ToF and load the robot before using this condition.',
+  head: 'Head · observed / target',
   checking: 'Checking distance',
   decisions: 'Condition checks',
   yes: 'yes',

@@ -148,43 +148,50 @@ export default function MujocoSimulatorPanel({
                           : command.inputs['thresholdMeters'],
                       ),
                     }
-                  : command.commandId === 'distance'
+                  : command.commandId === 'head-yaw'
                     ? {
-                        kind: 'distance',
-                        distanceMeters: Number(
-                          command.inputs['distanceMeters'],
-                        ),
-                        speed: Number(command.inputs['speed']),
-                        timeoutSeconds: Number(
-                          command.inputs['timeoutSeconds'],
-                        ),
+                        kind: 'head-yaw',
+                        angleRadians: Number(command.inputs['angleRadians']),
                       }
-                    : command.commandId === 'turn'
+                    : command.commandId === 'distance'
                       ? {
-                          kind: 'turn',
-                          angleRadians: Number(command.inputs['angleRadians']),
+                          kind: 'distance',
+                          distanceMeters: Number(
+                            command.inputs['distanceMeters'],
+                          ),
                           speed: Number(command.inputs['speed']),
                           timeoutSeconds: Number(
                             command.inputs['timeoutSeconds'],
                           ),
                         }
-                      : command.commandId === 'wait'
+                      : command.commandId === 'turn'
                         ? {
-                            kind: 'velocity',
-                            forward: 0,
-                            yaw: 0,
-                            durationSeconds: Number(
-                              command.inputs['durationSeconds'],
+                            kind: 'turn',
+                            angleRadians: Number(
+                              command.inputs['angleRadians'],
+                            ),
+                            speed: Number(command.inputs['speed']),
+                            timeoutSeconds: Number(
+                              command.inputs['timeoutSeconds'],
                             ),
                           }
-                        : {
-                            kind: 'velocity',
-                            forward: Number(command.inputs['forward']),
-                            yaw: Number(command.inputs['yaw']),
-                            durationSeconds: Number(
-                              command.inputs['durationSeconds'],
-                            ),
-                          }
+                        : command.commandId === 'wait'
+                          ? {
+                              kind: 'velocity',
+                              forward: 0,
+                              yaw: 0,
+                              durationSeconds: Number(
+                                command.inputs['durationSeconds'],
+                              ),
+                            }
+                          : {
+                              kind: 'velocity',
+                              forward: Number(command.inputs['forward']),
+                              yaw: Number(command.inputs['yaw']),
+                              durationSeconds: Number(
+                                command.inputs['durationSeconds'],
+                              ),
+                            }
                 : {
                     joint: String(command.inputs['joint']),
                     positionRadians: Number(command.inputs['positionRadians']),
@@ -692,6 +699,19 @@ export default function MujocoSimulatorPanel({
             : ''}
         </p>
       )}
+      {commandTrace
+        .filter((e) => e.result.headYaw)
+        .map((entry) => (
+          <p key={entry.commandId} className="px-4 text-sm">
+            {copy.head}:{' '}
+            {((entry.result.headYaw!.observedRadians * 180) / Math.PI).toFixed(
+              1,
+            )}
+            ° /{' '}
+            {((entry.result.headYaw!.targetRadians * 180) / Math.PI).toFixed(1)}
+            °
+          </p>
+        ))}
       {commandTrace.some((e) => e.result.proximity) && (
         <ol aria-label={copy.decisions} className="space-y-1 px-4 text-sm">
           {commandTrace

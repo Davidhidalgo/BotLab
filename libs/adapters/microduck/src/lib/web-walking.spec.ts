@@ -25,7 +25,7 @@ describe('educational web walking', () => {
         compileMicroduckWalkingProgram([
           { kind: 'distance', sourceBlockId: 'd', distanceMeters },
         ]),
-      ).toThrow();
+      ).toThrow(/Usa avance/);
     expect(() =>
       compileMicroduckWalkingProgram(
         Array(2).fill({
@@ -34,7 +34,7 @@ describe('educational web walking', () => {
           distanceMeters: 1,
         }),
       ),
-    ).toThrow();
+    ).toThrow(/identificador/);
   });
 });
 
@@ -84,5 +84,20 @@ it('compiles repeated actions with unique execution IDs, source identity and ite
         body: [{ sourceBlockId: 'bad', kind: 'distance', distanceMeters: -1 }],
       },
     ]),
-  ).toThrow();
+  ).toThrow(/Usa avance/);
+});
+
+it('compiles only the measured head directions', () => {
+  for (const angleRadians of [-0.3, 0, 0.3])
+    expect(
+      compileMicroduckWalkingProgram([
+        { kind: 'head-yaw', sourceBlockId: 'h', angleRadians },
+      ]).commands[0],
+    ).toMatchObject({ commandId: 'head-yaw', inputs: { angleRadians } });
+  for (const angleRadians of [0.2, NaN, 1])
+    expect(() =>
+      compileMicroduckWalkingProgram([
+        { kind: 'head-yaw', sourceBlockId: 'h', angleRadians },
+      ]),
+    ).toThrow(/Usa avance/);
 });

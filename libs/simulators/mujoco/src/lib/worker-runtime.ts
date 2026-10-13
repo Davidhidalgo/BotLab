@@ -121,6 +121,14 @@ export function installSimulationWorker(createController?: ControllerFactory) {
             evidence: 'simulator',
             level: 'physics',
             finalErrorRadians: error,
+            ...(controller && jointCommand.command.joint === 'head_yaw'
+              ? {
+                  headYaw: {
+                    targetRadians: jointCommand.command.positionRadians,
+                    observedRadians: current.positions[jointCommand.index],
+                  },
+                }
+              : {}),
             timeSeconds: current.timeSeconds,
           },
         });
@@ -328,7 +336,33 @@ export function installSimulationWorker(createController?: ControllerFactory) {
               });
               return;
             }
-            if (
+            if (c && 'kind' in c && c.kind === 'head-yaw') {
+              if (
+                !controller?.setHeadYaw ||
+                ![0, -0.3, 0.3].includes(c.angleRadians)
+              )
+                throw new Error(
+                  'Head orientation is not available for this robot.',
+                );
+              const index = world.manifest.joints.findIndex(
+                (j) => j.name === 'head_yaw',
+              );
+              if (index < 0) throw new Error('Missing head joint.');
+              halt();
+              controller.setHeadYaw(c.angleRadians);
+              jointCommand = {
+                request,
+                index,
+                command: {
+                  joint: 'head_yaw',
+                  positionRadians: c.angleRadians,
+                  toleranceRadians: 0.07,
+                  timeoutSeconds: 8,
+                },
+                start: frame().timeSeconds,
+                settled: 0,
+              };
+            } else if (
               c &&
               'kind' in c &&
               (c.kind === 'distance' || c.kind === 'turn')

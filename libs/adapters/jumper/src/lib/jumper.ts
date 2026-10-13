@@ -266,7 +266,7 @@ export function compileJumperWalkingProgram(
       const value =
         s.kind === 'distance'
           ? s.distanceMeters
-          : s.kind === 'turn'
+          : s.kind === 'turn' || s.kind === 'head-yaw'
             ? s.angleRadians
             : s.durationSeconds;
       if (
@@ -310,23 +310,25 @@ export function compileJumperWalkingProgram(
       commandId: 'kind' in s ? s.kind : 'velocity',
       inputs:
         'kind' in s
-          ? s.kind === 'condition'
-            ? { condition: s.condition }
-            : s.kind === 'proximity'
-              ? { thresholdMeters: s.thresholdMeters }
-              : s.kind === 'distance'
-                ? {
-                    distanceMeters: s.distanceMeters,
-                    speed: 0.24,
-                    timeoutSeconds: 15 + s.distanceMeters / 0.04,
-                  }
-                : s.kind === 'turn'
+          ? s.kind === 'head-yaw'
+            ? { angleRadians: s.angleRadians }
+            : s.kind === 'condition'
+              ? { condition: s.condition }
+              : s.kind === 'proximity'
+                ? { thresholdMeters: s.thresholdMeters }
+                : s.kind === 'distance'
                   ? {
-                      angleRadians: s.angleRadians,
-                      speed: 1,
-                      timeoutSeconds: 45,
+                      distanceMeters: s.distanceMeters,
+                      speed: 0.24,
+                      timeoutSeconds: 15 + s.distanceMeters / 0.04,
                     }
-                  : { durationSeconds: s.durationSeconds }
+                  : s.kind === 'turn'
+                    ? {
+                        angleRadians: s.angleRadians,
+                        speed: 1,
+                        timeoutSeconds: 45,
+                      }
+                    : { durationSeconds: s.durationSeconds }
           : {
               forward: s.forward,
               yaw: s.yaw,

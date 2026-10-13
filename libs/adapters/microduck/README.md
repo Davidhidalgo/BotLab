@@ -51,3 +51,5 @@ The walking adapter optionally advertises the shared proximity command when the 
 The optional proximity capability also compiles compound `condition` commands. Evaluation semantics and expression validation are shared with Jumper.
 
 MuJoCo head actions are left/centre/right at +0.3/0/−0.3 rad, with measured arrival. No arbitrary angle or neck inclination is advertised.
+
+The web walking adapter accepts explicit sit/stand actions using the pinned posture policy. It preserves source IDs and posture results; locomotion while sitting is rejected by the loaded controller.

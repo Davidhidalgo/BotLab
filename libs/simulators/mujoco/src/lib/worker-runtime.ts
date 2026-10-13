@@ -44,6 +44,9 @@ export function installSimulationWorker(createController?: ControllerFactory) {
         yaw: number;
       }
     | undefined;
+  let postureCommand:
+    | { request: WorkerRequest; target: 'sit' | 'stand'; start: number }
+    | undefined;
   let motionGoal: { request: WorkerRequest; goal: MotionGoal } | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let lastPublish = 0;
@@ -69,6 +72,9 @@ export function installSimulationWorker(createController?: ControllerFactory) {
       reply(jointCommand.request, { error: 'Command cancelled.' });
     if (velocityCommand)
       reply(velocityCommand.request, { error: 'Command cancelled.' });
+    if (postureCommand)
+      reply(postureCommand.request, { error: 'Command cancelled.' });
+    postureCommand = undefined;
     if (motionGoal) reply(motionGoal.request, { error: 'Command cancelled.' });
     motionGoal = undefined;
     jointCommand = undefined;
@@ -85,6 +91,33 @@ export function installSimulationWorker(createController?: ControllerFactory) {
   function inspectCommand() {
     const current = frame();
     if (controller) controller.validateFeedback(world!.feedback());
+    if (postureCommand) {
+      const active = postureCommand;
+      const observed = controller?.getPosture?.();
+      if (observed === active.target) {
+        postureCommand = undefined;
+        reply(active.request, {
+          result: {
+            status: 'completed',
+            evidence: 'simulator',
+            level: 'closed-loop-policy',
+            timeSeconds: current.timeSeconds,
+            posture: {
+              target: active.target,
+              observed,
+              heightMeters: current.rootPosition[2],
+            },
+          },
+        });
+      } else if (current.timeSeconds - active.start >= 10) {
+        postureCommand = undefined;
+        halt();
+        reply(active.request, {
+          error: 'La postura no se estabilizó antes del tiempo máximo.',
+          frame: frame(),
+        });
+      }
+    }
     if (motionGoal) {
       const active = motionGoal;
       try {
@@ -296,6 +329,7 @@ export function installSimulationWorker(createController?: ControllerFactory) {
           case 'step':
             if (
               state === 'running' ||
+              postureCommand ||
               jointCommand ||
               velocityCommand ||
               motionGoal ||
@@ -314,6 +348,7 @@ export function installSimulationWorker(createController?: ControllerFactory) {
             break;
           case 'command': {
             if (
+              postureCommand ||
               jointCommand ||
               velocityCommand ||
               motionGoal ||
@@ -336,7 +371,20 @@ export function installSimulationWorker(createController?: ControllerFactory) {
               });
               return;
             }
-            if (c && 'kind' in c && c.kind === 'head-yaw') {
+            if (c && 'kind' in c && c.kind === 'posture') {
+              if (
+                !controller?.setPosture ||
+                !['sit', 'stand'].includes(c.posture)
+              )
+                throw new Error('Posture is unavailable for this robot.');
+              halt();
+              controller.setPosture(c.posture);
+              postureCommand = {
+                request,
+                target: c.posture,
+                start: frame().timeSeconds,
+              };
+            } else if (c && 'kind' in c && c.kind === 'head-yaw') {
               if (
                 !controller?.setHeadYaw ||
                 ![0, -0.3, 0.3].includes(c.angleRadians)

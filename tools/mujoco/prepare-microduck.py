@@ -69,4 +69,7 @@ def main():
     obstacle_manifest.update(id='microduck-obstacles-tof',scene='obstacles.xml',variant='obstacles-alpha-walking-tof',depthSensor=dict(id='front-tof',site='tof',rows=8,columns=8,horizontalFovRadians=0.7853981633974483,verticalFovRadians=0.7853981633974483,maxRangeMeters=4,frequencyHz=15),limitations=['Geometric 8x8 depth, 45 degrees per axis, 4 m range, 15 simulated Hz. No optical noise or automatic avoidance. Walking policy unchanged.'])
     (dst/'obstacles-manifest.json').write_text(json.dumps(obstacle_manifest,indent=2)+'\n')
     print(json.dumps(dict(manifest=str(dst/'obstacles-manifest.json'),sha256=sha(dst/'obstacles-manifest.json'))))
-if __name__=='__main__':main()
+if __name__=='__main__':
+    main()
+    import runpy
+    runpy.run_path(str(Path(__file__).with_name('prepare-microduck-posture.py')), run_name='__main__')

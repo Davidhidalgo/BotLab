@@ -362,3 +362,7 @@ Predice cuántos avances hará y compara las distancias y decisiones que aparece
 <!-- activity implemented by examples/microduck-mujoco-head.botlab.json -->
 
 La actividad [Mirar y avanzar](examples/microduck-mujoco-head.botlab.json) orienta la cabeza de MicroDuck a izquierda, derecha y centro y después avanza 15 cm. Compara el movimiento de cabeza con el giro del cuerpo y observa cómo cambia el mapa ToF.
+
+<!-- activity implemented by examples/microduck-mujoco-posture.botlab.json -->
+
+La actividad [Sentarse, levantarse y avanzar](examples/microduck-mujoco-posture.botlab.json) hace explícita la preparación para caminar. El resultado muestra la postura observada; intentar avanzar sentado da un error que pide levantarse.

@@ -262,6 +262,9 @@ export function compileJumperWalkingProgram(
   steps: readonly import('@botlab/model').WalkingProgramStep[],
 ): CompiledBehaviorArtifact {
   const expanded = expandWalkingProgram(steps, (s) => {
+    if ('kind' in s && s.kind === 'posture') {
+      throw new Error('Jumper no admite las posturas de MicroDuck.');
+    }
     if ('kind' in s) {
       const value =
         s.kind === 'distance'
@@ -310,25 +313,27 @@ export function compileJumperWalkingProgram(
       commandId: 'kind' in s ? s.kind : 'velocity',
       inputs:
         'kind' in s
-          ? s.kind === 'head-yaw'
-            ? { angleRadians: s.angleRadians }
-            : s.kind === 'condition'
-              ? { condition: s.condition }
-              : s.kind === 'proximity'
-                ? { thresholdMeters: s.thresholdMeters }
-                : s.kind === 'distance'
-                  ? {
-                      distanceMeters: s.distanceMeters,
-                      speed: 0.24,
-                      timeoutSeconds: 15 + s.distanceMeters / 0.04,
-                    }
-                  : s.kind === 'turn'
+          ? s.kind === 'posture'
+            ? { posture: s.posture }
+            : s.kind === 'head-yaw'
+              ? { angleRadians: s.angleRadians }
+              : s.kind === 'condition'
+                ? { condition: s.condition }
+                : s.kind === 'proximity'
+                  ? { thresholdMeters: s.thresholdMeters }
+                  : s.kind === 'distance'
                     ? {
-                        angleRadians: s.angleRadians,
-                        speed: 1,
-                        timeoutSeconds: 45,
+                        distanceMeters: s.distanceMeters,
+                        speed: 0.24,
+                        timeoutSeconds: 15 + s.distanceMeters / 0.04,
                       }
-                    : { durationSeconds: s.durationSeconds }
+                    : s.kind === 'turn'
+                      ? {
+                          angleRadians: s.angleRadians,
+                          speed: 1,
+                          timeoutSeconds: 45,
+                        }
+                      : { durationSeconds: s.durationSeconds }
           : {
               forward: s.forward,
               yaw: s.yaw,

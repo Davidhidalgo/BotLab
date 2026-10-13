@@ -17,3 +17,7 @@ The policy runs at 50 Hz with four 5 ms MuJoCo steps per inference. Observations
 <!-- head control implemented in src/lib/controller.ts and src/lib/observations.ts -->
 
 The alpha walker now supports measured head yaw at −0.3, 0 and +0.3 rad, through its own head observation channel (body yaw remains zero). The upstream 0.2 command smoothing commits only with accepted inference output. Orientation persists across subsequent motion and is cleared on reset. Neck pitch, head pitch and roll remain unavailable as public commands.
+
+<!-- posture policies and observation from src/lib/controller.ts and src/lib/posture.ts -->
+
+The loader now pins separate `manifest-posture.json` / `obstacles-manifest-posture.json` variants adding the verified alpha sit/stand policy. Original manifests remain reproducible. `MicroduckPostureTracker` confirms the requested posture with 0.6 s of low angular speed and stable height (sit ≤0.085 m, stand ≥0.095 m, variation <0.004 m). Locomotion from sitting/transitioning fails and requires an explicit stand action; no automatic stand or recovery is inserted. Zero-velocity waits maintain the current posture policy.

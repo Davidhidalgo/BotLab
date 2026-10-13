@@ -190,6 +190,24 @@ export function decodeMujocoExecution(
           sequence: p.sequence as number,
         };
       }
+      if (result.posture !== undefined) {
+        const p = result.posture;
+        if (
+          !record(p) ||
+          (p.target !== 'sit' && p.target !== 'stand') ||
+          p.observed !== p.target ||
+          typeof p.heightMeters !== 'number' ||
+          !Number.isFinite(p.heightMeters) ||
+          p.heightMeters < 0.045 ||
+          (p.target === 'sit' ? p.heightMeters > 0.085 : p.heightMeters < 0.095)
+        )
+          throw new Error('Invalid saved posture.');
+        checked.posture = {
+          target: p.target,
+          observed: p.target,
+          heightMeters: p.heightMeters,
+        };
+      }
       if (result.headYaw !== undefined) {
         const head = result.headYaw;
         if (

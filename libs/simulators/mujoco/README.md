@@ -39,3 +39,5 @@ A proximity command pauses the simulation loop, invalidates pending inference an
 Obstacle activities select a rear camera view so an approaching wall does not hide the robot; OrbitControls still allows manual orbit. This changes presentation only.
 
 An optional controller `setHeadYaw` channel uses observed joint arrival (0.07 rad, joint speed ≤0.05 rad/s for 0.1 s, eight-second timeout). The walking controller stays active; unsupported controllers reject the command. Stop freezes physics and reset clears the controller pose.
+
+Optional controller `setPosture` / `getPosture` methods support explicit, observed sit/stand transitions with a ten-second deadline. Posture requests share the command exclusivity and cancellation path with motion and joints.

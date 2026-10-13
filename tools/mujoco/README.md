@@ -183,3 +183,9 @@ Run `node tools/mujoco/verify-wait-until.mjs` against the static preview on port
 <!-- probes implemented by head-harness.ts, probe-head.mjs and verify-head.mjs -->
 
 `node tools/mujoco/probe-head.mjs` uses Vite on port 4231 (`BOTLAB_TEST_URL` overrides it) to measure the four upstream head channels without exposing unvalidated commands. `node tools/mujoco/verify-head.mjs` checks the accepted left/right/centre blocks in the static editor on port 4230, followed by a 15 cm advance, reload and cancellation. Only yaw passed the chosen public arrival contract; neck inclination is not enabled.
+
+### MicroDuck posture acceptance
+
+<!-- preparation and validation in prepare-microduck-posture.py, posture-harness.ts and verify-posture.mjs -->
+
+`python3 tools/mujoco/prepare-microduck.py` now also prepares separate posture manifests through `prepare-microduck-posture.py`, pinning alpha_sitstand SHA-256 `c6c40e35e726eabd803d633e090d112994f469921152448367953fbaf9799bc8`. The helper reuses a verified native cache or downloads the pinned revision. `node tools/mujoco/probe-posture.mjs` probes repeated physical transitions on Vite port 4231; `node tools/mujoco/verify-posture.mjs` validates the compiled editor on port 4230, explicit stand before walking, observed height, reload and cancellation.

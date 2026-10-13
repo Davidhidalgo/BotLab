@@ -99,8 +99,9 @@ class LeaseTests(unittest.TestCase):
 
 
 class ExternalPresentationTests(unittest.TestCase):
+    @patch('botlab_microduck_native.gateway.write_circuit_scene', return_value='test-circuit.xml')
     @patch('botlab_microduck_native.gateway.NativeMicroDuckSession')
-    def test_external_reset_reopens_native_session_without_video(self, session):
+    def test_external_reset_reopens_native_session_without_video(self, session, write_scene):
         gateway = Gateway('external')
         gateway.start()
         gateway.session.rpc.call.return_value = {'result': {}}
@@ -112,6 +113,7 @@ class ExternalPresentationTests(unittest.TestCase):
         self.assertEqual(snapshot['frameTime'], 0)
         gateway.request('/reset', {'token': token, 'sequence': 1}, 1)
         self.assertEqual(session.call_count, 2)
+        self.assertEqual(write_scene.call_count, 2)
         session.assert_called_with('app', viewer=True)
         self.assertIsNone(gateway.video)
         session.return_value.start.return_value.close.assert_called_once()

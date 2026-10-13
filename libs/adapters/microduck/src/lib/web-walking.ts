@@ -56,6 +56,20 @@ export function createMicroduckWalkingAdapter(
         schema: {
           commands: [
             {
+              id: 'posture',
+              name: 'Cambiar postura',
+              description:
+                'Sentarse o levantarse de forma explícita y observada.',
+              inputs: [
+                {
+                  name: 'posture',
+                  type: 'enum',
+                  enumValues: ['sit', 'stand'],
+                  required: true,
+                },
+              ],
+            },
+            {
               id: 'head-yaw',
               name: 'Orientar cabeza',
               description:
@@ -182,6 +196,11 @@ export function compileMicroduckWalkingProgram(
   steps: readonly WalkingProgramStep[],
 ): CompiledBehaviorArtifact {
   const expanded = expandWalkingProgram(steps, (s) => {
+    if ('kind' in s && s.kind === 'posture') {
+      if (!['sit', 'stand'].includes(s.posture))
+        throw new Error('Postura no válida.');
+      return;
+    }
     if ('kind' in s) {
       const value =
         s.kind === 'distance'
@@ -229,25 +248,27 @@ export function compileMicroduckWalkingProgram(
       commandId: 'kind' in s ? s.kind : 'velocity',
       inputs:
         'kind' in s
-          ? s.kind === 'head-yaw'
-            ? { angleRadians: s.angleRadians }
-            : s.kind === 'condition'
-              ? { condition: s.condition }
-              : s.kind === 'proximity'
-                ? { thresholdMeters: s.thresholdMeters }
-                : s.kind === 'distance'
-                  ? {
-                      distanceMeters: s.distanceMeters,
-                      speed: 0.25,
-                      timeoutSeconds: 15 + s.distanceMeters / 0.04,
-                    }
-                  : s.kind === 'turn'
+          ? s.kind === 'posture'
+            ? { posture: s.posture }
+            : s.kind === 'head-yaw'
+              ? { angleRadians: s.angleRadians }
+              : s.kind === 'condition'
+                ? { condition: s.condition }
+                : s.kind === 'proximity'
+                  ? { thresholdMeters: s.thresholdMeters }
+                  : s.kind === 'distance'
                     ? {
-                        angleRadians: s.angleRadians,
-                        speed: 1,
-                        timeoutSeconds: 45,
+                        distanceMeters: s.distanceMeters,
+                        speed: 0.25,
+                        timeoutSeconds: 15 + s.distanceMeters / 0.04,
                       }
-                    : { durationSeconds: s.durationSeconds }
+                    : s.kind === 'turn'
+                      ? {
+                          angleRadians: s.angleRadians,
+                          speed: 1,
+                          timeoutSeconds: 45,
+                        }
+                      : { durationSeconds: s.durationSeconds }
           : {
               forward: s.forward,
               yaw: s.yaw,

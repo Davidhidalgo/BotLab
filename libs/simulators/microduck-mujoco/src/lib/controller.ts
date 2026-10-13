@@ -1,3 +1,4 @@
+import { MicroduckPostureTracker } from './posture';
 import * as ort from 'onnxruntime-web/wasm';
 import ortWasmUrl from 'onnxruntime-web/ort-wasm-simd-threaded.wasm?url';
 import type { ControllerFactory } from '@botlab/simulators-mujoco';
@@ -26,13 +27,48 @@ export const createWalkingController: ControllerFactory = async (
     await session.release();
     throw new Error('Unexpected ONNX tensor interface.');
   }
+  let postureSession: ort.InferenceSession | undefined;
+  try {
+    if (files['alpha-sitstand.onnx']) {
+      postureSession = await ort.InferenceSession.create(
+        files['alpha-sitstand.onnx'],
+        { executionProviders: ['wasm'] },
+      );
+      if (
+        postureSession.inputNames.length !== 1 ||
+        postureSession.outputNames.length !== 1
+      )
+        throw new Error('Unexpected posture tensor interface.');
+    }
+  } catch (error) {
+    await session.release();
+    await postureSession?.release();
+    throw error;
+  }
+  const posture = new MicroduckPostureTracker();
+  let mode: 'walk' | 'posture' = 'walk';
   // Upstream constants use Float32Array, including the default pose rounding.
   const home = Array.from(new Float32Array(manifest.joints.map((j) => j.home)));
   let previous = Array<number>(14).fill(0);
   let headTarget = 0,
     headCurrent = 0;
   return {
+    ...(postureSession
+      ? {
+          setPosture(target: 'sit' | 'stand') {
+            if (target !== 'sit' && target !== 'stand')
+              throw new Error('Unsupported posture.');
+            if (posture.state === target) return;
+            mode = 'posture';
+            previous = Array(14).fill(0);
+            posture.begin(target);
+          },
+          getPosture: () => posture.state,
+        }
+      : {}),
     setHeadYaw(angleRadians) {
+      if (posture.state !== 'stand')
+        throw new Error('Levanta a MicroDuck antes de orientar la cabeza.');
       if (![0, -0.3, 0.3].includes(angleRadians))
         throw new Error('Unsupported head orientation.');
       headTarget = angleRadians;
@@ -40,15 +76,26 @@ export const createWalkingController: ControllerFactory = async (
     validateFeedback(feedback) {
       const [w, x, y, z] = feedback.quaternion;
       if (
-        feedback.rootPosition[2] < 0.065 ||
+        feedback.rootPosition[2] < (mode === 'posture' ? 0.045 : 0.065) ||
         1 - 2 * (x * x + y * y) < 0.5 ||
         ![w, x, y, z].every(Number.isFinite)
       )
         throw new Error(
           'MicroDuck fell outside the validated walking envelope.',
         );
+      posture.observe(feedback);
     },
     validateVelocity(velocity) {
+      if (velocity.forward !== 0 || velocity.yaw !== 0) {
+        if (posture.state !== 'stand')
+          throw new Error(
+            'MicroDuck está sentado o cambiando de postura. Añade levantarse antes de caminar.',
+          );
+        if (mode !== 'walk') {
+          mode = 'walk';
+          previous = Array(14).fill(0);
+        }
+      }
       if (
         velocity.forward < -0.2 ||
         velocity.forward > 0.25 ||
@@ -58,16 +105,20 @@ export const createWalkingController: ControllerFactory = async (
     },
     async infer(feedback, velocity) {
       const nextHead = headCurrent + 0.2 * (headTarget - headCurrent);
-      const obs = walkingObservation(feedback, home, previous, velocity, [
-        0,
-        0,
-        nextHead,
-        0,
-      ]);
+      const obs = walkingObservation(
+        feedback,
+        home,
+        previous,
+        mode === 'posture'
+          ? { forward: posture.target === 'sit' ? 1 : 0, yaw: 0 }
+          : velocity,
+        [0, 0, nextHead, 0],
+      );
       const input = new ort.Tensor('float32', obs, [1, 61]);
-      const outputs = await session.run({ [session.inputNames[0]]: input });
+      const selected = mode === 'posture' ? postureSession! : session;
+      const outputs = await selected.run({ [selected.inputNames[0]]: input });
       try {
-        const tensor = outputs[session.outputNames[0]];
+        const tensor = outputs[selected.outputNames[0]];
         const action = Array.from(tensor.data as Float32Array);
         if (
           tensor.type !== 'float32' ||
@@ -91,7 +142,12 @@ export const createWalkingController: ControllerFactory = async (
     reset() {
       previous = Array<number>(14).fill(0);
       headTarget = headCurrent = 0;
+      mode = 'walk';
+      posture.reset();
     },
-    dispose: () => session.release(),
+    async dispose() {
+      await session.release();
+      await postureSession?.release();
+    },
   };
 };

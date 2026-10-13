@@ -19,3 +19,5 @@ The walking adapter optionally advertises the shared proximity command when the 
 The optional proximity capability also compiles compound `condition` commands. Evaluation semantics and expression validation are shared with MicroDuck.
 
 Jumper rejects MicroDuck head-yaw steps; sharing program types does not inherit robot-specific capabilities.
+
+Jumper rejects MicroDuck sit/stand actions. Its body-height modes require their own controller contract and validation.

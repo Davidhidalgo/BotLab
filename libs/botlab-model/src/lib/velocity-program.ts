@@ -15,6 +15,7 @@ export interface VelocityProgramStep {
 
 /** Educational goals retain their meaning independently of a robot's speed. */
 export type WalkingActionStep =
+  | { sourceBlockId: string; kind: 'posture'; posture: 'sit' | 'stand' }
   | { sourceBlockId: string; kind: 'head-yaw'; angleRadians: number }
   | VelocityProgramStep
   | { sourceBlockId: string; kind: 'distance'; distanceMeters: number }

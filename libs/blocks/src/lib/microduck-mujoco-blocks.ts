@@ -169,6 +169,8 @@ export const jumperWalkingBlockTypes = [
   'botlab_microduck_turn_right',
 ];
 export const microduckWalkingBlockTypes = [
+  'botlab_microduck_sit',
+  'botlab_microduck_stand',
   'botlab_web_head_yaw',
   ...commonWalkingBlockTypes,
   'botlab_microduck_turn_left',
@@ -343,7 +345,16 @@ function readWalkingProgram(
           'Bloque de movimiento no compatible o más de 256 bloques.',
         );
       const sourceBlockId = current.getAttribute('id') ?? '';
-      if (type === 'botlab_web_head_yaw') {
+      if (
+        type === 'botlab_microduck_sit' ||
+        type === 'botlab_microduck_stand'
+      ) {
+        steps.push({
+          sourceBlockId,
+          kind: 'posture',
+          posture: type.endsWith('_sit') ? 'sit' : 'stand',
+        });
+      } else if (type === 'botlab_web_head_yaw') {
         const fields = children(current, 'field').filter(
           (f) => f.getAttribute('name') === 'DIRECTION',
         );

@@ -30,3 +30,5 @@ Keep this package light. Robot-specific simulator dependencies, assets, and runt
 A command result may retain a `decision` with its shared walking condition and boolean outcome, alongside the raw proximity observation. Restoration verifies that the decision agrees with the saved distance.
 
 `head-yaw` requests an optional head orientation in radians. Completed results retain `headYaw` target and observed angle, independently of body turns.
+
+A `posture` command requests sit or stand where supported. Results retain target, observed stable posture and body height in metres.

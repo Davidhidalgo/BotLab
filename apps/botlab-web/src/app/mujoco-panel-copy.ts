@@ -13,6 +13,9 @@ const es = {
 
   sensorRequired:
     'Selecciona Obstáculos + ToF y carga el robot antes de usar esta condición.',
+  posture: 'Postura observada',
+  sitting: 'sentado',
+  standing: 'de pie',
   head: 'Cabeza · observado / objetivo',
   checking: 'Comprobando distancia',
   decisions: 'Comprobaciones de la condición',
@@ -51,7 +54,7 @@ const es = {
   jumperHelp:
     'Jumper puede avanzar, girar 90° a izquierda o derecha y esperar. El retroceso no está disponible.',
   microduckHelp:
-    'MicroDuck puede avanzar, girar a la izquierda y esperar. El giro a la derecha y el retroceso todavía no están disponibles.',
+    'MicroDuck puede avanzar, girar a la izquierda, mirar, sentarse, levantarse y esperar. El giro a la derecha y el retroceso todavía no están disponibles.',
   physics: 'Estado de la física',
   moving: 'En marcha',
   paused: 'Pausada',
@@ -91,6 +94,9 @@ const ca: typeof es = {
 
   sensorRequired:
     'Selecciona Obstacles + ToF i carrega el robot abans d’usar aquesta condició.',
+  posture: 'Postura observada',
+  sitting: 'assegut',
+  standing: 'dret',
   head: 'Cap · observat / objectiu',
   checking: 'Comprovant distància',
   decisions: 'Comprovacions de la condició',
@@ -129,7 +135,7 @@ const ca: typeof es = {
   jumperHelp:
     'Jumper pot avançar, girar 90° a esquerra o dreta i esperar. El retrocés no està disponible.',
   microduckHelp:
-    'MicroDuck pot avançar, girar a l’esquerra i esperar. El gir a la dreta i el retrocés encara no estan disponibles.',
+    'MicroDuck pot avançar, girar a l’esquerra, mirar, seure, aixecar-se i esperar. El gir a la dreta i el retrocés encara no estan disponibles.',
   physics: 'Estat de la física',
   moving: 'En marxa',
   paused: 'Pausada',
@@ -169,6 +175,9 @@ const en: typeof es = {
 
   sensorRequired:
     'Select Obstacles + ToF and load the robot before using this condition.',
+  posture: 'Observed posture',
+  sitting: 'sitting',
+  standing: 'standing',
   head: 'Head · observed / target',
   checking: 'Checking distance',
   decisions: 'Condition checks',
@@ -207,7 +216,7 @@ const en: typeof es = {
   jumperHelp:
     'Jumper can advance, turn 90° left or right and wait. Backward movement is not available.',
   microduckHelp:
-    'MicroDuck can advance, turn left and wait. Right turns and backward movement are not available yet.',
+    'MicroDuck can advance, turn left, look, sit, stand and wait. Right turns and backward movement are not available yet.',
   physics: 'Physics state',
   moving: 'Running',
   paused: 'Paused',

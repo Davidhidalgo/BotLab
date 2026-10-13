@@ -12,7 +12,7 @@ export async function loadMicroduckMujocoManifest(
   scene: 'flat' | 'obstacles' = 'flat',
 ): Promise<SimulationManifest> {
   const response = await fetch(
-    `/simulation-assets/microduck/${scene === 'obstacles' ? 'obstacles-manifest' : 'manifest'}.json`,
+    `/simulation-assets/microduck/${scene === 'obstacles' ? 'obstacles-manifest-posture' : 'manifest-posture'}.json`,
     {
       signal,
     },
@@ -29,8 +29,8 @@ export async function loadMicroduckMujocoManifest(
   if (
     hash !==
     (scene === 'obstacles'
-      ? '106f20379cc467f9e67cb396ffafd414efbc764ebdb522a3b729a2f9f964dde0'
-      : '50f88e703fefd010294a7a46b13e2dc8d1654b3a7c834c82f2449611115f45ed')
+      ? '9592d64a358bfc6515dc59c125e13f751c1e65ab359b86d8165cf84acb26c86e'
+      : '958611d00fd8374eddb6edd25822d11a067b2c39abf9004ab6a99487ef3c7003')
   )
     throw new Error('MicroDuck manifest hash mismatch.');
   return JSON.parse(new TextDecoder().decode(bytes));

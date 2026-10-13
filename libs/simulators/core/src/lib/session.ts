@@ -122,6 +122,11 @@ export interface SimulationJointCommand {
 }
 
 export interface SimulationCommandResult {
+  posture?: {
+    target: 'sit' | 'stand';
+    observed: 'sit' | 'stand';
+    heightMeters: number;
+  };
   decision?: { condition: WalkingCondition; value: boolean };
   proximity?: {
     value: boolean;
@@ -165,6 +170,7 @@ export type SimulationMotionGoal =
       timeoutSeconds: number;
     };
 export type SimulationCommand =
+  | { kind: 'posture'; posture: 'sit' | 'stand' }
   | { kind: 'head-yaw'; angleRadians: number }
   | { kind: 'proximity'; thresholdMeters: number }
   | SimulationJointCommand

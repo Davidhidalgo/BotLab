@@ -120,3 +120,5 @@ Both walking palettes include **wait until [condition], at most [seconds]**. The
 The walking palettes also expose **and / or / not**. Nested proximity conditions connect to if, repeat-until and bounded wait-until. The XML parser preserves operand structure and rejects disconnected inputs.
 
 Only MicroDuck’s MuJoCo palette offers **look left / centre / right**. This changes head orientation, not the body heading; Jumper rejects imported head blocks.
+
+MicroDuck MuJoCo now accepts the existing **sit** and **stand** block IDs, preserving saved programs. Retired-destination migration continues to block unimplemented actions (the regression fixture uses kick-left).

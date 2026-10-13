@@ -1,0 +1,92 @@
+{
+  "date": "2026-10-13T00:20:45.975Z",
+  "browser": "154.0.8037.98",
+  "results": [
+    {
+      "robot": "microduck",
+      "run": {
+        "targetId": "microduck-mujoco-web",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"botlab_microduck_sit\" id=\"sit\"><next><block type=\"control_wait\" id=\"pause\"><value name=\"DURATION\"><shadow type=\"math_positive_number\" id=\"2g7s9M8?NU~SUqcuf]bO\"><field name=\"NUM\">1</field></shadow></value><next><block type=\"botlab_microduck_stand\" id=\"stand\"><next><block type=\"botlab_web_advance_cm\" id=\"advance\"><field name=\"CM\">15</field></block></next></block></next></block></next></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:20:21.687Z",
+        "manifestId": "microduck-obstacles-tof-posture",
+        "modelRevision": "363b7effd4eae9f24dd1bb8bf647aef4d74edca9",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@1",
+            "sourceBlockId": "sit",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 1.449999999999991,
+              "posture": {
+                "target": "sit",
+                "observed": "sit",
+                "heightMeters": 0.05941186667426721
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@2",
+            "sourceBlockId": "pause",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 2.4599999999999698,
+              "displacementMeters": 0.00004845300003768132,
+              "yawRadians": -0.0009051247799077982
+            }
+          },
+          {
+            "commandId": "velocity-2@3",
+            "sourceBlockId": "stand",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 3.85999999999994,
+              "posture": {
+                "target": "stand",
+                "observed": "stand",
+                "heightMeters": 0.1159445449603809
+              }
+            }
+          },
+          {
+            "commandId": "velocity-3@4",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 7.429999999999864,
+              "displacementMeters": 0.1518722872175231,
+              "yawRadians": -0.0746196834455901,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.1504067919656645
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-ebea4948-63b54823-2a1428ee-b166731e-mujoco-program-1",
+          "program": {
+            "programId": "microduck-web-walking",
+            "targetId": "microduck-mujoco-web",
+            "revision": "{\"commands\":[{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"posture\",\"id\":\"velocity-0\",\"inputs\":{\"posture\":\"sit\"},\"sourceBlockId\":\"sit\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"wait\",\"id\":\"velocity-1\",\"inputs\":{\"durationSeconds\":1},\"sourceBlockId\":\"pause\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"posture\",\"id\":\"velocity-2\",\"inputs\":{\"posture\":\"stand\"},\"sourceBlockId\":\"stand\",\"targetId\":\"microduck-mujoco-web\"},{\"capabilityId\":\"microduck-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-3\",\"inputs\":{\"distanceMeters\":0.15,\"speed\":0.25,\"timeoutSeconds\":18.75},\"sourceBlockId\":\"advance\",\"targetId\":\"microduck-mujoco-web\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:20:29.102Z"
+      },
+      "cancelled": true
+    },
+    {
+      "walkWhileSittingRejected": true
+    }
+  ],
+  "errors": []
+}

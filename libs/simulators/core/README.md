@@ -40,3 +40,5 @@ A `posture` command requests sit or stand where supported. Results retain target
 <!-- software evaluation and optional skill results from src/lib/session.ts -->
 
 Pure program evaluations use `program-evaluation`; variable changes and decision snapshots are stored separately from physical measurements. Optional `skill` commands identify left/right kick or the ground gesture, retaining duration and joint excursion alongside measured rest.
+
+The optional `jump` skill also requires persisted contact-free flight duration and maximum height gain; a saved jump without that evidence is rejected.

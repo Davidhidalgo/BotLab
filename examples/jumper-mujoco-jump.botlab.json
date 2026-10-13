@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "locale": "es",
+  "targetId": "jumper-web-walking",
+  "simulatorBackend": "mujoco",
+  "workspace": {
+    "id": "jumper-jump",
+    "behaviorId": "jumper-web-walking",
+    "kind": "blocks",
+    "label": "Saltar, aterrizar y avanzar",
+    "format": "scratch-xml",
+    "engine": "scratch-blocks",
+    "status": "loaded",
+    "validationErrors": [],
+    "createdAt": "1970-01-01T00:00:00.000Z",
+    "content": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"botlab_jumper_jump\" id=\"jump\"><next><block type=\"botlab_web_advance_cm\" id=\"advance\"><field name=\"CM\">15</field></block></next></block></next></block></xml>"
+  },
+  "simulationScene": "flat"
+}

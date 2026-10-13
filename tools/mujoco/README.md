@@ -205,3 +205,9 @@ Run `node tools/mujoco/verify-wait-until.mjs` against the static preview on port
 <!-- skill preparation and probes from prepare-microduck-skills.py, skill-harness.ts, probe-skills.mjs and verify-skills.mjs -->
 
 MicroDuck preparation now adds separately pinned skill manifests with kick-left, kick-right and ground-pick policies. `node tools/mujoco/probe-skills.mjs` compares startup and balanced-entry states, return to walking and later movement; its exploratory roll case is not exposed. `node tools/mujoco/verify-skills.mjs` checks the compiled editor, stored physical results, cancellation and explicit standing preconditions. The example is `examples/microduck-mujoco-skills.botlab.json`.
+
+<!-- Jumper mode and jump checks from prepare-jumper-skills-probe.py, jumper-skills-harness.ts, probe-jumper-skills.mjs, prepare-jumper-jump.py and verify-jump.mjs -->
+
+`python3 tools/mujoco/prepare-jumper-skills-probe.py` prepares verified probe-only models from the cached bundle; `node tools/mujoco/probe-jumper-skills.mjs` audits mode entry, dynamics and return without enabling product blocks. Gesture/pincer entry is not a complete action test; long dances need full-duration acceptance. `BOTLAB_PROBE_SKILLS=jump,jump-cold` selects the focused startup/settled jump cases.
+
+Normal Jumper preparation adds a separate pinned jump manifest. `node tools/mujoco/verify-jump.mjs` imports the fixed-jump example, checks observed flight/landing and subsequent advance, persists results, cancels in flight, verifies explicit reset is required and reruns successfully after reset.

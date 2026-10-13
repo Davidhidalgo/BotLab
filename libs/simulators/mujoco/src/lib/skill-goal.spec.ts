@@ -33,3 +33,25 @@ it('requires a completed policy, visible joint motion and stable upright return'
     new SkillGoal('kick-left', feedback(0)).update(feedback(10, 0.4), true),
   ).toThrow(/tiempo/);
 });
+
+it('requires contact-free flight and height gain before confirming a jump landing', () => {
+  const goal = new SkillGoal('jump', feedback(0));
+  goal.update(feedback(0.1, 0.4, 0.18), true, 0);
+  goal.update(feedback(0.18, 0.6, 0.23), true, 0);
+  goal.update(feedback(0.3, 0.4, 0.12), true, 4);
+  let result;
+  for (let i = 16; i < 65; i++)
+    result = goal.update(feedback(i * 0.02, 0.1), false, 4) ?? result;
+  expect(result?.skill?.flight).toEqual({
+    contactFreeSeconds: 0.07999999999999999,
+    maxHeightGainMeters: 0.114,
+  });
+  const grounded = new SkillGoal('jump', feedback(0));
+  grounded.update(feedback(0.1, 0.5, 0.2), true, 4);
+  expect(() => grounded.update(feedback(1, 0.5, 0.12), false, 4)).toThrow(
+    /despegue/,
+  );
+  expect(() =>
+    new SkillGoal('jump', feedback(0)).update(feedback(0.1, 0.3), true),
+  ).toThrow(/contactos/);
+});

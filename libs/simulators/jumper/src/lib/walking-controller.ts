@@ -14,6 +14,8 @@ interface Fsm {
     gyro: Float32Array,
     now: number,
   ): void;
+  setKey(key: string, down: boolean): boolean;
+  mode(): string;
   setAxis(axis: string, value: number): void;
   padFrame(now: number): void;
   set_command(x: number, y: number, yaw: number, now: number): void;
@@ -60,16 +62,49 @@ export const createJumperWalkingController: ControllerFactory = async (
   const session = await ort.InferenceSession.create(files['locomotion.onnx'], {
     executionProviders: ['wasm'],
   });
+  let jumpSession: ort.InferenceSession | undefined;
+  try {
+    if (files['jump.onnx'])
+      jumpSession = await ort.InferenceSession.create(files['jump.onnx'], {
+        executionProviders: ['wasm'],
+      });
+  } catch (error) {
+    await session.release();
+    throw error;
+  }
+  let jump: { sent: boolean; entered: boolean } | undefined;
+  let needsReset = false;
   let fsm: Fsm | undefined,
     version = 0,
     awaiting = false;
   function reset() {
     version++;
+    jump = undefined;
+    needsReset = false;
     fsm?.free();
     fsm = undefined;
   }
   const empty: ControllerOutput = { targets: [], state: [] };
   return {
+    ...(jumpSession
+      ? {
+          setSkill(skill: import('@botlab/simulators-core').SimulationSkill) {
+            if (needsReset)
+              throw new Error(
+                'Reinicia Jumper después de interrumpir un salto.',
+              );
+            if (skill !== 'jump') throw new Error('Unsupported Jumper skill.');
+            jump = { sent: false, entered: false };
+          },
+          isSkillRunning: () => jump !== undefined,
+          cancelSkill() {
+            if (jump) {
+              jump = undefined;
+              needsReset = true;
+            }
+          },
+        }
+      : {}),
     turnProfile: 'constant',
     turnStopFraction: 0.1,
     validateFeedback(f) {
@@ -82,9 +117,13 @@ export const createJumperWalkingController: ControllerFactory = async (
         throw new Error('Jumper left the validated walking envelope.');
     },
     validateVelocity(v) {
+      if (needsReset)
+        throw new Error('Reinicia Jumper después de interrumpir un salto.');
       jumperWalkingAxes(v);
     },
     async infer(feedback, velocity) {
+      if (needsReset)
+        throw new Error('Reinicia Jumper después de interrumpir un salto.');
       const now = Math.round(feedback.timeSeconds * 1e6),
         token = version;
       fsm ??= new binding.WebFsm(
@@ -107,23 +146,28 @@ export const createJumperWalkingController: ControllerFactory = async (
       current.setAxis('Ly', axes.Ly);
       current.setAxis('Rx', axes.Rx);
       for (const axis of ['Lx', 'Ry', 'LT', 'RT']) current.setAxis(axis, 0);
+      current.setKey('key_space', !!jump && !jump.sent);
+      if (jump) jump.sent = true;
       current.padFrame(now);
       current.set_command(0, 0, 0, now);
       const mode = current.tick(now);
+      if (jump && current.mode() === 'jump') jump.entered = true;
+      const jumpDone = jump?.entered && current.mode() === 'locomotion';
       if (mode) {
-        if (mode !== 'locomotion')
+        if (mode !== 'locomotion' && !(mode === 'jump' && jumpSession))
           throw new Error(`Unexposed Jumper mode: ${mode}`);
+        const selected = mode === 'jump' ? jumpSession! : session;
         const tensor = new ort.Tensor(
           'float32',
           current.observation().slice(),
-          [1, 415],
+          [1, mode === 'jump' ? 167 : 415],
         );
         awaiting = true;
         try {
-          const out = await session.run({ [session.inputNames[0]]: tensor });
+          const out = await selected.run({ [selected.inputNames[0]]: tensor });
           try {
             if (token !== version) return empty;
-            const action = out[session.outputNames[0]];
+            const action = out[selected.outputNames[0]];
             if (
               action.type !== 'float32' ||
               action.dims.join(',') !== '1,20' ||
@@ -143,17 +187,24 @@ export const createJumperWalkingController: ControllerFactory = async (
         targets: Array.from(current.positions()),
         kp: Array.from(current.kp()),
         kd: Array.from(current.kd()),
-        state: [],
+        state: [jumpDone ? 1 : 0],
       };
     },
-    accept() {},
+    accept(output) {
+      if (output.state[0] === 1) jump = undefined;
+    },
     reset,
     invalidate() {
-      if (awaiting) reset();
+      if (awaiting) {
+        const interrupted = !!jump;
+        reset();
+        if (interrupted) needsReset = true;
+      }
     },
     async dispose() {
       reset();
       await session.release();
+      await jumpSession?.release();
     },
   };
 };

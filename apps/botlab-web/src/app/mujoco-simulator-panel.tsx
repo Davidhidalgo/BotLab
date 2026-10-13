@@ -156,7 +156,8 @@ export default function MujocoSimulatorPanel({
                           name: command.inputs['skill'] as
                             | 'kick-left'
                             | 'kick-right'
-                            | 'ground-pick',
+                            | 'ground-pick'
+                            | 'jump',
                         }
                       : command.commandId === 'rest'
                         ? { kind: 'rest' }
@@ -719,6 +720,18 @@ export default function MujocoSimulatorPanel({
                 {copy.skillNames[entry.result.skill!.name]} ·{' '}
                 {entry.result.skill!.durationSeconds.toFixed(1)} s ·{' '}
                 {copy.stable}
+                {entry.result.skill!.flight && (
+                  <>
+                    {' '}
+                    · {copy.flight}:{' '}
+                    {entry.result.skill!.flight.contactFreeSeconds.toFixed(2)} s
+                    · {copy.heightGain}:{' '}
+                    {(
+                      entry.result.skill!.flight.maxHeightGainMeters * 100
+                    ).toFixed(1)}{' '}
+                    cm
+                  </>
+                )}
               </li>
             ))}
         </ul>
@@ -741,6 +754,7 @@ export default function MujocoSimulatorPanel({
                       | 'kick-left'
                       | 'kick-right'
                       | 'ground-pick'
+                      | 'jump'
                   ]
                 : ['distance', 'distance-value'].includes(
                       activeCommand.commandId,

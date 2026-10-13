@@ -309,3 +309,13 @@ The left/right kick and ground gesture policies are verified by SHA-256 in separ
 [Compiled-editor acceptance](evidence/microduck-skills-workbench.json) confirms left kick (1.68 s), right kick (1.57 s), ground gesture (3.77 s), then a measured 15 cm advance. These durations include observed settling, not just the policy window. Results survive reload; cancellation stops the run, and a kick requested after sitting fails without an automatic stand. The worker requires joint excursion ≥0.15 rad and an upright stable return using the shared rest criterion. No ball contact or object pickup is claimed.
 
 The roll probe reaches an upright final state but passes through ~3 rad tilt and ~4.6 cm body height. It remains unavailable because interrupted/inverted recovery and cancellation have not been validated. Its successful uninterrupted probe does not satisfy the public-block acceptance criteria.
+
+## Jumper fixed jump and mode audit — 2026-10-13
+
+BL-032 integrates the official jump ONNX (167 observations, 20 actions, SHA `1822601bd4c3696633d1bd7faf59c21988906ad75cc2c41f595375611313d79d`) through the existing verified WASM controller and trajectory. Separate jump manifests preserve the previous walking manifests. [Cold/settled-entry probe](evidence/jumper-jump-probe.json) observed absolute body height ~22.9 cm, minimum ~6.7 cm and ~0.29 s without any MuJoCo contacts.
+
+[Compiled-editor acceptance](evidence/jumper-jump-workbench.json) confirms actual flight, landing with contact, stable upright rest, a measured 15 cm advance, saved results and reload. Cancellation is tested while body height exceeds 17 cm: further execution fails before motion until explicit reset, after which the full program completes again. No automatic landing/recovery is inserted. The block has no height parameter; reported ascent is an observation.
+
+The shared skill goal requires at least 0.04 s with zero contacts and 3 cm body-height gain, then current contact, upright height and the usual 0.8 s rest window. Failure to observe flight cannot produce a successful jump.
+
+[Other-mode audit](evidence/jumper-skills-probe.json) exercises official pincher, gesture, dance and locomotion-pitch modes with each policy’s dimensions and dynamic gains. Pincher entry is not a verified grasp; a gesture’s stable mode is not a verified completed semantic action. The long dances (up to 235.68 s reference duration) were probed only for entry/initial dynamics and are not enabled. Control modifiers use concrete keys (`key_left_ctrl`), not the aggregate modifier alias. These observations retain pending acceptance criteria in BL-029.

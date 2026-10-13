@@ -232,6 +232,11 @@ export class MujocoWorld {
       timeSeconds: this.data.time,
     };
   }
+  /** Zero contacts is a conservative proof of a contact-free flight sample. */
+  contactCount(): number {
+    this.assertActive();
+    return this.data.ncon;
+  }
   setControllerGains(kp?: readonly number[], kd?: readonly number[]) {
     if (!kp && !kd) return;
     if (

@@ -777,6 +777,7 @@ function createBotLabToolbox(
               },
             },
             { kind: 'block', type: 'botlab_web_rest', inputs: {} },
+            { kind: 'block', type: 'botlab_jumper_jump', inputs: {} },
             { kind: 'block', type: 'botlab_web_ground_pick', inputs: {} },
             { kind: 'block', type: 'botlab_web_head_yaw', inputs: {} },
           ]),

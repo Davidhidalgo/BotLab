@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-13T00:46:05.159Z",
+  "browser": "155.0.8059.40",
+  "results": [
+    {
+      "robot": "jumper",
+      "run": {
+        "targetId": "jumper-web-walking",
+        "sourceContent": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"event_whenflagclicked\" id=\"start\" x=\"20\" y=\"20\"><next><block type=\"botlab_jumper_jump\" id=\"jump\"><next><block type=\"botlab_web_advance_cm\" id=\"advance\"><field name=\"CM\">15</field></block></next></block></next></block></xml>",
+        "status": "completed",
+        "startedAt": "2026-10-13T00:45:41.590Z",
+        "manifestId": "jumper-walking-jump",
+        "modelRevision": "78966f45de6f2b6de3f7cea017f32a39f8b993e6",
+        "mujocoVersion": "3.11.0",
+        "trace": [
+          {
+            "commandId": "velocity-0@1",
+            "sourceBlockId": "jump",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 3.5979999999997148,
+              "rest": {
+                "durationSeconds": 0.8009999999999118,
+                "driftMeters": 0.001025276263899252,
+                "rotationRadians": 0.0026092023790104234
+              },
+              "skill": {
+                "name": "jump",
+                "durationSeconds": 3.5979999999997148,
+                "maxJointChangeRadians": 1.6925202513360034,
+                "flight": {
+                  "contactFreeSeconds": 0.2850000000000002,
+                  "maxHeightGainMeters": 0.12211949962589032
+                }
+              }
+            }
+          },
+          {
+            "commandId": "velocity-1@2",
+            "sourceBlockId": "advance",
+            "result": {
+              "status": "completed",
+              "evidence": "simulator",
+              "level": "closed-loop-policy",
+              "timeSeconds": 6.203000000000406,
+              "displacementMeters": 0.14123972996512124,
+              "yawRadians": 0.025614489622876536,
+              "targetDistanceMeters": 0.15,
+              "forwardDisplacementMeters": 0.14115906230117395
+            }
+          }
+        ],
+        "outcome": {
+          "executionId": "runtime-b9b000fb-45198e12-bf403c94-7bb19225-mujoco-program-1",
+          "program": {
+            "programId": "jumper-web-walking",
+            "targetId": "jumper-web-walking",
+            "revision": "{\"commands\":[{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"skill\",\"id\":\"velocity-0\",\"inputs\":{\"skill\":\"jump\"},\"sourceBlockId\":\"jump\",\"targetId\":\"jumper-web-walking\"},{\"capabilityId\":\"jumper-web-velocity\",\"commandId\":\"distance\",\"id\":\"velocity-1\",\"inputs\":{\"distanceMeters\":0.15,\"speed\":0.24,\"timeoutSeconds\":18.75},\"sourceBlockId\":\"advance\",\"targetId\":\"jumper-web-walking\"}],\"requiredPolicyIds\":[]}"
+          },
+          "status": "completed",
+          "evidence": "simulator"
+        },
+        "finishedAt": "2026-10-13T00:45:47.877Z"
+      },
+      "cancellation": "cancelled",
+      "resetRequiredAfterCancellation": true,
+      "rerunCompleted": true
+    }
+  ],
+  "errors": []
+}

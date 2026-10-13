@@ -23,7 +23,7 @@ export type WalkingActionStep =
   | {
       sourceBlockId: string;
       kind: 'skill';
-      skill: 'kick-left' | 'kick-right' | 'ground-pick';
+      skill: 'kick-left' | 'kick-right' | 'ground-pick' | 'jump';
     }
   | {
       sourceBlockId: string;

@@ -33,6 +33,7 @@ export function applyWebWalkingLocale(
       'cambiar %1 por %2',
       'Variables',
       'inclinarse hacia el suelo',
+      'saltar',
     ],
     ca: [
       'Avançat',
@@ -52,6 +53,7 @@ export function applyWebWalkingLocale(
       'canvia %1 per %2',
       'Variables',
       'inclinar-se cap a terra',
+      'saltar',
     ],
     en: [
       'Advanced',
@@ -71,6 +73,7 @@ export function applyWebWalkingLocale(
       'change %1 by %2',
       'Variables',
       'bow towards the ground',
+      'jump',
     ],
   }[locale];
   for (const [i, key] of [
@@ -91,12 +94,19 @@ export function applyWebWalkingLocale(
     'CHANGE_NUMBER',
     'VARIABLES',
     'GROUND_PICK',
+    'JUMP',
   ].entries())
     api.Msg[`BOTLAB_WEB_${key}`] = copy[i];
 }
 export function registerMicroduckMujocoBlocks(api: typeof ScratchBlocks) {
   if (api.Blocks['botlab_web_velocity']) return;
   api.defineBlocksWithJsonArray([
+    {
+      type: 'botlab_jumper_jump',
+      message0: '%{BKY_BOTLAB_WEB_JUMP}',
+      style: 'motion',
+      extensions: ['shape_statement'],
+    },
     {
       type: 'botlab_web_ground_pick',
       message0: '%{BKY_BOTLAB_WEB_GROUND_PICK}',
@@ -250,6 +260,7 @@ const commonWalkingBlockTypes = [
   'botlab_web_velocity',
 ];
 export const jumperWalkingBlockTypes = [
+  'botlab_jumper_jump',
   ...commonWalkingBlockTypes,
   'botlab_microduck_turn_left',
   'botlab_microduck_turn_right',
@@ -577,6 +588,10 @@ function readWalkingProgram(
                 ? 'kick-left'
                 : 'kick-right',
         });
+        continue;
+      }
+      if (type === 'botlab_jumper_jump') {
+        steps.push({ sourceBlockId, kind: 'skill', skill: 'jump' });
         continue;
       }
       if (type === 'botlab_web_rest') {

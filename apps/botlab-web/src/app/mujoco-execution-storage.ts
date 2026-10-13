@@ -265,7 +265,7 @@ export function decodeMujocoExecution(
         const v = result.skill;
         if (
           !record(v) ||
-          !['kick-left', 'kick-right', 'ground-pick'].includes(
+          !['kick-left', 'kick-right', 'ground-pick', 'jump'].includes(
             String(v.name),
           ) ||
           typeof v.durationSeconds !== 'number' ||
@@ -279,10 +279,28 @@ export function decodeMujocoExecution(
         )
           throw new Error('Invalid saved skill.');
         checked.skill = {
-          name: v.name as 'kick-left' | 'kick-right' | 'ground-pick',
+          name: v.name as 'kick-left' | 'kick-right' | 'ground-pick' | 'jump',
           durationSeconds: v.durationSeconds,
           maxJointChangeRadians: v.maxJointChangeRadians,
         };
+        if (v.name === 'jump') {
+          const f = v.flight;
+          if (
+            !record(f) ||
+            typeof f.contactFreeSeconds !== 'number' ||
+            !Number.isFinite(f.contactFreeSeconds) ||
+            f.contactFreeSeconds < 0.04 ||
+            f.contactFreeSeconds > v.durationSeconds ||
+            typeof f.maxHeightGainMeters !== 'number' ||
+            !Number.isFinite(f.maxHeightGainMeters) ||
+            f.maxHeightGainMeters < 0.03
+          )
+            throw new Error('Invalid jump flight.');
+          checked.skill.flight = {
+            contactFreeSeconds: f.contactFreeSeconds,
+            maxHeightGainMeters: f.maxHeightGainMeters,
+          };
+        }
       }
       if (result.variableChange !== undefined) {
         const v = result.variableChange;

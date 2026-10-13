@@ -16,10 +16,12 @@ The walking adapter supplies the validated goal speed and simulated timeout in c
 
 The walking adapter optionally advertises the shared proximity command when the loaded scene has a sensor. Its compiler preserves bounded `until`/`if` control-flow instructions with fresh condition evaluation at runtime. Source branches are all validated; movement units/speed/control stay robot-specific.
 
-The optional proximity capability also compiles compound `condition` commands. Evaluation semantics and expression validation are shared with MicroDuck.
+The walking capability also compiles compound `condition` commands, including numeric comparisons without a sensor. Evaluation semantics and expression validation are shared with MicroDuck.
 
 Jumper rejects MicroDuck head-yaw steps; sharing program types does not inherit robot-specific capabilities.
 
 Jumper rejects MicroDuck sit/stand actions. Its body-height modes require their own controller contract and validation.
 
 Jumper compilation rejects posture predicates until its own posture observer is implemented.
+
+The adapter also compiles numeric expressions/variables, measured rest and the fixed `jump` skill. MicroDuck-specific skills remain rejected. The worker must observe flight and landing before the jump command completes.

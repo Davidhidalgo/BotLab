@@ -106,6 +106,7 @@ export function installSimulationWorker(createController?: ControllerFactory) {
         const result = active.goal.update(
           world!.feedback(),
           controller?.isSkillRunning?.() ?? false,
+          world!.contactCount(),
         );
         if (result) {
           skillGoal = undefined;

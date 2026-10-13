@@ -121,12 +121,17 @@ export interface SimulationJointCommand {
   timeoutSeconds: number;
 }
 
-export type SimulationSkill = 'kick-left' | 'kick-right' | 'ground-pick';
+export type SimulationSkill =
+  | 'kick-left'
+  | 'kick-right'
+  | 'ground-pick'
+  | 'jump';
 export interface SimulationCommandResult {
   skill?: {
     name: SimulationSkill;
     durationSeconds: number;
     maxJointChangeRadians: number;
+    flight?: { contactFreeSeconds: number; maxHeightGainMeters: number };
   };
   rest?: {
     durationSeconds: number;

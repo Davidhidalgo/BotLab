@@ -239,3 +239,15 @@ it('allows verified skills only in the MicroDuck walking palette', () => {
     expect(() => readJumperWalkingProgram(artifact)).toThrow(/compatible/);
   }
 });
+
+it('offers the fixed jump only for Jumper', () => {
+  const artifact = {
+    ...microduckWalkingExample,
+    content:
+      '<xml><block type="event_whenflagclicked" id="start"><next><block type="botlab_jumper_jump" id="jump"/></next></block></xml>',
+  };
+  expect(readJumperWalkingProgram(artifact)).toEqual([
+    { sourceBlockId: 'jump', kind: 'skill', skill: 'jump' },
+  ]);
+  expect(() => readMicroduckWalkingProgram(artifact)).toThrow(/compatible/);
+});

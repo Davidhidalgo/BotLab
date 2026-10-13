@@ -140,3 +140,37 @@ it('restores numeric decisions with their validated snapshot, without executing 
     }),
   ).toThrow();
 });
+
+it('requires saved flight evidence for a completed jump', () => {
+  const result = {
+    status: 'completed',
+    evidence: 'simulator',
+    level: 'closed-loop-policy',
+    timeSeconds: 7,
+    rest: { durationSeconds: 0.8, driftMeters: 0.001, rotationRadians: 0.01 },
+    skill: {
+      name: 'jump',
+      durationSeconds: 7,
+      maxJointChangeRadians: 1,
+      flight: { contactFreeSeconds: 0.28, maxHeightGainMeters: 0.12 },
+    },
+  };
+  const report = { ...saved, trace: [{ sourceBlockId: 'jump', result }] };
+  expect(decode(report).trace[0].result).toEqual(result);
+  for (const flight of [
+    undefined,
+    { contactFreeSeconds: 0, maxHeightGainMeters: 0.12 },
+    { contactFreeSeconds: 0.28, maxHeightGainMeters: NaN },
+  ])
+    expect(() =>
+      decode({
+        ...report,
+        trace: [
+          {
+            sourceBlockId: 'jump',
+            result: { ...result, skill: { ...result.skill, flight } },
+          },
+        ],
+      }),
+    ).toThrow();
+});

@@ -132,3 +132,5 @@ Both walking palettes offer **stop movement**, confirming measured rest before p
 Both MuJoCo walking palettes offer numeric comparisons, arithmetic, a frontal-distance reporter in cm, explicit named variables (set/change/read), and an advance block with a connected numeric input. Wait also accepts numeric expressions; repeat counts remain literal. The original centimetre field block is unchanged. XML accepts a connected value over its numeric fallback shadow and rejects unsupported or disconnected expressions. Variables are per run, require initialization and appear in saved results.
 
 MicroDuck MuJoCo also offers left/right kicks and **bow towards the ground**, with explicit standing preconditions and measured return to rest. These blocks do not claim ball contact or object pickup. The general imported community-skill block remains unsupported.
+
+Jumper alone offers **jump**, using its fixed official controller motion. It completes after observed flight, landing and rest; cancelled jumps require reset before movement.

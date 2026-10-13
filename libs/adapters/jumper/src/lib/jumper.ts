@@ -160,6 +160,20 @@ export function createJumperWalkingAdapter(
           commands: [
             ...numericCommandSchemas,
             {
+              id: 'skill',
+              name: 'Salto',
+              description:
+                'Salto oficial fijo con despegue y aterrizaje observados.',
+              inputs: [
+                {
+                  name: 'skill',
+                  type: 'enum',
+                  enumValues: ['jump'],
+                  required: true,
+                },
+              ],
+            },
+            {
               id: 'rest',
               name: 'Detener movimiento',
               description: 'Mantener equilibrio y confirmar reposo observado.',
@@ -271,8 +285,11 @@ export function compileJumperWalkingProgram(
 ): CompiledBehaviorArtifact {
   const expanded = expandWalkingProgram(steps, (s) => {
     if ('expression' in s) return;
-    if ('kind' in s && s.kind === 'skill')
-      throw new Error('Jumper no dispone de las habilidades de MicroDuck.');
+    if ('kind' in s && s.kind === 'skill') {
+      if (s.skill !== 'jump')
+        throw new Error('Jumper no dispone de las habilidades de MicroDuck.');
+      return;
+    }
     if ('kind' in s && s.kind === 'rest') return;
     if ('kind' in s && s.kind === 'posture') {
       throw new Error('Jumper no admite las posturas de MicroDuck.');
